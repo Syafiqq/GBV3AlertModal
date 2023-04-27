@@ -25,11 +25,6 @@ public class AlertModal: UIView {
 
     // MARK: Private Properties
 
-    private var closeOnTapOverlay: Bool = true
-    private var dismissOnAction: Bool = true
-
-    private var completion: ((AlertModal, ActionType) -> Void)?
-
     private var properties: DialogProperties?
     private var dataHolder: DataHolder?
 
@@ -43,8 +38,10 @@ public class AlertModal: UIView {
 
     // MARK: Initialization
 
-    override init(frame: CGRect) {
-        super.init(frame: frame)
+    public init(holder: DataHolder) {
+        super.init(frame: .zero)
+
+        dataHolder = holder
 
         initDesign()
         initViews()
@@ -64,7 +61,7 @@ public class AlertModal: UIView {
 
     @objc
     private func onOverlayTapped(_ sender: UITapGestureRecognizer) {
-        guard closeOnTapOverlay else {
+        guard dataHolder?.closeOnTapOverlay == true else {
             return
         }
 
@@ -114,16 +111,16 @@ public class AlertModal: UIView {
     }
 
     func dismiss() {
-        if dismissOnAction {
+        if dataHolder?.dismissOnAction == true {
             hide()
         }
     }
 
     func dismissAndEmit(event: ActionType) {
-        if dismissOnAction {
+        if dataHolder?.dismissOnAction == true {
             hide()
         }
-        completion?(self, event)
+        dataHolder?.completion?(self, event)
     }
 
     // MARK: Deinitialization
