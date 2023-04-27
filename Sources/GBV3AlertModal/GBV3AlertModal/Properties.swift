@@ -1,6 +1,7 @@
 import UIKit
 
 public struct DialogProperties {
+    public var baseTint: UIColor?
     public var overlayColor: UIColor?
     public var contentBackgroundColor: UIColor?
 

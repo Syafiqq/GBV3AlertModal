@@ -139,10 +139,17 @@ private extension AlertModal {
     func initViews() {
         translatesAutoresizingMaskIntoConstraints = false
 
+        // Define base color
+        backgroundColor = .clear
+        tintColor = properties?.baseTint ?? globalProperties.baseTint
+
         vwOverlay?.backgroundColor = properties?.overlayColor ?? globalProperties.overlayColor
 
         vwContainer?.backgroundColor = properties?.contentBackgroundColor ?? globalProperties.contentBackgroundColor
         vwContainer?.layer.cornerRadius = properties?.contentCornerRadius ?? globalProperties.contentCornerRadius ?? 0
+
+        unregisterDialogView()
+        registerDialogView()
     }
 
     func initEvents() {
