@@ -7,16 +7,23 @@ import SnapKit
 public class AlertModal: UIView {
     // MARK: Outlets
     // Overlay
-    public private(set) var vwOverlay: UIView?
+    private(set) var vwOverlay: UIView?
 
     // Main Container
-    public private(set) var vwContainer: UIView?
+    private(set) var vwContainer: UIView?
 
     // Main Content
-    public private(set) var svContentContainer: UIStackView?
+    private(set) var svContentContainer: UIStackView?
 
     // Content
-    public private(set) var lbTitle: UILabel?
+    private(set) var lbTitle: UILabel?
+
+    private(set) var svSubtitleContainer: UIScrollView?
+    private(set) var lbSubtitle: UILabel?
+    private(set) weak var vwSubtitle: UIView?
+
+    // Divider
+    private(set) var vwTitleAndSubtitleDivider: UIView?
 
     // MARK: Attributes Gestures
     private var tapRecognizerOverlay: UIGestureRecognizer?
@@ -167,6 +174,11 @@ private extension AlertModal {
         svContentContainer?.removeAllArrangedSubviews()
 
         lbTitle?.removeFromSuperview()
+        svSubtitleContainer?.removeFromSuperview()
+        lbSubtitle?.removeFromSuperview()
+        vwSubtitle?.removeFromSuperview()
+
+        vwTitleAndSubtitleDivider?.removeFromSuperview()
     }
 
     func registerDialogView() {
@@ -181,7 +193,7 @@ private extension AlertModal {
                     ].compactMapValues({ $0 })
             )
             self.lbTitle = lbTitle
-        } else if let title = dataHolder?.attributedTitle {
+        } else if let title = dataHolder?.titleAttributed {
             let lbTitle = generateLabelForTitleDesign()
             lbTitle.attributedText = title
             self.lbTitle = lbTitle
@@ -189,12 +201,71 @@ private extension AlertModal {
             lbTitle = nil
         }
 
+        // Setup subtitle
+        if dataHolder?.subtitle != nil ||
+                   dataHolder?.subtitleAttributed != nil ||
+                   dataHolder?.subtitleCustomView != nil {
+            let svSubtitleContainer = generateScrollForCustomViewDesign()
+            let vwSubtitle: UIView
+            if let subtitle = dataHolder?.subtitle {
+                let lbSubtitle = generateLabelForSubtitleDesign()
+                lbSubtitle.attributedText = NSAttributedString(
+                        string: subtitle,
+                        attributes: [
+                            .font: properties?.subtitleFont,
+                            .foregroundColor: properties?.subtitleColor
+                        ].compactMapValues({ $0 })
+                )
+
+                vwSubtitle = lbSubtitle
+                self.lbSubtitle = lbSubtitle
+            } else if let subtitle = dataHolder?.subtitleAttributed {
+                let lbSubtitle = generateLabelForSubtitleDesign()
+                lbSubtitle.attributedText = subtitle
+
+                vwSubtitle = lbSubtitle
+                self.lbSubtitle = lbSubtitle
+            } else if let subtitle = dataHolder?.subtitleCustomView {
+                vwSubtitle = subtitle
+                self.vwSubtitle = subtitle
+            } else {
+                fatalError("This never happened")
+            }
+
+            svSubtitleContainer.addSubview(vwSubtitle)
+            vwSubtitle.snp.makeConstraints { (make: ConstraintMaker) -> Void in
+                make.edges.equalTo(svSubtitleContainer.contentLayoutGuide)
+                make.width.equalTo(svSubtitleContainer.frameLayoutGuide)
+                make.height.equalTo(svSubtitleContainer.frameLayoutGuide).priority(.low)
+            }
+
+            self.svSubtitleContainer = svSubtitleContainer
+        } else {
+            svSubtitleContainer = nil
+            lbSubtitle = nil
+            vwSubtitle = nil
+        }
+
         // Setup Divider
+        // Setup divider title and subtitle
+        if lbTitle != nil,
+           svSubtitleContainer != nil {
+            let vwTitleAndSubtitleDivider = generateGenericViewDesign()
+            vwTitleAndSubtitleDivider.snp.makeConstraints { (make: ConstraintMaker) -> Void in
+                make.height.equalTo(properties?.titleToSubtitleSpace ?? 0)
+            }
+
+            self.vwTitleAndSubtitleDivider = vwTitleAndSubtitleDivider
+        } else {
+            vwTitleAndSubtitleDivider = nil
+        }
 
         // Compile View
 
         [
-            lbTitle
+            lbTitle,
+            vwTitleAndSubtitleDivider,
+            svSubtitleContainer,
         ]
                 .forEach {
                     guard let view = $0 else {
@@ -247,7 +318,13 @@ private extension AlertModal {
                 titleFont: properties.titleFont
                         ?? globalProperties.titleFont,
                 titleColor: properties.titleColor
-                        ?? globalProperties.titleColor
+                        ?? globalProperties.titleColor,
+                subtitleFont: properties.subtitleFont
+                        ?? globalProperties.subtitleFont,
+                subtitleColor: properties.subtitleColor
+                        ?? globalProperties.subtitleColor,
+                titleToSubtitleSpace: properties.titleToSubtitleSpace
+                        ?? globalProperties.titleToSubtitleSpace
         )
     }
 }
@@ -376,6 +453,14 @@ private extension AlertModal {
         view.translatesAutoresizingMaskIntoConstraints = false
         view.numberOfLines = 0
         view.textAlignment = .center
+        return view
+    }
+
+    func generateScrollForCustomViewDesign() -> UIScrollView {
+        let view = UIScrollView()
+        view.translatesAutoresizingMaskIntoConstraints = false
+        view.showsHorizontalScrollIndicator = false
+        view.showsVerticalScrollIndicator = true
         return view
     }
 }

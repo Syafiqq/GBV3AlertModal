@@ -2,9 +2,9 @@ import UIKit
 
 public struct DataHolder {
     public let title: String?
-    public let attributedTitle: NSAttributedString?
-    public let subtitle: NSAttributedString?
-    public let attributedSubtitle: NSAttributedString?
+    public let titleAttributed: NSAttributedString?
+    public let subtitle: String?
+    public let subtitleAttributed: NSAttributedString?
     public weak var subtitleCustomView: UIView?
     public let primaryAction: String?
     public let primaryActionStyle: ActionStyle?
@@ -31,9 +31,9 @@ public struct DataHolder {
             completion: ((AlertModal, ActionType) -> Void)? = nil
     ) {
         self.title = title
-        self.attributedTitle = attributedTitle
+        self.titleAttributed = attributedTitle
         self.subtitle = subtitle
-        self.attributedSubtitle = attributedSubtitle
+        self.subtitleAttributed = attributedSubtitle
         self.subtitleCustomView = subtitleCustomView
         self.primaryAction = primaryAction
         self.primaryActionStyle = primaryActionStyle
