@@ -1,14 +1,27 @@
 import Foundation
 import UIKit
+import SnapKit
 
 // MARK: - LIFECYCLE AND CALLBACK
 
 public class AlertModal: UIView {
     // MARK: Outlets
+    // Overlay
+    public private(set) var vwOverlay: UIView?
+
+    // MARK: Attributes Gestures
+    private var tapRecognizerOverlay: UIGestureRecognizer?
 
     // MARK: ViewModel
 
     // MARK: Private Properties
+
+    private var closeOnTapOverlay: Bool = true
+    private var dismissOnAction: Bool = true
+
+    private var completion: ((AlertModal, ActionType) -> Void)?
+
+    private var properties: DialogProperties?
 
     // Rx
 
@@ -39,7 +52,69 @@ public class AlertModal: UIView {
 
     // MARK: Callback
 
+    @objc
+    private func onOverlayTapped(_ sender: UITapGestureRecognizer) {
+        guard closeOnTapOverlay else {
+            return
+        }
+
+        switch sender.state {
+        case .ended:
+            dismissAndEmit(event: .close)
+        default:
+            break
+        }
+    }
+
     // MARK: Public Function
+
+    /*
+     We need to show specific alert long enough, so
+     we don't overwrite the main class for now and add custom method here
+     */
+    public func show(parent: UIView, completion onShown: @escaping () -> Void) {
+        weak var parent = parent
+        guard let parent else {
+            return
+        }
+
+        alpha = 1
+        transform = .identity
+
+        parent.addSubview(self)
+        snp.makeConstraints { (make: ConstraintMaker) -> Void in
+            make.edges.equalTo(parent)
+        }
+
+        onShown()
+    }
+
+    @objc
+    public func hide() {
+        UIView.animate(
+                withDuration: 0.2,
+                animations: { [weak self] in
+                    self?.alpha = 0
+                    self?.transform = .identity.scaledBy(x: 2, y: 2)
+                },
+                completion: { [weak self] _ in
+                    self?.removeFromSuperview()
+                }
+        )
+    }
+
+    func dismiss() {
+        if dismissOnAction {
+            hide()
+        }
+    }
+
+    func dismissAndEmit(event: ActionType) {
+        if dismissOnAction {
+            hide()
+        }
+        completion?(self, event)
+    }
 
     // MARK: Deinitialization
 
@@ -56,6 +131,8 @@ private extension AlertModal {
     }
 
     func initEvents() {
+        unregisterEvents()
+        registerEvents()
     }
 
     func initData() {
@@ -64,6 +141,22 @@ private extension AlertModal {
     // MARK: Views
 
     // MARK: ViewModel
+
+    func registerEvents() {
+        // Gestures
+        let tapRecognizerOverlay = UITapGestureRecognizer(target: self, action: #selector(onOverlayTapped))
+        vwOverlay?.addGestureRecognizer(tapRecognizerOverlay)
+        vwOverlay?.isUserInteractionEnabled = true
+        self.tapRecognizerOverlay = tapRecognizerOverlay
+    }
+
+    func unregisterEvents() {
+        // Gestures
+        if let tapRecognizerOverlay = tapRecognizerOverlay {
+            vwOverlay?.removeGestureRecognizer(tapRecognizerOverlay)
+        }
+        tapRecognizerOverlay = nil
+    }
 
     // MARK: Model
 }
@@ -81,11 +174,29 @@ private extension AlertModal {
 private extension AlertModal {
     func initDesign() {
         // MARK: View Initialization
+        let vwOverlay = generateViewForOverlayDesign()
 
         // MARK: View Graph
+        addSubview(vwOverlay)
 
         // MARK: View Constraints
+        vwOverlay.snp.makeConstraints { (make: ConstraintMaker) -> Void in
+            make.edges.equalToSuperview()
+        }
 
         // MARK: View Assign
+        self.vwOverlay = vwOverlay
+    }
+
+    func generateGenericView() -> UIView {
+        let view = UIView(frame: .zero)
+        view.translatesAutoresizingMaskIntoConstraints = false
+        return view
+    }
+
+    func generateViewForOverlayDesign() -> UIView {
+        let view = generateGenericView()
+        view.backgroundColor = properties?.overlayColor ?? globalProperties.overlayColor
+        return view
     }
 }
