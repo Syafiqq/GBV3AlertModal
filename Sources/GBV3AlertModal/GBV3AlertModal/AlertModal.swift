@@ -242,7 +242,7 @@ private extension AlertModal {
                     )
                     .priority(.medium)
 
-            make.center
+            make.centerX
                     .equalToSuperview()
         }
 
