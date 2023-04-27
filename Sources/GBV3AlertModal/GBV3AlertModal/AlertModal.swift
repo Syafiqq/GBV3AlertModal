@@ -12,6 +12,9 @@ public class AlertModal: UIView {
     // Main Container
     public private(set) var vwContainer: UIView?
 
+    // Main Content
+    public private(set) var svContentContainer: UIStackView?
+
     // MARK: Attributes Gestures
     private var tapRecognizerOverlay: UIGestureRecognizer?
 
@@ -182,12 +185,14 @@ private extension AlertModal {
 private extension AlertModal {
     func initDesign() {
         // MARK: View Initialization
-        let vwOverlay = generateGenericView()
-        let vwContainer = generateGenericView()
+        let vwOverlay = generateGenericViewDesign()
+        let vwContainer = generateGenericViewDesign()
+        let svContentContainer = generateStackViewDesign()
 
         // MARK: View Graph
         addSubview(vwOverlay)
         addSubview(vwContainer)
+        vwContainer.addSubview(svContentContainer)
 
         // MARK: View Constraints
         vwOverlay.snp.makeConstraints { (make: ConstraintMaker) -> Void in
@@ -212,14 +217,54 @@ private extension AlertModal {
                     .equalToSuperview()
         }
 
+        svContentContainer.snp.makeConstraints { (make: ConstraintMaker) -> Void in
+            make.top
+                    .greaterThanOrEqualToSuperview()
+                    .offset(
+                            properties?.contentVerticalPadding?.0 ?? globalProperties.contentVerticalPadding?.0 ?? 0
+                    )
+            make.top
+                    .equalToSuperview()
+                    .offset(
+                            properties?.contentVerticalPadding?.1 ?? globalProperties.contentVerticalPadding?.1 ?? 0
+                    )
+                    .priority(.medium)
+
+            make.leading
+                    .greaterThanOrEqualToSuperview()
+                    .offset(
+                            properties?.contentHorizontalPadding?.0 ?? globalProperties.contentHorizontalPadding?.0 ?? 0
+                    )
+            make.leading
+                    .equalToSuperview()
+                    .offset(
+                            properties?.contentHorizontalPadding?.1 ?? globalProperties.contentHorizontalPadding?.1 ?? 1
+                    )
+                    .priority(.medium)
+
+            make.center
+                    .equalToSuperview()
+        }
+
         // MARK: View Assign
         self.vwOverlay = vwOverlay
         self.vwContainer = vwContainer
+        self.svContentContainer = svContentContainer
     }
 
-    func generateGenericView() -> UIView {
+    func generateGenericViewDesign() -> UIView {
         let view = UIView(frame: .zero)
         view.translatesAutoresizingMaskIntoConstraints = false
+        return view
+    }
+
+    func generateStackViewDesign() -> UIStackView {
+        let view = UIStackView()
+        view.translatesAutoresizingMaskIntoConstraints = false
+        view.axis = .vertical
+        view.distribution = .fill
+        view.alignment = .center
+        view.spacing = 0
         return view
     }
 }
