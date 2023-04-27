@@ -177,7 +177,6 @@
 				5901DC5B29370CFA00FF0A94 /* Linting */,
 				5962A4AC2935DFA100183658 /* Frameworks */,
 				5962A4AD2935DFA100183658 /* Resources */,
-				A6516F984BD8140B620082AC /* [CP] Embed Pods Frameworks */,
 			);
 			buildRules = (
 			);
@@ -218,7 +217,6 @@
 				5901DC5D29370D2900FF0A94 /* Linting */,
 				5962A4CC2935DFA200183658 /* Frameworks */,
 				5962A4CD2935DFA200183658 /* Resources */,
-				37EAB5CE6BDE044E8D7AA23C /* [CP] Embed Pods Frameworks */,
 			);
 			buildRules = (
 			);
@@ -301,23 +299,6 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXShellScriptBuildPhase section */
-		37EAB5CE6BDE044E8D7AA23C /* [CP] Embed Pods Frameworks */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputFileListPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-GBV3AlertModalExample-GBV3AlertModalExampleUITests/Pods-GBV3AlertModalExample-GBV3AlertModalExampleUITests-frameworks-${CONFIGURATION}-input-files.xcfilelist",
-			);
-			name = "[CP] Embed Pods Frameworks";
-			outputFileListPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-GBV3AlertModalExample-GBV3AlertModalExampleUITests/Pods-GBV3AlertModalExample-GBV3AlertModalExampleUITests-frameworks-${CONFIGURATION}-output-files.xcfilelist",
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-GBV3AlertModalExample-GBV3AlertModalExampleUITests/Pods-GBV3AlertModalExample-GBV3AlertModalExampleUITests-frameworks.sh\"\n";
-			showEnvVarsInLog = 0;
-		};
 		5901DC5B29370CFA00FF0A94 /* Linting */ = {
 			isa = PBXShellScriptBuildPhase;
 			alwaysOutOfDate = 1;
@@ -412,23 +393,6 @@
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
 			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-GBV3AlertModalExampleTests/Pods-GBV3AlertModalExampleTests-frameworks.sh\"\n";
-			showEnvVarsInLog = 0;
-		};
-		A6516F984BD8140B620082AC /* [CP] Embed Pods Frameworks */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputFileListPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-GBV3AlertModalExample/Pods-GBV3AlertModalExample-frameworks-${CONFIGURATION}-input-files.xcfilelist",
-			);
-			name = "[CP] Embed Pods Frameworks";
-			outputFileListPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-GBV3AlertModalExample/Pods-GBV3AlertModalExample-frameworks-${CONFIGURATION}-output-files.xcfilelist",
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-GBV3AlertModalExample/Pods-GBV3AlertModalExample-frameworks.sh\"\n";
 			showEnvVarsInLog = 0;
 		};
 		BBBECF9CB0601125C46736F7 /* [CP] Check Pods Manifest.lock */ = {
