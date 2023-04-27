@@ -52,6 +52,7 @@ public class AlertModal: UIView {
 private extension AlertModal {
     // MARK: Init Functions
     func initViews() {
+        translatesAutoresizingMaskIntoConstraints = false
     }
 
     func initEvents() {
