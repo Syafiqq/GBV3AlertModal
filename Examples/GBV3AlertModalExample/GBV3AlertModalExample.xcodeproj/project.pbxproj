@@ -16,6 +16,8 @@
 		5962A4CA2935DFA200183658 /* GBV3AlertModalExampleTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5962A4C92935DFA200183658 /* GBV3AlertModalExampleTests.swift */; };
 		5962A4D42935DFA200183658 /* GBV3AlertModalExampleUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5962A4D32935DFA200183658 /* GBV3AlertModalExampleUITests.swift */; };
 		5962A4D62935DFA200183658 /* GBV3AlertModalExampleUITestsLaunchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5962A4D52935DFA200183658 /* GBV3AlertModalExampleUITestsLaunchTests.swift */; };
+		599AB6CF29FAA656002F86A1 /* GBV3AlertModal.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 599AB6CE29FAA656002F86A1 /* GBV3AlertModal.framework */; };
+		599AB6D029FAA656002F86A1 /* GBV3AlertModal.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 599AB6CE29FAA656002F86A1 /* GBV3AlertModal.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		8AE6DF00C2621EBAF89816B8 /* Pods_GBV3AlertModalExample_GBV3AlertModalExampleUITests.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B918DDD2951E369B2EAC3AA8 /* Pods_GBV3AlertModalExample_GBV3AlertModalExampleUITests.framework */; };
 		A3F62B095EBD54CB58E525AF /* Pods_GBV3AlertModalExample.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1B7F02D18FDAAAFE64A644C9 /* Pods_GBV3AlertModalExample.framework */; };
 /* End PBXBuildFile section */
@@ -37,6 +39,20 @@
 		};
 /* End PBXContainerItemProxy section */
 
+/* Begin PBXCopyFilesBuildPhase section */
+		599AB6D129FAA656002F86A1 /* Embed Frameworks */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+				599AB6D029FAA656002F86A1 /* GBV3AlertModal.framework in Embed Frameworks */,
+			);
+			name = "Embed Frameworks";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
 /* Begin PBXFileReference section */
 		000691E42DCB89CE2C2240A0 /* Pods-GBV3AlertModalExampleTests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-GBV3AlertModalExampleTests.release.xcconfig"; path = "Target Support Files/Pods-GBV3AlertModalExampleTests/Pods-GBV3AlertModalExampleTests.release.xcconfig"; sourceTree = "<group>"; };
 		107C63735F152D798633262C /* Pods-GBV3AlertModalExample.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-GBV3AlertModalExample.debug.xcconfig"; path = "Target Support Files/Pods-GBV3AlertModalExample/Pods-GBV3AlertModalExample.debug.xcconfig"; sourceTree = "<group>"; };
@@ -53,6 +69,7 @@
 		5962A4CF2935DFA200183658 /* GBV3AlertModalExampleUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = GBV3AlertModalExampleUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		5962A4D32935DFA200183658 /* GBV3AlertModalExampleUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GBV3AlertModalExampleUITests.swift; sourceTree = "<group>"; };
 		5962A4D52935DFA200183658 /* GBV3AlertModalExampleUITestsLaunchTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GBV3AlertModalExampleUITestsLaunchTests.swift; sourceTree = "<group>"; };
+		599AB6CE29FAA656002F86A1 /* GBV3AlertModal.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = GBV3AlertModal.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		716D753FD77C149DDE6A5FE1 /* Pods-GBV3AlertModalExample-GBV3AlertModalExampleUITests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-GBV3AlertModalExample-GBV3AlertModalExampleUITests.debug.xcconfig"; path = "Target Support Files/Pods-GBV3AlertModalExample-GBV3AlertModalExampleUITests/Pods-GBV3AlertModalExample-GBV3AlertModalExampleUITests.debug.xcconfig"; sourceTree = "<group>"; };
 		A26519B706EE68860F1FFA54 /* Pods-GBV3AlertModalExampleTests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-GBV3AlertModalExampleTests.debug.xcconfig"; path = "Target Support Files/Pods-GBV3AlertModalExampleTests/Pods-GBV3AlertModalExampleTests.debug.xcconfig"; sourceTree = "<group>"; };
 		B918DDD2951E369B2EAC3AA8 /* Pods_GBV3AlertModalExample_GBV3AlertModalExampleUITests.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_GBV3AlertModalExample_GBV3AlertModalExampleUITests.framework; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -67,6 +84,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				A3F62B095EBD54CB58E525AF /* Pods_GBV3AlertModalExample.framework in Frameworks */,
+				599AB6CF29FAA656002F86A1 /* GBV3AlertModal.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -144,6 +162,7 @@
 		8127A5D3838CD9E3B9355832 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				599AB6CE29FAA656002F86A1 /* GBV3AlertModal.framework */,
 				1B7F02D18FDAAAFE64A644C9 /* Pods_GBV3AlertModalExample.framework */,
 				B918DDD2951E369B2EAC3AA8 /* Pods_GBV3AlertModalExample_GBV3AlertModalExampleUITests.framework */,
 				FA45B8C4696D0CBC88488962 /* Pods_GBV3AlertModalExampleTests.framework */,
@@ -177,6 +196,7 @@
 				5901DC5B29370CFA00FF0A94 /* Linting */,
 				5962A4AC2935DFA100183658 /* Frameworks */,
 				5962A4AD2935DFA100183658 /* Resources */,
+				599AB6D129FAA656002F86A1 /* Embed Frameworks */,
 			);
 			buildRules = (
 			);
