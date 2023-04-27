@@ -16,19 +16,19 @@ public struct DataHolder {
     public let completion: ((AlertModal, ActionType) -> Void)?
 
     public init(
-            title: String?,
-            attributedTitle: NSAttributedString?,
-            subtitle: NSAttributedString?,
-            attributedSubtitle: NSAttributedString?,
-            subtitleCustomView: UIView?,
-            primaryAction: String?,
-            primaryActionStyle: ActionStyle?,
-            secondaryAction: String?,
-            secondaryActionStyle: String?,
-            closeOnTapOverlay: Bool,
-            showCloseButton: Bool,
-            dismissOnAction: Bool,
-            completion: ((AlertModal, ActionType) -> Void)?
+            title: String? = nil,
+            attributedTitle: NSAttributedString? = nil,
+            subtitle: NSAttributedString? = nil,
+            attributedSubtitle: NSAttributedString? = nil,
+            subtitleCustomView: UIView? = nil,
+            primaryAction: String? = nil,
+            primaryActionStyle: ActionStyle? = nil,
+            secondaryAction: String? = nil,
+            secondaryActionStyle: String? = nil,
+            closeOnTapOverlay: Bool = false,
+            showCloseButton: Bool = false,
+            dismissOnAction: Bool = false,
+            completion: ((AlertModal, ActionType) -> Void)? = nil
     ) {
         self.title = title
         self.attributedTitle = attributedTitle
