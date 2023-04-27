@@ -10,7 +10,7 @@ public class AlertModal: UIView {
     public private(set) var vwOverlay: UIView?
 
     // Main Container
-    private(set) var vwContainer: UIView?
+    public private(set) var vwContainer: UIView?
 
     // MARK: Attributes Gestures
     private var tapRecognizerOverlay: UIGestureRecognizer?
