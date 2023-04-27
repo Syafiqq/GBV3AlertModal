@@ -15,6 +15,9 @@ public class AlertModal: UIView {
     // Main Content
     public private(set) var svContentContainer: UIStackView?
 
+    // Content
+    public private(set) var lbTitle: UILabel?
+
     // MARK: Attributes Gestures
     private var tapRecognizerOverlay: UIGestureRecognizer?
 
@@ -28,6 +31,7 @@ public class AlertModal: UIView {
     private var completion: ((AlertModal, ActionType) -> Void)?
 
     private var properties: DialogProperties?
+    private var dataHolder: DataHolder?
 
     // Rx
 
@@ -151,6 +155,43 @@ private extension AlertModal {
 
     // MARK: Views
 
+    func unregisterDialogView() {
+        svContentContainer?.removeAllArrangedSubviews()
+
+        lbTitle?.removeFromSuperview()
+    }
+
+    func registerDialogView() {
+        // Setup title
+        if let title = dataHolder?.title {
+            let lbTitle = generateLabelForTitleDesign()
+            lbTitle.attributedText = NSAttributedString(
+                string: title,
+                attributes: [
+                    .font: properties?.titleFont ?? globalProperties.titleFont,
+                    .foregroundColor: properties?.titleColor ?? globalProperties.titleColor
+                ].compactMapValues({ $0 })
+            )
+            self.lbTitle = lbTitle
+        } else {
+            lbTitle = nil
+        }
+
+        // Setup Divider
+
+        // Compile View
+
+        [
+            lbTitle
+        ]
+                .forEach {
+                    guard let view = $0 else {
+                        return
+                    }
+                    svContentContainer?.addArrangedSubview(view)
+                }
+    }
+
     // MARK: ViewModel
 
     func registerEvents() {
@@ -183,6 +224,7 @@ private extension AlertModal {
 // MARK: - DESIGN
 
 private extension AlertModal {
+    // swiftlint:disable:next function_body_length
     func initDesign() {
         // MARK: View Initialization
         let vwOverlay = generateGenericViewDesign()
@@ -277,6 +319,24 @@ private extension AlertModal {
         view.distribution = .fill
         view.alignment = .center
         view.spacing = 0
+        return view
+    }
+
+    func generateLabelForTitleDesign() -> UILabel {
+        let view = UILabel(frame: .zero)
+        view.translatesAutoresizingMaskIntoConstraints = false
+        view.numberOfLines = 2
+        view.minimumScaleFactor = 0.75
+        view.adjustsFontSizeToFitWidth = true
+        view.textAlignment = .center
+        return view
+    }
+
+    func generateLabelForSubtitleDesign() -> UILabel {
+        let view = UILabel(frame: .zero)
+        view.translatesAutoresizingMaskIntoConstraints = false
+        view.numberOfLines = 0
+        view.textAlignment = .center
         return view
     }
 }
