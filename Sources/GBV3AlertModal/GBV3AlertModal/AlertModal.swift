@@ -368,14 +368,24 @@ private extension AlertModal {
         vwContainer.snp.makeConstraints { (make: ConstraintMaker) -> Void in
             // Align
             make.top
-                    .greaterThanOrEqualToSuperview()
+                    .greaterThanOrEqualTo(safeAreaLayoutGuide)
                     .offset(
                             properties?.contentVerticalMargin ?? 0
                     )
             make.leading
-                    .greaterThanOrEqualToSuperview()
+                    .greaterThanOrEqualTo(safeAreaLayoutGuide)
                     .offset(
                             properties?.contentHorizontalMargin ?? 0
+                    )
+            make.bottom
+                    .lessThanOrEqualTo(safeAreaLayoutGuide)
+                    .offset(
+                            -(properties?.contentVerticalMargin ?? 0)
+                    )
+            make.trailing
+                    .lessThanOrEqualTo(safeAreaLayoutGuide)
+                    .offset(
+                            -(properties?.contentHorizontalMargin ?? 0)
                     )
 
             make.center
