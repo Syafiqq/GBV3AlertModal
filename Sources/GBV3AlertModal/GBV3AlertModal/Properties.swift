@@ -14,8 +14,8 @@ public struct DialogProperties {
 
     public var titleFont: UIFont?
     public var titleColor: UIColor?
-    public let subtitleFont: UIFont
+    public var subtitleFont: UIFont
     public var subtitleColor: UIColor?
 
-    public let titleToSubtitleSpace: CGFloat?
+    public var titleToSubtitleSpace: CGFloat?
 }
