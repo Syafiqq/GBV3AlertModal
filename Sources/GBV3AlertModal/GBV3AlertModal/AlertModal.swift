@@ -292,12 +292,12 @@ private extension AlertModal {
                     )
                     .priority(.medium)
 
-            make.top
+            make.bottom
                     .lessThanOrEqualToSuperview()
                     .offset(
                             -(properties?.contentBottomPadding?.0 ?? globalProperties.contentBottomPadding?.0 ?? 0)
                     )
-            make.top
+            make.bottom
                     .equalToSuperview()
                     .offset(
                             -(properties?.contentBottomPadding?.1 ?? globalProperties.contentBottomPadding?.1 ?? 0)
