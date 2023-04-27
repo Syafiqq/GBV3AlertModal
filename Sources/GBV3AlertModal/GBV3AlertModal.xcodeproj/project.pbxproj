@@ -12,6 +12,7 @@
 		593ED2572935CFA9007BC45A /* GBV3AlertModalTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 593ED2562935CFA9007BC45A /* GBV3AlertModalTests.swift */; };
 		593ED2582935CFA9007BC45A /* GBV3AlertModal.h in Headers */ = {isa = PBXBuildFile; fileRef = 593ED24A2935CFA9007BC45A /* GBV3AlertModal.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		59D1458D2936F74000339673 /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = 59D1458F2936F74000339673 /* Localizable.strings */; };
+		65B8C6E9701D13A1052A81FF /* AlertModal.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65B8CE1814B3C775B6BC76B0 /* AlertModal.swift */; };
 		65B8CB4C5DBA6103913DF02C /* GBV3AlertModal.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65B8CCF436BFA68301C842E8 /* GBV3AlertModal.swift */; };
 		7E08E373E182F46E53D1628C /* Pods_GBV3AlertModalTests.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AE8E82687F68207AB6A57066 /* Pods_GBV3AlertModalTests.framework */; };
 		DAE3C726BE474CB1552C4672 /* Pods_GBV3AlertModal.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 3F132D23E0D92A9E7C37C9BE /* Pods_GBV3AlertModal.framework */; };
@@ -46,6 +47,7 @@
 		59D145912936F79A00339673 /* vi */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = vi; path = vi.lproj/Localizable.strings; sourceTree = "<group>"; };
 		59D145922936F81B00339673 /* zh-Hans */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "zh-Hans"; path = "zh-Hans.lproj/Localizable.strings"; sourceTree = "<group>"; };
 		65B8CCF436BFA68301C842E8 /* GBV3AlertModal.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = GBV3AlertModal.swift; sourceTree = "<group>"; };
+		65B8CE1814B3C775B6BC76B0 /* AlertModal.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = AlertModal.swift; sourceTree = "<group>"; };
 		AE8E82687F68207AB6A57066 /* Pods_GBV3AlertModalTests.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_GBV3AlertModalTests.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -98,6 +100,7 @@
 				593ED24B2935CFA9007BC45A /* GBV3AlertModal.docc */,
 				65B8CCF436BFA68301C842E8 /* GBV3AlertModal.swift */,
 				59D145852936F0B700339673 /* i18n */,
+				65B8CE1814B3C775B6BC76B0 /* AlertModal.swift */,
 			);
 			path = GBV3AlertModal;
 			sourceTree = "<group>";
@@ -363,6 +366,7 @@
 			files = (
 				593ED24C2935CFA9007BC45A /* GBV3AlertModal.docc in Sources */,
 				65B8CB4C5DBA6103913DF02C /* GBV3AlertModal.swift in Sources */,
+				65B8C6E9701D13A1052A81FF /* AlertModal.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
