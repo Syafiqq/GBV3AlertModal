@@ -38,10 +38,14 @@ public class AlertModal: UIView {
 
     // MARK: Initialization
 
-    public init(holder: DataHolder) {
+    public init(
+            holder: DataHolder,
+            properties: DialogProperties
+    ) {
         super.init(frame: .zero)
 
         dataHolder = holder
+        updateProperties(properties)
 
         initDesign()
         initViews()
@@ -138,12 +142,12 @@ private extension AlertModal {
 
         // Define base color
         backgroundColor = .clear
-        tintColor = properties?.baseTint ?? globalProperties.baseTint
+        tintColor = properties?.baseTint
 
-        vwOverlay?.backgroundColor = properties?.overlayColor ?? globalProperties.overlayColor
+        vwOverlay?.backgroundColor = properties?.overlayColor
 
-        vwContainer?.backgroundColor = properties?.contentBackgroundColor ?? globalProperties.contentBackgroundColor
-        vwContainer?.layer.cornerRadius = properties?.contentCornerRadius ?? globalProperties.contentCornerRadius ?? 0
+        vwContainer?.backgroundColor = properties?.contentBackgroundColor
+        vwContainer?.layer.cornerRadius = properties?.contentCornerRadius ?? 0
 
         unregisterDialogView()
         registerDialogView()
@@ -172,8 +176,8 @@ private extension AlertModal {
             lbTitle.attributedText = NSAttributedString(
                     string: title,
                     attributes: [
-                        .font: properties?.titleFont ?? globalProperties.titleFont,
-                        .foregroundColor: properties?.titleColor ?? globalProperties.titleColor
+                        .font: properties?.titleFont,
+                        .foregroundColor: properties?.titleColor
                     ].compactMapValues({ $0 })
             )
             self.lbTitle = lbTitle
@@ -219,6 +223,33 @@ private extension AlertModal {
     }
 
     // MARK: Model
+
+    private func updateProperties(_ properties: DialogProperties) {
+        self.properties = DialogProperties(
+                baseTint: properties.baseTint
+                        ?? globalProperties.baseTint,
+                overlayColor: properties.overlayColor
+                        ?? globalProperties.overlayColor,
+                contentBackgroundColor: properties.contentBackgroundColor
+                        ?? globalProperties.contentBackgroundColor,
+                contentCornerRadius: properties.contentCornerRadius
+                        ?? globalProperties.contentCornerRadius,
+                contentVerticalMargin: properties.contentVerticalMargin
+                        ?? globalProperties.contentVerticalMargin,
+                contentHorizontalMargin: properties.contentHorizontalMargin
+                        ?? globalProperties.contentHorizontalMargin,
+                contentTopPadding: properties.contentTopPadding
+                        ?? globalProperties.contentTopPadding,
+                contentBottomPadding: properties.contentBottomPadding
+                        ?? globalProperties.contentBottomPadding,
+                contentHorizontalPadding: properties.contentHorizontalPadding
+                        ?? globalProperties.contentHorizontalPadding,
+                titleFont: properties.titleFont
+                        ?? globalProperties.titleFont,
+                titleColor: properties.titleColor
+                        ?? globalProperties.titleColor
+        )
+    }
 }
 
 // MARK: - DELEGATIONS
@@ -255,12 +286,12 @@ private extension AlertModal {
             make.top
                     .greaterThanOrEqualToSuperview()
                     .offset(
-                            properties?.contentVerticalMargin ?? globalProperties.contentVerticalMargin ?? 0
+                            properties?.contentVerticalMargin ?? 0
                     )
             make.leading
                     .greaterThanOrEqualToSuperview()
                     .offset(
-                            properties?.contentHorizontalMargin ?? globalProperties.contentHorizontalMargin ?? 0
+                            properties?.contentHorizontalMargin ?? 0
                     )
 
             make.center
@@ -271,36 +302,36 @@ private extension AlertModal {
             make.top
                     .greaterThanOrEqualToSuperview()
                     .offset(
-                            properties?.contentTopPadding?.0 ?? globalProperties.contentTopPadding?.0 ?? 0
+                            properties?.contentTopPadding?.0 ?? 0
                     )
             make.top
                     .equalToSuperview()
                     .offset(
-                            properties?.contentTopPadding?.1 ?? globalProperties.contentTopPadding?.1 ?? 0
+                            properties?.contentTopPadding?.1 ?? 0
                     )
                     .priority(.medium)
 
             make.leading
                     .greaterThanOrEqualToSuperview()
                     .offset(
-                            properties?.contentHorizontalPadding?.0 ?? globalProperties.contentHorizontalPadding?.0 ?? 0
+                            properties?.contentHorizontalPadding?.0 ?? 0
                     )
             make.leading
                     .equalToSuperview()
                     .offset(
-                            properties?.contentHorizontalPadding?.1 ?? globalProperties.contentHorizontalPadding?.1 ?? 1
+                            properties?.contentHorizontalPadding?.1 ?? 1
                     )
                     .priority(.medium)
 
             make.bottom
                     .lessThanOrEqualToSuperview()
                     .offset(
-                            -(properties?.contentBottomPadding?.0 ?? globalProperties.contentBottomPadding?.0 ?? 0)
+                            -(properties?.contentBottomPadding?.0 ?? 0)
                     )
             make.bottom
                     .equalToSuperview()
                     .offset(
-                            -(properties?.contentBottomPadding?.1 ?? globalProperties.contentBottomPadding?.1 ?? 0)
+                            -(properties?.contentBottomPadding?.1 ?? 0)
                     )
                     .priority(.medium)
 

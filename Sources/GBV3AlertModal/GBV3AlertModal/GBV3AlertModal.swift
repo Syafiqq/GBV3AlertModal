@@ -3,5 +3,10 @@ public var globalProperties = DialogProperties(
         contentBackgroundColor: nil,
         contentCornerRadius: nil,
         contentVerticalMargin: nil,
-        contentHorizontalMargin: nil
+        contentHorizontalMargin: nil,
+        contentTopPadding: nil,
+        contentBottomPadding: nil,
+        contentHorizontalPadding: nil,
+        titleFont: nil,
+        titleColor: nil
 )
