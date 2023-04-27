@@ -181,6 +181,7 @@ private extension AlertModal {
         vwTitleAndSubtitleDivider?.removeFromSuperview()
     }
 
+    // swiftlint:disable:next function_body_length
     func registerDialogView() {
         // Setup title
         if let title = dataHolder?.title {
@@ -265,7 +266,7 @@ private extension AlertModal {
         [
             lbTitle,
             vwTitleAndSubtitleDivider,
-            svSubtitleContainer,
+            svSubtitleContainer
         ]
                 .forEach {
                     guard let view = $0 else {

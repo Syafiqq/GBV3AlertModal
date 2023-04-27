@@ -18,7 +18,7 @@ public struct DataHolder {
     public init(
             title: String? = nil,
             attributedTitle: NSAttributedString? = nil,
-            subtitle: NSAttributedString? = nil,
+            subtitle: String? = nil,
             attributedSubtitle: NSAttributedString? = nil,
             subtitleCustomView: UIView? = nil,
             primaryAction: String? = nil,
