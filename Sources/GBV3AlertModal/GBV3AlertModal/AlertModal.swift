@@ -184,7 +184,8 @@ private extension AlertModal {
     // swiftlint:disable:next function_body_length
     func registerDialogView() {
         // Setup title
-        if let title = dataHolder?.title {
+        if let title = dataHolder?.title,
+           !title.isEmpty {
             let lbTitle = generateLabelForTitleDesign()
             lbTitle.attributedText = NSAttributedString(
                     string: title,
@@ -194,7 +195,8 @@ private extension AlertModal {
                     ].compactMapValues({ $0 })
             )
             self.lbTitle = lbTitle
-        } else if let title = dataHolder?.titleAttributed {
+        } else if let title = dataHolder?.titleAttributed,
+                  title.length <= 0 {
             let lbTitle = generateLabelForTitleDesign()
             lbTitle.attributedText = title
             self.lbTitle = lbTitle
@@ -207,8 +209,9 @@ private extension AlertModal {
                    dataHolder?.subtitleAttributed != nil ||
                    dataHolder?.subtitleCustomView != nil {
             let svSubtitleContainer = generateScrollForCustomViewDesign()
-            let vwSubtitle: UIView
-            if let subtitle = dataHolder?.subtitle {
+            let vwSubtitle: UIView?
+            if let subtitle = dataHolder?.subtitle,
+               !subtitle.isEmpty {
                 let lbSubtitle = generateLabelForSubtitleDesign()
                 lbSubtitle.attributedText = NSAttributedString(
                         string: subtitle,
@@ -220,7 +223,8 @@ private extension AlertModal {
 
                 vwSubtitle = lbSubtitle
                 self.lbSubtitle = lbSubtitle
-            } else if let subtitle = dataHolder?.subtitleAttributed {
+            } else if let subtitle = dataHolder?.subtitleAttributed,
+                      subtitle.length <= 0 {
                 let lbSubtitle = generateLabelForSubtitleDesign()
                 lbSubtitle.attributedText = subtitle
 
@@ -230,17 +234,19 @@ private extension AlertModal {
                 vwSubtitle = subtitle
                 self.vwSubtitle = subtitle
             } else {
-                fatalError("This never happened")
+                vwSubtitle = nil
             }
 
-            svSubtitleContainer.addSubview(vwSubtitle)
-            vwSubtitle.snp.makeConstraints { (make: ConstraintMaker) -> Void in
-                make.edges.equalTo(svSubtitleContainer.contentLayoutGuide)
-                make.width.equalTo(svSubtitleContainer.frameLayoutGuide)
-                make.height.equalTo(svSubtitleContainer.frameLayoutGuide).priority(.low)
-            }
+            if let vwSubtitle {
+                svSubtitleContainer.addSubview(vwSubtitle)
+                vwSubtitle.snp.makeConstraints { (make: ConstraintMaker) -> Void in
+                    make.edges.equalTo(svSubtitleContainer.contentLayoutGuide)
+                    make.width.equalTo(svSubtitleContainer.frameLayoutGuide)
+                    make.height.equalTo(svSubtitleContainer.frameLayoutGuide).priority(.low)
+                }
 
-            self.svSubtitleContainer = svSubtitleContainer
+                self.svSubtitleContainer = svSubtitleContainer
+            }
         } else {
             svSubtitleContainer = nil
             lbSubtitle = nil
