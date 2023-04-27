@@ -9,6 +9,9 @@ public class AlertModal: UIView {
     // Overlay
     public private(set) var vwOverlay: UIView?
 
+    // Main Container
+    private(set) var vwContainer: UIView?
+
     // MARK: Attributes Gestures
     private var tapRecognizerOverlay: UIGestureRecognizer?
 
@@ -128,6 +131,11 @@ private extension AlertModal {
     // MARK: Init Functions
     func initViews() {
         translatesAutoresizingMaskIntoConstraints = false
+
+        vwOverlay?.backgroundColor = properties?.overlayColor ?? globalProperties.overlayColor
+
+        vwContainer?.backgroundColor = properties?.contentBackgroundColor ?? globalProperties.contentBackgroundColor
+        vwContainer?.layer.cornerRadius = properties?.contentCornerRadius ?? globalProperties.contentCornerRadius ?? 0
     }
 
     func initEvents() {
@@ -174,29 +182,44 @@ private extension AlertModal {
 private extension AlertModal {
     func initDesign() {
         // MARK: View Initialization
-        let vwOverlay = generateViewForOverlayDesign()
+        let vwOverlay = generateGenericView()
+        let vwContainer = generateGenericView()
 
         // MARK: View Graph
         addSubview(vwOverlay)
+        addSubview(vwContainer)
 
         // MARK: View Constraints
         vwOverlay.snp.makeConstraints { (make: ConstraintMaker) -> Void in
-            make.edges.equalToSuperview()
+            make.edges
+                    .equalToSuperview()
+        }
+
+        vwContainer.snp.makeConstraints { (make: ConstraintMaker) -> Void in
+            // Align
+            make.top
+                    .greaterThanOrEqualToSuperview()
+                    .offset(
+                            properties?.contentVerticalMargin ?? globalProperties.contentVerticalMargin ?? 0
+                    )
+            make.leading
+                    .greaterThanOrEqualToSuperview()
+                    .offset(
+                            properties?.contentHorizontalMargin ?? globalProperties.contentHorizontalMargin ?? 0
+                    )
+
+            make.center
+                    .equalToSuperview()
         }
 
         // MARK: View Assign
         self.vwOverlay = vwOverlay
+        self.vwContainer = vwContainer
     }
 
     func generateGenericView() -> UIView {
         let view = UIView(frame: .zero)
         view.translatesAutoresizingMaskIntoConstraints = false
-        return view
-    }
-
-    func generateViewForOverlayDesign() -> UIView {
-        let view = generateGenericView()
-        view.backgroundColor = properties?.overlayColor ?? globalProperties.overlayColor
         return view
     }
 }
