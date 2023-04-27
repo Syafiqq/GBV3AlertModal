@@ -1,21 +1,35 @@
 import UIKit
 
 public struct DataHolder {
-    public var title: String?
-    public var attributedTitle: NSAttributedString?
-    public var subtitle: NSAttributedString?
-    public var attributedSubtitle: NSAttributedString?
+    public let title: String?
+    public let attributedTitle: NSAttributedString?
+    public let subtitle: NSAttributedString?
+    public let attributedSubtitle: NSAttributedString?
     public weak var subtitleCustomView: UIView?
-    public var primaryAction: String?
-    public var primaryActionStyle: ActionStyle?
-    public var secondaryAction: String?
-    public var secondaryActionStyle: String?
-    public var closeOnTapOverlay: Bool
-    public var showCloseButton: Bool
-    public var dismissOnAction: Bool
-    public var completion: ((AlertModal, ActionType) -> Void)?
+    public let primaryAction: String?
+    public let primaryActionStyle: ActionStyle?
+    public let secondaryAction: String?
+    public let secondaryActionStyle: String?
+    public let closeOnTapOverlay: Bool
+    public let showCloseButton: Bool
+    public let dismissOnAction: Bool
+    public let completion: ((AlertModal, ActionType) -> Void)?
 
-    public init(title: String?, attributedTitle: NSAttributedString?, subtitle: NSAttributedString?, attributedSubtitle: NSAttributedString?, subtitleCustomView: UIView?, primaryAction: String?, primaryActionStyle: ActionStyle?, secondaryAction: String?, secondaryActionStyle: String?, closeOnTapOverlay: Bool, showCloseButton: Bool, dismissOnAction: Bool, completion: ((AlertModal, ActionType) -> ())?) {
+    public init(
+            title: String?,
+            attributedTitle: NSAttributedString?,
+            subtitle: NSAttributedString?,
+            attributedSubtitle: NSAttributedString?,
+            subtitleCustomView: UIView?,
+            primaryAction: String?,
+            primaryActionStyle: ActionStyle?,
+            secondaryAction: String?,
+            secondaryActionStyle: String?,
+            closeOnTapOverlay: Bool,
+            showCloseButton: Bool,
+            dismissOnAction: Bool,
+            completion: ((AlertModal, ActionType) -> Void)?
+    ) {
         self.title = title
         self.attributedTitle = attributedTitle
         self.subtitle = subtitle
