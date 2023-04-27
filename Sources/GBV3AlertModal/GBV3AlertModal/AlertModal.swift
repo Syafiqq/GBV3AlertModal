@@ -221,12 +221,12 @@ private extension AlertModal {
             make.top
                     .greaterThanOrEqualToSuperview()
                     .offset(
-                            properties?.contentVerticalPadding?.0 ?? globalProperties.contentVerticalPadding?.0 ?? 0
+                            properties?.contentTopPadding?.0 ?? globalProperties.contentTopPadding?.0 ?? 0
                     )
             make.top
                     .equalToSuperview()
                     .offset(
-                            properties?.contentVerticalPadding?.1 ?? globalProperties.contentVerticalPadding?.1 ?? 0
+                            properties?.contentTopPadding?.1 ?? globalProperties.contentTopPadding?.1 ?? 0
                     )
                     .priority(.medium)
 
@@ -239,6 +239,18 @@ private extension AlertModal {
                     .equalToSuperview()
                     .offset(
                             properties?.contentHorizontalPadding?.1 ?? globalProperties.contentHorizontalPadding?.1 ?? 1
+                    )
+                    .priority(.medium)
+
+            make.top
+                    .lessThanOrEqualToSuperview()
+                    .offset(
+                            -(properties?.contentBottomPadding?.0 ?? globalProperties.contentBottomPadding?.0 ?? 0)
+                    )
+            make.top
+                    .equalToSuperview()
+                    .offset(
+                            -(properties?.contentBottomPadding?.1 ?? globalProperties.contentBottomPadding?.1 ?? 0)
                     )
                     .priority(.medium)
 
