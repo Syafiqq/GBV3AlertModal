@@ -10,6 +10,7 @@ end
 
 def lib_pods
   pod 'LanguageManager-iOS', '~> 1.2.6-beta.2'
+  pod 'SnapKit', '~> 5.6'
 end
 
 def lib_test_pods
