@@ -173,12 +173,16 @@ private extension AlertModal {
         if let title = dataHolder?.title {
             let lbTitle = generateLabelForTitleDesign()
             lbTitle.attributedText = NSAttributedString(
-                string: title,
-                attributes: [
-                    .font: properties?.titleFont ?? globalProperties.titleFont,
-                    .foregroundColor: properties?.titleColor ?? globalProperties.titleColor
-                ].compactMapValues({ $0 })
+                    string: title,
+                    attributes: [
+                        .font: properties?.titleFont ?? globalProperties.titleFont,
+                        .foregroundColor: properties?.titleColor ?? globalProperties.titleColor
+                    ].compactMapValues({ $0 })
             )
+            self.lbTitle = lbTitle
+        } else if let title = dataHolder?.attributedTitle {
+            let lbTitle = generateLabelForTitleDesign()
+            lbTitle.attributedText = title
             self.lbTitle = lbTitle
         } else {
             lbTitle = nil

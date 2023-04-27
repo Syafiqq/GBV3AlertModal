@@ -13,6 +13,7 @@
 		593ED2582935CFA9007BC45A /* GBV3AlertModal.h in Headers */ = {isa = PBXBuildFile; fileRef = 593ED24A2935CFA9007BC45A /* GBV3AlertModal.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		59D1458D2936F74000339673 /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = 59D1458F2936F74000339673 /* Localizable.strings */; };
 		65B8C3B48879A21129A88E55 /* UIStackView+Removal.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65B8C2CB5DA782EB208997A2 /* UIStackView+Removal.swift */; };
+		65B8C62FAC98668EC6F8659F /* ActionStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65B8CFF32AE8CAC7053CCE34 /* ActionStyle.swift */; };
 		65B8C6E9701D13A1052A81FF /* AlertModal.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65B8CE1814B3C775B6BC76B0 /* AlertModal.swift */; };
 		65B8C88BBC61402078426DF8 /* Properties.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65B8C54EBD9DD2B44CB85B52 /* Properties.swift */; };
 		65B8C99661546852E86BDB28 /* ActionType.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65B8C85D24DE24935E28A095 /* ActionType.swift */; };
@@ -56,6 +57,7 @@
 		65B8CCF436BFA68301C842E8 /* GBV3AlertModal.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = GBV3AlertModal.swift; sourceTree = "<group>"; };
 		65B8CD858113D42DDF0E2EB4 /* DataHolder.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = DataHolder.swift; path = GBV3AlertModal/DataHolder.swift; sourceTree = "<group>"; };
 		65B8CE1814B3C775B6BC76B0 /* AlertModal.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = AlertModal.swift; sourceTree = "<group>"; };
+		65B8CFF32AE8CAC7053CCE34 /* ActionStyle.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = ActionStyle.swift; path = GBV3AlertModal/ActionStyle.swift; sourceTree = "<group>"; };
 		AE8E82687F68207AB6A57066 /* Pods_GBV3AlertModalTests.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_GBV3AlertModalTests.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -90,6 +92,7 @@
 				653F7E887296796C8D9C1E5A /* Pods */,
 				878E0B7A7ACFFF4724765B96 /* Frameworks */,
 				65B8CD858113D42DDF0E2EB4 /* DataHolder.swift */,
+				65B8CFF32AE8CAC7053CCE34 /* ActionStyle.swift */,
 			);
 			sourceTree = "<group>";
 		};
@@ -383,6 +386,7 @@
 				65B8C88BBC61402078426DF8 /* Properties.swift in Sources */,
 				65B8C3B48879A21129A88E55 /* UIStackView+Removal.swift in Sources */,
 				65B8CBC9E777B3A4CB14C5C3 /* DataHolder.swift in Sources */,
+				65B8C62FAC98668EC6F8659F /* ActionStyle.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
