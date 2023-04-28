@@ -101,6 +101,16 @@ public class GBAlertModal: UIView {
         }
     }
 
+    @objc
+    private func onPrimaryActionTapped() {
+        dismissAndEmit(event: .primary)
+    }
+
+    @objc
+    private func onSecondaryActionTapped() {
+        dismissAndEmit(event: .secondary)
+    }
+
     // MARK: Public Function
 
     /*
@@ -450,6 +460,10 @@ private extension GBAlertModal {
         vwOverlay?.addGestureRecognizer(tapRecognizerOverlay)
         vwOverlay?.isUserInteractionEnabled = true
         self.tapRecognizerOverlay = tapRecognizerOverlay
+
+        // Buttons
+        btPrimaryAction?.addTarget(self, action: #selector(onPrimaryActionTapped), for: .touchUpInside)
+        btSecondaryAction?.addTarget(self, action: #selector(onSecondaryActionTapped), for: .touchUpInside)
     }
 
     func unregisterEvents() {
@@ -458,6 +472,10 @@ private extension GBAlertModal {
             vwOverlay?.removeGestureRecognizer(tapRecognizerOverlay)
         }
         tapRecognizerOverlay = nil
+
+        // Buttons
+        btPrimaryAction?.removeTarget(self, action: #selector(onPrimaryActionTapped), for: .touchUpInside)
+        btSecondaryAction?.removeTarget(self, action: #selector(onSecondaryActionTapped), for: .touchUpInside)
     }
 
     // MARK: Model

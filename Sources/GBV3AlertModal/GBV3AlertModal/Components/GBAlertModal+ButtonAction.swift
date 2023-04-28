@@ -103,7 +103,7 @@ internal extension GBAlertModal {
     }
 
     func generateButtonForCapsuleThemedDesign() -> GBRoundedButton {
-        let view = GBRoundedButton()
+        let view = GBRoundedButton(type: .system)
         view.translatesAutoresizingMaskIntoConstraints = false
         view.rounded = true
         view.contentEdgeInsets = UIEdgeInsets(top: 6, left: 16, bottom: 6, right: 16)
