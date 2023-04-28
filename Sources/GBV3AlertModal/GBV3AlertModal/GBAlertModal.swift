@@ -326,9 +326,13 @@ private extension GBAlertModal {
         if let primaryAction = dataHolder?.primaryAction,
            let primaryActionStyle = dataHolder?.primaryActionStyle {
             let vwPrimaryAction = generateGenericViewDesign()
-            let btPrimaryAction = generateButtonForActionDesign(type: primaryActionStyle)
+
+            let btPrimaryAction = generateButtonForActionDesign(style: primaryActionStyle)
             configureButtonActionStyle(btPrimaryAction, title: primaryAction, style: primaryActionStyle)
+
+            vwPrimaryAction.addSubview(btPrimaryAction)
             configureButtonActionConstraint(btPrimaryAction, parent: vwPrimaryAction, style: primaryActionStyle)
+
             self.vwPrimaryAction = vwPrimaryAction
             self.btPrimaryAction = btPrimaryAction
         } else {
@@ -340,9 +344,13 @@ private extension GBAlertModal {
         if let secondaryAction = dataHolder?.secondaryAction,
            let secondaryActionStyle = dataHolder?.secondaryActionStyle {
             let vwSecondaryAction = generateGenericViewDesign()
-            let btSecondaryAction = generateButtonForActionDesign(type: secondaryActionStyle)
+
+            let btSecondaryAction = generateButtonForActionDesign(style: secondaryActionStyle)
             configureButtonActionStyle(btSecondaryAction, title: secondaryAction, style: secondaryActionStyle)
+
+            vwSecondaryAction.addSubview(btSecondaryAction)
             configureButtonActionConstraint(btSecondaryAction, parent: vwSecondaryAction, style: secondaryActionStyle)
+
             self.vwSecondaryAction = vwSecondaryAction
             self.btSecondaryAction = btSecondaryAction
         } else {
