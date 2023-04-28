@@ -116,11 +116,11 @@ public class GBAlertModal: UIView {
         if sender === btPrimaryAction,
            let primaryActionStyle = dataHolder?.primaryActionStyle,
            case ActionStyle.obliqueBottomLeft(let style) = primaryActionStyle {
-            updateSpaceThemedButtonStylePressed(sender, style: style)
+            updateObliqueBottomLeftStylePressed(sender, style: style)
         } else if sender === btSecondaryAction,
                   let secondaryActionStyle = dataHolder?.secondaryActionStyle,
                   case ActionStyle.obliqueBottomLeft(let style) = secondaryActionStyle {
-            updateSpaceThemedButtonStylePressed(sender, style: style)
+            updateObliqueBottomLeftStylePressed(sender, style: style)
         }
     }
 
@@ -129,11 +129,11 @@ public class GBAlertModal: UIView {
         if sender === btPrimaryAction,
            let primaryActionStyle = dataHolder?.primaryActionStyle,
            case ActionStyle.obliqueBottomLeft(let style) = primaryActionStyle {
-            updateSpaceThemedButtonStyleUnPressed(sender, style: style)
+            updateObliqueBottomLeftStyleUnPressed(sender, style: style)
         } else if sender === btSecondaryAction,
                   let secondaryActionStyle = dataHolder?.secondaryActionStyle,
                   case ActionStyle.obliqueBottomLeft(let style) = secondaryActionStyle {
-            updateSpaceThemedButtonStyleUnPressed(sender, style: style)
+            updateObliqueBottomLeftStyleUnPressed(sender, style: style)
         }
     }
 

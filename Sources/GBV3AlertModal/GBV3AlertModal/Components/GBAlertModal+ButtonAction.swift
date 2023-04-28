@@ -149,14 +149,14 @@ internal extension GBAlertModal {
             button.backgroundColor = style.unPressedColor
             button.setTitleColor(style.titleColor, for: .normal)
             button.titleLabel?.font = style.titleFont
-            updateSpaceThemedButtonStyleUnPressed(button, style: style)
+            updateObliqueBottomLeftStyleUnPressed(button, style: style)
         case .plain(let style):
             button.setTitleColor(style.titleColor, for: .normal)
             button.titleLabel?.font = style.titleFont
         }
     }
 
-    func updateSpaceThemedButtonStylePressed(_ button: UIButton, style: ActionStyle.ObliqueBottomLeftTheme) {
+    func updateObliqueBottomLeftStylePressed(_ button: UIButton, style: ActionStyle.ObliqueBottomLeftTheme) {
         UIView.animate(
                 withDuration: 0.1,
                 delay: 0,
@@ -173,7 +173,7 @@ internal extension GBAlertModal {
         )
     }
 
-    func updateSpaceThemedButtonStyleUnPressed(_ button: UIButton, style: ActionStyle.ObliqueBottomLeftTheme) {
+    func updateObliqueBottomLeftStyleUnPressed(_ button: UIButton, style: ActionStyle.ObliqueBottomLeftTheme) {
         UIView.animate(
                 withDuration: 0.1,
                 delay: 0,
