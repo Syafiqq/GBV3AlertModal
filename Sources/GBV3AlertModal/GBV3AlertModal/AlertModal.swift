@@ -322,7 +322,6 @@ private extension AlertModal {
         if let primaryAction = dataHolder?.primaryAction {
             primaryAction
             let vwPrimaryAction = generateGenericViewDesign()
-            vwPrimaryAction.backgroundColor = .red
             self.vwPrimaryAction = vwPrimaryAction
         } else {
             vwPrimaryAction = nil
@@ -332,7 +331,6 @@ private extension AlertModal {
         if let secondaryAction = dataHolder?.secondaryAction {
             secondaryAction
             let vwSecondaryAction = generateGenericViewDesign()
-            vwSecondaryAction.backgroundColor = .blue
             self.vwSecondaryAction = vwSecondaryAction
         } else {
             vwSecondaryAction = nil
