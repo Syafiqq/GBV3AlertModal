@@ -168,7 +168,7 @@ private extension AlertModal {
         unregisterDialogView()
         registerDialogView()
 
-        svContentContainer?.alignment = properties?.contentMatchParent == true ? .fill : .center
+        svContentContainer?.alignment = properties?.contentFitSize == true ? .fill : .center
     }
 
     func initEvents() {
@@ -389,8 +389,8 @@ private extension AlertModal {
                         ?? globalProperties.contentBottomPadding,
                 contentHorizontalPadding: properties.contentHorizontalPadding
                         ?? globalProperties.contentHorizontalPadding,
-                contentMatchParent: properties.contentMatchParent
-                        ?? globalProperties.contentMatchParent,
+                contentFitSize: properties.contentFitSize
+                        ?? globalProperties.contentFitSize,
                 bannerRatio: properties.bannerRatio
                         ?? globalProperties.bannerRatio,
                 titleFont: properties.titleFont

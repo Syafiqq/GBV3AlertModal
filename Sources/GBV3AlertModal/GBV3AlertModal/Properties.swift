@@ -13,7 +13,7 @@ public struct DialogProperties {
     public let contentBottomPadding: (CGFloat, CGFloat)?
     public let contentHorizontalPadding: (CGFloat, CGFloat)?
 
-    public let contentMatchParent: Bool?
+    public let contentFitSize: Bool?
     public let bannerRatio: CGFloat?
     public let titleFont: UIFont?
     public let titleColor: UIColor?
@@ -34,7 +34,7 @@ public struct DialogProperties {
             contentTopPadding: (CGFloat, CGFloat)? = nil,
             contentBottomPadding: (CGFloat, CGFloat)? = nil,
             contentHorizontalPadding: (CGFloat, CGFloat)? = nil,
-            contentMatchParent: Bool? = false,
+            contentFitSize: Bool? = false,
             bannerRatio: CGFloat? = nil,
             titleFont: UIFont? = nil,
             titleColor: UIColor? = nil,
@@ -53,7 +53,7 @@ public struct DialogProperties {
         self.contentTopPadding = contentTopPadding
         self.contentBottomPadding = contentBottomPadding
         self.contentHorizontalPadding = contentHorizontalPadding
-        self.contentMatchParent = contentMatchParent
+        self.contentFitSize = contentFitSize
         self.bannerRatio = bannerRatio
         self.titleFont = titleFont
         self.titleColor = titleColor
