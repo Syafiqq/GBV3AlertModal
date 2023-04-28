@@ -15,6 +15,7 @@
 		65B8C067B6E3064C974E779F /* UIButton+Rounded.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65B8C2DE662E0B4FE41CCC28 /* UIButton+Rounded.swift */; };
 		65B8C279F7EBA1333ADA25CB /* GBAlertModal+ButtonAction.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65B8C8F4CDA47B4A2E97BF9E /* GBAlertModal+ButtonAction.swift */; };
 		65B8C2D7272890138CF49372 /* GBAlertModal+ActionType.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65B8CCA3D39117416950F886 /* GBAlertModal+ActionType.swift */; };
+		65B8C3999C9001EFF19DF13F /* CALayer+AdobeXd.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65B8CADA9628CE46224FA786 /* CALayer+AdobeXd.swift */; };
 		65B8C46AC1D2C54954052E32 /* GBAlertModal.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65B8CBE0D89063FBE78C5A85 /* GBAlertModal.swift */; };
 		65B8C6C15E1796C1EFCAD0C8 /* GBAlertModal+Properties.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65B8C91D154B97B6A1B6C2DA /* GBAlertModal+Properties.swift */; };
 		65B8C8B4530CA05921457770 /* GBAlertModal+DataHolder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65B8C2F6D0391C8584B0744C /* GBAlertModal+DataHolder.swift */; };
@@ -57,6 +58,7 @@
 		65B8C8F4CDA47B4A2E97BF9E /* GBAlertModal+ButtonAction.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = "GBAlertModal+ButtonAction.swift"; path = "GBV3AlertModal/Components/GBAlertModal+ButtonAction.swift"; sourceTree = "<group>"; };
 		65B8C91BA5656CF72BB18B20 /* UIStackView+Removal.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = "UIStackView+Removal.swift"; sourceTree = "<group>"; };
 		65B8C91D154B97B6A1B6C2DA /* GBAlertModal+Properties.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = "GBAlertModal+Properties.swift"; sourceTree = "<group>"; };
+		65B8CADA9628CE46224FA786 /* CALayer+AdobeXd.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = "CALayer+AdobeXd.swift"; sourceTree = "<group>"; };
 		65B8CBE0D89063FBE78C5A85 /* GBAlertModal.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = GBAlertModal.swift; sourceTree = "<group>"; };
 		65B8CCA3D39117416950F886 /* GBAlertModal+ActionType.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = "GBAlertModal+ActionType.swift"; sourceTree = "<group>"; };
 		65B8CCF436BFA68301C842E8 /* GBV3AlertModal.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = GBV3AlertModal.swift; sourceTree = "<group>"; };
@@ -165,6 +167,7 @@
 			isa = PBXGroup;
 			children = (
 				65B8C91BA5656CF72BB18B20 /* UIStackView+Removal.swift */,
+				65B8CADA9628CE46224FA786 /* CALayer+AdobeXd.swift */,
 			);
 			path = Extensions;
 			sourceTree = "<group>";
@@ -407,6 +410,7 @@
 				65B8C279F7EBA1333ADA25CB /* GBAlertModal+ButtonAction.swift in Sources */,
 				65B8C067B6E3064C974E779F /* UIButton+Rounded.swift in Sources */,
 				65B8C8B4530CA05921457770 /* GBAlertModal+DataHolder.swift in Sources */,
+				65B8C3999C9001EFF19DF13F /* CALayer+AdobeXd.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
