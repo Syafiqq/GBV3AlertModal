@@ -307,7 +307,7 @@ private extension AlertModal {
             let vwBannerAndTitleDivider = generateGenericViewDesign()
             vwBannerAndTitleDivider.snp.makeConstraints { (make: ConstraintMaker) -> Void in
                 make.height
-                        .equalTo(properties?.titleToSubtitleSpace ?? 0)
+                        .equalTo(properties?.bannerToTitleSpace ?? 0)
             }
 
             self.vwBannerAndTitleDivider = vwBannerAndTitleDivider
