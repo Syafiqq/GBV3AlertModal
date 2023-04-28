@@ -13,6 +13,7 @@ public struct DialogProperties {
     public let contentBottomPadding: (CGFloat, CGFloat)?
     public let contentHorizontalPadding: (CGFloat, CGFloat)?
 
+    public let contentMatchParent: Bool?
     public let titleFont: UIFont?
     public let titleColor: UIColor?
     public let subtitleFont: UIFont?
@@ -31,6 +32,7 @@ public struct DialogProperties {
             contentTopPadding: (CGFloat, CGFloat)? = nil,
             contentBottomPadding: (CGFloat, CGFloat)? = nil,
             contentHorizontalPadding: (CGFloat, CGFloat)? = nil,
+            contentMatchParent: Bool? = false,
             titleFont: UIFont? = nil,
             titleColor: UIColor? = nil,
             subtitleFont: UIFont? = nil,
@@ -47,6 +49,7 @@ public struct DialogProperties {
         self.contentTopPadding = contentTopPadding
         self.contentBottomPadding = contentBottomPadding
         self.contentHorizontalPadding = contentHorizontalPadding
+        self.contentMatchParent = contentMatchParent
         self.titleFont = titleFont
         self.titleColor = titleColor
         self.subtitleFont = subtitleFont
