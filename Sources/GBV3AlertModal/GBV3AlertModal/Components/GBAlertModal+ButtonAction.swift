@@ -5,8 +5,8 @@ import SnapKit
 public extension GBAlertModal {
     enum ActionStyle {
         case capsule(CapsuleThemedAction)
-        case capsuleOutline(CapsuleOutlineThemedAction)
-        case spaceTheme(SpaceThemedAction)
+        case outline(OutlineThemedAction)
+        case dimension3(SpaceThemedAction)
         case spaceThemeOutline
     }
 
@@ -26,7 +26,7 @@ public extension GBAlertModal {
         }
     }
 
-    struct CapsuleOutlineThemedAction {
+    struct OutlineThemedAction {
         public var backgroundColor: UIColor?
         public var titleColor: UIColor?
         public var borderWidth: CGFloat?
@@ -75,7 +75,7 @@ internal extension GBAlertModal {
     func configureButtonActionConstraint(_ button: UIButton, parent: UIView, style: ActionStyle) {
         switch style {
         case .capsule,
-             .capsuleOutline:
+             .outline:
             button.snp.makeConstraints { (make: ConstraintMaker) -> Void in
                 // Align
                 make.edges
@@ -87,7 +87,7 @@ internal extension GBAlertModal {
                 make.height
                         .equalTo(48)
             }
-        case .spaceTheme:
+        case .dimension3:
             button.snp.makeConstraints { (make: ConstraintMaker) -> Void in
                 // Align
                 make.top
@@ -124,14 +124,14 @@ internal extension GBAlertModal {
             button.setTitleColor(style.titleColor, for: .normal)
             button.setImage(nil, for: .normal)
             button.titleLabel?.font = style.titleFont
-        case .capsuleOutline(let style):
+        case .outline(let style):
             button.layer.borderWidth = style.borderWidth ?? 0
             button.layer.borderColor = style.borderColor
             button.backgroundColor = style.backgroundColor
             button.setTitleColor(style.titleColor, for: .normal)
             button.setImage(nil, for: .normal)
             button.titleLabel?.font = style.titleFont
-        case .spaceTheme(let style):
+        case .dimension3(let style):
             button.backgroundColor = style.unPressedColor
             button.setTitleColor(style.titleColor, for: .normal)
             button.titleLabel?.font = style.titleFont
@@ -186,9 +186,9 @@ internal extension GBAlertModal {
     func generateButtonForActionDesign(style: ActionStyle) -> UIButton {
         switch style {
         case .capsule,
-             .capsuleOutline:
+             .outline:
             return generateButtonForCapsuleThemedDesign()
-        case .spaceTheme:
+        case .dimension3:
             return generateButtonForSpaceThemedDesign()
         case .spaceThemeOutline:
             return generateButtonForCapsuleThemedDesign()
