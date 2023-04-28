@@ -163,6 +163,7 @@ private extension AlertModal {
 
         vwContainer?.backgroundColor = properties?.contentBackgroundColor
         vwContainer?.layer.cornerRadius = properties?.contentCornerRadius ?? 0
+        vwContainer?.clipsToBounds = true
 
         unregisterDialogView()
         registerDialogView()
