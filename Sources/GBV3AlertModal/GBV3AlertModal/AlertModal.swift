@@ -163,7 +163,6 @@ private extension AlertModal {
         registerDialogView()
 
         svContentContainer?.alignment = properties?.contentMatchParent == true ? .fill : .center
-        lbTitle?.backgroundColor = .red
     }
 
     func initEvents() {
