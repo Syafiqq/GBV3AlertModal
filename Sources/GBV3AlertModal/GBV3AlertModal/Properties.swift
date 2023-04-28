@@ -14,11 +14,13 @@ public struct DialogProperties {
     public let contentHorizontalPadding: (CGFloat, CGFloat)?
 
     public let contentMatchParent: Bool?
+    public let bannerRatio: CGFloat?
     public let titleFont: UIFont?
     public let titleColor: UIColor?
     public let subtitleFont: UIFont?
     public let subtitleColor: UIColor?
 
+    public let bannerToTitleSpace: CGFloat?
     public let titleToSubtitleSpace: CGFloat?
 
     public init(
@@ -33,10 +35,12 @@ public struct DialogProperties {
             contentBottomPadding: (CGFloat, CGFloat)? = nil,
             contentHorizontalPadding: (CGFloat, CGFloat)? = nil,
             contentMatchParent: Bool? = false,
+            bannerRatio: CGFloat? = nil,
             titleFont: UIFont? = nil,
             titleColor: UIColor? = nil,
             subtitleFont: UIFont? = nil,
             subtitleColor: UIColor? = nil,
+            bannerToTitleSpace: CGFloat? = nil,
             titleToSubtitleSpace: CGFloat? = nil
     ) {
         self.baseTint = baseTint
@@ -50,10 +54,12 @@ public struct DialogProperties {
         self.contentBottomPadding = contentBottomPadding
         self.contentHorizontalPadding = contentHorizontalPadding
         self.contentMatchParent = contentMatchParent
+        self.bannerRatio = bannerRatio
         self.titleFont = titleFont
         self.titleColor = titleColor
         self.subtitleFont = subtitleFont
         self.subtitleColor = subtitleColor
+        self.bannerToTitleSpace = bannerToTitleSpace
         self.titleToSubtitleSpace = titleToSubtitleSpace
     }
 }

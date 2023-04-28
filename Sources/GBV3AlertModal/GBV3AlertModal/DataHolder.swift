@@ -1,6 +1,7 @@
 import UIKit
 
 public struct DataHolder {
+    public let banner: UIImage?
     public let title: String?
     public let titleAttributed: NSAttributedString?
     public let subtitle: String?
@@ -16,10 +17,11 @@ public struct DataHolder {
     public let completion: ((AlertModal, ActionType) -> Void)?
 
     public init(
+            banner: UIImage? = nil,
             title: String? = nil,
-            attributedTitle: NSAttributedString? = nil,
+            titleAttributed: NSAttributedString? = nil,
             subtitle: String? = nil,
-            attributedSubtitle: NSAttributedString? = nil,
+            subtitleAttributed: NSAttributedString? = nil,
             subtitleCustomView: UIView? = nil,
             primaryAction: String? = nil,
             primaryActionStyle: ActionStyle? = nil,
@@ -30,10 +32,11 @@ public struct DataHolder {
             dismissOnAction: Bool = false,
             completion: ((AlertModal, ActionType) -> Void)? = nil
     ) {
+        self.banner = banner
         self.title = title
-        self.titleAttributed = attributedTitle
+        self.titleAttributed = titleAttributed
         self.subtitle = subtitle
-        self.subtitleAttributed = attributedSubtitle
+        self.subtitleAttributed = subtitleAttributed
         self.subtitleCustomView = subtitleCustomView
         self.primaryAction = primaryAction
         self.primaryActionStyle = primaryActionStyle

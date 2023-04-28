@@ -16,6 +16,9 @@ public class AlertModal: UIView {
     private(set) var svContentContainer: UIStackView?
 
     // Content
+    private(set) var vwBanner: UIView?
+    private(set) var ivBanner: UIImageView?
+
     private(set) var lbTitle: UILabel?
 
     private(set) var svSubtitleContainer: UIScrollView?
@@ -23,6 +26,7 @@ public class AlertModal: UIView {
     private(set) weak var vwSubtitle: UIView?
 
     // Divider
+    private(set) var vwBannerAndTitleDivider: UIView?
     private(set) var vwTitleAndSubtitleDivider: UIView?
 
     // MARK: Constraints
@@ -104,7 +108,8 @@ public class AlertModal: UIView {
 
         parent.addSubview(self)
         snp.makeConstraints { (make: ConstraintMaker) -> Void in
-            make.edges.equalTo(parent)
+            make.edges
+                    .equalTo(parent)
         }
 
         onShown()
@@ -178,6 +183,8 @@ private extension AlertModal {
     func unregisterDialogView() {
         svContentContainer?.removeAllArrangedSubviews()
 
+        vwBanner?.removeFromSuperview()
+        ivBanner?.removeFromSuperview()
         lbTitle?.removeFromSuperview()
         svSubtitleContainer?.removeFromSuperview()
         lbSubtitle?.removeFromSuperview()
@@ -186,8 +193,37 @@ private extension AlertModal {
         vwTitleAndSubtitleDivider?.removeFromSuperview()
     }
 
-    // swiftlint:disable:next function_body_length
+    // swiftlint:disable:next function_body_length cyclomatic_complexity
     func registerDialogView() {
+        // Setup banner
+        if let banner = dataHolder?.banner {
+            let vwBanner = generateGenericViewDesign()
+            let ivBanner = generateImageViewForBannerDesign()
+            ivBanner.image = banner
+
+            vwBanner.addSubview(ivBanner)
+            ivBanner.snp.makeConstraints { (make: ConstraintMaker) -> Void in
+                // Align
+                make.leading.top
+                        .greaterThanOrEqualToSuperview()
+                make.center
+                        .equalToSuperview()
+
+                // Pin
+                if let ratio = properties?.bannerRatio {
+                    make.width
+                            .equalTo(ivBanner.snp.height)
+                            .multipliedBy(ratio)
+                }
+            }
+
+            self.vwBanner = vwBanner
+            self.ivBanner = ivBanner
+        } else {
+            vwBanner = nil
+            ivBanner = nil
+        }
+
         // Setup title
         if let title = dataHolder?.title,
            !title.isEmpty {
@@ -245,9 +281,12 @@ private extension AlertModal {
             if let vwSubtitle {
                 svSubtitleContainer.addSubview(vwSubtitle)
                 vwSubtitle.snp.makeConstraints { (make: ConstraintMaker) -> Void in
-                    make.edges.equalTo(svSubtitleContainer.contentLayoutGuide)
-                    make.width.equalTo(svSubtitleContainer.frameLayoutGuide)
-                    make.height.equalTo(svSubtitleContainer.frameLayoutGuide).priority(.low)
+                    make.edges
+                            .equalTo(svSubtitleContainer.contentLayoutGuide)
+                    make.width
+                            .equalTo(svSubtitleContainer.frameLayoutGuide)
+                    make.height
+                            .equalTo(svSubtitleContainer.frameLayoutGuide).priority(.low)
                 }
 
                 self.svSubtitleContainer = svSubtitleContainer
@@ -259,12 +298,27 @@ private extension AlertModal {
         }
 
         // Setup Divider
+        // Setup banner and title
+        if vwBanner != nil,
+           (lbTitle != nil || svSubtitleContainer != nil) {
+            let vwBannerAndTitleDivider = generateGenericViewDesign()
+            vwBannerAndTitleDivider.snp.makeConstraints { (make: ConstraintMaker) -> Void in
+                make.height
+                        .equalTo(properties?.titleToSubtitleSpace ?? 0)
+            }
+
+            self.vwBannerAndTitleDivider = vwBannerAndTitleDivider
+        } else {
+            vwBannerAndTitleDivider = nil
+        }
+
         // Setup divider title and subtitle
         if lbTitle != nil,
            svSubtitleContainer != nil {
             let vwTitleAndSubtitleDivider = generateGenericViewDesign()
             vwTitleAndSubtitleDivider.snp.makeConstraints { (make: ConstraintMaker) -> Void in
-                make.height.equalTo(properties?.titleToSubtitleSpace ?? 0)
+                make.height
+                        .equalTo(properties?.bannerToTitleSpace ?? 0)
             }
 
             self.vwTitleAndSubtitleDivider = vwTitleAndSubtitleDivider
@@ -275,6 +329,8 @@ private extension AlertModal {
         // Compile View
 
         [
+            vwBanner,
+            vwBannerAndTitleDivider,
             lbTitle,
             vwTitleAndSubtitleDivider,
             svSubtitleContainer
@@ -331,6 +387,8 @@ private extension AlertModal {
                         ?? globalProperties.contentHorizontalPadding,
                 contentMatchParent: properties.contentMatchParent
                         ?? globalProperties.contentMatchParent,
+                bannerRatio: properties.bannerRatio
+                        ?? globalProperties.bannerRatio,
                 titleFont: properties.titleFont
                         ?? globalProperties.titleFont,
                 titleColor: properties.titleColor
@@ -339,6 +397,8 @@ private extension AlertModal {
                         ?? globalProperties.subtitleFont,
                 subtitleColor: properties.subtitleColor
                         ?? globalProperties.subtitleColor,
+                bannerToTitleSpace: properties.bannerToTitleSpace
+                        ?? globalProperties.bannerToTitleSpace,
                 titleToSubtitleSpace: properties.titleToSubtitleSpace
                         ?? globalProperties.titleToSubtitleSpace
         )
@@ -503,6 +563,13 @@ private extension AlertModal {
         view.translatesAutoresizingMaskIntoConstraints = false
         view.showsHorizontalScrollIndicator = false
         view.showsVerticalScrollIndicator = true
+        return view
+    }
+
+    func generateImageViewForBannerDesign() -> UIImageView {
+        let view = UIImageView()
+        view.translatesAutoresizingMaskIntoConstraints = false
+        view.contentMode = .scaleAspectFit
         return view
     }
 }
