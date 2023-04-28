@@ -30,7 +30,9 @@ public class GBAlertModal: UIView {
 
     // Action
     private(set) var vwPrimaryAction: UIView?
+    private(set) var btPrimaryAction: UIButton?
     private(set) var vwSecondaryAction: UIView?
+    private(set) var btSecondaryAction: UIButton?
 
     // Divider
     private(set) var vwBannerAndBelowDivider: UIView?
@@ -208,7 +210,9 @@ private extension GBAlertModal {
         svMainActionContainer?.removeFromSuperview()
 
         vwPrimaryAction?.removeFromSuperview()
+        btPrimaryAction?.removeFromSuperview()
         vwSecondaryAction?.removeFromSuperview()
+        btSecondaryAction?.removeFromSuperview()
     }
 
     // swiftlint:disable:next function_body_length cyclomatic_complexity
@@ -319,21 +323,31 @@ private extension GBAlertModal {
         }
 
         // Setup primaryAction
-        if let primaryAction = dataHolder?.primaryAction {
-            primaryAction
+        if let primaryAction = dataHolder?.primaryAction,
+           let primaryActionStyle = dataHolder?.primaryActionStyle {
             let vwPrimaryAction = generateGenericViewDesign()
+            let btPrimaryAction = generateButtonForActionDesign(type: primaryActionStyle)
+            configureButtonActionStyle(btPrimaryAction, title: primaryAction, style: primaryActionStyle)
+            configureButtonActionConstraint(btPrimaryAction, parent: vwPrimaryAction, style: primaryActionStyle)
             self.vwPrimaryAction = vwPrimaryAction
+            self.btPrimaryAction = btPrimaryAction
         } else {
             vwPrimaryAction = nil
+            btPrimaryAction = nil
         }
 
         // Setup secondaryAction
-        if let secondaryAction = dataHolder?.secondaryAction {
-            secondaryAction
+        if let secondaryAction = dataHolder?.secondaryAction,
+           let secondaryActionStyle = dataHolder?.secondaryActionStyle {
             let vwSecondaryAction = generateGenericViewDesign()
+            let btSecondaryAction = generateButtonForActionDesign(type: secondaryActionStyle)
+            configureButtonActionStyle(btSecondaryAction, title: secondaryAction, style: secondaryActionStyle)
+            configureButtonActionConstraint(btSecondaryAction, parent: vwSecondaryAction, style: secondaryActionStyle)
             self.vwSecondaryAction = vwSecondaryAction
+            self.btSecondaryAction = btSecondaryAction
         } else {
             vwSecondaryAction = nil
+            btSecondaryAction = nil
         }
 
         // Setup main action container
@@ -418,6 +432,30 @@ private extension GBAlertModal {
                     }
                     svContentContainer?.addArrangedSubview(view)
                 }
+    }
+
+    private func configureButtonActionConstraint(_ action: UIButton, parent: UIView, style: ActionStyle) {
+        switch style {
+        case .capsule,
+             .capsuleOutline:
+            break
+        case .spaceTheme:
+            break
+        case .spaceThemeOutline:
+            break
+        }
+    }
+
+    private func configureButtonActionStyle(_ action: UIButton, title: String, style: ActionStyle) {
+        switch style {
+        case .capsule,
+             .capsuleOutline:
+            break
+        case .spaceTheme:
+            break
+        case .spaceThemeOutline:
+            break
+        }
     }
 
     // MARK: ViewModel
@@ -663,5 +701,9 @@ private extension GBAlertModal {
         view.distribution = .fillEqually
         view.alignment = .center
         return view
+    }
+
+    func generateButtonForActionDesign(type: ActionStyle) -> UIButton {
+        fatalError("not yet implemented")
     }
 }
