@@ -206,6 +206,9 @@ private extension AlertModal {
                 // Align
                 make.leading.top
                         .greaterThanOrEqualToSuperview()
+                make.leading.top
+                        .equalToSuperview()
+                        .priority(.low)
                 make.center
                         .equalToSuperview()
 
