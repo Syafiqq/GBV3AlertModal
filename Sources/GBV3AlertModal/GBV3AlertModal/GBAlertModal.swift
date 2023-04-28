@@ -4,7 +4,7 @@ import SnapKit
 
 // MARK: - LIFECYCLE AND CALLBACK
 
-public class AlertModal: UIView {
+public class GBAlertModal: UIView {
     // MARK: Outlets
     // Overlay
     private(set) var vwOverlay: UIView?
@@ -158,7 +158,7 @@ public class AlertModal: UIView {
 
 // MARK: - PRIVATE FUNCTIONS
 
-private extension AlertModal {
+private extension GBAlertModal {
     // MARK: Init Functions
     func initViews() {
         translatesAutoresizingMaskIntoConstraints = false
@@ -498,7 +498,7 @@ private extension AlertModal {
 
 // MARK: - DESIGN
 
-private extension AlertModal {
+private extension GBAlertModal {
     // swiftlint:disable:next function_body_length
     func initDesign() {
         // MARK: View Initialization

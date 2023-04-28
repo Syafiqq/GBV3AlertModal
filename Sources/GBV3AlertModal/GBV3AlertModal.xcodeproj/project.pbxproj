@@ -13,7 +13,7 @@
 		593ED2582935CFA9007BC45A /* GBV3AlertModal.h in Headers */ = {isa = PBXBuildFile; fileRef = 593ED24A2935CFA9007BC45A /* GBV3AlertModal.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		59D1458D2936F74000339673 /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = 59D1458F2936F74000339673 /* Localizable.strings */; };
 		65B8C2D7272890138CF49372 /* ActionType.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65B8CCA3D39117416950F886 /* ActionType.swift */; };
-		65B8C46AC1D2C54954052E32 /* AlertModal.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65B8CBE0D89063FBE78C5A85 /* AlertModal.swift */; };
+		65B8C46AC1D2C54954052E32 /* GBAlertModal.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65B8CBE0D89063FBE78C5A85 /* GBAlertModal.swift */; };
 		65B8C62FAC98668EC6F8659F /* ActionStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65B8CFF32AE8CAC7053CCE34 /* ActionStyle.swift */; };
 		65B8C6C15E1796C1EFCAD0C8 /* Properties.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65B8C91D154B97B6A1B6C2DA /* Properties.swift */; };
 		65B8CB22EA11D4CECC9D548C /* UIStackView+Removal.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65B8C91BA5656CF72BB18B20 /* UIStackView+Removal.swift */; };
@@ -53,7 +53,7 @@
 		59D145922936F81B00339673 /* zh-Hans */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "zh-Hans"; path = "zh-Hans.lproj/Localizable.strings"; sourceTree = "<group>"; };
 		65B8C91BA5656CF72BB18B20 /* UIStackView+Removal.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = "UIStackView+Removal.swift"; sourceTree = "<group>"; };
 		65B8C91D154B97B6A1B6C2DA /* Properties.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Properties.swift; sourceTree = "<group>"; };
-		65B8CBE0D89063FBE78C5A85 /* AlertModal.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = AlertModal.swift; sourceTree = "<group>"; };
+		65B8CBE0D89063FBE78C5A85 /* GBAlertModal.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = GBAlertModal.swift; sourceTree = "<group>"; };
 		65B8CCA3D39117416950F886 /* ActionType.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ActionType.swift; sourceTree = "<group>"; };
 		65B8CCF436BFA68301C842E8 /* GBV3AlertModal.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = GBV3AlertModal.swift; sourceTree = "<group>"; };
 		65B8CD858113D42DDF0E2EB4 /* DataHolder.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = DataHolder.swift; path = GBV3AlertModal/DataHolder.swift; sourceTree = "<group>"; };
@@ -113,7 +113,7 @@
 				65B8CCF436BFA68301C842E8 /* GBV3AlertModal.swift */,
 				59D145852936F0B700339673 /* i18n */,
 				65B8C6B55C5FCB58DA011F6B /* Components */,
-				65B8CBE0D89063FBE78C5A85 /* AlertModal.swift */,
+				65B8CBE0D89063FBE78C5A85 /* GBAlertModal.swift */,
 				65B8CE12579008CC44BF9453 /* Extensions */,
 			);
 			path = GBV3AlertModal;
@@ -401,7 +401,7 @@
 				65B8C62FAC98668EC6F8659F /* ActionStyle.swift in Sources */,
 				65B8C2D7272890138CF49372 /* ActionType.swift in Sources */,
 				65B8C6C15E1796C1EFCAD0C8 /* Properties.swift in Sources */,
-				65B8C46AC1D2C54954052E32 /* AlertModal.swift in Sources */,
+				65B8C46AC1D2C54954052E32 /* GBAlertModal.swift in Sources */,
 				65B8CB22EA11D4CECC9D548C /* UIStackView+Removal.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

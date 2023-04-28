@@ -14,7 +14,7 @@ public struct DataHolder {
     public let closeOnTapOverlay: Bool
     public let showCloseButton: Bool
     public let dismissOnAction: Bool
-    public let completion: ((AlertModal, ActionType) -> Void)?
+    public let completion: ((GBAlertModal, ActionType) -> Void)?
 
     public init(
             banner: UIImage? = nil,
@@ -30,7 +30,7 @@ public struct DataHolder {
             closeOnTapOverlay: Bool = false,
             showCloseButton: Bool = false,
             dismissOnAction: Bool = false,
-            completion: ((AlertModal, ActionType) -> Void)? = nil
+            completion: ((GBAlertModal, ActionType) -> Void)? = nil
     ) {
         self.banner = banner
         self.title = title
