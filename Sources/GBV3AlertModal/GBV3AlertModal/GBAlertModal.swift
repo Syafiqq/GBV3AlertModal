@@ -111,6 +111,32 @@ public class GBAlertModal: UIView {
         dismissAndEmit(event: .secondary)
     }
 
+    @objc
+    private func onActionButtonPressed(_ sender: UIButton) {
+        if sender === btPrimaryAction,
+           let primaryActionStyle = dataHolder?.primaryActionStyle,
+           case ActionStyle.spaceTheme(let style) = primaryActionStyle {
+            updateSpaceThemedButtonStylePressed(sender, style: style)
+        } else if sender === btSecondaryAction,
+                  let secondaryActionStyle = dataHolder?.secondaryActionStyle,
+                  case ActionStyle.spaceTheme(let style) = secondaryActionStyle {
+            updateSpaceThemedButtonStylePressed(sender, style: style)
+        }
+    }
+
+    @objc
+    private func onActionButtonUnPressed(_ sender: UIButton) {
+        if sender === btPrimaryAction,
+           let primaryActionStyle = dataHolder?.primaryActionStyle,
+           case ActionStyle.spaceTheme(let style) = primaryActionStyle {
+            updateSpaceThemedButtonStyleUnPressed(sender, style: style)
+        } else if sender === btSecondaryAction,
+                  let secondaryActionStyle = dataHolder?.secondaryActionStyle,
+                  case ActionStyle.spaceTheme(let style) = secondaryActionStyle {
+            updateSpaceThemedButtonStyleUnPressed(sender, style: style)
+        }
+    }
+
     // MARK: Public Function
 
     /*
@@ -463,7 +489,17 @@ private extension GBAlertModal {
 
         // Buttons
         btPrimaryAction?.addTarget(self, action: #selector(onPrimaryActionTapped), for: .touchUpInside)
+        btPrimaryAction?.addTarget(self, action: #selector(onActionButtonPressed(_:)), for: .touchDown)
+        btPrimaryAction?.addTarget(self, action: #selector(onActionButtonPressed(_:)), for: .touchDragEnter)
+        btPrimaryAction?.addTarget(self, action: #selector(onActionButtonUnPressed(_:)), for: .touchDragExit)
+        btPrimaryAction?.addTarget(self, action: #selector(onActionButtonUnPressed(_:)), for: .touchUpInside)
+        btPrimaryAction?.addTarget(self, action: #selector(onActionButtonUnPressed(_:)), for: .touchUpOutside)
         btSecondaryAction?.addTarget(self, action: #selector(onSecondaryActionTapped), for: .touchUpInside)
+        btSecondaryAction?.addTarget(self, action: #selector(onActionButtonPressed(_:)), for: .touchDown)
+        btSecondaryAction?.addTarget(self, action: #selector(onActionButtonPressed(_:)), for: .touchDragEnter)
+        btSecondaryAction?.addTarget(self, action: #selector(onActionButtonUnPressed(_:)), for: .touchDragExit)
+        btSecondaryAction?.addTarget(self, action: #selector(onActionButtonUnPressed(_:)), for: .touchUpInside)
+        btSecondaryAction?.addTarget(self, action: #selector(onActionButtonUnPressed(_:)), for: .touchUpOutside)
     }
 
     func unregisterEvents() {

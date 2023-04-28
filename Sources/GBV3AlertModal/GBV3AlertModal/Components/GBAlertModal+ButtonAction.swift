@@ -49,18 +49,21 @@ public extension GBAlertModal {
     }
 
     struct SpaceThemedAction {
-        public var backgroundColor: UIColor?
+        public var unPressedColor: UIColor?
+        public var pressedColor: UIColor?
         public var shadowColor: CGColor?
         public var titleColor: UIColor?
         public var titleFont: UIFont?
 
         public init(
-                backgroundColor: UIColor? = nil,
+                unPressedColor: UIColor? = nil,
+                pressedColor: UIColor? = nil,
                 shadowColor: CGColor? = nil,
                 titleColor: UIColor? = nil,
                 titleFont: UIFont? = nil
         ) {
-            self.backgroundColor = backgroundColor
+            self.unPressedColor = unPressedColor
+            self.pressedColor = pressedColor
             self.shadowColor = shadowColor
             self.titleColor = titleColor
             self.titleFont = titleFont
@@ -129,19 +132,53 @@ internal extension GBAlertModal {
             button.setImage(nil, for: .normal)
             button.titleLabel?.font = style.titleFont
         case .spaceTheme(let style):
-            button.backgroundColor = style.backgroundColor
+            button.backgroundColor = style.unPressedColor
             button.setTitleColor(style.titleColor, for: .normal)
             button.titleLabel?.font = style.titleFont
-            button.layer.applySketchShadow(
-                    color: style.shadowColor,
-                    alpha: 1.0,
-                    x: -3.0,
-                    y: 3.0,
-                    blur: 0.0
-            )
+            updateSpaceThemedButtonStyleUnPressed(button, style: style)
         case .spaceThemeOutline:
             break
         }
+    }
+
+    func updateSpaceThemedButtonStylePressed(_ button: UIButton, style: SpaceThemedAction) {
+        UIView.animate(
+                withDuration: 0.1,
+                delay: 0,
+                options: UIView.AnimationOptions.curveEaseIn,
+                animations: { [weak self] in
+                    guard self != nil else {
+                        return
+                    }
+                    button.backgroundColor = style.pressedColor
+                    button.transform = .identity.translatedBy(x: -3, y: 3)
+                    button.layer.removeSketchShadow()
+                },
+                completion: { _ in }
+        )
+    }
+
+    func updateSpaceThemedButtonStyleUnPressed(_ button: UIButton, style: SpaceThemedAction) {
+        UIView.animate(
+                withDuration: 0.1,
+                delay: 0,
+                options: UIView.AnimationOptions.curveEaseOut,
+                animations: { [weak self] in
+                    guard self != nil else {
+                        return
+                    }
+                    button.backgroundColor = style.unPressedColor
+                    button.transform = .identity
+                    button.layer.applySketchShadow(
+                            color: style.shadowColor,
+                            alpha: 1.0,
+                            x: -3.0,
+                            y: 3.0,
+                            blur: 0.0
+                    )
+                },
+                completion: { _ in }
+        )
     }
 }
 
