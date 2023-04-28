@@ -205,6 +205,9 @@ private extension AlertModal {
 
         svMainActionContainer?.removeAllArrangedSubviews()
         svMainActionContainer?.removeFromSuperview()
+
+        vwPrimaryAction?.removeFromSuperview()
+        vwSecondaryAction?.removeFromSuperview()
     }
 
     // swiftlint:disable:next function_body_length cyclomatic_complexity
@@ -312,6 +315,26 @@ private extension AlertModal {
             svSubtitleContainer = nil
             lbSubtitle = nil
             vwSubtitle = nil
+        }
+
+        // Setup primaryAction
+        if let primaryAction = dataHolder?.primaryAction {
+            primaryAction
+            let vwPrimaryAction = generateGenericViewDesign()
+            vwPrimaryAction.backgroundColor = .red
+            self.vwPrimaryAction = vwPrimaryAction
+        } else {
+            vwPrimaryAction = nil
+        }
+
+        // Setup secondaryAction
+        if let secondaryAction = dataHolder?.secondaryAction {
+            secondaryAction
+            let vwSecondaryAction = generateGenericViewDesign()
+            vwSecondaryAction.backgroundColor = .blue
+            self.vwSecondaryAction = vwSecondaryAction
+        } else {
+            vwSecondaryAction = nil
         }
 
         // Setup main action container
