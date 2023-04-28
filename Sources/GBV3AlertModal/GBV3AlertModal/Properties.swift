@@ -20,8 +20,10 @@ public struct DialogProperties {
     public let subtitleFont: UIFont?
     public let subtitleColor: UIColor?
 
-    public let bannerToTitleSpace: CGFloat?
-    public let titleToSubtitleSpace: CGFloat?
+    public let bannerToBelowSpace: CGFloat?
+    public let titleToBelowSpace: CGFloat?
+    public let subtitleToBelowSpace: CGFloat?
+    public let buttonActionSpace: CGFloat?
 
     public init(
             baseTint: UIColor? = nil,
@@ -40,8 +42,10 @@ public struct DialogProperties {
             titleColor: UIColor? = nil,
             subtitleFont: UIFont? = nil,
             subtitleColor: UIColor? = nil,
-            bannerToTitleSpace: CGFloat? = nil,
-            titleToSubtitleSpace: CGFloat? = nil
+            bannerToBelowSpace: CGFloat? = nil,
+            titleToBelowSpace: CGFloat? = nil,
+            subtitleToBelowSpace: CGFloat? = nil,
+            buttonActionSpace: CGFloat? = nil
     ) {
         self.baseTint = baseTint
         self.overlayColor = overlayColor
@@ -59,7 +63,9 @@ public struct DialogProperties {
         self.titleColor = titleColor
         self.subtitleFont = subtitleFont
         self.subtitleColor = subtitleColor
-        self.bannerToTitleSpace = bannerToTitleSpace
-        self.titleToSubtitleSpace = titleToSubtitleSpace
+        self.bannerToBelowSpace = bannerToBelowSpace
+        self.titleToBelowSpace = titleToBelowSpace
+        self.subtitleToBelowSpace = subtitleToBelowSpace
+        self.buttonActionSpace = buttonActionSpace
     }
 }

@@ -25,9 +25,17 @@ public class AlertModal: UIView {
     private(set) var lbSubtitle: UILabel?
     private(set) weak var vwSubtitle: UIView?
 
+    // Main action container
+    private(set) var svMainActionContainer: UIStackView?
+
+    // Action
+    private(set) var vwPrimaryAction: UIView?
+    private(set) var vwSecondaryAction: UIView?
+
     // Divider
-    private(set) var vwBannerAndTitleDivider: UIView?
-    private(set) var vwTitleAndSubtitleDivider: UIView?
+    private(set) var vwBannerAndBelowDivider: UIView?
+    private(set) var vwTitleAndBelowDivider: UIView?
+    private(set) var vwSubtitleAndBelowDivider: UIView?
 
     // MARK: Constraints
     private(set) var constraintVwContainerWidth: Constraint?
@@ -191,7 +199,12 @@ private extension AlertModal {
         lbSubtitle?.removeFromSuperview()
         vwSubtitle?.removeFromSuperview()
 
-        vwTitleAndSubtitleDivider?.removeFromSuperview()
+        vwBannerAndBelowDivider?.removeFromSuperview()
+        vwTitleAndBelowDivider?.removeFromSuperview()
+        vwSubtitleAndBelowDivider?.removeFromSuperview()
+
+        svMainActionContainer?.removeAllArrangedSubviews()
+        svMainActionContainer?.removeFromSuperview()
     }
 
     // swiftlint:disable:next function_body_length cyclomatic_complexity
@@ -301,43 +314,81 @@ private extension AlertModal {
             vwSubtitle = nil
         }
 
-        // Setup Divider
-        // Setup banner and title
-        if vwBanner != nil,
-           (lbTitle != nil || svSubtitleContainer != nil) {
-            let vwBannerAndTitleDivider = generateGenericViewDesign()
-            vwBannerAndTitleDivider.snp.makeConstraints { (make: ConstraintMaker) -> Void in
-                make.height
-                        .equalTo(properties?.bannerToTitleSpace ?? 0)
-            }
+        // Setup main action container
+        if vwPrimaryAction != nil || vwSecondaryAction != nil {
+            let svMainActionContainer = generateStackViewForMainButtonDesign()
+            svMainActionContainer.spacing = properties?.buttonActionSpace ?? 0
 
-            self.vwBannerAndTitleDivider = vwBannerAndTitleDivider
+            self.svMainActionContainer = svMainActionContainer
         } else {
-            vwBannerAndTitleDivider = nil
+            svMainActionContainer = nil
         }
 
-        // Setup divider title and subtitle
-        if lbTitle != nil,
-           svSubtitleContainer != nil {
-            let vwTitleAndSubtitleDivider = generateGenericViewDesign()
-            vwTitleAndSubtitleDivider.snp.makeConstraints { (make: ConstraintMaker) -> Void in
+        // Setup Divider
+        // Setup banner and its below
+        if vwBanner != nil,
+           (lbTitle != nil || svSubtitleContainer != nil || svMainActionContainer != nil) {
+            let vwBannerAndBelowDivider = generateGenericViewDesign()
+            vwBannerAndBelowDivider.snp.makeConstraints { (make: ConstraintMaker) -> Void in
                 make.height
-                        .equalTo(properties?.titleToSubtitleSpace ?? 0)
+                        .equalTo(properties?.bannerToBelowSpace ?? 0)
             }
 
-            self.vwTitleAndSubtitleDivider = vwTitleAndSubtitleDivider
+            self.vwBannerAndBelowDivider = vwBannerAndBelowDivider
         } else {
-            vwTitleAndSubtitleDivider = nil
+            vwBannerAndBelowDivider = nil
+        }
+
+        // Setup title and its below
+        if lbTitle != nil,
+           (svSubtitleContainer != nil || svMainActionContainer != nil) {
+            let vwTitleAndBelowDivider = generateGenericViewDesign()
+            vwTitleAndBelowDivider.snp.makeConstraints { (make: ConstraintMaker) -> Void in
+                make.height
+                        .equalTo(properties?.titleToBelowSpace ?? 0)
+            }
+
+            self.vwTitleAndBelowDivider = vwTitleAndBelowDivider
+        } else {
+            vwTitleAndBelowDivider = nil
+        }
+
+        // Setup subtitle and its below
+        if svSubtitleContainer != nil,
+           svMainActionContainer != nil {
+            let vwSubtitleAndBelowDivider = generateGenericViewDesign()
+
+            vwSubtitleAndBelowDivider.snp.makeConstraints { (make: ConstraintMaker) -> Void in
+                make.height
+                        .equalTo(properties?.subtitleToBelowSpace ?? 0)
+            }
+
+            self.vwSubtitleAndBelowDivider = vwSubtitleAndBelowDivider
+        } else {
+            vwSubtitleAndBelowDivider = nil
         }
 
         // Compile View
 
         [
+            vwPrimaryAction,
+            vwSecondaryAction
+        ]
+                .forEach {
+                    guard let view = $0 else {
+                        return
+                    }
+                    svMainActionContainer?.addArrangedSubview(view)
+                }
+
+        [
             vwBanner,
-            vwBannerAndTitleDivider,
+            vwBannerAndBelowDivider,
             lbTitle,
-            vwTitleAndSubtitleDivider,
-            svSubtitleContainer
+            vwTitleAndBelowDivider,
+            svSubtitleContainer,
+            vwSubtitleAndBelowDivider,
+            svMainActionContainer
         ]
                 .forEach {
                     guard let view = $0 else {
@@ -401,10 +452,14 @@ private extension AlertModal {
                         ?? globalProperties.subtitleFont,
                 subtitleColor: properties.subtitleColor
                         ?? globalProperties.subtitleColor,
-                bannerToTitleSpace: properties.bannerToTitleSpace
-                        ?? globalProperties.bannerToTitleSpace,
-                titleToSubtitleSpace: properties.titleToSubtitleSpace
-                        ?? globalProperties.titleToSubtitleSpace
+                bannerToBelowSpace: properties.bannerToBelowSpace
+                        ?? globalProperties.bannerToBelowSpace,
+                titleToBelowSpace: properties.titleToBelowSpace
+                        ?? globalProperties.titleToBelowSpace,
+                subtitleToBelowSpace: properties.subtitleToBelowSpace
+                        ?? globalProperties.subtitleToBelowSpace,
+                buttonActionSpace: properties.buttonActionSpace
+                        ?? globalProperties.buttonActionSpace
         )
     }
 }
@@ -574,6 +629,15 @@ private extension AlertModal {
         let view = UIImageView()
         view.translatesAutoresizingMaskIntoConstraints = false
         view.contentMode = .scaleAspectFit
+        return view
+    }
+
+    func generateStackViewForMainButtonDesign() -> UIStackView {
+        let view = UIStackView()
+        view.translatesAutoresizingMaskIntoConstraints = false
+        view.axis = .vertical
+        view.distribution = .fillEqually
+        view.alignment = .center
         return view
     }
 }
