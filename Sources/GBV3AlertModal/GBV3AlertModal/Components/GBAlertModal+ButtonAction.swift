@@ -35,8 +35,20 @@ internal extension GBAlertModal {
             break
         }
     }
+}
 
+internal extension GBAlertModal {
     func generateButtonForActionDesign(type: ActionStyle) -> UIButton {
         fatalError("not yet implemented")
+    }
+
+    func generateButtonForCapsuleThemedDesign() -> GBRoundedButton {
+        let view = GBRoundedButton()
+        view.translatesAutoresizingMaskIntoConstraints = false
+        view.rounded = true
+        view.contentEdgeInsets = UIEdgeInsets(top: 6, left: 16, bottom: 6, right: 16)
+        view.titleLabel?.minimumScaleFactor = 0.5
+        view.titleLabel?.adjustsFontSizeToFitWidth = true
+        return view
     }
 }
