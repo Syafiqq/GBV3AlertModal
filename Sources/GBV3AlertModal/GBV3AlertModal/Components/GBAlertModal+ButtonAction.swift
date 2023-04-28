@@ -90,8 +90,7 @@ internal extension GBAlertModal {
     func configureButtonActionConstraint(_ button: UIButton, parent: UIView, style: ActionStyle) {
         switch style {
         case .capsule,
-             .capsuleOutlined,
-             .plain:
+             .capsuleOutlined:
             button.snp.makeConstraints { (make: ConstraintMaker) -> Void in
                 // Align
                 make.edges
@@ -118,6 +117,23 @@ internal extension GBAlertModal {
                 make.trailing
                         .equalToSuperview()
                         .offset(3)
+            }
+
+            parent.snp.makeConstraints { (make: ConstraintMaker) -> Void in
+                // Pin
+                make.height
+                        .equalTo(48)
+            }
+        case .plain:
+            button.snp.makeConstraints { (make: ConstraintMaker) -> Void in
+                // Align
+                make.top
+                        .equalToSuperview()
+                make.leading
+                        .greaterThanOrEqualToSuperview()
+
+                make.center
+                        .equalToSuperview()
             }
 
             parent.snp.makeConstraints { (make: ConstraintMaker) -> Void in
