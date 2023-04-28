@@ -4,15 +4,15 @@ import SnapKit
 
 public extension GBAlertModal {
     enum ActionStyle {
-        case capsule(CapsuleThemedAction)
-        case outline(OutlineThemedAction)
-        case dimension3(SpaceThemedAction)
+        case capsule(CapsuleTheme)
+        case outline(OutlineTheme)
+        case dimension3(DimensionTheme)
         case spaceThemeOutline
     }
 }
 
 public extension GBAlertModal.ActionStyle {
-    struct CapsuleThemedAction {
+    struct CapsuleTheme {
         public var backgroundColor: UIColor?
         public var titleColor: UIColor?
         public var titleFont: UIFont?
@@ -28,7 +28,7 @@ public extension GBAlertModal.ActionStyle {
         }
     }
 
-    struct OutlineThemedAction {
+    struct OutlineTheme {
         public var backgroundColor: UIColor?
         public var titleColor: UIColor?
         public var borderWidth: CGFloat?
@@ -50,7 +50,7 @@ public extension GBAlertModal.ActionStyle {
         }
     }
 
-    struct SpaceThemedAction {
+    struct DimensionTheme {
         public var unPressedColor: UIColor?
         public var pressedColor: UIColor?
         public var shadowColor: CGColor?
@@ -143,7 +143,7 @@ internal extension GBAlertModal {
         }
     }
 
-    func updateSpaceThemedButtonStylePressed(_ button: UIButton, style: ActionStyle.SpaceThemedAction) {
+    func updateSpaceThemedButtonStylePressed(_ button: UIButton, style: ActionStyle.DimensionTheme) {
         UIView.animate(
                 withDuration: 0.1,
                 delay: 0,
@@ -160,7 +160,7 @@ internal extension GBAlertModal {
         )
     }
 
-    func updateSpaceThemedButtonStyleUnPressed(_ button: UIButton, style: ActionStyle.SpaceThemedAction) {
+    func updateSpaceThemedButtonStyleUnPressed(_ button: UIButton, style: ActionStyle.DimensionTheme) {
         UIView.animate(
                 withDuration: 0.1,
                 delay: 0,
