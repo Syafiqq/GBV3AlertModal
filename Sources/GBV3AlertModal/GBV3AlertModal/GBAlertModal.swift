@@ -49,7 +49,7 @@ public class GBAlertModal: UIView {
 
     // MARK: Private Properties
 
-    private var properties: DialogProperties?
+    private var properties: Properties?
     private var dataHolder: DataHolder?
 
     // Rx
@@ -64,7 +64,7 @@ public class GBAlertModal: UIView {
 
     public init(
             holder: DataHolder,
-            properties: DialogProperties
+            properties: Properties
     ) {
         super.init(frame: .zero)
 
@@ -454,8 +454,8 @@ private extension GBAlertModal {
 
     // MARK: Model
 
-    private func updateProperties(_ properties: DialogProperties) {
-        self.properties = DialogProperties(
+    private func updateProperties(_ properties: Properties) {
+        self.properties = Properties(
                 baseTint: properties.baseTint
                         ?? globalProperties.baseTint,
                 overlayColor: properties.overlayColor

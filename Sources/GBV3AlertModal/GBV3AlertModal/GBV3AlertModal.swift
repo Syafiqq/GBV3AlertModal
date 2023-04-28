@@ -1,1 +1,1 @@
-public var globalProperties = DialogProperties()
+public var globalProperties = GBAlertModal.Properties()
