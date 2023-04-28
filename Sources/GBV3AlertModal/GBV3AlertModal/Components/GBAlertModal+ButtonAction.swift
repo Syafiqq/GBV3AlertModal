@@ -53,6 +53,12 @@ internal extension GBAlertModal {
                 make.edges
                         .equalToSuperview()
             }
+
+            parent.snp.makeConstraints { (make: ConstraintMaker) -> Void in
+                // Pin
+                make.height
+                        .equalTo(48)
+            }
         case .spaceTheme:
             break
         case .spaceThemeOutline:
