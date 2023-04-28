@@ -4,10 +4,10 @@ import SnapKit
 
 public extension GBAlertModal {
     enum ActionStyle {
-        case spaceTheme
-        case spaceThemeOutline
         case capsule(CapsuleThemedAction)
         case capsuleOutline(CapsuleOutlineThemedAction)
+        case spaceTheme(SpaceThemedAction)
+        case spaceThemeOutline
     }
 
     struct CapsuleThemedAction {
@@ -47,6 +47,25 @@ public extension GBAlertModal {
             self.titleFont = titleFont
         }
     }
+
+    struct SpaceThemedAction {
+        public var backgroundColor: UIColor?
+        public var shadowColor: CGColor?
+        public var titleColor: UIColor?
+        public var titleFont: UIFont?
+
+        public init(
+                backgroundColor: UIColor? = nil,
+                shadowColor: CGColor? = nil,
+                titleColor: UIColor? = nil,
+                titleFont: UIFont? = nil
+        ) {
+            self.backgroundColor = backgroundColor
+            self.shadowColor = shadowColor
+            self.titleColor = titleColor
+            self.titleFont = titleFont
+        }
+    }
 }
 
 internal extension GBAlertModal {
@@ -66,7 +85,23 @@ internal extension GBAlertModal {
                         .equalTo(48)
             }
         case .spaceTheme:
-            break
+            button.snp.makeConstraints { (make: ConstraintMaker) -> Void in
+                // Align
+                make.top
+                        .equalToSuperview()
+                make.leading
+                        .equalToSuperview()
+                make.bottom
+                        .equalToSuperview()
+                make.trailing
+                        .equalToSuperview()
+            }
+
+            parent.snp.makeConstraints { (make: ConstraintMaker) -> Void in
+                // Pin
+                make.height
+                        .equalTo(48)
+            }
         case .spaceThemeOutline:
             break
         }
@@ -89,19 +124,17 @@ internal extension GBAlertModal {
             button.setTitleColor(style.titleColor, for: .normal)
             button.setImage(nil, for: .normal)
             button.titleLabel?.font = style.titleFont
-        case .spaceTheme:
-            view.backgroundColor = UIColor.Custom.accentSecondaryDark
-            view.setTitleColor(.white, for: .normal)
-            view.setTitle("send_code".localized.lowercased().capitalizingFirstLetter(), for: .normal)
-            view.titleLabel?.font = FontHelper.Campton.bold.font(16.0)
-            view.layer.applySketchShadow(
-                    color: UIColor.Custom.orangeMandarin,
+        case .spaceTheme(let style):
+            button.backgroundColor = style.backgroundColor
+            button.setTitleColor(style.titleColor, for: .normal)
+            button.titleLabel?.font = style.titleFont
+            button.layer.applySketchShadow(
+                    color: style.shadowColor,
                     alpha: 1.0,
                     x: -2.0,
                     y: 3.0,
                     blur: 0.0
             )
-            break
         case .spaceThemeOutline:
             break
         }

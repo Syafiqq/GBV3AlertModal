@@ -4,7 +4,7 @@ import UIKit
 extension CALayer {
     /// https://stackoverflow.com/questions/34269399/how-to-control-shadow-spread-and-blur
     func applySketchShadow(
-            color: CGColor = UIColor.black.cgColor,
+            color: CGColor? = UIColor.black.cgColor,
             alpha: Float = 0.5,
             x: CGFloat = 0,
             y: CGFloat = 2,
