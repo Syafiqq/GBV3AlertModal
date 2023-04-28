@@ -89,12 +89,16 @@ internal extension GBAlertModal {
                 // Align
                 make.top
                         .equalToSuperview()
+                        .offset(-3)
                 make.leading
                         .equalToSuperview()
+                        .offset(3)
                 make.bottom
                         .equalToSuperview()
+                        .offset(-3)
                 make.trailing
                         .equalToSuperview()
+                        .offset(3)
             }
 
             parent.snp.makeConstraints { (make: ConstraintMaker) -> Void in
@@ -131,7 +135,7 @@ internal extension GBAlertModal {
             button.layer.applySketchShadow(
                     color: style.shadowColor,
                     alpha: 1.0,
-                    x: -2.0,
+                    x: -3.0,
                     y: 3.0,
                     blur: 0.0
             )
