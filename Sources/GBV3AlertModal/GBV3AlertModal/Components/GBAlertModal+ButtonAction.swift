@@ -9,7 +9,9 @@ public extension GBAlertModal {
         case dimension3(SpaceThemedAction)
         case spaceThemeOutline
     }
+}
 
+public extension GBAlertModal.ActionStyle {
     struct CapsuleThemedAction {
         public var backgroundColor: UIColor?
         public var titleColor: UIColor?
@@ -141,7 +143,7 @@ internal extension GBAlertModal {
         }
     }
 
-    func updateSpaceThemedButtonStylePressed(_ button: UIButton, style: SpaceThemedAction) {
+    func updateSpaceThemedButtonStylePressed(_ button: UIButton, style: ActionStyle.SpaceThemedAction) {
         UIView.animate(
                 withDuration: 0.1,
                 delay: 0,
@@ -158,7 +160,7 @@ internal extension GBAlertModal {
         )
     }
 
-    func updateSpaceThemedButtonStyleUnPressed(_ button: UIButton, style: SpaceThemedAction) {
+    func updateSpaceThemedButtonStyleUnPressed(_ button: UIButton, style: ActionStyle.SpaceThemedAction) {
         UIView.animate(
                 withDuration: 0.1,
                 delay: 0,
