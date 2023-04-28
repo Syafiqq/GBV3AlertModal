@@ -5,9 +5,9 @@ import SnapKit
 public extension GBAlertModal {
     enum ActionStyle {
         case capsule(CapsuleTheme)
-        case outline(OutlineTheme)
-        case dimension3(DimensionTheme)
-        case spaceThemeOutline
+        case capsuleOutlined(CapsuleOutlineTheme)
+        case obliqueBottomLeft(ObliqueBottomLeftTheme)
+        case plain(PlainTheme)
     }
 }
 
@@ -28,7 +28,7 @@ public extension GBAlertModal.ActionStyle {
         }
     }
 
-    struct OutlineTheme {
+    struct CapsuleOutlineTheme {
         public var backgroundColor: UIColor?
         public var titleColor: UIColor?
         public var borderWidth: CGFloat?
@@ -50,7 +50,7 @@ public extension GBAlertModal.ActionStyle {
         }
     }
 
-    struct DimensionTheme {
+    struct ObliqueBottomLeftTheme {
         public var unPressedColor: UIColor?
         public var pressedColor: UIColor?
         public var shadowColor: CGColor?
@@ -71,13 +71,27 @@ public extension GBAlertModal.ActionStyle {
             self.titleFont = titleFont
         }
     }
+
+    struct PlainTheme {
+        public var titleColor: UIColor?
+        public var titleFont: UIFont?
+
+        public init(
+                titleColor: UIColor? = nil,
+                titleFont: UIFont? = nil
+        ) {
+            self.titleColor = titleColor
+            self.titleFont = titleFont
+        }
+    }
 }
 
 internal extension GBAlertModal {
     func configureButtonActionConstraint(_ button: UIButton, parent: UIView, style: ActionStyle) {
         switch style {
         case .capsule,
-             .outline:
+             .capsuleOutlined,
+             .plain:
             button.snp.makeConstraints { (make: ConstraintMaker) -> Void in
                 // Align
                 make.edges
@@ -89,7 +103,7 @@ internal extension GBAlertModal {
                 make.height
                         .equalTo(48)
             }
-        case .dimension3:
+        case .obliqueBottomLeft:
             button.snp.makeConstraints { (make: ConstraintMaker) -> Void in
                 // Align
                 make.top
@@ -111,8 +125,6 @@ internal extension GBAlertModal {
                 make.height
                         .equalTo(48)
             }
-        case .spaceThemeOutline:
-            break
         }
     }
 
@@ -126,24 +138,25 @@ internal extension GBAlertModal {
             button.setTitleColor(style.titleColor, for: .normal)
             button.setImage(nil, for: .normal)
             button.titleLabel?.font = style.titleFont
-        case .outline(let style):
+        case .capsuleOutlined(let style):
             button.layer.borderWidth = style.borderWidth ?? 0
             button.layer.borderColor = style.borderColor
             button.backgroundColor = style.backgroundColor
             button.setTitleColor(style.titleColor, for: .normal)
             button.setImage(nil, for: .normal)
             button.titleLabel?.font = style.titleFont
-        case .dimension3(let style):
+        case .obliqueBottomLeft(let style):
             button.backgroundColor = style.unPressedColor
             button.setTitleColor(style.titleColor, for: .normal)
             button.titleLabel?.font = style.titleFont
             updateSpaceThemedButtonStyleUnPressed(button, style: style)
-        case .spaceThemeOutline:
-            break
+        case .plain(let style):
+            button.setTitleColor(style.titleColor, for: .normal)
+            button.titleLabel?.font = style.titleFont
         }
     }
 
-    func updateSpaceThemedButtonStylePressed(_ button: UIButton, style: ActionStyle.DimensionTheme) {
+    func updateSpaceThemedButtonStylePressed(_ button: UIButton, style: ActionStyle.ObliqueBottomLeftTheme) {
         UIView.animate(
                 withDuration: 0.1,
                 delay: 0,
@@ -160,7 +173,7 @@ internal extension GBAlertModal {
         )
     }
 
-    func updateSpaceThemedButtonStyleUnPressed(_ button: UIButton, style: ActionStyle.DimensionTheme) {
+    func updateSpaceThemedButtonStyleUnPressed(_ button: UIButton, style: ActionStyle.ObliqueBottomLeftTheme) {
         UIView.animate(
                 withDuration: 0.1,
                 delay: 0,
@@ -188,12 +201,12 @@ internal extension GBAlertModal {
     func generateButtonForActionDesign(style: ActionStyle) -> UIButton {
         switch style {
         case .capsule,
-             .outline:
+             .capsuleOutlined:
             return generateButtonForCapsuleThemedDesign()
-        case .dimension3:
-            return generateButtonForSpaceThemedDesign()
-        case .spaceThemeOutline:
-            return generateButtonForCapsuleThemedDesign()
+        case .obliqueBottomLeft:
+            return generateButtonForObliqueThemedDesign()
+        case .plain:
+            return generateButtonForPlainThemedDesign()
         }
     }
 
@@ -207,10 +220,19 @@ internal extension GBAlertModal {
         return view
     }
 
-    func generateButtonForSpaceThemedDesign() -> UIButton {
+    func generateButtonForObliqueThemedDesign() -> UIButton {
         let view = UIButton(type: .custom)
         view.translatesAutoresizingMaskIntoConstraints = false
         view.layer.cornerRadius = 8
+        view.contentEdgeInsets = UIEdgeInsets(top: 6, left: 16, bottom: 6, right: 16)
+        view.titleLabel?.minimumScaleFactor = 0.5
+        view.titleLabel?.adjustsFontSizeToFitWidth = true
+        return view
+    }
+
+    func generateButtonForPlainThemedDesign() -> UIButton {
+        let view = UIButton(type: .system)
+        view.translatesAutoresizingMaskIntoConstraints = false
         view.contentEdgeInsets = UIEdgeInsets(top: 6, left: 16, bottom: 6, right: 16)
         view.titleLabel?.minimumScaleFactor = 0.5
         view.titleLabel?.adjustsFontSizeToFitWidth = true
