@@ -10,7 +10,7 @@ public struct DataHolder {
     public let primaryAction: String?
     public let primaryActionStyle: ActionStyle?
     public let secondaryAction: String?
-    public let secondaryActionStyle: String?
+    public let secondaryActionStyle: ActionStyle?
     public let closeOnTapOverlay: Bool
     public let showCloseButton: Bool
     public let dismissOnAction: Bool
@@ -26,7 +26,7 @@ public struct DataHolder {
             primaryAction: String? = nil,
             primaryActionStyle: ActionStyle? = nil,
             secondaryAction: String? = nil,
-            secondaryActionStyle: String? = nil,
+            secondaryActionStyle: ActionStyle? = nil,
             closeOnTapOverlay: Bool = false,
             showCloseButton: Bool = false,
             dismissOnAction: Bool = false,
