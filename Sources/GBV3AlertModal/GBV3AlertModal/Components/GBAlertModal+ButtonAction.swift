@@ -2,6 +2,15 @@ import Foundation
 import UIKit
 import SnapKit
 
+public extension GBAlertModal {
+    enum ActionStyle {
+        case spaceTheme
+        case spaceThemeOutline
+        case capsule
+        case capsuleOutline
+    }
+}
+
 internal extension GBAlertModal {
     func configureButtonActionConstraint(_ action: UIButton, parent: UIView, style: ActionStyle) {
         switch style {
