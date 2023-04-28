@@ -19,6 +19,7 @@ public struct DialogProperties {
     public let titleColor: UIColor?
     public let subtitleFont: UIFont?
     public let subtitleColor: UIColor?
+    public let buttonActionFitSize: Bool?
 
     public let bannerToBelowSpace: CGFloat?
     public let titleToBelowSpace: CGFloat?
@@ -42,6 +43,7 @@ public struct DialogProperties {
             titleColor: UIColor? = nil,
             subtitleFont: UIFont? = nil,
             subtitleColor: UIColor? = nil,
+            buttonActionFitSize: Bool? = false,
             bannerToBelowSpace: CGFloat? = nil,
             titleToBelowSpace: CGFloat? = nil,
             subtitleToBelowSpace: CGFloat? = nil,
@@ -63,6 +65,7 @@ public struct DialogProperties {
         self.titleColor = titleColor
         self.subtitleFont = subtitleFont
         self.subtitleColor = subtitleColor
+        self.buttonActionFitSize = buttonActionFitSize
         self.bannerToBelowSpace = bannerToBelowSpace
         self.titleToBelowSpace = titleToBelowSpace
         self.subtitleToBelowSpace = subtitleToBelowSpace

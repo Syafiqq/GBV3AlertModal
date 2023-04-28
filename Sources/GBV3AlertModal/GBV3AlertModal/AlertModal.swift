@@ -177,6 +177,7 @@ private extension AlertModal {
         registerDialogView()
 
         svContentContainer?.alignment = properties?.contentFitSize == true ? .fill : .center
+        svMainActionContainer?.alignment = properties?.buttonActionFitSize == true ? .fill : .center
     }
 
     func initEvents() {
@@ -475,6 +476,8 @@ private extension AlertModal {
                         ?? globalProperties.subtitleFont,
                 subtitleColor: properties.subtitleColor
                         ?? globalProperties.subtitleColor,
+                buttonActionFitSize: properties.buttonActionFitSize
+                        ?? globalProperties.buttonActionFitSize,
                 bannerToBelowSpace: properties.bannerToBelowSpace
                         ?? globalProperties.bannerToBelowSpace,
                 titleToBelowSpace: properties.titleToBelowSpace
