@@ -511,7 +511,17 @@ private extension GBAlertModal {
 
         // Buttons
         btPrimaryAction?.removeTarget(self, action: #selector(onPrimaryActionTapped), for: .touchUpInside)
+        btPrimaryAction?.removeTarget(self, action: #selector(onActionButtonPressed(_:)), for: .touchDown)
+        btPrimaryAction?.removeTarget(self, action: #selector(onActionButtonPressed(_:)), for: .touchDragEnter)
+        btPrimaryAction?.removeTarget(self, action: #selector(onActionButtonUnPressed(_:)), for: .touchDragExit)
+        btPrimaryAction?.removeTarget(self, action: #selector(onActionButtonUnPressed(_:)), for: .touchUpInside)
+        btPrimaryAction?.removeTarget(self, action: #selector(onActionButtonUnPressed(_:)), for: .touchUpOutside)
         btSecondaryAction?.removeTarget(self, action: #selector(onSecondaryActionTapped), for: .touchUpInside)
+        btSecondaryAction?.removeTarget(self, action: #selector(onActionButtonPressed(_:)), for: .touchDown)
+        btSecondaryAction?.removeTarget(self, action: #selector(onActionButtonPressed(_:)), for: .touchDragEnter)
+        btSecondaryAction?.removeTarget(self, action: #selector(onActionButtonUnPressed(_:)), for: .touchDragExit)
+        btSecondaryAction?.removeTarget(self, action: #selector(onActionButtonUnPressed(_:)), for: .touchUpInside)
+        btSecondaryAction?.removeTarget(self, action: #selector(onActionButtonUnPressed(_:)), for: .touchUpOutside)
     }
 
     // MARK: Model
