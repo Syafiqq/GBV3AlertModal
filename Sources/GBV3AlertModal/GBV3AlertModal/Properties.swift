@@ -6,6 +6,7 @@ public struct DialogProperties {
     public let contentBackgroundColor: UIColor?
 
     public let contentCornerRadius: CGFloat?
+    public let contentFixedSize: CGFloat?
     public let contentVerticalMargin: CGFloat?
     public let contentHorizontalMargin: CGFloat?
     public let contentTopPadding: (CGFloat, CGFloat)?
@@ -24,6 +25,7 @@ public struct DialogProperties {
             overlayColor: UIColor? = nil,
             contentBackgroundColor: UIColor? = nil,
             contentCornerRadius: CGFloat? = nil,
+            contentFixedSize: CGFloat? = nil,
             contentVerticalMargin: CGFloat? = nil,
             contentHorizontalMargin: CGFloat? = nil,
             contentTopPadding: (CGFloat, CGFloat)? = nil,
@@ -39,6 +41,7 @@ public struct DialogProperties {
         self.overlayColor = overlayColor
         self.contentBackgroundColor = contentBackgroundColor
         self.contentCornerRadius = contentCornerRadius
+        self.contentFixedSize = contentFixedSize
         self.contentVerticalMargin = contentVerticalMargin
         self.contentHorizontalMargin = contentHorizontalMargin
         self.contentTopPadding = contentTopPadding
