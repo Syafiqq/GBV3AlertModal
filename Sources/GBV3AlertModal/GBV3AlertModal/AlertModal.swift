@@ -25,6 +25,9 @@ public class AlertModal: UIView {
     // Divider
     private(set) var vwTitleAndSubtitleDivider: UIView?
 
+    // MARK: Constraints
+    private(set) var constraintVwContainerWidth: Constraint?
+
     // MARK: Attributes Gestures
     private var tapRecognizerOverlay: UIGestureRecognizer?
 
@@ -312,6 +315,8 @@ private extension AlertModal {
                         ?? globalProperties.contentBackgroundColor,
                 contentCornerRadius: properties.contentCornerRadius
                         ?? globalProperties.contentCornerRadius,
+                contentFixedSize: properties.contentFixedSize
+                        ?? globalProperties.contentFixedSize,
                 contentVerticalMargin: properties.contentVerticalMargin
                         ?? globalProperties.contentVerticalMargin,
                 contentHorizontalMargin: properties.contentHorizontalMargin
@@ -354,6 +359,8 @@ private extension AlertModal {
         let vwContainer = generateGenericViewDesign()
         let svContentContainer = generateStackViewDesign()
 
+        var constraintVwContainerWidth: Constraint?
+
         // MARK: View Graph
         addSubview(vwOverlay)
         addSubview(vwContainer)
@@ -390,6 +397,12 @@ private extension AlertModal {
 
             make.center
                     .equalToSuperview()
+
+            // Pin
+            constraintVwContainerWidth = make.width
+                    .equalTo(properties?.contentFixedSize ?? 0)
+                    .priority(.low)
+                    .constraint
         }
 
         svContentContainer.snp.makeConstraints { (make: ConstraintMaker) -> Void in
@@ -433,10 +446,18 @@ private extension AlertModal {
                     .equalToSuperview()
         }
 
+        if properties?.contentFixedSize == nil {
+            constraintVwContainerWidth?.deactivate()
+        } else {
+            constraintVwContainerWidth?.activate()
+        }
+
         // MARK: View Assign
         self.vwOverlay = vwOverlay
         self.vwContainer = vwContainer
         self.svContentContainer = svContentContainer
+
+        self.constraintVwContainerWidth = constraintVwContainerWidth
     }
 
     func generateGenericViewDesign() -> UIView {
