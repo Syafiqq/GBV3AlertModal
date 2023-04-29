@@ -209,24 +209,37 @@ private extension GBAlertModal {
 
         // Define base color
         backgroundColor = .clear
-        tintColor = properties?.baseTint
 
-        vwOverlay?.backgroundColor = properties?.overlayColor
-
-        vwContainer?.backgroundColor = properties?.contentProperty?.backgroundColor
-        vwContainer?.layer.cornerRadius = properties?.contentProperty?.cornerRadius ?? .zero
         vwContainer?.clipsToBounds = true
 
         unregisterDialogView()
         registerDialogView()
+        adjustDialogView()
+    }
 
+    private func adjustDialogView() {
+        // Base View
+        tintColor = properties?.baseTint
+
+        // Overlay
+        vwOverlay?.backgroundColor = properties?.overlayColor
+
+        // Content Container
+        vwContainer?.backgroundColor = properties?.contentProperty?.backgroundColor
+        vwContainer?.layer.cornerRadius = properties?.contentProperty?.cornerRadius ?? .zero
+
+        // Content Container Stack
         svContentContainer?.alignment = properties?.contentProperty?.childShouldMatchParent == true ? .fill : .center
+
+        // Button Action Stack
         svMainActionContainer?.alignment = properties?.buttonActionShouldMatchParent == true ? .fill : .center
 
+        // Button Action Orientatin
         if let buttonActionOrientation = properties?.buttonActionOrientation {
             svMainActionContainer?.axis = buttonActionOrientation
         }
 
+        // Close Button
         btCloseAction?.tintColor = properties?.closeButtonTint
         btCloseAction?.setImage(
                 dataHolder?.closeImage ?? UIImage(
