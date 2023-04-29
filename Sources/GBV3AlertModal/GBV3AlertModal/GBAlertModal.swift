@@ -673,7 +673,7 @@ private extension GBAlertModal {
                     .offset(
                             properties?.padding?.topMax ?? .zero
                     )
-                    .priority(.medium)
+                    .priority(.low)
 
             make.leading
                     .greaterThanOrEqualToSuperview()
@@ -685,7 +685,7 @@ private extension GBAlertModal {
                     .offset(
                             properties?.padding?.leftMax ?? .zero
                     )
-                    .priority(.medium)
+                    .priority(.low)
 
             make.bottom
                     .lessThanOrEqualToSuperview()
@@ -697,7 +697,7 @@ private extension GBAlertModal {
                     .offset(
                             -(properties?.padding?.bottomMax ?? .zero)
                     )
-                    .priority(.medium)
+                    .priority(.low)
 
             make.trailing
                     .lessThanOrEqualToSuperview()
@@ -709,7 +709,7 @@ private extension GBAlertModal {
                     .offset(
                             -(properties?.padding?.rightMax ?? .zero)
                     )
-                    .priority(.medium)
+                    .priority(.low)
 
             make.center
                     .equalToSuperview()

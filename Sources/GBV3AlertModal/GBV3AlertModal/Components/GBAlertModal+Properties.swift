@@ -59,7 +59,7 @@ extension GBAlertModal {
 
 public extension GBAlertModal.Properties {
     struct ComponentSpace {
-        static var zero: Self {
+        public static var zero: Self {
             Self()
         }
 

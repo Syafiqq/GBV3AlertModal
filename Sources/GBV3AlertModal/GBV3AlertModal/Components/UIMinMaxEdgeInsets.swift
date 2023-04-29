@@ -5,7 +5,7 @@
 import Foundation
 
 public struct UIMinMaxEdgeInsets {
-    static var zero: Self {
+    public static var zero: Self {
         Self()
     }
 
