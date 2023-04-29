@@ -53,6 +53,7 @@
 		593ED2562935CFA9007BC45A /* GBV3AlertModalTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GBV3AlertModalTests.swift; sourceTree = "<group>"; };
 		59403FD12947695000426541 /* Script */ = {isa = PBXFileReference; lastKnownFileType = folder; path = Script; sourceTree = "<group>"; };
 		5982C0C729FCBAF300AB877A /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		5982C0CB29FD391D00AB877A /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		59D1458E2936F74000339673 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/Localizable.strings; sourceTree = "<group>"; };
 		59D145902936F77900339673 /* id */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = id; path = id.lproj/Localizable.strings; sourceTree = "<group>"; };
 		59D145912936F79A00339673 /* vi */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = vi; path = vi.lproj/Localizable.strings; sourceTree = "<group>"; };
@@ -120,6 +121,7 @@
 		593ED2492935CFA9007BC45A /* GBV3AlertModal */ = {
 			isa = PBXGroup;
 			children = (
+				5982C0CB29FD391D00AB877A /* Info.plist */,
 				593ED24A2935CFA9007BC45A /* GBV3AlertModal.h */,
 				593ED24B2935CFA9007BC45A /* GBV3AlertModal.docc */,
 				65B8CCF436BFA68301C842E8 /* GBV3AlertModal.swift */,
@@ -593,6 +595,7 @@
 				DYLIB_CURRENT_VERSION = 1;
 				DYLIB_INSTALL_NAME_BASE = "@rpath";
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = GBV3AlertModal/Info.plist;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
 				IPHONEOS_DEPLOYMENT_TARGET = 11.0;
@@ -626,6 +629,7 @@
 				DYLIB_CURRENT_VERSION = 1;
 				DYLIB_INSTALL_NAME_BASE = "@rpath";
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = GBV3AlertModal/Info.plist;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
 				IPHONEOS_DEPLOYMENT_TARGET = 11.0;
