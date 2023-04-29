@@ -191,7 +191,7 @@ public class GBAlertModal: UIView {
         dataHolder?.completion?(self, event)
     }
 
-    func updateDialog(holder: DataHolder, properties: Properties) {
+    public func updateDialog(holder: DataHolder, properties: Properties) {
         dataHolder = holder
         updateProperties(properties)
 
