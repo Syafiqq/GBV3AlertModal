@@ -215,6 +215,10 @@ private extension GBAlertModal {
 
         svContentContainer?.alignment = properties?.contentProperty?.childShouldMatchParent == true ? .fill : .center
         svMainActionContainer?.alignment = properties?.buttonActionShouldMatchParent == true ? .fill : .center
+
+        if let buttonActionOrientation = properties?.buttonActionOrientation {
+            svMainActionContainer?.axis = buttonActionOrientation
+        }
     }
 
     func initEvents() {
@@ -585,6 +589,8 @@ private extension GBAlertModal {
                         ?? globalProperties.subtitleColor,
                 buttonActionShouldMatchParent: properties.buttonActionShouldMatchParent
                         ?? globalProperties.buttonActionShouldMatchParent,
+                buttonActionOrientation: properties.buttonActionOrientation
+                        ?? globalProperties.buttonActionOrientation,
                 space: properties.space
                         ?? globalProperties.space
         )
