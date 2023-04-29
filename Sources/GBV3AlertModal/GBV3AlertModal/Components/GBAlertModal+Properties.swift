@@ -17,6 +17,8 @@ extension GBAlertModal {
         public let buttonActionShouldMatchParent: Bool?
         public let buttonActionOrientation: NSLayoutConstraint.Axis?
 
+        public let showClose: Bool?
+
         public let space: ComponentSpace?
 
         public init(

@@ -34,6 +34,8 @@ public class GBAlertModal: UIView {
     private(set) var vwSecondaryAction: UIView?
     private(set) var btSecondaryAction: UIButton?
 
+    private(set) var btCloseAction: UIButton?
+
     // Divider
     private(set) var vwBannerAndBelowDivider: UIView?
     private(set) var vwTitleAndBelowDivider: UIView?
@@ -134,6 +136,11 @@ public class GBAlertModal: UIView {
                   case ActionStyle.obliqueBottomLeft(let style) = secondaryActionStyle {
             updateObliqueBottomLeftStyleUnPressed(sender, style: style)
         }
+    }
+
+    @objc
+    private func onCloseTapped() {
+        dismissAndEmit(event: .close)
     }
 
     // MARK: Public Function
@@ -252,6 +259,8 @@ private extension GBAlertModal {
         btPrimaryAction?.removeFromSuperview()
         vwSecondaryAction?.removeFromSuperview()
         btSecondaryAction?.removeFromSuperview()
+
+        btCloseAction?.removeFromSuperview()
     }
 
     // swiftlint:disable:next function_body_length cyclomatic_complexity
@@ -381,6 +390,17 @@ private extension GBAlertModal {
             svMainActionContainer = nil
         }
 
+        // Setup close action
+        if properties?.showClose == true,
+           let vwContainer = vwContainer {
+            let btCloseAction = generateButtonForCloseDesign()
+            vwContainer.addSubview(btCloseAction)
+
+            self.btCloseAction = btCloseAction
+        } else {
+            btCloseAction = nil
+        }
+
         // Setup Divider
         // Setup banner and its below
         if vwBanner != nil,
@@ -492,6 +512,20 @@ private extension GBAlertModal {
             configureButtonActionConstraint(btSecondaryAction, parent: vwSecondaryAction, style: secondaryActionStyle)
         }
 
+        // Close Action
+        if let btCloseAction {
+            btCloseAction.snp.makeConstraints { (make: ConstraintMaker) -> Void in
+                make.top.trailing
+                        .equalToSuperview()
+                make.size
+                        .equalTo(48)
+                make.leading
+                        .greaterThanOrEqualToSuperview()
+                make.bottom
+                        .lessThanOrEqualToSuperview()
+            }
+        }
+
         // Banner divider
         if let vwBannerAndBelowDivider {
             vwBannerAndBelowDivider.snp.makeConstraints { (make: ConstraintMaker) -> Void in
@@ -539,6 +573,8 @@ private extension GBAlertModal {
         btSecondaryAction?.addTarget(self, action: #selector(onActionButtonUnPressed(_:)), for: .touchDragExit)
         btSecondaryAction?.addTarget(self, action: #selector(onActionButtonUnPressed(_:)), for: .touchUpInside)
         btSecondaryAction?.addTarget(self, action: #selector(onActionButtonUnPressed(_:)), for: .touchUpOutside)
+
+        btCloseAction?.addTarget(self, action: #selector(onCloseTapped), for: .touchUpInside)
     }
 
     func unregisterEvents() {
@@ -561,6 +597,8 @@ private extension GBAlertModal {
         btSecondaryAction?.removeTarget(self, action: #selector(onActionButtonUnPressed(_:)), for: .touchDragExit)
         btSecondaryAction?.removeTarget(self, action: #selector(onActionButtonUnPressed(_:)), for: .touchUpInside)
         btSecondaryAction?.removeTarget(self, action: #selector(onActionButtonUnPressed(_:)), for: .touchUpOutside)
+
+        btCloseAction?.removeTarget(self, action: #selector(onCloseTapped), for: .touchUpInside)
     }
 
     // MARK: Model
@@ -776,6 +814,12 @@ private extension GBAlertModal {
         view.axis = .vertical
         view.distribution = .fillEqually
         view.alignment = .center
+        return view
+    }
+
+    func generateButtonForCloseDesign() -> UIButton {
+        let view = UIButton(type: .system)
+        view.translatesAutoresizingMaskIntoConstraints = false
         return view
     }
 }
