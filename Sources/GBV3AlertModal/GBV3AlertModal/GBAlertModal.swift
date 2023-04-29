@@ -40,7 +40,6 @@ public class GBAlertModal: UIView {
     private(set) var vwSubtitleAndBelowDivider: UIView?
 
     // MARK: Constraints
-    private(set) var constraintVwContainerWidth: Constraint?
 
     // MARK: Attributes Gestures
     private var tapRecognizerOverlay: UIGestureRecognizer?
@@ -610,8 +609,6 @@ private extension GBAlertModal {
         let vwContainer = generateGenericViewDesign()
         let svContentContainer = generateStackViewDesign()
 
-        var constraintVwContainerWidth: Constraint?
-
         // MARK: View Graph
         addSubview(vwOverlay)
         addSubview(vwContainer)
@@ -651,10 +648,11 @@ private extension GBAlertModal {
                     .priority(.low)
 
             // Pin
-            constraintVwContainerWidth = make.width
-                    .equalTo(properties?.contentProperty?.fixedWidth ?? .zero)
-                    .priority(.low)
-                    .constraint
+            if let fixedWidth = properties?.contentProperty?.fixedWidth {
+                make.width
+                        .equalTo(fixedWidth)
+                        .priority(.low)
+            }
         }
 
         svContentContainer.snp.makeConstraints { (make: ConstraintMaker) -> Void in
@@ -711,18 +709,10 @@ private extension GBAlertModal {
                     .priority(.low)
         }
 
-        if properties?.contentProperty?.fixedWidth == nil {
-            constraintVwContainerWidth?.deactivate()
-        } else {
-            constraintVwContainerWidth?.activate()
-        }
-
         // MARK: View Assign
         self.vwOverlay = vwOverlay
         self.vwContainer = vwContainer
         self.svContentContainer = svContentContainer
-
-        self.constraintVwContainerWidth = constraintVwContainerWidth
     }
 
     func generateGenericViewDesign() -> UIView {
