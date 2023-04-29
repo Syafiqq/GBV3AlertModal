@@ -68,11 +68,20 @@ extension GBAlertModal {
 
 public extension GBAlertModal.Properties {
     struct ComponentSpace {
+        static var zero: Self {
+            Self()
+        }
+
+        public let banner: CGFloat
+        public let title: CGFloat
+        public let subtitle: CGFloat
+        public let interButton: CGFloat
+
         public init(
-                banner: CGFloat = 0,
-                title: CGFloat = 0,
-                subtitle: CGFloat = 0,
-                interButton: CGFloat = 0
+                banner: CGFloat = .zero,
+                title: CGFloat = .zero,
+                subtitle: CGFloat = .zero,
+                interButton: CGFloat = .zero
         ) {
             self.banner = banner
             self.title = title
@@ -80,29 +89,47 @@ public extension GBAlertModal.Properties {
             self.interButton = interButton
         }
 
-        public let banner: CGFloat
-        public let title: CGFloat
-        public let subtitle: CGFloat
-        public let interButton: CGFloat
+        func copy(
+                banner: CGFloat? = nil,
+                title: CGFloat? = nil,
+                subtitle: CGFloat? = nil,
+                interButton: CGFloat? = nil
+        ) -> Self {
+            Self(
+                    banner: banner ?? self.banner,
+                    title: title ?? self.title,
+                    subtitle: subtitle ?? self.subtitle,
+                    interButton: interButton ?? self.interButton
+            )
+        }
     }
 }
 
-public extension GBAlertModal.Properties.ComponentSpace {
-    static var zero: Self {
-        Self(banner: 0, title: 0, subtitle: 0, interButton: 0)
-    }
+public extension GBAlertModal.Properties {
+    struct ComponentMargin {
+        static var zero: Self {
+            Self()
+        }
 
-    func copy(
-            banner: CGFloat? = nil,
-            title: CGFloat? = nil,
-            subtitle: CGFloat? = nil,
-            interButton: CGFloat? = nil
-    ) -> Self {
-        Self(
-                banner: banner ?? self.banner,
-                title: title ?? self.title,
-                subtitle: subtitle ?? self.subtitle,
-                interButton: interButton ?? self.interButton
-        )
+        public let vertical: CGFloat
+        public let horizontal: CGFloat
+
+        public init(
+                vertical: CGFloat = .zero,
+                horizontal: CGFloat = .zero
+        ) {
+            self.vertical = vertical
+            self.horizontal = horizontal
+        }
+
+        func copy(
+                vertical: CGFloat? = nil,
+                horizontal: CGFloat? = nil
+        ) -> Self {
+            Self(
+                    vertical: vertical ?? self.vertical,
+                    horizontal: horizontal ?? self.horizontal
+            )
+        }
     }
 }
