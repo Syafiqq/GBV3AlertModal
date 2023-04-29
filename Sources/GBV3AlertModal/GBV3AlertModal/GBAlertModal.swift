@@ -463,14 +463,15 @@ private extension GBAlertModal {
 
         // Subtitle
         if let svSubtitleContainer,
-           let vwSubtitle {
+           let vwSubtitle = vwSubtitle ?? lbSubtitle {
             vwSubtitle.snp.makeConstraints { (make: ConstraintMaker) -> Void in
                 make.edges
                         .equalTo(svSubtitleContainer.contentLayoutGuide)
                 make.width
                         .equalTo(svSubtitleContainer.frameLayoutGuide)
                 make.height
-                        .equalTo(svSubtitleContainer.frameLayoutGuide).priority(.low)
+                        .equalTo(svSubtitleContainer.frameLayoutGuide)
+                        .priority(.low)
             }
         }
 
