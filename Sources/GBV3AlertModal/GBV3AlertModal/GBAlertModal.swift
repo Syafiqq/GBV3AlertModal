@@ -205,6 +205,8 @@ public class GBAlertModal: UIView {
 private extension GBAlertModal {
     // MARK: Init Functions
     func initViews() {
+        translatesAutoresizingMaskIntoConstraints = false
+
         // Define base color
         backgroundColor = .clear
 
