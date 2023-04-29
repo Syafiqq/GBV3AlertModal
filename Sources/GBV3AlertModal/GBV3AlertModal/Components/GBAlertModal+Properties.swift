@@ -8,7 +8,7 @@ extension GBAlertModal {
 
         public let contentCornerRadius: CGFloat?
         public let contentFixedSize: CGFloat?
-        public let margin: ComponentMargin?
+        public let margin: UIEdgeInsets?
         public let contentTopPadding: (CGFloat, CGFloat)?
         public let contentBottomPadding: (CGFloat, CGFloat)?
         public let contentHorizontalPadding: (CGFloat, CGFloat)?
@@ -29,7 +29,7 @@ extension GBAlertModal {
                 contentBackgroundColor: UIColor? = nil,
                 contentCornerRadius: CGFloat? = nil,
                 contentFixedSize: CGFloat? = nil,
-                margin: ComponentMargin? = nil,
+                margin: UIEdgeInsets? = nil,
                 contentTopPadding: (CGFloat, CGFloat)? = nil,
                 contentBottomPadding: (CGFloat, CGFloat)? = nil,
                 contentHorizontalPadding: (CGFloat, CGFloat)? = nil,
@@ -102,31 +102,18 @@ public extension GBAlertModal.Properties {
     }
 }
 
-public extension GBAlertModal.Properties {
-    struct ComponentMargin {
-        static var zero: Self {
-            Self()
-        }
-
-        public let vertical: CGFloat
-        public let horizontal: CGFloat
-
-        public init(
-                vertical: CGFloat = .zero,
-                horizontal: CGFloat = .zero
-        ) {
-            self.vertical = vertical
-            self.horizontal = horizontal
-        }
-
-        func copy(
-                vertical: CGFloat? = nil,
-                horizontal: CGFloat? = nil
-        ) -> Self {
-            Self(
-                    vertical: vertical ?? self.vertical,
-                    horizontal: horizontal ?? self.horizontal
-            )
-        }
+public extension UIEdgeInsets {
+    func copy(
+            top: CGFloat? = nil,
+            left: CGFloat? = nil,
+            bottom: CGFloat? = nil,
+            right: CGFloat? = nil
+    ) -> Self {
+        Self(
+                top: top ?? self.top,
+                left: left ?? self.left,
+                bottom: bottom ?? self.bottom,
+                right: right ?? self.right
+        )
     }
 }

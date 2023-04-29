@@ -637,26 +637,27 @@ private extension GBAlertModal {
             make.top
                     .greaterThanOrEqualTo(safeAreaLayoutGuide)
                     .offset(
-                            properties?.margin?.vertical ?? 0
+                            properties?.margin?.top ?? 0
                     )
             make.leading
                     .greaterThanOrEqualTo(safeAreaLayoutGuide)
                     .offset(
-                            properties?.margin?.horizontal ?? 0
+                            properties?.margin?.left ?? 0
                     )
             make.bottom
                     .lessThanOrEqualTo(safeAreaLayoutGuide)
                     .offset(
-                            -(properties?.margin?.vertical ?? 0)
+                            -(properties?.margin?.bottom ?? 0)
                     )
             make.trailing
                     .lessThanOrEqualTo(safeAreaLayoutGuide)
                     .offset(
-                            -(properties?.margin?.horizontal ?? 0)
+                            -(properties?.margin?.right ?? 0)
                     )
 
             make.center
                     .equalToSuperview()
+                    .priority(.low)
 
             // Pin
             constraintVwContainerWidth = make.width
