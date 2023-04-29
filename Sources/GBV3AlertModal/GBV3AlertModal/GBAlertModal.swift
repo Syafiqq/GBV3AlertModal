@@ -626,6 +626,12 @@ private extension GBAlertModal {
                         .equalTo(fixedWidth)
                         .priority(.low)
             }
+
+            if let maxWidth = properties?.contentProperty?.maxWidth {
+                make.width
+                        .lessThanOrEqualTo(maxWidth)
+                        .priority(.high)
+            }
         }
     }
 
