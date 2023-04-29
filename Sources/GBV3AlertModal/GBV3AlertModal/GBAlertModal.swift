@@ -391,7 +391,7 @@ private extension GBAlertModal {
         }
 
         // Setup close action
-        if properties?.showClose == true,
+        if dataHolder?.showCloseButton == true,
            let vwContainer = vwContainer {
             let btCloseAction = generateButtonForCloseDesign()
             vwContainer.addSubview(btCloseAction)
@@ -629,8 +629,8 @@ private extension GBAlertModal {
                         ?? globalProperties.buttonActionShouldMatchParent,
                 buttonActionOrientation: properties.buttonActionOrientation
                         ?? globalProperties.buttonActionOrientation,
-                showClose: properties.showClose
-                        ?? globalProperties.showClose,
+                closeButtonTint: properties.closeButtonTint
+                        ?? globalProperties.closeButtonTint,
                 space: properties.space
                         ?? globalProperties.space
         )
