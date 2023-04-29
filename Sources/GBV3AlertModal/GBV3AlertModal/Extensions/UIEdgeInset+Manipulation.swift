@@ -5,7 +5,7 @@
 import UIKit
 
 public extension UIEdgeInsets {
-    func copy(
+    public func copy(
             top: CGFloat? = nil,
             left: CGFloat? = nil,
             bottom: CGFloat? = nil,

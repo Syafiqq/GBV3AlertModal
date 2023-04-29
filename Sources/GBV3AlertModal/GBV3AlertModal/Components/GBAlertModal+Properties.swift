@@ -72,7 +72,7 @@ public extension GBAlertModal.Properties {
             self.interButton = interButton
         }
 
-        func copy(
+        public func copy(
                 banner: CGFloat? = nil,
                 title: CGFloat? = nil,
                 subtitle: CGFloat? = nil,
@@ -111,7 +111,7 @@ public extension GBAlertModal.Properties {
             self.childShouldMatchParent = childShouldMatchParent
         }
 
-        func copy(
+        public func copy(
                 backgroundColor: UIColor? = nil,
                 cornerRadius: CGFloat? = nil,
                 fixedWidth: CGFloat? = nil,

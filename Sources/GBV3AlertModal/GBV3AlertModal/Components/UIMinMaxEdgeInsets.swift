@@ -34,7 +34,7 @@ public struct UIMinMaxEdgeInsets {
         rightMax = right.1
     }
 
-    func copy(
+    public func copy(
             top: (CGFloat, CGFloat)? = nil,
             left: (CGFloat, CGFloat)? = nil,
             bottom: (CGFloat, CGFloat)? = nil,
