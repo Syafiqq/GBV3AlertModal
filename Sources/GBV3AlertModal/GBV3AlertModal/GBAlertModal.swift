@@ -213,8 +213,9 @@ private extension GBAlertModal {
         vwContainer?.clipsToBounds = true
 
         unregisterDialogView()
+        adjustBaseDialogConstraint()
         registerDialogView()
-        adjustDialogView()
+        adjustDialogViewStyle()
     }
 
     func initEvents() {
@@ -540,7 +541,7 @@ private extension GBAlertModal {
         }
     }
 
-    private func adjustDialogView() {
+    private func adjustDialogViewStyle() {
         // Base View
         tintColor = properties?.baseTint
 
@@ -572,6 +573,105 @@ private extension GBAlertModal {
                 ),
                 for: .normal
         )
+    }
+
+    private func adjustBaseDialogConstraint() {
+        if let vwContainer = vwContainer {
+            adjustVwContainerConstraint(vwContainer)
+        }
+    }
+
+    private func adjustVwContainerConstraint(_ vwContainer: UIView) {
+        vwContainer.snp.remakeConstraints { (make: ConstraintMaker) -> Void in
+            // Align
+            make.top
+                    .greaterThanOrEqualTo(safeAreaLayoutGuide)
+                    .offset(
+                            properties?.margin?.top ?? .zero
+                    )
+            make.leading
+                    .greaterThanOrEqualTo(safeAreaLayoutGuide)
+                    .offset(
+                            properties?.margin?.left ?? .zero
+                    )
+            make.bottom
+                    .lessThanOrEqualTo(safeAreaLayoutGuide)
+                    .offset(
+                            -(properties?.margin?.bottom ?? .zero)
+                    )
+            make.trailing
+                    .lessThanOrEqualTo(safeAreaLayoutGuide)
+                    .offset(
+                            -(properties?.margin?.right ?? .zero)
+                    )
+
+            make.center
+                    .equalToSuperview()
+                    .priority(.low)
+
+            // Pin
+            if let fixedWidth = properties?.contentProperty?.fixedWidth {
+                make.width
+                        .equalTo(fixedWidth)
+                        .priority(.low)
+            }
+        }
+    }
+
+    private func adjustSvContentContainerConstraint(_ svContentContainer: UIView) {
+        svContentContainer.snp.makeConstraints { (make: ConstraintMaker) -> Void in
+            make.top
+                    .greaterThanOrEqualToSuperview()
+                    .offset(
+                            properties?.padding?.topMin ?? .zero
+                    )
+            make.top
+                    .equalToSuperview()
+                    .offset(
+                            properties?.padding?.topMax ?? .zero
+                    )
+                    .priority(.low)
+
+            make.leading
+                    .greaterThanOrEqualToSuperview()
+                    .offset(
+                            properties?.padding?.leftMin ?? .zero
+                    )
+            make.leading
+                    .equalToSuperview()
+                    .offset(
+                            properties?.padding?.leftMax ?? .zero
+                    )
+                    .priority(.low)
+
+            make.bottom
+                    .lessThanOrEqualToSuperview()
+                    .offset(
+                            -(properties?.padding?.bottomMin ?? .zero)
+                    )
+            make.bottom
+                    .equalToSuperview()
+                    .offset(
+                            -(properties?.padding?.bottomMax ?? .zero)
+                    )
+                    .priority(.low)
+
+            make.trailing
+                    .lessThanOrEqualToSuperview()
+                    .offset(
+                            -(properties?.padding?.rightMin ?? .zero)
+                    )
+            make.trailing
+                    .equalToSuperview()
+                    .offset(
+                            -(properties?.padding?.rightMax ?? .zero)
+                    )
+                    .priority(.low)
+
+            make.center
+                    .equalToSuperview()
+                    .priority(.low)
+        }
     }
 
     // MARK: ViewModel
@@ -671,7 +771,6 @@ private extension GBAlertModal {
 // MARK: - DESIGN
 
 private extension GBAlertModal {
-    // swiftlint:disable:next function_body_length
     func initDesign() {
         // MARK: View Initialization
         let vwOverlay = generateGenericViewDesign()
@@ -689,94 +788,8 @@ private extension GBAlertModal {
                     .equalToSuperview()
         }
 
-        vwContainer.snp.makeConstraints { (make: ConstraintMaker) -> Void in
-            // Align
-            make.top
-                    .greaterThanOrEqualTo(safeAreaLayoutGuide)
-                    .offset(
-                            properties?.margin?.top ?? .zero
-                    )
-            make.leading
-                    .greaterThanOrEqualTo(safeAreaLayoutGuide)
-                    .offset(
-                            properties?.margin?.left ?? .zero
-                    )
-            make.bottom
-                    .lessThanOrEqualTo(safeAreaLayoutGuide)
-                    .offset(
-                            -(properties?.margin?.bottom ?? .zero)
-                    )
-            make.trailing
-                    .lessThanOrEqualTo(safeAreaLayoutGuide)
-                    .offset(
-                            -(properties?.margin?.right ?? .zero)
-                    )
-
-            make.center
-                    .equalToSuperview()
-                    .priority(.low)
-
-            // Pin
-            if let fixedWidth = properties?.contentProperty?.fixedWidth {
-                make.width
-                        .equalTo(fixedWidth)
-                        .priority(.low)
-            }
-        }
-
-        svContentContainer.snp.makeConstraints { (make: ConstraintMaker) -> Void in
-            make.top
-                    .greaterThanOrEqualToSuperview()
-                    .offset(
-                            properties?.padding?.topMin ?? .zero
-                    )
-            make.top
-                    .equalToSuperview()
-                    .offset(
-                            properties?.padding?.topMax ?? .zero
-                    )
-                    .priority(.low)
-
-            make.leading
-                    .greaterThanOrEqualToSuperview()
-                    .offset(
-                            properties?.padding?.leftMin ?? .zero
-                    )
-            make.leading
-                    .equalToSuperview()
-                    .offset(
-                            properties?.padding?.leftMax ?? .zero
-                    )
-                    .priority(.low)
-
-            make.bottom
-                    .lessThanOrEqualToSuperview()
-                    .offset(
-                            -(properties?.padding?.bottomMin ?? .zero)
-                    )
-            make.bottom
-                    .equalToSuperview()
-                    .offset(
-                            -(properties?.padding?.bottomMax ?? .zero)
-                    )
-                    .priority(.low)
-
-            make.trailing
-                    .lessThanOrEqualToSuperview()
-                    .offset(
-                            -(properties?.padding?.rightMin ?? .zero)
-                    )
-            make.trailing
-                    .equalToSuperview()
-                    .offset(
-                            -(properties?.padding?.rightMax ?? .zero)
-                    )
-                    .priority(.low)
-
-            make.center
-                    .equalToSuperview()
-                    .priority(.low)
-        }
+        adjustVwContainerConstraint(vwContainer)
+        adjustSvContentContainerConstraint(svContentContainer)
 
         // MARK: View Assign
         self.vwOverlay = vwOverlay
