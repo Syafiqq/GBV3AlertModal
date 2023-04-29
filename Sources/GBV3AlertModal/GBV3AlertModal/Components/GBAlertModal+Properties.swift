@@ -91,4 +91,18 @@ public extension GBAlertModal.Properties.ComponentSpace {
     static var zero: Self {
         .init(banner: 0, title: 0, subtitle: 0, interButton: 0)
     }
+
+    func copy(
+            banner: CGFloat? = nil,
+            title: CGFloat? = nil,
+            subtitle: CGFloat? = nil,
+            interButton: CGFloat? = nil
+    ) -> Self {
+        .init(
+                banner: banner ?? self.banner,
+                title: title ?? self.title,
+                subtitle: subtitle ?? self.subtitle,
+                interButton: interButton ?? self.interButton
+        )
+    }
 }
