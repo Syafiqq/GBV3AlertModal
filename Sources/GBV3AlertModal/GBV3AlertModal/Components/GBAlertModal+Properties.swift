@@ -95,3 +95,42 @@ public extension GBAlertModal.Properties {
         }
     }
 }
+
+public extension GBAlertModal.Properties {
+    struct ContentContainer {
+        public static var `default`: Self {
+            Self()
+        }
+
+        public let backgroundColor: UIColor?
+        public let cornerRadius: CGFloat
+        public let fixedWidth: CGFloat
+        public let childShouldMatchParent: Bool
+
+        public init(
+                backgroundColor: UIColor? = nil,
+                cornerRadius: CGFloat = .zero,
+                fixedWidth: CGFloat = .zero,
+                childShouldMatchParent: Bool = false
+        ) {
+            self.backgroundColor = backgroundColor
+            self.cornerRadius = cornerRadius
+            self.fixedWidth = fixedWidth
+            self.childShouldMatchParent = childShouldMatchParent
+        }
+
+        func copy(
+                backgroundColor: UIColor? = nil,
+                cornerRadius: CGFloat? = nil,
+                fixedWidth: CGFloat? = nil,
+                childShouldMatchParent: Bool? = nil
+        ) -> Self {
+            Self(
+                    backgroundColor: backgroundColor ?? self.backgroundColor,
+                    cornerRadius: cornerRadius ?? self.cornerRadius,
+                    fixedWidth: fixedWidth ?? self.fixedWidth,
+                    childShouldMatchParent: childShouldMatchParent ?? self.childShouldMatchParent
+            )
+        }
+    }
+}
