@@ -217,40 +217,6 @@ private extension GBAlertModal {
         adjustDialogView()
     }
 
-    private func adjustDialogView() {
-        // Base View
-        tintColor = properties?.baseTint
-
-        // Overlay
-        vwOverlay?.backgroundColor = properties?.overlayColor
-
-        // Content Container
-        vwContainer?.backgroundColor = properties?.contentProperty?.backgroundColor
-        vwContainer?.layer.cornerRadius = properties?.contentProperty?.cornerRadius ?? .zero
-
-        // Content Container Stack
-        svContentContainer?.alignment = properties?.contentProperty?.childShouldMatchParent == true ? .fill : .center
-
-        // Button Action Stack
-        svMainActionContainer?.alignment = properties?.buttonActionShouldMatchParent == true ? .fill : .center
-
-        // Button Action Orientatin
-        if let buttonActionOrientation = properties?.buttonActionOrientation {
-            svMainActionContainer?.axis = buttonActionOrientation
-        }
-
-        // Close Button
-        btCloseAction?.tintColor = properties?.closeButtonTint
-        btCloseAction?.setImage(
-                dataHolder?.closeImage ?? UIImage(
-                        named: "ic_fa_xmark_24",
-                        in: Bundle(for: Self.self),
-                        compatibleWith: nil
-                ),
-                for: .normal
-        )
-    }
-
     func initEvents() {
         unregisterEvents()
         registerEvents()
@@ -572,6 +538,40 @@ private extension GBAlertModal {
                         .equalTo(properties?.space?.subtitle ?? .zero)
             }
         }
+    }
+
+    private func adjustDialogView() {
+        // Base View
+        tintColor = properties?.baseTint
+
+        // Overlay
+        vwOverlay?.backgroundColor = properties?.overlayColor
+
+        // Content Container
+        vwContainer?.backgroundColor = properties?.contentProperty?.backgroundColor
+        vwContainer?.layer.cornerRadius = properties?.contentProperty?.cornerRadius ?? .zero
+
+        // Content Container Stack
+        svContentContainer?.alignment = properties?.contentProperty?.childShouldMatchParent == true ? .fill : .center
+
+        // Button Action Stack
+        svMainActionContainer?.alignment = properties?.buttonActionShouldMatchParent == true ? .fill : .center
+
+        // Button Action Orientation
+        if let buttonActionOrientation = properties?.buttonActionOrientation {
+            svMainActionContainer?.axis = buttonActionOrientation
+        }
+
+        // Close Button
+        btCloseAction?.tintColor = properties?.closeButtonTint
+        btCloseAction?.setImage(
+                dataHolder?.closeImage ?? UIImage(
+                        named: "ic_fa_xmark_24",
+                        in: Bundle(for: Self.self),
+                        compatibleWith: nil
+                ),
+                for: .normal
+        )
     }
 
     // MARK: ViewModel
