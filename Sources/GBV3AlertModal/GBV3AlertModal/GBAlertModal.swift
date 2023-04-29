@@ -207,14 +207,14 @@ private extension GBAlertModal {
 
         vwOverlay?.backgroundColor = properties?.overlayColor
 
-        vwContainer?.backgroundColor = properties?.contentBackgroundColor
-        vwContainer?.layer.cornerRadius = properties?.contentCornerRadius ?? .zero
+        vwContainer?.backgroundColor = properties?.contentProperty?.backgroundColor
+        vwContainer?.layer.cornerRadius = properties?.contentProperty?.cornerRadius ?? .zero
         vwContainer?.clipsToBounds = true
 
         unregisterDialogView()
         registerDialogView()
 
-        svContentContainer?.alignment = properties?.contentFitSize == true ? .fill : .center
+        svContentContainer?.alignment = properties?.contentProperty?.childShouldMatchParent == true ? .fill : .center
         svMainActionContainer?.alignment = properties?.buttonActionFitSize == true ? .fill : .center
     }
 
@@ -568,18 +568,12 @@ private extension GBAlertModal {
                         ?? globalProperties.baseTint,
                 overlayColor: properties.overlayColor
                         ?? globalProperties.overlayColor,
-                contentBackgroundColor: properties.contentBackgroundColor
-                        ?? globalProperties.contentBackgroundColor,
-                contentCornerRadius: properties.contentCornerRadius
-                        ?? globalProperties.contentCornerRadius,
-                contentFixedSize: properties.contentFixedSize
-                        ?? globalProperties.contentFixedSize,
+                contentProperty: properties.contentProperty
+                        ?? globalProperties.contentProperty,
                 margin: properties.margin
                         ?? globalProperties.margin,
                 padding: properties.padding
                         ?? globalProperties.padding,
-                contentFitSize: properties.contentFitSize
-                        ?? globalProperties.contentFitSize,
                 bannerRatio: properties.bannerRatio
                         ?? globalProperties.bannerRatio,
                 titleFont: properties.titleFont
@@ -658,7 +652,7 @@ private extension GBAlertModal {
 
             // Pin
             constraintVwContainerWidth = make.width
-                    .equalTo(properties?.contentFixedSize ?? .zero)
+                    .equalTo(properties?.contentProperty?.fixedWidth ?? .zero)
                     .priority(.low)
                     .constraint
         }
@@ -717,7 +711,7 @@ private extension GBAlertModal {
                     .priority(.low)
         }
 
-        if properties?.contentFixedSize == nil {
+        if properties?.contentProperty?.fixedWidth == nil {
             constraintVwContainerWidth?.deactivate()
         } else {
             constraintVwContainerWidth?.activate()

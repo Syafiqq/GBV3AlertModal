@@ -4,14 +4,11 @@ extension GBAlertModal {
     public struct Properties {
         public let baseTint: UIColor?
         public let overlayColor: UIColor?
-        public let contentBackgroundColor: UIColor?
+        public let contentProperty: ContentProperty?
 
-        public let contentCornerRadius: CGFloat?
-        public let contentFixedSize: CGFloat?
         public let margin: UIEdgeInsets?
         public let padding: UIMinMaxEdgeInsets?
 
-        public let contentFitSize: Bool?
         public let bannerRatio: CGFloat?
         public let titleFont: UIFont?
         public let titleColor: UIColor?
@@ -24,9 +21,7 @@ extension GBAlertModal {
         public init(
                 baseTint: UIColor? = nil,
                 overlayColor: UIColor? = nil,
-                contentBackgroundColor: UIColor? = nil,
-                contentCornerRadius: CGFloat? = nil,
-                contentFixedSize: CGFloat? = nil,
+                contentProperty: ContentProperty? = nil,
                 margin: UIEdgeInsets? = nil,
                 padding: UIMinMaxEdgeInsets? = nil,
                 contentFitSize: Bool? = false,
@@ -40,12 +35,9 @@ extension GBAlertModal {
         ) {
             self.baseTint = baseTint
             self.overlayColor = overlayColor
-            self.contentBackgroundColor = contentBackgroundColor
-            self.contentCornerRadius = contentCornerRadius
-            self.contentFixedSize = contentFixedSize
+            self.contentProperty = contentProperty
             self.margin = margin
             self.padding = padding
-            self.contentFitSize = contentFitSize
             self.bannerRatio = bannerRatio
             self.titleFont = titleFont
             self.titleColor = titleColor
@@ -97,20 +89,20 @@ public extension GBAlertModal.Properties {
 }
 
 public extension GBAlertModal.Properties {
-    struct ContentContainer {
+    struct ContentProperty {
         public static var `default`: Self {
             Self()
         }
 
         public let backgroundColor: UIColor?
         public let cornerRadius: CGFloat
-        public let fixedWidth: CGFloat
+        public let fixedWidth: CGFloat?
         public let childShouldMatchParent: Bool
 
         public init(
                 backgroundColor: UIColor? = nil,
                 cornerRadius: CGFloat = .zero,
-                fixedWidth: CGFloat = .zero,
+                fixedWidth: CGFloat? = nil,
                 childShouldMatchParent: Bool = false
         ) {
             self.backgroundColor = backgroundColor
