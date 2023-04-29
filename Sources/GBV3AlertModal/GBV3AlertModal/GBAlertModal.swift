@@ -226,6 +226,16 @@ private extension GBAlertModal {
         if let buttonActionOrientation = properties?.buttonActionOrientation {
             svMainActionContainer?.axis = buttonActionOrientation
         }
+
+        btCloseAction?.tintColor = properties?.closeButtonTint
+        btCloseAction?.setImage(
+                dataHolder?.closeImage ?? UIImage(
+                        named: "ic_fa_xmark_24",
+                        in: Bundle(for: Self.self),
+                        compatibleWith: nil
+                ),
+                for: .normal
+        )
     }
 
     func initEvents() {

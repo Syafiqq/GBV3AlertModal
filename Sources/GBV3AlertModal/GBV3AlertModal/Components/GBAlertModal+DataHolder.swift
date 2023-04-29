@@ -14,6 +14,7 @@ extension GBAlertModal {
         public let secondaryActionStyle: ActionStyle?
         public let closeOnTapOverlay: Bool
         public let showCloseButton: Bool
+        public let closeImage: UIImage?
         public let dismissOnAction: Bool
         public let completion: ((GBAlertModal, GBAlertModal.ActionType) -> Void)?
 
@@ -30,6 +31,7 @@ extension GBAlertModal {
                 secondaryActionStyle: ActionStyle? = nil,
                 closeOnTapOverlay: Bool = false,
                 showCloseButton: Bool = false,
+                closeImage: UIImage? = nil,
                 dismissOnAction: Bool = false,
                 completion: ((GBAlertModal, GBAlertModal.ActionType) -> Void)? = nil
         ) {
@@ -45,6 +47,7 @@ extension GBAlertModal {
             self.secondaryActionStyle = secondaryActionStyle
             self.closeOnTapOverlay = closeOnTapOverlay
             self.showCloseButton = showCloseButton
+            self.closeImage = closeImage
             self.dismissOnAction = dismissOnAction
             self.completion = completion
         }
