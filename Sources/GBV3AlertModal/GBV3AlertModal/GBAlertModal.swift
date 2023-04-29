@@ -208,7 +208,7 @@ private extension GBAlertModal {
         vwOverlay?.backgroundColor = properties?.overlayColor
 
         vwContainer?.backgroundColor = properties?.contentBackgroundColor
-        vwContainer?.layer.cornerRadius = properties?.contentCornerRadius ?? 0
+        vwContainer?.layer.cornerRadius = properties?.contentCornerRadius ?? .zero
         vwContainer?.clipsToBounds = true
 
         unregisterDialogView()
@@ -371,7 +371,7 @@ private extension GBAlertModal {
         // Setup main action container
         if vwPrimaryAction != nil || vwSecondaryAction != nil {
             let svMainActionContainer = generateStackViewForMainButtonDesign()
-            svMainActionContainer.spacing = properties?.space?.interButton ?? 0
+            svMainActionContainer.spacing = properties?.space?.interButton ?? .zero
 
             self.svMainActionContainer = svMainActionContainer
         } else {
@@ -492,7 +492,7 @@ private extension GBAlertModal {
         if let vwBannerAndBelowDivider {
             vwBannerAndBelowDivider.snp.makeConstraints { (make: ConstraintMaker) -> Void in
                 make.height
-                        .equalTo(properties?.space?.banner ?? 0)
+                        .equalTo(properties?.space?.banner ?? .zero)
             }
         }
 
@@ -500,7 +500,7 @@ private extension GBAlertModal {
         if let vwTitleAndBelowDivider {
             vwTitleAndBelowDivider.snp.makeConstraints { (make: ConstraintMaker) -> Void in
                 make.height
-                        .equalTo(properties?.space?.title ?? 0)
+                        .equalTo(properties?.space?.title ?? .zero)
             }
         }
 
@@ -508,7 +508,7 @@ private extension GBAlertModal {
         if let vwSubtitleAndBelowDivider {
             vwSubtitleAndBelowDivider.snp.makeConstraints { (make: ConstraintMaker) -> Void in
                 make.height
-                        .equalTo(properties?.space?.subtitle ?? 0)
+                        .equalTo(properties?.space?.subtitle ?? .zero)
             }
         }
     }
@@ -575,12 +575,8 @@ private extension GBAlertModal {
                         ?? globalProperties.contentFixedSize,
                 margin: properties.margin
                         ?? globalProperties.margin,
-                contentTopPadding: properties.contentTopPadding
-                        ?? globalProperties.contentTopPadding,
-                contentBottomPadding: properties.contentBottomPadding
-                        ?? globalProperties.contentBottomPadding,
-                contentHorizontalPadding: properties.contentHorizontalPadding
-                        ?? globalProperties.contentHorizontalPadding,
+                padding: properties.padding
+                        ?? globalProperties.padding,
                 contentFitSize: properties.contentFitSize
                         ?? globalProperties.contentFitSize,
                 bannerRatio: properties.bannerRatio
@@ -637,22 +633,22 @@ private extension GBAlertModal {
             make.top
                     .greaterThanOrEqualTo(safeAreaLayoutGuide)
                     .offset(
-                            properties?.margin?.top ?? 0
+                            properties?.margin?.top ?? .zero
                     )
             make.leading
                     .greaterThanOrEqualTo(safeAreaLayoutGuide)
                     .offset(
-                            properties?.margin?.left ?? 0
+                            properties?.margin?.left ?? .zero
                     )
             make.bottom
                     .lessThanOrEqualTo(safeAreaLayoutGuide)
                     .offset(
-                            -(properties?.margin?.bottom ?? 0)
+                            -(properties?.margin?.bottom ?? .zero)
                     )
             make.trailing
                     .lessThanOrEqualTo(safeAreaLayoutGuide)
                     .offset(
-                            -(properties?.margin?.right ?? 0)
+                            -(properties?.margin?.right ?? .zero)
                     )
 
             make.center
@@ -661,7 +657,7 @@ private extension GBAlertModal {
 
             // Pin
             constraintVwContainerWidth = make.width
-                    .equalTo(properties?.contentFixedSize ?? 0)
+                    .equalTo(properties?.contentFixedSize ?? .zero)
                     .priority(.low)
                     .constraint
         }
@@ -670,41 +666,54 @@ private extension GBAlertModal {
             make.top
                     .greaterThanOrEqualToSuperview()
                     .offset(
-                            properties?.contentTopPadding?.0 ?? 0
+                            properties?.padding?.topMin ?? .zero
                     )
             make.top
                     .equalToSuperview()
                     .offset(
-                            properties?.contentTopPadding?.1 ?? 0
+                            properties?.padding?.topMax ?? .zero
                     )
                     .priority(.medium)
 
             make.leading
                     .greaterThanOrEqualToSuperview()
                     .offset(
-                            properties?.contentHorizontalPadding?.0 ?? 0
+                            properties?.padding?.leftMin ?? .zero
                     )
             make.leading
                     .equalToSuperview()
                     .offset(
-                            properties?.contentHorizontalPadding?.1 ?? 1
+                            properties?.padding?.leftMax ?? .zero
                     )
                     .priority(.medium)
 
             make.bottom
                     .lessThanOrEqualToSuperview()
                     .offset(
-                            -(properties?.contentBottomPadding?.0 ?? 0)
+                            -(properties?.padding?.bottomMin ?? .zero)
                     )
             make.bottom
                     .equalToSuperview()
                     .offset(
-                            -(properties?.contentBottomPadding?.1 ?? 0)
+                            -(properties?.padding?.bottomMax ?? .zero)
                     )
                     .priority(.medium)
 
-            make.centerX
+            make.trailing
+                    .lessThanOrEqualToSuperview()
+                    .offset(
+                            -(properties?.padding?.rightMin ?? .zero)
+                    )
+            make.trailing
                     .equalToSuperview()
+                    .offset(
+                            -(properties?.padding?.rightMax ?? .zero)
+                    )
+                    .priority(.medium)
+
+            make.center
+                    .equalToSuperview()
+                    .priority(.low)
         }
 
         if properties?.contentFixedSize == nil {

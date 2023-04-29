@@ -9,9 +9,7 @@ extension GBAlertModal {
         public let contentCornerRadius: CGFloat?
         public let contentFixedSize: CGFloat?
         public let margin: UIEdgeInsets?
-        public let contentTopPadding: (CGFloat, CGFloat)?
-        public let contentBottomPadding: (CGFloat, CGFloat)?
-        public let contentHorizontalPadding: (CGFloat, CGFloat)?
+        public let padding: UIMinMaxEdgeInsets?
 
         public let contentFitSize: Bool?
         public let bannerRatio: CGFloat?
@@ -30,9 +28,7 @@ extension GBAlertModal {
                 contentCornerRadius: CGFloat? = nil,
                 contentFixedSize: CGFloat? = nil,
                 margin: UIEdgeInsets? = nil,
-                contentTopPadding: (CGFloat, CGFloat)? = nil,
-                contentBottomPadding: (CGFloat, CGFloat)? = nil,
-                contentHorizontalPadding: (CGFloat, CGFloat)? = nil,
+                padding: UIMinMaxEdgeInsets? = nil,
                 contentFitSize: Bool? = false,
                 bannerRatio: CGFloat? = nil,
                 titleFont: UIFont? = nil,
@@ -48,9 +44,7 @@ extension GBAlertModal {
             self.contentCornerRadius = contentCornerRadius
             self.contentFixedSize = contentFixedSize
             self.margin = margin
-            self.contentTopPadding = contentTopPadding
-            self.contentBottomPadding = contentBottomPadding
-            self.contentHorizontalPadding = contentHorizontalPadding
+            self.padding = padding
             self.contentFitSize = contentFitSize
             self.bannerRatio = bannerRatio
             self.titleFont = titleFont
