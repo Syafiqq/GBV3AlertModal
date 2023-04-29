@@ -89,7 +89,7 @@ public extension GBAlertModal.Properties {
 
 public extension GBAlertModal.Properties.ComponentSpace {
     static var zero: Self {
-        .init(banner: 0, title: 0, subtitle: 0, interButton: 0)
+        ComponentSpace(banner: 0, title: 0, subtitle: 0, interButton: 0)
     }
 
     func copy(
