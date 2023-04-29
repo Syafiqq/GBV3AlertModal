@@ -22,10 +22,7 @@ extension GBAlertModal {
         public let subtitleColor: UIColor?
         public let buttonActionFitSize: Bool?
 
-        public let bannerToBelowSpace: CGFloat?
-        public let titleToBelowSpace: CGFloat?
-        public let subtitleToBelowSpace: CGFloat?
-        public let buttonActionSpace: CGFloat?
+        public let componentSpace: ComponentSpace?
 
         public init(
                 baseTint: UIColor? = nil,
@@ -45,10 +42,7 @@ extension GBAlertModal {
                 subtitleFont: UIFont? = nil,
                 subtitleColor: UIColor? = nil,
                 buttonActionFitSize: Bool? = false,
-                bannerToBelowSpace: CGFloat? = nil,
-                titleToBelowSpace: CGFloat? = nil,
-                subtitleToBelowSpace: CGFloat? = nil,
-                buttonActionSpace: CGFloat? = nil
+                componentSpace: ComponentSpace? = nil
         ) {
             self.baseTint = baseTint
             self.overlayColor = overlayColor
@@ -67,10 +61,34 @@ extension GBAlertModal {
             self.subtitleFont = subtitleFont
             self.subtitleColor = subtitleColor
             self.buttonActionFitSize = buttonActionFitSize
-            self.bannerToBelowSpace = bannerToBelowSpace
-            self.titleToBelowSpace = titleToBelowSpace
-            self.subtitleToBelowSpace = subtitleToBelowSpace
-            self.buttonActionSpace = buttonActionSpace
+            self.componentSpace = componentSpace
         }
+    }
+}
+
+public extension GBAlertModal.Properties {
+    struct ComponentSpace {
+        public init(
+                banner: CGFloat = 0,
+                title: CGFloat = 0,
+                subtitle: CGFloat = 0,
+                interButton: CGFloat = 0
+        ) {
+            self.banner = banner
+            self.title = title
+            self.subtitle = subtitle
+            self.interButton = interButton
+        }
+
+        public let banner: CGFloat
+        public let title: CGFloat
+        public let subtitle: CGFloat
+        public let interButton: CGFloat
+    }
+}
+
+public extension GBAlertModal.Properties.ComponentSpace {
+    static var zero: Self {
+        .init(banner: 0, title: 0, subtitle: 0, interButton: 0)
     }
 }
