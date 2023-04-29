@@ -3,18 +3,24 @@ import UIKit
 extension GBAlertModal {
     public struct DataHolder {
         public let banner: UIImage?
+
         public let title: String?
         public let titleAttributed: NSAttributedString?
+
         public let subtitle: String?
         public let subtitleAttributed: NSAttributedString?
         public weak var subtitleCustomView: UIView?
+
         public let primaryAction: String?
         public let primaryActionStyle: ActionStyle?
+
         public let secondaryAction: String?
         public let secondaryActionStyle: ActionStyle?
-        public let closeOnTapOverlay: Bool
+
         public let showCloseButton: Bool
         public let closeImage: UIImage?
+
+        public let closeOnTapOverlay: Bool
         public let dismissOnAction: Bool
         public let completion: ((GBAlertModal, GBAlertModal.ActionType) -> Void)?
 
@@ -29,9 +35,9 @@ extension GBAlertModal {
                 primaryActionStyle: ActionStyle? = nil,
                 secondaryAction: String? = nil,
                 secondaryActionStyle: ActionStyle? = nil,
-                closeOnTapOverlay: Bool = false,
                 showCloseButton: Bool = false,
                 closeImage: UIImage? = nil,
+                closeOnTapOverlay: Bool = false,
                 dismissOnAction: Bool = false,
                 completion: ((GBAlertModal, GBAlertModal.ActionType) -> Void)? = nil
         ) {
@@ -45,9 +51,9 @@ extension GBAlertModal {
             self.primaryActionStyle = primaryActionStyle
             self.secondaryAction = secondaryAction
             self.secondaryActionStyle = secondaryActionStyle
-            self.closeOnTapOverlay = closeOnTapOverlay
             self.showCloseButton = showCloseButton
             self.closeImage = closeImage
+            self.closeOnTapOverlay = closeOnTapOverlay
             self.dismissOnAction = dismissOnAction
             self.completion = completion
         }
