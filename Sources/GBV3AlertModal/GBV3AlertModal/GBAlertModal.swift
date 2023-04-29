@@ -371,7 +371,7 @@ private extension GBAlertModal {
         // Setup main action container
         if vwPrimaryAction != nil || vwSecondaryAction != nil {
             let svMainActionContainer = generateStackViewForMainButtonDesign()
-            svMainActionContainer.spacing = properties?.componentSpace?.interButton ?? 0
+            svMainActionContainer.spacing = properties?.space?.interButton ?? 0
 
             self.svMainActionContainer = svMainActionContainer
         } else {
@@ -492,7 +492,7 @@ private extension GBAlertModal {
         if let vwBannerAndBelowDivider {
             vwBannerAndBelowDivider.snp.makeConstraints { (make: ConstraintMaker) -> Void in
                 make.height
-                        .equalTo(properties?.componentSpace?.banner ?? 0)
+                        .equalTo(properties?.space?.banner ?? 0)
             }
         }
 
@@ -500,7 +500,7 @@ private extension GBAlertModal {
         if let vwTitleAndBelowDivider {
             vwTitleAndBelowDivider.snp.makeConstraints { (make: ConstraintMaker) -> Void in
                 make.height
-                        .equalTo(properties?.componentSpace?.title ?? 0)
+                        .equalTo(properties?.space?.title ?? 0)
             }
         }
 
@@ -508,7 +508,7 @@ private extension GBAlertModal {
         if let vwSubtitleAndBelowDivider {
             vwSubtitleAndBelowDivider.snp.makeConstraints { (make: ConstraintMaker) -> Void in
                 make.height
-                        .equalTo(properties?.componentSpace?.subtitle ?? 0)
+                        .equalTo(properties?.space?.subtitle ?? 0)
             }
         }
     }
@@ -595,8 +595,8 @@ private extension GBAlertModal {
                         ?? globalProperties.subtitleColor,
                 buttonActionFitSize: properties.buttonActionFitSize
                         ?? globalProperties.buttonActionFitSize,
-                componentSpace: properties.componentSpace
-                        ?? globalProperties.componentSpace
+                componentSpace: properties.space
+                        ?? globalProperties.space
         )
     }
 }

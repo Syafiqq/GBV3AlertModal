@@ -21,7 +21,7 @@ extension GBAlertModal {
         public let subtitleColor: UIColor?
         public let buttonActionFitSize: Bool?
 
-        public let componentSpace: ComponentSpace?
+        public let space: ComponentSpace?
 
         public init(
                 baseTint: UIColor? = nil,
@@ -58,7 +58,7 @@ extension GBAlertModal {
             self.subtitleFont = subtitleFont
             self.subtitleColor = subtitleColor
             self.buttonActionFitSize = buttonActionFitSize
-            self.componentSpace = componentSpace
+            self.space = componentSpace
         }
     }
 }
