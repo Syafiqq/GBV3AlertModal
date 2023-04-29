@@ -583,7 +583,7 @@ private extension GBAlertModal {
                         ?? globalProperties.subtitleFont,
                 subtitleColor: properties.subtitleColor
                         ?? globalProperties.subtitleColor,
-                buttonActionFitSize: properties.buttonActionShouldMatchParent
+                buttonActionShouldMatchParent: properties.buttonActionShouldMatchParent
                         ?? globalProperties.buttonActionShouldMatchParent,
                 space: properties.space
                         ?? globalProperties.space
