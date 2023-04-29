@@ -24,7 +24,6 @@ extension GBAlertModal {
                 contentProperty: ContentProperty? = nil,
                 margin: UIEdgeInsets? = nil,
                 padding: UIMinMaxEdgeInsets? = nil,
-                contentFitSize: Bool? = false,
                 bannerRatio: CGFloat? = nil,
                 titleFont: UIFont? = nil,
                 titleColor: UIColor? = nil,
