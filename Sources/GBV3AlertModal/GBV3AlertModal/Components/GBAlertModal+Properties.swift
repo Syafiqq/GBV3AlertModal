@@ -36,7 +36,7 @@ extension GBAlertModal {
                 subtitleFont: UIFont? = nil,
                 subtitleColor: UIColor? = nil,
                 buttonActionFitSize: Bool? = false,
-                componentSpace: ComponentSpace? = nil
+                space: ComponentSpace? = nil
         ) {
             self.baseTint = baseTint
             self.overlayColor = overlayColor
@@ -52,7 +52,7 @@ extension GBAlertModal {
             self.subtitleFont = subtitleFont
             self.subtitleColor = subtitleColor
             self.buttonActionFitSize = buttonActionFitSize
-            self.space = componentSpace
+            self.space = space
         }
     }
 }

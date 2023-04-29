@@ -592,7 +592,7 @@ private extension GBAlertModal {
                         ?? globalProperties.subtitleColor,
                 buttonActionFitSize: properties.buttonActionFitSize
                         ?? globalProperties.buttonActionFitSize,
-                componentSpace: properties.space
+                space: properties.space
                         ?? globalProperties.space
         )
     }
