@@ -8,8 +8,7 @@ extension GBAlertModal {
 
         public let contentCornerRadius: CGFloat?
         public let contentFixedSize: CGFloat?
-        public let contentVerticalMargin: CGFloat?
-        public let contentHorizontalMargin: CGFloat?
+        public let margin: ComponentMargin?
         public let contentTopPadding: (CGFloat, CGFloat)?
         public let contentBottomPadding: (CGFloat, CGFloat)?
         public let contentHorizontalPadding: (CGFloat, CGFloat)?
@@ -30,8 +29,7 @@ extension GBAlertModal {
                 contentBackgroundColor: UIColor? = nil,
                 contentCornerRadius: CGFloat? = nil,
                 contentFixedSize: CGFloat? = nil,
-                contentVerticalMargin: CGFloat? = nil,
-                contentHorizontalMargin: CGFloat? = nil,
+                margin: ComponentMargin? = nil,
                 contentTopPadding: (CGFloat, CGFloat)? = nil,
                 contentBottomPadding: (CGFloat, CGFloat)? = nil,
                 contentHorizontalPadding: (CGFloat, CGFloat)? = nil,
@@ -49,8 +47,7 @@ extension GBAlertModal {
             self.contentBackgroundColor = contentBackgroundColor
             self.contentCornerRadius = contentCornerRadius
             self.contentFixedSize = contentFixedSize
-            self.contentVerticalMargin = contentVerticalMargin
-            self.contentHorizontalMargin = contentHorizontalMargin
+            self.margin = margin
             self.contentTopPadding = contentTopPadding
             self.contentBottomPadding = contentBottomPadding
             self.contentHorizontalPadding = contentHorizontalPadding

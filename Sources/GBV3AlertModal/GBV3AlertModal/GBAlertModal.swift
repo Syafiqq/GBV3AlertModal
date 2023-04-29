@@ -573,10 +573,8 @@ private extension GBAlertModal {
                         ?? globalProperties.contentCornerRadius,
                 contentFixedSize: properties.contentFixedSize
                         ?? globalProperties.contentFixedSize,
-                contentVerticalMargin: properties.contentVerticalMargin
-                        ?? globalProperties.contentVerticalMargin,
-                contentHorizontalMargin: properties.contentHorizontalMargin
-                        ?? globalProperties.contentHorizontalMargin,
+                margin: properties.margin
+                        ?? globalProperties.margin,
                 contentTopPadding: properties.contentTopPadding
                         ?? globalProperties.contentTopPadding,
                 contentBottomPadding: properties.contentBottomPadding
@@ -639,22 +637,22 @@ private extension GBAlertModal {
             make.top
                     .greaterThanOrEqualTo(safeAreaLayoutGuide)
                     .offset(
-                            properties?.contentVerticalMargin ?? 0
+                            properties?.margin?.vertical ?? 0
                     )
             make.leading
                     .greaterThanOrEqualTo(safeAreaLayoutGuide)
                     .offset(
-                            properties?.contentHorizontalMargin ?? 0
+                            properties?.margin?.horizontal ?? 0
                     )
             make.bottom
                     .lessThanOrEqualTo(safeAreaLayoutGuide)
                     .offset(
-                            -(properties?.contentVerticalMargin ?? 0)
+                            -(properties?.margin?.vertical ?? 0)
                     )
             make.trailing
                     .lessThanOrEqualTo(safeAreaLayoutGuide)
                     .offset(
-                            -(properties?.contentHorizontalMargin ?? 0)
+                            -(properties?.margin?.horizontal ?? 0)
                     )
 
             make.center
