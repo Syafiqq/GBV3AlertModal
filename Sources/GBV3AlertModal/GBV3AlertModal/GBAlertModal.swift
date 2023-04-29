@@ -214,7 +214,7 @@ private extension GBAlertModal {
         registerDialogView()
 
         svContentContainer?.alignment = properties?.contentProperty?.childShouldMatchParent == true ? .fill : .center
-        svMainActionContainer?.alignment = properties?.buttonActionFitSize == true ? .fill : .center
+        svMainActionContainer?.alignment = properties?.buttonActionShouldMatchParent == true ? .fill : .center
     }
 
     func initEvents() {
@@ -583,8 +583,8 @@ private extension GBAlertModal {
                         ?? globalProperties.subtitleFont,
                 subtitleColor: properties.subtitleColor
                         ?? globalProperties.subtitleColor,
-                buttonActionFitSize: properties.buttonActionFitSize
-                        ?? globalProperties.buttonActionFitSize,
+                buttonActionFitSize: properties.buttonActionShouldMatchParent
+                        ?? globalProperties.buttonActionShouldMatchParent,
                 space: properties.space
                         ?? globalProperties.space
         )

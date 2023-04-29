@@ -14,7 +14,7 @@ extension GBAlertModal {
         public let titleColor: UIColor?
         public let subtitleFont: UIFont?
         public let subtitleColor: UIColor?
-        public let buttonActionFitSize: Bool?
+        public let buttonActionShouldMatchParent: Bool?
 
         public let space: ComponentSpace?
 
@@ -43,7 +43,7 @@ extension GBAlertModal {
             self.titleColor = titleColor
             self.subtitleFont = subtitleFont
             self.subtitleColor = subtitleColor
-            self.buttonActionFitSize = buttonActionFitSize
+            self.buttonActionShouldMatchParent = buttonActionFitSize
             self.space = space
         }
     }
