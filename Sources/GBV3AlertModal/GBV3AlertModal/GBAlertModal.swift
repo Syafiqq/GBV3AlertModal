@@ -63,10 +63,7 @@ public class GBAlertModal: UIView {
 
     // MARK: Initialization
 
-    public init(
-            holder: DataHolder,
-            properties: Properties
-    ) {
+    public init(holder: DataHolder, properties: Properties) {
         super.init(frame: .zero)
 
         dataHolder = holder
@@ -192,6 +189,20 @@ public class GBAlertModal: UIView {
             hide()
         }
         dataHolder?.completion?(self, event)
+    }
+
+    func updateDialog(holder: DataHolder, properties: Properties) {
+        dataHolder = holder
+        updateProperties(properties)
+
+        unregisterDialogView()
+        unregisterEvents()
+        adjustBaseDialogConstraint()
+        registerDialogView()
+        adjustDialogViewStyle()
+        registerEvents()
+        updateConstraintsIfNeeded()
+        layoutIfNeeded()
     }
 
     // MARK: Deinitialization
