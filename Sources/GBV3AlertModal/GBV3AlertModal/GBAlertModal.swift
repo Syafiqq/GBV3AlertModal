@@ -27,6 +27,7 @@ public class GBAlertModal: UIView {
 
     // Divider
     private(set) var vwBannerAndBelowDivider: UIView?
+    private(set) var vwTitleAndBelowDivider: UIView?
 
     // MARK: Constraints
 
@@ -118,6 +119,7 @@ private extension GBAlertModal {
         vwSubtitle?.removeFromSuperview()
 
         vwBannerAndBelowDivider?.removeFromSuperview()
+        vwTitleAndBelowDivider?.removeFromSuperview()
     }
 
     // swiftlint:disable:next function_body_length cyclomatic_complexity
@@ -214,6 +216,16 @@ private extension GBAlertModal {
             vwBannerAndBelowDivider = nil
         }
 
+        // Setup title and its below
+        if lbTitle != nil,
+           (svSubtitleContainer != nil) {
+            let vwTitleAndBelowDivider = generateGenericViewDesign()
+
+            self.vwTitleAndBelowDivider = vwTitleAndBelowDivider
+        } else {
+            vwTitleAndBelowDivider = nil
+        }
+
         // MARK: View Graph
         // Compile View
 
@@ -221,6 +233,7 @@ private extension GBAlertModal {
             vwBanner,
             vwBannerAndBelowDivider,
             lbTitle,
+            vwTitleAndBelowDivider,
             svSubtitleContainer
         ]
                 .forEach {
@@ -271,6 +284,14 @@ private extension GBAlertModal {
                 make.height
                         .equalTo(svSubtitleContainer.frameLayoutGuide)
                         .priority(.low)
+            }
+        }
+
+        // Title Divider
+        if let vwTitleAndBelowDivider {
+            vwTitleAndBelowDivider.snp.makeConstraints { (make: ConstraintMaker) -> Void in
+                make.height
+                        .equalTo(properties?.space?.title ?? .zero)
             }
         }
     }
