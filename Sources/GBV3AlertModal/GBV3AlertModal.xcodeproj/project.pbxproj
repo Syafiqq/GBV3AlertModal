@@ -12,6 +12,7 @@
 		593ED2572935CFA9007BC45A /* GBV3AlertModalTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 593ED2562935CFA9007BC45A /* GBV3AlertModalTests.swift */; };
 		593ED2582935CFA9007BC45A /* GBV3AlertModal.h in Headers */ = {isa = PBXBuildFile; fileRef = 593ED24A2935CFA9007BC45A /* GBV3AlertModal.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		59D1458D2936F74000339673 /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = 59D1458F2936F74000339673 /* Localizable.strings */; };
+		65B8C0473FD51C4A082DDDAA /* UIStackView+Removal.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65B8CF9F05A68AA20C95EE02 /* UIStackView+Removal.swift */; };
 		65B8C9CA5074E157E37AC0CF /* GBAlertModal+DataHolder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65B8C85B5688BE2EE047E94A /* GBAlertModal+DataHolder.swift */; };
 		65B8C9EDBB77D02A3C4F6E54 /* GBAlertModal.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65B8C217DB1BBC34E7756F5E /* GBAlertModal.swift */; };
 		65B8CB4C5DBA6103913DF02C /* GBV3AlertModal.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65B8CCF436BFA68301C842E8 /* GBV3AlertModal.swift */; };
@@ -52,6 +53,7 @@
 		65B8C533E4B76C4781471FC2 /* GBAlertModal+Properties.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = "GBAlertModal+Properties.swift"; sourceTree = "<group>"; };
 		65B8C85B5688BE2EE047E94A /* GBAlertModal+DataHolder.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = "GBAlertModal+DataHolder.swift"; sourceTree = "<group>"; };
 		65B8CCF436BFA68301C842E8 /* GBV3AlertModal.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = GBV3AlertModal.swift; sourceTree = "<group>"; };
+		65B8CF9F05A68AA20C95EE02 /* UIStackView+Removal.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = "UIStackView+Removal.swift"; sourceTree = "<group>"; };
 		AE8E82687F68207AB6A57066 /* Pods_GBV3AlertModalTests.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_GBV3AlertModalTests.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -153,6 +155,7 @@
 		65B8C9308D0852D7F65D4DB4 /* Extensions */ = {
 			isa = PBXGroup;
 			children = (
+				65B8CF9F05A68AA20C95EE02 /* UIStackView+Removal.swift */,
 			);
 			path = Extensions;
 			sourceTree = "<group>";
@@ -391,6 +394,7 @@
 				65B8C9EDBB77D02A3C4F6E54 /* GBAlertModal.swift in Sources */,
 				65B8CE33125189D3D1CCDC00 /* GBAlertModal+Properties.swift in Sources */,
 				65B8C9CA5074E157E37AC0CF /* GBAlertModal+DataHolder.swift in Sources */,
+				65B8C0473FD51C4A082DDDAA /* UIStackView+Removal.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
