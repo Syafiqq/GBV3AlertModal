@@ -128,7 +128,9 @@ private extension GBAlertModal {
                 baseTint: properties.baseTint
                         ?? globalProperties.baseTint,
                 overlayColor: properties.overlayColor
-                        ?? globalProperties.overlayColor
+                        ?? globalProperties.overlayColor,
+                contentProperty: properties.contentProperty
+                        ?? globalProperties.contentProperty
         )
     }
 }
