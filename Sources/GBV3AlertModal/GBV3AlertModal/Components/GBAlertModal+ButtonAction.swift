@@ -81,6 +81,9 @@ internal extension GBAlertModal {
             button.setTitleColor(style.titleColor, for: .normal)
             button.setImage(nil, for: .normal)
             button.titleLabel?.font = style.titleFont
+        case .plain(let style):
+            button.setTitleColor(style.titleColor, for: .normal)
+            button.titleLabel?.font = style.titleFont
         }
     }
 
