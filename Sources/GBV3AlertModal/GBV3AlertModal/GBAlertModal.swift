@@ -109,6 +109,24 @@ public class GBAlertModal: UIView {
 
     // MARK: Public Function
 
+    public func show(parent: UIView, completion onShown: @escaping () -> Void) {
+        weak var parent = parent
+        guard let parent else {
+            return
+        }
+
+        alpha = 1
+        transform = .identity
+
+        parent.addSubview(self)
+        snp.makeConstraints { (make: ConstraintMaker) -> Void in
+            make.edges
+                    .equalTo(parent)
+        }
+
+        onShown()
+    }
+
     // MARK: Deinitialization
 
     deinit {
