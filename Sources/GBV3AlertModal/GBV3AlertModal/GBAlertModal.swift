@@ -255,7 +255,9 @@ private extension GBAlertModal {
                 margin: properties.margin
                         ?? globalProperties.margin,
                 padding: properties.padding
-                        ?? globalProperties.padding
+                        ?? globalProperties.padding,
+                bannerRatio: properties.bannerRatio
+                        ?? globalProperties.bannerRatio
         )
     }
 }
