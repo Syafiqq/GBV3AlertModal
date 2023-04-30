@@ -106,6 +106,7 @@
 				65B8CCF436BFA68301C842E8 /* GBV3AlertModal.swift */,
 				59D145852936F0B700339673 /* i18n */,
 				65B8C53374FE7664B3D1A75E /* Components */,
+				65B8C9308D0852D7F65D4DB4 /* Extensions */,
 			);
 			path = GBV3AlertModal;
 			sourceTree = "<group>";
@@ -147,6 +148,13 @@
 				65B8C85B5688BE2EE047E94A /* GBAlertModal+DataHolder.swift */,
 			);
 			path = Components;
+			sourceTree = "<group>";
+		};
+		65B8C9308D0852D7F65D4DB4 /* Extensions */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			path = Extensions;
 			sourceTree = "<group>";
 		};
 		878E0B7A7ACFFF4724765B96 /* Frameworks */ = {
