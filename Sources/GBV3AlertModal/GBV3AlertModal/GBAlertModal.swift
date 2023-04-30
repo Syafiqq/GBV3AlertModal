@@ -70,6 +70,11 @@ private extension GBAlertModal {
     }
 
     // MARK: ViewModel
+    func registerEvents() {
+    }
+
+    func unregisterEvents() {
+    }
 
     // MARK: Model
 }
