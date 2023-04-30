@@ -11,6 +11,7 @@
 		593ED2522935CFA9007BC45A /* GBV3AlertModal.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 593ED2472935CFA9007BC45A /* GBV3AlertModal.framework */; };
 		593ED2572935CFA9007BC45A /* GBV3AlertModalTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 593ED2562935CFA9007BC45A /* GBV3AlertModalTests.swift */; };
 		593ED2582935CFA9007BC45A /* GBV3AlertModal.h in Headers */ = {isa = PBXBuildFile; fileRef = 593ED24A2935CFA9007BC45A /* GBV3AlertModal.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		59685EA429FE82F20037BB17 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 59685EA329FE82F20037BB17 /* Assets.xcassets */; };
 		59D1458D2936F74000339673 /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = 59D1458F2936F74000339673 /* Localizable.strings */; };
 		65B8C0473FD51C4A082DDDAA /* UIStackView+Removal.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65B8CF9F05A68AA20C95EE02 /* UIStackView+Removal.swift */; };
 		65B8C1D523EB87133B680197 /* UIMinMaxEdgeInsets.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65B8CA374D81E39819EF8298 /* UIMinMaxEdgeInsets.swift */; };
@@ -47,6 +48,7 @@
 		593ED2512935CFA9007BC45A /* GBV3AlertModalTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = GBV3AlertModalTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		593ED2562935CFA9007BC45A /* GBV3AlertModalTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GBV3AlertModalTests.swift; sourceTree = "<group>"; };
 		59403FD12947695000426541 /* Script */ = {isa = PBXFileReference; lastKnownFileType = folder; path = Script; sourceTree = "<group>"; };
+		59685EA329FE82F20037BB17 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		59D1458E2936F74000339673 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/Localizable.strings; sourceTree = "<group>"; };
 		59D145902936F77900339673 /* id */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = id; path = id.lproj/Localizable.strings; sourceTree = "<group>"; };
 		59D145912936F79A00339673 /* vi */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = vi; path = vi.lproj/Localizable.strings; sourceTree = "<group>"; };
@@ -113,6 +115,7 @@
 				59D145852936F0B700339673 /* i18n */,
 				65B8C53374FE7664B3D1A75E /* Components */,
 				65B8C9308D0852D7F65D4DB4 /* Extensions */,
+				59685EA329FE82F20037BB17 /* Assets.xcassets */,
 			);
 			path = GBV3AlertModal;
 			sourceTree = "<group>";
@@ -275,6 +278,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				59685EA429FE82F20037BB17 /* Assets.xcassets in Resources */,
 				59D1458D2936F74000339673 /* Localizable.strings in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
