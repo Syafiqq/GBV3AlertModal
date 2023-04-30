@@ -73,6 +73,8 @@ private extension GBAlertModal {
     func initViews() {
         translatesAutoresizingMaskIntoConstraints = false
 
+        vwContainer?.clipsToBounds = true
+
         unregisterDialogView()
         adjustBaseDialogConstraint()
         registerDialogView()
@@ -101,6 +103,10 @@ private extension GBAlertModal {
 
         // Overlay
         vwOverlay?.backgroundColor = properties?.overlayColor
+
+        // Content Container
+        vwContainer?.backgroundColor = properties?.contentProperty?.backgroundColor
+        vwContainer?.layer.cornerRadius = properties?.contentProperty?.cornerRadius ?? .zero
     }
 
     func adjustBaseDialogConstraint() {
