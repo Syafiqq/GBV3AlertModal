@@ -12,6 +12,9 @@ public class GBAlertModal: UIView {
     // Main Container
     private(set) var vwContainer: UIView?
 
+    // Main Content
+    private(set) var svContentContainer: UIStackView?
+
     // MARK: Constraints
 
     // MARK: Attributes Gestures
@@ -113,6 +116,9 @@ private extension GBAlertModal {
         if let vwContainer = vwContainer {
             adjustVwContainerConstraint(vwContainer)
         }
+        if let svContentContainer = svContentContainer {
+            adjustSvContentContainerConstraint(svContentContainer)
+        }
     }
 
     private func adjustVwContainerConstraint(_ vwContainer: UIView) {
@@ -155,6 +161,62 @@ private extension GBAlertModal {
                         .lessThanOrEqualTo(maxWidth)
                         .priority(.high)
             }
+        }
+    }
+
+    private func adjustSvContentContainerConstraint(_ svContentContainer: UIView) {
+        svContentContainer.snp.remakeConstraints { (make: ConstraintMaker) -> Void in
+            make.top
+                    .greaterThanOrEqualToSuperview()
+                    .offset(
+                            properties?.padding?.topMin ?? .zero
+                    )
+            make.top
+                    .equalToSuperview()
+                    .offset(
+                            properties?.padding?.topMax ?? .zero
+                    )
+                    .priority(.low)
+
+            make.leading
+                    .greaterThanOrEqualToSuperview()
+                    .offset(
+                            properties?.padding?.leftMin ?? .zero
+                    )
+            make.leading
+                    .equalToSuperview()
+                    .offset(
+                            properties?.padding?.leftMax ?? .zero
+                    )
+                    .priority(.low)
+
+            make.bottom
+                    .lessThanOrEqualToSuperview()
+                    .offset(
+                            -(properties?.padding?.bottomMin ?? .zero)
+                    )
+            make.bottom
+                    .equalToSuperview()
+                    .offset(
+                            -(properties?.padding?.bottomMax ?? .zero)
+                    )
+                    .priority(.low)
+
+            make.trailing
+                    .lessThanOrEqualToSuperview()
+                    .offset(
+                            -(properties?.padding?.rightMin ?? .zero)
+                    )
+            make.trailing
+                    .equalToSuperview()
+                    .offset(
+                            -(properties?.padding?.rightMax ?? .zero)
+                    )
+                    .priority(.low)
+
+            make.center
+                    .equalToSuperview()
+                    .priority(.low)
         }
     }
 
@@ -209,10 +271,12 @@ private extension GBAlertModal {
         // MARK: View Initialization
         let vwOverlay = generateGenericViewDesign()
         let vwContainer = generateGenericViewDesign()
+        let svContentContainer = generateStackViewForContentDesign()
 
         // MARK: View Graph
         addSubview(vwOverlay)
         addSubview(vwContainer)
+        vwContainer.addSubview(svContentContainer)
 
         // MARK: View Constraints
         vwOverlay.snp.makeConstraints { (make: ConstraintMaker) -> Void in
@@ -221,15 +285,27 @@ private extension GBAlertModal {
         }
 
         adjustVwContainerConstraint(vwContainer)
+        adjustSvContentContainerConstraint(svContentContainer)
 
         // MARK: View Assign
         self.vwOverlay = vwOverlay
         self.vwContainer = vwContainer
+        self.svContentContainer = svContentContainer
     }
 
     func generateGenericViewDesign() -> UIView {
         let view = UIView(frame: .zero)
         view.translatesAutoresizingMaskIntoConstraints = false
+        return view
+    }
+
+    func generateStackViewForContentDesign() -> UIStackView {
+        let view = UIStackView()
+        view.translatesAutoresizingMaskIntoConstraints = false
+        view.axis = .vertical
+        view.distribution = .fill
+        view.alignment = .center
+        view.spacing = 0
         return view
     }
 }
