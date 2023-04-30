@@ -1,10 +1,13 @@
 import Foundation
 import UIKit
+import SnapKit
 
 // MARK: - LIFECYCLE AND CALLBACK
 
 public class GBAlertModal: UIView {
     // MARK: Outlets
+    // Overlay
+    private(set) var vwOverlay: UIView?
 
     // MARK: Constraints
 
@@ -119,11 +122,24 @@ private extension GBAlertModal {
 private extension GBAlertModal {
     func initDesign() {
         // MARK: View Initialization
+        let vwOverlay = generateGenericViewDesign()
 
         // MARK: View Graph
+        addSubview(vwOverlay)
 
         // MARK: View Constraints
+        vwOverlay.snp.makeConstraints { (make: ConstraintMaker) -> Void in
+            make.edges
+                    .equalToSuperview()
+        }
 
         // MARK: View Assign
+        self.vwOverlay = vwOverlay
+    }
+
+    func generateGenericViewDesign() -> UIView {
+        let view = UIView(frame: .zero)
+        view.translatesAutoresizingMaskIntoConstraints = false
+        return view
     }
 }
