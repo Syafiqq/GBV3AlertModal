@@ -52,7 +52,9 @@ private extension GBAlertModal {
     // MARK: Init Functions
     func initViews() {
         unregisterDialogView()
+        adjustBaseDialogConstraint()
         registerDialogView()
+        adjustDialogViewStyle()
     }
 
     func initEvents() {
