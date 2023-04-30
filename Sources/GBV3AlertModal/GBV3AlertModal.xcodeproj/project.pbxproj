@@ -101,6 +101,7 @@
 				593ED24B2935CFA9007BC45A /* GBV3AlertModal.docc */,
 				65B8CCF436BFA68301C842E8 /* GBV3AlertModal.swift */,
 				59D145852936F0B700339673 /* i18n */,
+				65B8C53374FE7664B3D1A75E /* Components */,
 			);
 			path = GBV3AlertModal;
 			sourceTree = "<group>";
@@ -133,6 +134,13 @@
 			);
 			name = Pods;
 			path = ../../Pods;
+			sourceTree = "<group>";
+		};
+		65B8C53374FE7664B3D1A75E /* Components */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			path = Components;
 			sourceTree = "<group>";
 		};
 		878E0B7A7ACFFF4724765B96 /* Frameworks */ = {
