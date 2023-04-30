@@ -56,6 +56,40 @@ extension GBAlertModal {
             self.closeButtonTint = closeButtonTint
             self.space = space
         }
+
+        public func copy(
+                baseTint: UIColor? = nil,
+                overlayColor: UIColor? = nil,
+                contentProperty: ContentProperty? = nil,
+                margin: UIEdgeInsets? = nil,
+                padding: UIMinMaxEdgeInsets? = nil,
+                bannerRatio: CGFloat? = nil,
+                titleFont: UIFont? = nil,
+                titleColor: UIColor? = nil,
+                subtitleFont: UIFont? = nil,
+                subtitleColor: UIColor? = nil,
+                buttonActionShouldMatchParent: Bool? = false,
+                buttonActionOrientation: NSLayoutConstraint.Axis? = nil,
+                closeButtonTint: UIColor? = nil,
+                space: ComponentSpace? = nil
+        ) -> Self {
+            Self(
+                    baseTint: baseTint ?? self.baseTint,
+                    overlayColor: overlayColor ?? self.overlayColor,
+                    contentProperty: contentProperty ?? self.contentProperty,
+                    margin: margin ?? self.margin,
+                    padding: padding ?? self.padding,
+                    bannerRatio: bannerRatio ?? self.bannerRatio,
+                    titleFont: titleFont ?? self.titleFont,
+                    titleColor: titleColor ?? self.titleColor,
+                    subtitleFont: subtitleFont ?? self.subtitleFont,
+                    subtitleColor: subtitleColor ?? self.subtitleColor,
+                    buttonActionShouldMatchParent: buttonActionShouldMatchParent ?? self.buttonActionShouldMatchParent,
+                    buttonActionOrientation: buttonActionOrientation ?? self.buttonActionOrientation,
+                    closeButtonTint: closeButtonTint ?? self.closeButtonTint,
+                    space: space ?? self.space
+            )
+        }
     }
 }
 
