@@ -13,6 +13,9 @@ extension GBAlertModal {
         public let subtitleAttributed: NSAttributedString?
         public weak var subtitleCustomView: UIView?
 
+        public let primaryAction: String?
+        public let primaryActionStyle: ActionStyle?
+
         public init(
                 closeOnTapOverlay: Bool = false,
                 banner: UIImage? = nil,
@@ -20,7 +23,9 @@ extension GBAlertModal {
                 titleAttributed: NSAttributedString? = nil,
                 subtitle: String? = nil,
                 subtitleAttributed: NSAttributedString? = nil,
-                subtitleCustomView: UIView? = nil
+                subtitleCustomView: UIView? = nil,
+                primaryAction: String? = nil,
+                primaryActionStyle: ActionStyle? = nil
         ) {
             self.closeOnTapOverlay = closeOnTapOverlay
             self.banner = banner
@@ -29,6 +34,8 @@ extension GBAlertModal {
             self.subtitle = subtitle
             self.subtitleAttributed = subtitleAttributed
             self.subtitleCustomView = subtitleCustomView
+            self.primaryAction = primaryAction
+            self.primaryActionStyle = primaryActionStyle
         }
     }
 }
