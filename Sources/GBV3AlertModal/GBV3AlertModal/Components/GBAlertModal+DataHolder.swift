@@ -2,6 +2,10 @@ import UIKit
 
 extension GBAlertModal {
     public struct DataHolder {
+        public static var `default`: Self {
+            Self()
+        }
+
         public let closeOnTapOverlay: Bool
 
         public let banner: UIImage?
