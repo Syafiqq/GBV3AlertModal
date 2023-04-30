@@ -14,6 +14,7 @@
 		59D1458D2936F74000339673 /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = 59D1458F2936F74000339673 /* Localizable.strings */; };
 		65B8C0473FD51C4A082DDDAA /* UIStackView+Removal.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65B8CF9F05A68AA20C95EE02 /* UIStackView+Removal.swift */; };
 		65B8C1D523EB87133B680197 /* UIMinMaxEdgeInsets.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65B8CA374D81E39819EF8298 /* UIMinMaxEdgeInsets.swift */; };
+		65B8C4F2BA346864C4EFBCAE /* GBAlertModal+ButtonAction.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65B8CD901C081384C8B4C5D1 /* GBAlertModal+ButtonAction.swift */; };
 		65B8C9CA5074E157E37AC0CF /* GBAlertModal+DataHolder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65B8C85B5688BE2EE047E94A /* GBAlertModal+DataHolder.swift */; };
 		65B8C9EDBB77D02A3C4F6E54 /* GBAlertModal.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65B8C217DB1BBC34E7756F5E /* GBAlertModal.swift */; };
 		65B8CB4C5DBA6103913DF02C /* GBV3AlertModal.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65B8CCF436BFA68301C842E8 /* GBV3AlertModal.swift */; };
@@ -55,6 +56,7 @@
 		65B8C85B5688BE2EE047E94A /* GBAlertModal+DataHolder.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = "GBAlertModal+DataHolder.swift"; sourceTree = "<group>"; };
 		65B8CA374D81E39819EF8298 /* UIMinMaxEdgeInsets.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = UIMinMaxEdgeInsets.swift; sourceTree = "<group>"; };
 		65B8CCF436BFA68301C842E8 /* GBV3AlertModal.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = GBV3AlertModal.swift; sourceTree = "<group>"; };
+		65B8CD901C081384C8B4C5D1 /* GBAlertModal+ButtonAction.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = "GBAlertModal+ButtonAction.swift"; sourceTree = "<group>"; };
 		65B8CF9F05A68AA20C95EE02 /* UIStackView+Removal.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = "UIStackView+Removal.swift"; sourceTree = "<group>"; };
 		AE8E82687F68207AB6A57066 /* Pods_GBV3AlertModalTests.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_GBV3AlertModalTests.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
@@ -151,6 +153,7 @@
 				65B8C533E4B76C4781471FC2 /* GBAlertModal+Properties.swift */,
 				65B8C85B5688BE2EE047E94A /* GBAlertModal+DataHolder.swift */,
 				65B8CA374D81E39819EF8298 /* UIMinMaxEdgeInsets.swift */,
+				65B8CD901C081384C8B4C5D1 /* GBAlertModal+ButtonAction.swift */,
 			);
 			path = Components;
 			sourceTree = "<group>";
@@ -399,6 +402,7 @@
 				65B8C9CA5074E157E37AC0CF /* GBAlertModal+DataHolder.swift in Sources */,
 				65B8C0473FD51C4A082DDDAA /* UIStackView+Removal.swift in Sources */,
 				65B8C1D523EB87133B680197 /* UIMinMaxEdgeInsets.swift in Sources */,
+				65B8C4F2BA346864C4EFBCAE /* GBAlertModal+ButtonAction.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
