@@ -25,6 +25,9 @@ public class GBAlertModal: UIView {
     private(set) var lbSubtitle: UILabel?
     private(set) weak var vwSubtitle: UIView?
 
+    // Main action container
+    private(set) var svMainActionContainer: UIStackView?
+
     // Divider
     private(set) var vwBannerAndBelowDivider: UIView?
     private(set) var vwTitleAndBelowDivider: UIView?
@@ -120,6 +123,9 @@ private extension GBAlertModal {
 
         vwBannerAndBelowDivider?.removeFromSuperview()
         vwTitleAndBelowDivider?.removeFromSuperview()
+
+        svMainActionContainer?.removeAllArrangedSubviews()
+        svMainActionContainer?.removeFromSuperview()
     }
 
     // swiftlint:disable:next function_body_length cyclomatic_complexity
@@ -205,10 +211,20 @@ private extension GBAlertModal {
             vwSubtitle = nil
         }
 
+        // Setup main action container
+        if false {
+            let svMainActionContainer = generateStackViewForMainButtonDesign()
+            svMainActionContainer.spacing = properties?.space?.interButton ?? .zero
+
+            self.svMainActionContainer = svMainActionContainer
+        } else {
+            svMainActionContainer = nil
+        }
+
         // Setup Divider
         // Setup banner and its below
         if vwBanner != nil,
-           (lbTitle != nil || svSubtitleContainer != nil) {
+           (lbTitle != nil || svSubtitleContainer != nil || svMainActionContainer != nil) {
             let vwBannerAndBelowDivider = generateGenericViewDesign()
 
             self.vwBannerAndBelowDivider = vwBannerAndBelowDivider
@@ -218,7 +234,7 @@ private extension GBAlertModal {
 
         // Setup title and its below
         if lbTitle != nil,
-           (svSubtitleContainer != nil) {
+           (svSubtitleContainer != nil || svMainActionContainer != nil) {
             let vwTitleAndBelowDivider = generateGenericViewDesign()
 
             self.vwTitleAndBelowDivider = vwTitleAndBelowDivider
@@ -230,11 +246,21 @@ private extension GBAlertModal {
         // Compile View
 
         [
+        ]
+                .forEach {
+                    guard let view = $0 as? UIView else {
+                        return
+                    }
+                    svMainActionContainer?.addArrangedSubview(view)
+                }
+
+        [
             vwBanner,
             vwBannerAndBelowDivider,
             lbTitle,
             vwTitleAndBelowDivider,
-            svSubtitleContainer
+            svSubtitleContainer,
+            svMainActionContainer
         ]
                 .forEach {
                     guard let view = $0 else {
@@ -309,6 +335,14 @@ private extension GBAlertModal {
 
         // Content Container Stack
         svContentContainer?.alignment = properties?.contentProperty?.childShouldMatchParent == true ? .fill : .center
+
+        // Button Action Stack
+        svMainActionContainer?.alignment = properties?.buttonActionShouldMatchParent == true ? .fill : .center
+
+        // Button Action Orientation
+        if let buttonActionOrientation = properties?.buttonActionOrientation {
+            svMainActionContainer?.axis = buttonActionOrientation
+        }
     }
 
     func adjustBaseDialogConstraint() {
@@ -554,6 +588,15 @@ private extension GBAlertModal {
         view.translatesAutoresizingMaskIntoConstraints = false
         view.numberOfLines = 0
         view.textAlignment = .center
+        return view
+    }
+
+    func generateStackViewForMainButtonDesign() -> UIStackView {
+        let view = UIStackView()
+        view.translatesAutoresizingMaskIntoConstraints = false
+        view.axis = .vertical
+        view.distribution = .fillEqually
+        view.alignment = .center
         return view
     }
 }
