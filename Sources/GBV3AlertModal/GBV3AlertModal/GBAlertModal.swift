@@ -141,6 +141,19 @@ public class GBAlertModal: UIView {
         )
     }
 
+    public func dismiss() {
+        if dataHolder?.dismissOnAction == true {
+            hide()
+        }
+    }
+
+    public func dismissAndEmit(event: ActionType) {
+        if dataHolder?.dismissOnAction == true {
+            hide()
+        }
+        dataHolder?.completion?(self, event)
+    }
+
     // MARK: Deinitialization
 
     deinit {
