@@ -62,5 +62,41 @@ extension GBAlertModal {
             self.dismissOnAction = dismissOnAction
             self.completion = completion
         }
+
+        public func copy(
+                closeOnTapOverlay: Bool? = nil,
+                banner: UIImage? = nil,
+                title: String? = nil,
+                titleAttributed: NSAttributedString? = nil,
+                subtitle: String? = nil,
+                subtitleAttributed: NSAttributedString? = nil,
+                subtitleCustomView: UIView? = nil,
+                primaryAction: String? = nil,
+                primaryActionStyle: ActionStyle? = nil,
+                secondaryAction: String? = nil,
+                secondaryActionStyle: ActionStyle? = nil,
+                showCloseButton: Bool? = nil,
+                closeImage: UIImage? = nil,
+                dismissOnAction: Bool? = nil,
+                completion: ((GBAlertModal, GBAlertModal.ActionType) -> Void)? = nil
+        ) -> Self {
+            Self(
+                    closeOnTapOverlay: closeOnTapOverlay ?? self.closeOnTapOverlay,
+                    banner: banner ?? self.banner,
+                    title: title ?? self.title,
+                    titleAttributed: titleAttributed ?? self.titleAttributed,
+                    subtitle: subtitle ?? self.subtitle,
+                    subtitleAttributed: subtitleAttributed ?? self.subtitleAttributed,
+                    subtitleCustomView: subtitleCustomView ?? self.subtitleCustomView,
+                    primaryAction: primaryAction ?? self.primaryAction,
+                    primaryActionStyle: primaryActionStyle ?? self.primaryActionStyle,
+                    secondaryAction: secondaryAction ?? self.secondaryAction,
+                    secondaryActionStyle: secondaryActionStyle ?? self.secondaryActionStyle,
+                    showCloseButton: showCloseButton ?? self.showCloseButton,
+                    closeImage: closeImage ?? self.closeImage,
+                    dismissOnAction: dismissOnAction ?? self.dismissOnAction,
+                    completion: completion ?? self.completion
+            )
+        }
     }
 }
