@@ -28,6 +28,10 @@ public class GBAlertModal: UIView {
     // Main action container
     private(set) var svMainActionContainer: UIStackView?
 
+    // Action
+    private(set) var vwPrimaryAction: UIView?
+    private(set) var btPrimaryAction: UIButton?
+
     // Divider
     private(set) var vwBannerAndBelowDivider: UIView?
     private(set) var vwTitleAndBelowDivider: UIView?
@@ -128,6 +132,9 @@ private extension GBAlertModal {
 
         svMainActionContainer?.removeAllArrangedSubviews()
         svMainActionContainer?.removeFromSuperview()
+
+        vwPrimaryAction?.removeFromSuperview()
+        btPrimaryAction?.removeFromSuperview()
     }
 
     // swiftlint:disable:next function_body_length cyclomatic_complexity
@@ -213,8 +220,25 @@ private extension GBAlertModal {
             vwSubtitle = nil
         }
 
+        // Setup primaryAction
+        if let primaryAction = dataHolder?.primaryAction,
+           let primaryActionStyle = dataHolder?.primaryActionStyle {
+            let vwPrimaryAction = generateGenericViewDesign()
+
+            let btPrimaryAction = generateButtonForActionDesign(style: primaryActionStyle)
+            configureButtonActionStyle(btPrimaryAction, title: primaryAction, style: primaryActionStyle)
+
+            vwPrimaryAction.addSubview(btPrimaryAction)
+
+            self.vwPrimaryAction = vwPrimaryAction
+            self.btPrimaryAction = btPrimaryAction
+        } else {
+            vwPrimaryAction = nil
+            btPrimaryAction = nil
+        }
+
         // Setup main action container
-        if false {
+        if vwPrimaryAction != nil {
             let svMainActionContainer = generateStackViewForMainButtonDesign()
             svMainActionContainer.spacing = properties?.space?.interButton ?? .zero
 
@@ -258,9 +282,10 @@ private extension GBAlertModal {
         // Compile View
 
         [
+            vwPrimaryAction
         ]
                 .forEach {
-                    guard let view = $0 as? UIView else {
+                    guard let view = $0 else {
                         return
                     }
                     svMainActionContainer?.addArrangedSubview(view)
@@ -340,6 +365,13 @@ private extension GBAlertModal {
                 make.height
                         .equalTo(properties?.space?.subtitle ?? .zero)
             }
+        }
+
+        // Primary Action
+        if let vwPrimaryAction,
+           let btPrimaryAction,
+           let primaryActionStyle = dataHolder?.primaryActionStyle {
+            configureButtonActionConstraint(btPrimaryAction, parent: vwPrimaryAction, style: primaryActionStyle)
         }
     }
 
