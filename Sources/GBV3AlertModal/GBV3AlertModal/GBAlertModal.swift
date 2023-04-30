@@ -15,6 +15,10 @@ public class GBAlertModal: UIView {
     // Main Content
     private(set) var svContentContainer: UIStackView?
 
+    // Content
+    private(set) var vwBanner: UIView?
+    private(set) var ivBanner: UIImageView?
+
     // MARK: Constraints
 
     // MARK: Attributes Gestures
@@ -96,9 +100,62 @@ private extension GBAlertModal {
 
     func unregisterDialogView() {
         svContentContainer?.removeAllArrangedSubviews()
+
+        vwBanner?.removeFromSuperview()
+        ivBanner?.removeFromSuperview()
     }
 
     func registerDialogView() {
+        // MARK: View Initialization
+        // Setup banner
+        if let banner = dataHolder?.banner {
+            let vwBanner = generateGenericViewDesign()
+            let ivBanner = generateImageViewForBannerDesign()
+            ivBanner.image = banner
+
+            vwBanner.addSubview(ivBanner)
+
+            self.vwBanner = vwBanner
+            self.ivBanner = ivBanner
+        } else {
+            vwBanner = nil
+            ivBanner = nil
+        }
+
+        // MARK: View Graph
+        // Compile View
+
+        [
+            vwBanner
+        ]
+                .forEach {
+                    guard let view = $0 else {
+                        return
+                    }
+                    svContentContainer?.addArrangedSubview(view)
+                }
+
+        // MARK: View Constraints
+        // Banner
+        if let ivBanner {
+            ivBanner.snp.makeConstraints { (make: ConstraintMaker) -> Void in
+                // Align
+                make.leading.top
+                        .greaterThanOrEqualToSuperview()
+                make.leading.top
+                        .equalToSuperview()
+                        .priority(.low)
+                make.center
+                        .equalToSuperview()
+
+                // Pin
+                if let ratio = properties?.bannerRatio {
+                    make.width
+                            .equalTo(ivBanner.snp.height)
+                            .multipliedBy(ratio)
+                }
+            }
+        }
     }
 
     func adjustDialogViewStyle() {
@@ -312,6 +369,13 @@ private extension GBAlertModal {
         view.distribution = .fill
         view.alignment = .center
         view.spacing = 0
+        return view
+    }
+
+    func generateImageViewForBannerDesign() -> UIImageView {
+        let view = UIImageView()
+        view.translatesAutoresizingMaskIntoConstraints = false
+        view.contentMode = .scaleAspectFit
         return view
     }
 }
