@@ -6,14 +6,18 @@ extension GBAlertModal {
         public let overlayColor: UIColor?
         public let contentProperty: ContentProperty?
 
+        public let margin: UIEdgeInsets?
+
         public init(
                 baseTint: UIColor? = nil,
                 overlayColor: UIColor? = nil,
-                contentProperty: ContentProperty? = nil
+                contentProperty: ContentProperty? = nil,
+                margin: UIEdgeInsets? = nil
         ) {
             self.baseTint = baseTint
             self.overlayColor = overlayColor
             self.contentProperty = contentProperty
+            self.margin = margin
         }
     }
 }
