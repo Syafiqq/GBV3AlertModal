@@ -127,6 +127,20 @@ public class GBAlertModal: UIView {
         onShown()
     }
 
+    @objc
+    public func hide() {
+        UIView.animate(
+                withDuration: 0.2,
+                animations: { [weak self] in
+                    self?.alpha = 0
+                    self?.transform = .identity.scaledBy(x: 2, y: 2)
+                },
+                completion: { [weak self] _ in
+                    self?.removeFromSuperview()
+                }
+        )
+    }
+
     // MARK: Deinitialization
 
     deinit {
