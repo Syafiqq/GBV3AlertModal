@@ -171,6 +171,12 @@ internal extension GBAlertModal {
             }
         }
     }
+
+    func updateObliqueBottomLeftStylePressed(_ button: UIButton, style: ActionStyle.ObliqueBottomLeftTheme) {
+    }
+
+    func updateObliqueBottomLeftStyleUnPressed(_ button: UIButton, style: ActionStyle.ObliqueBottomLeftTheme) {
+    }
 }
 
 internal extension GBAlertModal {
