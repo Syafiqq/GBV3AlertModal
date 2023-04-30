@@ -9,6 +9,9 @@ public class GBAlertModal: UIView {
     // Overlay
     private(set) var vwOverlay: UIView?
 
+    // Main Container
+    private(set) var vwContainer: UIView?
+
     // MARK: Constraints
 
     // MARK: Attributes Gestures
@@ -101,6 +104,52 @@ private extension GBAlertModal {
     }
 
     func adjustBaseDialogConstraint() {
+        if let vwContainer = vwContainer {
+            adjustVwContainerConstraint(vwContainer)
+        }
+    }
+
+    private func adjustVwContainerConstraint(_ vwContainer: UIView) {
+        vwContainer.snp.remakeConstraints { (make: ConstraintMaker) -> Void in
+            // Align
+            make.top
+                    .greaterThanOrEqualTo(safeAreaLayoutGuide)
+                    .offset(
+                            properties?.margin?.top ?? .zero
+                    )
+            make.leading
+                    .greaterThanOrEqualTo(safeAreaLayoutGuide)
+                    .offset(
+                            properties?.margin?.left ?? .zero
+                    )
+            make.bottom
+                    .lessThanOrEqualTo(safeAreaLayoutGuide)
+                    .offset(
+                            -(properties?.margin?.bottom ?? .zero)
+                    )
+            make.trailing
+                    .lessThanOrEqualTo(safeAreaLayoutGuide)
+                    .offset(
+                            -(properties?.margin?.right ?? .zero)
+                    )
+
+            make.center
+                    .equalToSuperview()
+                    .priority(.low)
+
+            // Pin
+            if let fixedWidth = properties?.contentProperty?.fixedWidth {
+                make.width
+                        .equalTo(fixedWidth)
+                        .priority(.low)
+            }
+
+            if let maxWidth = properties?.contentProperty?.maxWidth {
+                make.width
+                        .lessThanOrEqualTo(maxWidth)
+                        .priority(.high)
+            }
+        }
     }
 
     // MARK: ViewModel
@@ -151,9 +200,11 @@ private extension GBAlertModal {
     func initDesign() {
         // MARK: View Initialization
         let vwOverlay = generateGenericViewDesign()
+        let vwContainer = generateGenericViewDesign()
 
         // MARK: View Graph
         addSubview(vwOverlay)
+        addSubview(vwContainer)
 
         // MARK: View Constraints
         vwOverlay.snp.makeConstraints { (make: ConstraintMaker) -> Void in
@@ -161,8 +212,11 @@ private extension GBAlertModal {
                     .equalToSuperview()
         }
 
+        adjustVwContainerConstraint(vwContainer)
+
         // MARK: View Assign
         self.vwOverlay = vwOverlay
+        self.vwContainer = vwContainer
     }
 
     func generateGenericViewDesign() -> UIView {
