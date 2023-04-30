@@ -105,6 +105,7 @@ public class GBAlertModal: UIView {
 
     @objc
     private func onCloseTapped() {
+        dismissAndEmit(event: .close)
     }
 
     // MARK: Public Function
