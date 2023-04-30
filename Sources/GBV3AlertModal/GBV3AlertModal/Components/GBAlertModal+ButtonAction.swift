@@ -173,6 +173,20 @@ internal extension GBAlertModal {
     }
 
     func updateObliqueBottomLeftStylePressed(_ button: UIButton, style: ActionStyle.ObliqueBottomLeftTheme) {
+        UIView.animate(
+                withDuration: 0.1,
+                delay: 0,
+                options: UIView.AnimationOptions.curveEaseIn,
+                animations: { [weak self] in
+                    guard self != nil else {
+                        return
+                    }
+                    button.backgroundColor = style.pressedColor
+                    button.transform = .identity.translatedBy(x: -3, y: 3)
+                    button.layer.removeSketchShadow()
+                },
+                completion: { _ in }
+        )
     }
 
     func updateObliqueBottomLeftStyleUnPressed(_ button: UIButton, style: ActionStyle.ObliqueBottomLeftTheme) {
