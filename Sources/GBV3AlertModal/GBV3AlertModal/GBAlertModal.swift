@@ -314,7 +314,11 @@ private extension GBAlertModal {
                 padding: properties.padding
                         ?? globalProperties.padding,
                 bannerRatio: properties.bannerRatio
-                        ?? globalProperties.bannerRatio
+                        ?? globalProperties.bannerRatio,
+                titleFont: properties.titleFont
+                        ?? globalProperties.titleFont,
+                titleColor: properties.titleColor
+                        ?? globalProperties.titleColor
         )
     }
 }
