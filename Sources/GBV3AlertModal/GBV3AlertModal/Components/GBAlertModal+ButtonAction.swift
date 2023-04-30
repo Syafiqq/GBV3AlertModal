@@ -107,6 +107,11 @@ internal extension GBAlertModal {
         case .plain(let style):
             button.setTitleColor(style.titleColor, for: .normal)
             button.titleLabel?.font = style.titleFont
+        case .obliqueBottomLeft(let style):
+            button.backgroundColor = style.unPressedColor
+            button.setTitleColor(style.titleColor, for: .normal)
+            button.titleLabel?.font = style.titleFont
+            updateObliqueBottomLeftStyleUnPressed(button, style: style)
         }
     }
 
