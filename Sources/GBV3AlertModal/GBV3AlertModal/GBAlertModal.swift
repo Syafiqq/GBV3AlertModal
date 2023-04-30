@@ -85,6 +85,13 @@ public class GBAlertModal: UIView {
         guard dataHolder?.closeOnTapOverlay == true else {
             return
         }
+
+        switch sender.state {
+        case .ended:
+            dismissAndEmit(event: .close)
+        default:
+            break
+        }
     }
 
     @objc
