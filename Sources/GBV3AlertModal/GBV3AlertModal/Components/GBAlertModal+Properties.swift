@@ -96,18 +96,23 @@ public extension GBAlertModal.Properties {
         }
 
         public let banner: CGFloat
+        public let title: CGFloat
 
         public init(
-                banner: CGFloat = .zero
+                banner: CGFloat = .zero,
+                title: CGFloat = .zero
         ) {
             self.banner = banner
+            self.title = title
         }
 
         public func copy(
-                banner: CGFloat? = nil
+                banner: CGFloat? = nil,
+                title: CGFloat? = nil
         ) -> Self {
             Self(
-                    banner: banner ?? self.banner
+                    banner: banner ?? self.banner,
+                    title: title ?? self.title
             )
         }
     }
