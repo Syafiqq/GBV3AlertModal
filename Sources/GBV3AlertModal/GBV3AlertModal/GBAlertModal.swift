@@ -104,7 +104,9 @@ private extension GBAlertModal {
     func updateProperties(_ properties: Properties) {
         self.properties = Properties(
                 baseTint: properties.baseTint
-                        ?? globalProperties.baseTint
+                        ?? globalProperties.baseTint,
+                overlayColor: properties.overlayColor
+                        ?? globalProperties.overlayColor
         )
     }
 }
