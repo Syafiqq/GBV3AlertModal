@@ -96,6 +96,7 @@ public class GBAlertModal: UIView {
 
     @objc
     private func onPrimaryActionTapped() {
+        dismissAndEmit(event: .primary)
     }
 
     @objc
