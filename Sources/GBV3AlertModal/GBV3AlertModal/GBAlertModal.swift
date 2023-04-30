@@ -61,6 +61,12 @@ private extension GBAlertModal {
 
     // MARK: Views
 
+    func unregisterDialogView() {
+    }
+
+    func registerDialogView() {
+    }
+
     // MARK: ViewModel
 
     // MARK: Model
