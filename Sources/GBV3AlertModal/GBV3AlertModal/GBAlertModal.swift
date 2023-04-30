@@ -12,6 +12,7 @@ public class GBAlertModal: UIView {
     // MARK: Constraints
 
     // MARK: Attributes Gestures
+    private var tapRecognizerOverlay: UIGestureRecognizer?
 
     // MARK: ViewModel
 
@@ -46,6 +47,13 @@ public class GBAlertModal: UIView {
     // MARK: Override Function
 
     // MARK: Callback
+
+    @objc
+    private func onOverlayTapped(_ sender: UITapGestureRecognizer) {
+        guard dataHolder?.closeOnTapOverlay == true else {
+            return
+        }
+    }
 
     // MARK: Public Function
 
@@ -97,9 +105,20 @@ private extension GBAlertModal {
 
     // MARK: ViewModel
     func registerEvents() {
+        // Gestures
+        let tapRecognizerOverlay = UITapGestureRecognizer(target: self, action: #selector(onOverlayTapped))
+        vwOverlay?.addGestureRecognizer(tapRecognizerOverlay)
+        vwOverlay?.isUserInteractionEnabled = true
+        self.tapRecognizerOverlay = tapRecognizerOverlay
+
     }
 
     func unregisterEvents() {
+        // Gestures
+        if let tapRecognizerOverlay = tapRecognizerOverlay {
+            vwOverlay?.removeGestureRecognizer(tapRecognizerOverlay)
+        }
+        tapRecognizerOverlay = nil
     }
 
     // MARK: Model
