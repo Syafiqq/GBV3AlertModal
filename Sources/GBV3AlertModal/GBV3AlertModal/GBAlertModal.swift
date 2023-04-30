@@ -95,6 +95,7 @@ private extension GBAlertModal {
     // MARK: Views
 
     func unregisterDialogView() {
+        svContentContainer?.removeAllArrangedSubviews()
     }
 
     func registerDialogView() {
