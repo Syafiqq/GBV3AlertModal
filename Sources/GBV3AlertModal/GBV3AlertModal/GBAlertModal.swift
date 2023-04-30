@@ -51,6 +51,8 @@ public class GBAlertModal: UIView {
 private extension GBAlertModal {
     // MARK: Init Functions
     func initViews() {
+        unregisterDialogView()
+        registerDialogView()
     }
 
     func initEvents() {
