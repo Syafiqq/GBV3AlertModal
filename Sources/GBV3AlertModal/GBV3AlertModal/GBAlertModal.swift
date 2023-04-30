@@ -103,6 +103,10 @@ public class GBAlertModal: UIView {
     private func onActionButtonUnPressed(_ sender: UIButton) {
     }
 
+    @objc
+    private func onCloseTapped() {
+    }
+
     // MARK: Public Function
 
     // MARK: Deinitialization
@@ -612,6 +616,8 @@ private extension GBAlertModal {
         btSecondaryAction?.addTarget(self, action: #selector(onActionButtonUnPressed(_:)), for: .touchDragExit)
         btSecondaryAction?.addTarget(self, action: #selector(onActionButtonUnPressed(_:)), for: .touchUpInside)
         btSecondaryAction?.addTarget(self, action: #selector(onActionButtonUnPressed(_:)), for: .touchUpOutside)
+
+        btCloseAction?.addTarget(self, action: #selector(onCloseTapped), for: .touchUpInside)
     }
 
     func unregisterEvents() {
@@ -634,6 +640,8 @@ private extension GBAlertModal {
         btSecondaryAction?.removeTarget(self, action: #selector(onActionButtonUnPressed(_:)), for: .touchDragExit)
         btSecondaryAction?.removeTarget(self, action: #selector(onActionButtonUnPressed(_:)), for: .touchUpInside)
         btSecondaryAction?.removeTarget(self, action: #selector(onActionButtonUnPressed(_:)), for: .touchUpOutside)
+
+        btCloseAction?.removeTarget(self, action: #selector(onCloseTapped), for: .touchUpInside)
     }
 
     // MARK: Model
