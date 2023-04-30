@@ -23,6 +23,7 @@ extension GBAlertModal {
         public let closeImage: UIImage?
 
         public let dismissOnAction: Bool
+        public let completion: ((GBAlertModal, GBAlertModal.ActionType) -> Void)?
 
         public init(
                 closeOnTapOverlay: Bool = false,
@@ -39,6 +40,7 @@ extension GBAlertModal {
                 showCloseButton: Bool = false,
                 closeImage: UIImage? = nil,
                 dismissOnAction: Bool = false,
+                completion: ((GBAlertModal, GBAlertModal.ActionType) -> Void)? = nil
         ) {
             self.closeOnTapOverlay = closeOnTapOverlay
             self.banner = banner
@@ -54,6 +56,7 @@ extension GBAlertModal {
             self.showCloseButton = showCloseButton
             self.closeImage = closeImage
             self.dismissOnAction = dismissOnAction
+            self.completion = completion
         }
     }
 }
