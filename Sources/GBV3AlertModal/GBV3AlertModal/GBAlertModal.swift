@@ -31,6 +31,8 @@ public class GBAlertModal: UIView {
     // Action
     private(set) var vwPrimaryAction: UIView?
     private(set) var btPrimaryAction: UIButton?
+    private(set) var vwSecondaryAction: UIView?
+    private(set) var btSecondaryAction: UIButton?
 
     // Divider
     private(set) var vwBannerAndBelowDivider: UIView?
@@ -147,6 +149,8 @@ private extension GBAlertModal {
 
         vwPrimaryAction?.removeFromSuperview()
         btPrimaryAction?.removeFromSuperview()
+        vwSecondaryAction?.removeFromSuperview()
+        btSecondaryAction?.removeFromSuperview()
     }
 
     // swiftlint:disable:next function_body_length cyclomatic_complexity
@@ -249,8 +253,25 @@ private extension GBAlertModal {
             btPrimaryAction = nil
         }
 
+        // Setup secondaryAction
+        if let secondaryAction = dataHolder?.secondaryAction,
+           let secondaryActionStyle = dataHolder?.secondaryActionStyle {
+            let vwSecondaryAction = generateGenericViewDesign()
+
+            let btSecondaryAction = generateButtonForActionDesign(style: secondaryActionStyle)
+            configureButtonActionStyle(btSecondaryAction, title: secondaryAction, style: secondaryActionStyle)
+
+            vwSecondaryAction.addSubview(btSecondaryAction)
+
+            self.vwSecondaryAction = vwSecondaryAction
+            self.btSecondaryAction = btSecondaryAction
+        } else {
+            vwSecondaryAction = nil
+            btSecondaryAction = nil
+        }
+
         // Setup main action container
-        if vwPrimaryAction != nil {
+        if vwPrimaryAction != nil || vwSecondaryAction != nil {
             let svMainActionContainer = generateStackViewForMainButtonDesign()
             svMainActionContainer.spacing = properties?.space?.interButton ?? .zero
 
@@ -294,7 +315,8 @@ private extension GBAlertModal {
         // Compile View
 
         [
-            vwPrimaryAction
+            vwPrimaryAction,
+            vwSecondaryAction
         ]
                 .forEach {
                     guard let view = $0 else {
@@ -384,6 +406,13 @@ private extension GBAlertModal {
            let btPrimaryAction,
            let primaryActionStyle = dataHolder?.primaryActionStyle {
             configureButtonActionConstraint(btPrimaryAction, parent: vwPrimaryAction, style: primaryActionStyle)
+        }
+
+        // Secondary Action
+        if let vwSecondaryAction,
+           let btSecondaryAction,
+           let secondaryActionStyle = dataHolder?.secondaryActionStyle {
+            configureButtonActionConstraint(btSecondaryAction, parent: vwSecondaryAction, style: secondaryActionStyle)
         }
     }
 
