@@ -60,6 +60,13 @@ internal extension GBAlertModal {
             button.setTitleColor(style.titleColor, for: .normal)
             button.setImage(nil, for: .normal)
             button.titleLabel?.font = style.titleFont
+        case .capsuleOutlined(let style):
+            button.layer.borderWidth = style.borderWidth ?? 0
+            button.layer.borderColor = style.borderColor
+            button.backgroundColor = style.backgroundColor
+            button.setTitleColor(style.titleColor, for: .normal)
+            button.setImage(nil, for: .normal)
+            button.titleLabel?.font = style.titleFont
         }
     }
 
