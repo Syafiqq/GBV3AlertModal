@@ -22,6 +22,7 @@
 		65B8C9D44B4DBFFC8FB2256E /* GBAlertModal+ActionType.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65B8C98B94E09AEF8EEB4043 /* GBAlertModal+ActionType.swift */; };
 		65B8C9EDBB77D02A3C4F6E54 /* GBAlertModal.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65B8C217DB1BBC34E7756F5E /* GBAlertModal.swift */; };
 		65B8CB4C5DBA6103913DF02C /* GBV3AlertModal.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65B8CCF436BFA68301C842E8 /* GBV3AlertModal.swift */; };
+		65B8CB6CC0A001DD6F9034C0 /* UIEdgeInset+Manipulation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65B8C095A1E531D67BCA9BBB /* UIEdgeInset+Manipulation.swift */; };
 		65B8CE33125189D3D1CCDC00 /* GBAlertModal+Properties.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65B8C533E4B76C4781471FC2 /* GBAlertModal+Properties.swift */; };
 		7E08E373E182F46E53D1628C /* Pods_GBV3AlertModalTests.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AE8E82687F68207AB6A57066 /* Pods_GBV3AlertModalTests.framework */; };
 		DAE3C726BE474CB1552C4672 /* Pods_GBV3AlertModal.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 3F132D23E0D92A9E7C37C9BE /* Pods_GBV3AlertModal.framework */; };
@@ -56,6 +57,7 @@
 		59D145902936F77900339673 /* id */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = id; path = id.lproj/Localizable.strings; sourceTree = "<group>"; };
 		59D145912936F79A00339673 /* vi */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = vi; path = vi.lproj/Localizable.strings; sourceTree = "<group>"; };
 		59D145922936F81B00339673 /* zh-Hans */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "zh-Hans"; path = "zh-Hans.lproj/Localizable.strings"; sourceTree = "<group>"; };
+		65B8C095A1E531D67BCA9BBB /* UIEdgeInset+Manipulation.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = "UIEdgeInset+Manipulation.swift"; sourceTree = "<group>"; };
 		65B8C1D3D6037BEC5F091505 /* UIButton+Rounded.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = "UIButton+Rounded.swift"; sourceTree = "<group>"; };
 		65B8C217DB1BBC34E7756F5E /* GBAlertModal.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = GBAlertModal.swift; path = GBV3AlertModal/GBAlertModal.swift; sourceTree = "<group>"; };
 		65B8C2DB512AE1C8C4AE65DC /* CALayer+AdobeXd.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = "CALayer+AdobeXd.swift"; sourceTree = "<group>"; };
@@ -174,6 +176,7 @@
 				65B8CF9F05A68AA20C95EE02 /* UIStackView+Removal.swift */,
 				65B8C1D3D6037BEC5F091505 /* UIButton+Rounded.swift */,
 				65B8C2DB512AE1C8C4AE65DC /* CALayer+AdobeXd.swift */,
+				65B8C095A1E531D67BCA9BBB /* UIEdgeInset+Manipulation.swift */,
 			);
 			path = Extensions;
 			sourceTree = "<group>";
@@ -419,6 +422,7 @@
 				65B8C9D44B4DBFFC8FB2256E /* GBAlertModal+ActionType.swift in Sources */,
 				65B8C024F75B496244F258AB /* UIButton+Rounded.swift in Sources */,
 				65B8C92976616B0909F07BAD /* CALayer+AdobeXd.swift in Sources */,
+				65B8CB6CC0A001DD6F9034C0 /* UIEdgeInset+Manipulation.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
