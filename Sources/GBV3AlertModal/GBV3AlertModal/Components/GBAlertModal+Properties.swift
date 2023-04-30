@@ -17,6 +17,8 @@ extension GBAlertModal {
         public let buttonActionShouldMatchParent: Bool?
         public let buttonActionOrientation: NSLayoutConstraint.Axis?
 
+        public let closeButtonTint: UIColor?
+
         public let space: ComponentSpace?
 
         public init(
@@ -32,6 +34,7 @@ extension GBAlertModal {
                 subtitleColor: UIColor? = nil,
                 buttonActionShouldMatchParent: Bool? = false,
                 buttonActionOrientation: NSLayoutConstraint.Axis? = nil,
+                closeButtonTint: UIColor? = nil,
                 space: ComponentSpace? = nil
         ) {
             self.baseTint = baseTint
@@ -46,6 +49,7 @@ extension GBAlertModal {
             self.subtitleColor = subtitleColor
             self.buttonActionShouldMatchParent = buttonActionShouldMatchParent
             self.buttonActionOrientation = buttonActionOrientation
+            self.closeButtonTint = closeButtonTint
             self.space = space
         }
     }
