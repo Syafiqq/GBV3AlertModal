@@ -56,6 +56,8 @@ private extension GBAlertModal {
     }
 
     func initEvents() {
+        unregisterEvents()
+        registerEvents()
     }
 
     func initData() {
