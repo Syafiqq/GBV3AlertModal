@@ -15,16 +15,18 @@ public class GBAlertModal: UIView {
     // MARK: Private Properties
 
     private var properties: Properties?
+    private var dataHolder: DataHolder?
 
     // MARK: Data
 
     // MARK: Public Properties
 
     // MARK: Initialization
-    public init(properties: Properties? = nil) {
+    public init(properties: Properties? = nil, holder: DataHolder) {
         super.init(frame: .zero)
 
         updateProperties(properties ?? globalProperties)
+        dataHolder = holder
 
         initDesign()
         initViews()
