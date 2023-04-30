@@ -19,6 +19,8 @@ public class GBAlertModal: UIView {
     private(set) var vwBanner: UIView?
     private(set) var ivBanner: UIImageView?
 
+    private(set) var lbTitle: UILabel?
+
     // MARK: Constraints
 
     // MARK: Attributes Gestures
@@ -103,6 +105,7 @@ private extension GBAlertModal {
 
         vwBanner?.removeFromSuperview()
         ivBanner?.removeFromSuperview()
+        lbTitle?.removeFromSuperview()
     }
 
     func registerDialogView() {
@@ -122,11 +125,33 @@ private extension GBAlertModal {
             ivBanner = nil
         }
 
+        // Setup title
+        if let title = dataHolder?.title,
+           !title.isEmpty {
+            let lbTitle = generateLabelForTitleDesign()
+            lbTitle.attributedText = NSAttributedString(
+                    string: title,
+                    attributes: [
+                        .font: properties?.titleFont,
+                        .foregroundColor: properties?.titleColor
+                    ].compactMapValues({ $0 })
+            )
+            self.lbTitle = lbTitle
+        } else if let title = dataHolder?.titleAttributed,
+                  title.length <= 0 {
+            let lbTitle = generateLabelForTitleDesign()
+            lbTitle.attributedText = title
+            self.lbTitle = lbTitle
+        } else {
+            lbTitle = nil
+        }
+
         // MARK: View Graph
         // Compile View
 
         [
-            vwBanner
+            vwBanner,
+            lbTitle
         ]
                 .forEach {
                     guard let view = $0 else {
@@ -380,6 +405,16 @@ private extension GBAlertModal {
         let view = UIImageView()
         view.translatesAutoresizingMaskIntoConstraints = false
         view.contentMode = .scaleAspectFit
+        return view
+    }
+
+    func generateLabelForTitleDesign() -> UILabel {
+        let view = UILabel(frame: .zero)
+        view.translatesAutoresizingMaskIntoConstraints = false
+        view.numberOfLines = 2
+        view.minimumScaleFactor = 0.75
+        view.adjustsFontSizeToFitWidth = true
+        view.textAlignment = .center
         return view
     }
 }
