@@ -82,6 +82,8 @@ private extension GBAlertModal {
     }
 
     func adjustDialogViewStyle() {
+        // Base View
+        tintColor = properties?.baseTint
     }
 
     func adjustBaseDialogConstraint() {
