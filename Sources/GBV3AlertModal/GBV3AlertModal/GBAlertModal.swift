@@ -343,7 +343,9 @@ private extension GBAlertModal {
                 titleFont: properties.titleFont
                         ?? globalProperties.titleFont,
                 titleColor: properties.titleColor
-                        ?? globalProperties.titleColor
+                        ?? globalProperties.titleColor,
+                space: properties.space
+                        ?? globalProperties.space
         )
     }
 }
