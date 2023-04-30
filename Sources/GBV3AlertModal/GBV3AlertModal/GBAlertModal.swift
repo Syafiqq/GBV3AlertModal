@@ -34,6 +34,8 @@ public class GBAlertModal: UIView {
     private(set) var vwSecondaryAction: UIView?
     private(set) var btSecondaryAction: UIButton?
 
+    private(set) var btCloseAction: UIButton?
+
     // Divider
     private(set) var vwBannerAndBelowDivider: UIView?
     private(set) var vwTitleAndBelowDivider: UIView?
@@ -155,6 +157,8 @@ private extension GBAlertModal {
         btPrimaryAction?.removeFromSuperview()
         vwSecondaryAction?.removeFromSuperview()
         btSecondaryAction?.removeFromSuperview()
+
+        btCloseAction?.removeFromSuperview()
     }
 
     // swiftlint:disable:next function_body_length cyclomatic_complexity
@@ -282,6 +286,17 @@ private extension GBAlertModal {
             self.svMainActionContainer = svMainActionContainer
         } else {
             svMainActionContainer = nil
+        }
+
+        // Setup close action
+        if dataHolder?.showCloseButton == true,
+           let vwContainer = vwContainer {
+            let btCloseAction = generateButtonForCloseDesign()
+            vwContainer.addSubview(btCloseAction)
+
+            self.btCloseAction = btCloseAction
+        } else {
+            btCloseAction = nil
         }
 
         // Setup Divider
@@ -418,6 +433,20 @@ private extension GBAlertModal {
            let secondaryActionStyle = dataHolder?.secondaryActionStyle {
             configureButtonActionConstraint(btSecondaryAction, parent: vwSecondaryAction, style: secondaryActionStyle)
         }
+
+        // Close Action
+        if let btCloseAction {
+            btCloseAction.snp.makeConstraints { (make: ConstraintMaker) -> Void in
+                make.top.trailing
+                        .equalToSuperview()
+                make.size
+                        .equalTo(48)
+                make.leading
+                        .greaterThanOrEqualToSuperview()
+                make.bottom
+                        .lessThanOrEqualToSuperview()
+            }
+        }
     }
 
     func adjustDialogViewStyle() {
@@ -441,6 +470,17 @@ private extension GBAlertModal {
         if let buttonActionOrientation = properties?.buttonActionOrientation {
             svMainActionContainer?.axis = buttonActionOrientation
         }
+
+        // Close Button
+        btCloseAction?.tintColor = properties?.closeButtonTint
+        btCloseAction?.setImage(
+                dataHolder?.closeImage ?? UIImage(
+                        named: "ic_fa_xmark_24",
+                        in: Bundle(for: Self.self),
+                        compatibleWith: nil
+                ),
+                for: .normal
+        )
     }
 
     func adjustBaseDialogConstraint() {
@@ -724,6 +764,12 @@ private extension GBAlertModal {
         view.axis = .vertical
         view.distribution = .fillEqually
         view.alignment = .center
+        return view
+    }
+
+    func generateButtonForCloseDesign() -> UIButton {
+        let view = UIButton(type: .system)
+        view.translatesAutoresizingMaskIntoConstraints = false
         return view
     }
 }
