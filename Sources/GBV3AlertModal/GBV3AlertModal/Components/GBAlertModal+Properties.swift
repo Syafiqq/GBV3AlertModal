@@ -35,30 +35,35 @@ public extension GBAlertModal.Properties {
         public let cornerRadius: CGFloat
         public let fixedWidth: CGFloat?
         public let maxWidth: CGFloat?
+        public let childShouldMatchParent: Bool
 
         public init(
                 backgroundColor: UIColor? = nil,
                 cornerRadius: CGFloat = .zero,
                 fixedWidth: CGFloat? = nil,
-                maxWidth: CGFloat? = nil
+                maxWidth: CGFloat? = nil,
+                childShouldMatchParent: Bool = false
         ) {
             self.backgroundColor = backgroundColor
             self.cornerRadius = cornerRadius
             self.fixedWidth = fixedWidth
             self.maxWidth = maxWidth
+            self.childShouldMatchParent = childShouldMatchParent
         }
 
         public func copy(
                 backgroundColor: UIColor? = nil,
                 cornerRadius: CGFloat? = nil,
                 fixedWidth: CGFloat? = nil,
-                maxWidth: CGFloat? = nil
+                maxWidth: CGFloat? = nil,
+                childShouldMatchParent: Bool? = nil
         ) -> Self {
             Self(
                     backgroundColor: backgroundColor ?? self.backgroundColor,
                     cornerRadius: cornerRadius ?? self.cornerRadius,
                     fixedWidth: fixedWidth ?? self.fixedWidth,
-                    maxWidth: maxWidth ?? self.maxWidth
+                    maxWidth: maxWidth ?? self.maxWidth,
+                    childShouldMatchParent: childShouldMatchParent ?? self.childShouldMatchParent
             )
         }
     }
