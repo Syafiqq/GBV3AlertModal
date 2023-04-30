@@ -28,6 +28,16 @@ public extension GBAlertModal.ActionStyle {
 
 internal extension GBAlertModal {
     func configureButtonActionStyle(_ button: UIButton, title: String, style: ActionStyle) {
+        button.setTitle(title, for: .normal)
+        switch style {
+        case .capsule(let style):
+            button.layer.borderWidth = 0.0
+            button.layer.borderColor = nil
+            button.backgroundColor = style.backgroundColor
+            button.setTitleColor(style.titleColor, for: .normal)
+            button.setImage(nil, for: .normal)
+            button.titleLabel?.font = style.titleFont
+        }
     }
 
     func configureButtonActionConstraint(_ button: UIButton, parent: UIView, style: ActionStyle) {
