@@ -119,6 +119,15 @@ public class GBAlertModal: UIView {
 
     @objc
     private func onActionButtonUnPressed(_ sender: UIButton) {
+        if sender === btPrimaryAction,
+           let primaryActionStyle = dataHolder?.primaryActionStyle,
+           case ActionStyle.obliqueBottomLeft(let style) = primaryActionStyle {
+            updateObliqueBottomLeftStyleUnPressed(sender, style: style)
+        } else if sender === btSecondaryAction,
+                  let secondaryActionStyle = dataHolder?.secondaryActionStyle,
+                  case ActionStyle.obliqueBottomLeft(let style) = secondaryActionStyle {
+            updateObliqueBottomLeftStyleUnPressed(sender, style: style)
+        }
     }
 
     @objc
