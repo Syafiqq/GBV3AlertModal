@@ -71,6 +71,12 @@ private extension GBAlertModal {
     func registerDialogView() {
     }
 
+    func adjustDialogViewStyle() {
+    }
+
+    func adjustBaseDialogConstraint() {
+    }
+
     // MARK: ViewModel
     func registerEvents() {
     }
