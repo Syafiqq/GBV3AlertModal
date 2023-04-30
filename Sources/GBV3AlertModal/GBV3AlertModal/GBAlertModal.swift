@@ -110,6 +110,9 @@ private extension GBAlertModal {
         // Content Container
         vwContainer?.backgroundColor = properties?.contentProperty?.backgroundColor
         vwContainer?.layer.cornerRadius = properties?.contentProperty?.cornerRadius ?? .zero
+
+        // Content Container Stack
+        svContentContainer?.alignment = properties?.contentProperty?.childShouldMatchParent == true ? .fill : .center
     }
 
     func adjustBaseDialogConstraint() {
