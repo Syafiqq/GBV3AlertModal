@@ -370,6 +370,10 @@ private extension GBAlertModal {
                         ?? globalProperties.titleFont,
                 titleColor: properties.titleColor
                         ?? globalProperties.titleColor,
+                subtitleFont: properties.subtitleFont
+                        ?? globalProperties.subtitleFont,
+                subtitleColor: properties.subtitleColor
+                        ?? globalProperties.subtitleColor,
                 space: properties.space
                         ?? globalProperties.space
         )
