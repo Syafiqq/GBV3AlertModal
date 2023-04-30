@@ -9,18 +9,22 @@ extension GBAlertModal {
         public let margin: UIEdgeInsets?
         public let padding: UIMinMaxEdgeInsets?
 
+        public let bannerRatio: CGFloat?
+
         public init(
                 baseTint: UIColor? = nil,
                 overlayColor: UIColor? = nil,
                 contentProperty: ContentProperty? = nil,
                 margin: UIEdgeInsets? = nil,
-                padding: UIMinMaxEdgeInsets? = nil
+                padding: UIMinMaxEdgeInsets? = nil,
+                bannerRatio: CGFloat? = nil
         ) {
             self.baseTint = baseTint
             self.overlayColor = overlayColor
             self.contentProperty = contentProperty
             self.margin = margin
             self.padding = padding
+            self.bannerRatio = bannerRatio
         }
     }
 }
