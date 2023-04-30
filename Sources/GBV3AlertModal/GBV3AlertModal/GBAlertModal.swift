@@ -31,6 +31,7 @@ public class GBAlertModal: UIView {
     // Divider
     private(set) var vwBannerAndBelowDivider: UIView?
     private(set) var vwTitleAndBelowDivider: UIView?
+    private(set) var vwSubtitleAndBelowDivider: UIView?
 
     // MARK: Constraints
 
@@ -123,6 +124,7 @@ private extension GBAlertModal {
 
         vwBannerAndBelowDivider?.removeFromSuperview()
         vwTitleAndBelowDivider?.removeFromSuperview()
+        vwSubtitleAndBelowDivider?.removeFromSuperview()
 
         svMainActionContainer?.removeAllArrangedSubviews()
         svMainActionContainer?.removeFromSuperview()
@@ -242,6 +244,16 @@ private extension GBAlertModal {
             vwTitleAndBelowDivider = nil
         }
 
+        // Setup subtitle and its below
+        if svSubtitleContainer != nil,
+           svMainActionContainer != nil {
+            let vwSubtitleAndBelowDivider = generateGenericViewDesign()
+
+            self.vwSubtitleAndBelowDivider = vwSubtitleAndBelowDivider
+        } else {
+            vwSubtitleAndBelowDivider = nil
+        }
+
         // MARK: View Graph
         // Compile View
 
@@ -260,6 +272,7 @@ private extension GBAlertModal {
             lbTitle,
             vwTitleAndBelowDivider,
             svSubtitleContainer,
+            vwSubtitleAndBelowDivider,
             svMainActionContainer
         ]
                 .forEach {
@@ -318,6 +331,14 @@ private extension GBAlertModal {
             vwTitleAndBelowDivider.snp.makeConstraints { (make: ConstraintMaker) -> Void in
                 make.height
                         .equalTo(properties?.space?.title ?? .zero)
+            }
+        }
+
+        // Subtitle Divider
+        if let vwSubtitleAndBelowDivider {
+            vwSubtitleAndBelowDivider.snp.makeConstraints { (make: ConstraintMaker) -> Void in
+                make.height
+                        .equalTo(properties?.space?.subtitle ?? .zero)
             }
         }
     }
