@@ -21,6 +21,9 @@ public class GBAlertModal: UIView {
 
     private(set) var lbTitle: UILabel?
 
+    // Divider
+    private(set) var vwBannerAndBelowDivider: UIView?
+
     // MARK: Constraints
 
     // MARK: Attributes Gestures
@@ -106,8 +109,11 @@ private extension GBAlertModal {
         vwBanner?.removeFromSuperview()
         ivBanner?.removeFromSuperview()
         lbTitle?.removeFromSuperview()
+
+        vwBannerAndBelowDivider?.removeFromSuperview()
     }
 
+    // swiftlint:disable:next function_body_length
     func registerDialogView() {
         // MARK: View Initialization
         // Setup banner
@@ -146,11 +152,23 @@ private extension GBAlertModal {
             lbTitle = nil
         }
 
+        // Setup Divider
+        // Setup banner and its below
+        if vwBanner != nil,
+           (lbTitle != nil) {
+            let vwBannerAndBelowDivider = generateGenericViewDesign()
+
+            self.vwBannerAndBelowDivider = vwBannerAndBelowDivider
+        } else {
+            vwBannerAndBelowDivider = nil
+        }
+
         // MARK: View Graph
         // Compile View
 
         [
             vwBanner,
+            vwBannerAndBelowDivider,
             lbTitle
         ]
                 .forEach {
@@ -179,6 +197,14 @@ private extension GBAlertModal {
                             .equalTo(ivBanner.snp.height)
                             .multipliedBy(ratio)
                 }
+            }
+        }
+
+        // Banner divider
+        if let vwBannerAndBelowDivider {
+            vwBannerAndBelowDivider.snp.makeConstraints { (make: ConstraintMaker) -> Void in
+                make.height
+                        .equalTo(properties?.space?.banner ?? .zero)
             }
         }
     }
