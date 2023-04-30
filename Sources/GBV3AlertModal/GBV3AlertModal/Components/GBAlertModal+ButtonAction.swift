@@ -6,6 +6,7 @@ public extension GBAlertModal {
     enum ActionStyle {
         case capsule(CapsuleTheme)
         case capsuleOutlined(CapsuleOutlineTheme)
+        case plain(PlainTheme)
     }
 }
 
@@ -47,6 +48,19 @@ public extension GBAlertModal.ActionStyle {
             self.titleFont = titleFont
         }
     }
+
+    struct PlainTheme {
+        public var titleColor: UIColor?
+        public var titleFont: UIFont?
+
+        public init(
+                titleColor: UIColor? = nil,
+                titleFont: UIFont? = nil
+        ) {
+            self.titleColor = titleColor
+            self.titleFont = titleFont
+        }
+    }
 }
 
 internal extension GBAlertModal {
@@ -85,6 +99,23 @@ internal extension GBAlertModal {
                 make.height
                         .equalTo(48)
             }
+        case .plain:
+            button.snp.makeConstraints { (make: ConstraintMaker) -> Void in
+                // Align
+                make.top
+                        .equalToSuperview()
+                make.leading
+                        .greaterThanOrEqualToSuperview()
+
+                make.center
+                        .equalToSuperview()
+            }
+
+            parent.snp.makeConstraints { (make: ConstraintMaker) -> Void in
+                // Pin
+                make.height
+                        .equalTo(48)
+            }
         }
     }
 }
@@ -95,6 +126,8 @@ internal extension GBAlertModal {
         case .capsule,
              .capsuleOutlined:
             return generateButtonForCapsuleThemedDesign()
+        case .plain:
+            return generateButtonForPlainThemedDesign()
         }
     }
 
@@ -102,6 +135,15 @@ internal extension GBAlertModal {
         let view = GBRoundedButton(type: .system)
         view.translatesAutoresizingMaskIntoConstraints = false
         view.rounded = true
+        view.contentEdgeInsets = UIEdgeInsets(top: 6, left: 16, bottom: 6, right: 16)
+        view.titleLabel?.minimumScaleFactor = 0.5
+        view.titleLabel?.adjustsFontSizeToFitWidth = true
+        return view
+    }
+
+    func generateButtonForPlainThemedDesign() -> UIButton {
+        let view = UIButton(type: .system)
+        view.translatesAutoresizingMaskIntoConstraints = false
         view.contentEdgeInsets = UIEdgeInsets(top: 6, left: 16, bottom: 6, right: 16)
         view.titleLabel?.minimumScaleFactor = 0.5
         view.titleLabel?.adjustsFontSizeToFitWidth = true
