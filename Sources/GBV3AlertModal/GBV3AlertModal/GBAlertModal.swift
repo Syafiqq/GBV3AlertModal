@@ -14,13 +14,17 @@ public class GBAlertModal: UIView {
 
     // MARK: Private Properties
 
+    private var properties: Properties?
+
     // MARK: Data
 
     // MARK: Public Properties
 
     // MARK: Initialization
-    public override init() {
-        super.init()
+    public init(properties: Properties? = nil) {
+        super.init(frame: .zero)
+
+        updateProperties(properties ?? globalProperties)
 
         initDesign()
         initViews()
@@ -89,6 +93,9 @@ private extension GBAlertModal {
     }
 
     // MARK: Model
+
+    func updateProperties(_ properties: Properties) {
+    }
 }
 
 // MARK: - DELEGATIONS
