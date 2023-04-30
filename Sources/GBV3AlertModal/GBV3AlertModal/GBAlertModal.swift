@@ -21,6 +21,10 @@ public class GBAlertModal: UIView {
 
     private(set) var lbTitle: UILabel?
 
+    private(set) var svSubtitleContainer: UIScrollView?
+    private(set) var lbSubtitle: UILabel?
+    private(set) weak var vwSubtitle: UIView?
+
     // Divider
     private(set) var vwBannerAndBelowDivider: UIView?
 
@@ -109,11 +113,14 @@ private extension GBAlertModal {
         vwBanner?.removeFromSuperview()
         ivBanner?.removeFromSuperview()
         lbTitle?.removeFromSuperview()
+        svSubtitleContainer?.removeFromSuperview()
+        lbSubtitle?.removeFromSuperview()
+        vwSubtitle?.removeFromSuperview()
 
         vwBannerAndBelowDivider?.removeFromSuperview()
     }
 
-    // swiftlint:disable:next function_body_length
+    // swiftlint:disable:next function_body_length cyclomatic_complexity
     func registerDialogView() {
         // MARK: View Initialization
         // Setup banner
@@ -152,10 +159,54 @@ private extension GBAlertModal {
             lbTitle = nil
         }
 
+        // Setup subtitle
+        if dataHolder?.subtitle != nil ||
+                   dataHolder?.subtitleAttributed != nil ||
+                   dataHolder?.subtitleCustomView != nil {
+            let svSubtitleContainer = generateScrollForCustomViewDesign()
+            let vwSubtitle: UIView?
+            if let subtitle = dataHolder?.subtitle,
+               !subtitle.isEmpty {
+                let lbSubtitle = generateLabelForSubtitleDesign()
+                lbSubtitle.attributedText = NSAttributedString(
+                        string: subtitle,
+                        attributes: [
+                            .font: properties?.subtitleFont,
+                            .foregroundColor: properties?.subtitleColor
+                        ].compactMapValues({ $0 })
+                )
+
+                vwSubtitle = lbSubtitle
+                self.lbSubtitle = lbSubtitle
+            } else if let subtitle = dataHolder?.subtitleAttributed,
+                      subtitle.length <= 0 {
+                let lbSubtitle = generateLabelForSubtitleDesign()
+                lbSubtitle.attributedText = subtitle
+
+                vwSubtitle = lbSubtitle
+                self.lbSubtitle = lbSubtitle
+            } else if let subtitle = dataHolder?.subtitleCustomView {
+                vwSubtitle = subtitle
+                self.vwSubtitle = subtitle
+            } else {
+                vwSubtitle = nil
+            }
+
+            if let vwSubtitle {
+                svSubtitleContainer.addSubview(vwSubtitle)
+
+                self.svSubtitleContainer = svSubtitleContainer
+            }
+        } else {
+            svSubtitleContainer = nil
+            lbSubtitle = nil
+            vwSubtitle = nil
+        }
+
         // Setup Divider
         // Setup banner and its below
         if vwBanner != nil,
-           (lbTitle != nil) {
+           (lbTitle != nil || svSubtitleContainer != nil) {
             let vwBannerAndBelowDivider = generateGenericViewDesign()
 
             self.vwBannerAndBelowDivider = vwBannerAndBelowDivider
@@ -169,7 +220,8 @@ private extension GBAlertModal {
         [
             vwBanner,
             vwBannerAndBelowDivider,
-            lbTitle
+            lbTitle,
+            svSubtitleContainer
         ]
                 .forEach {
                     guard let view = $0 else {
@@ -205,6 +257,20 @@ private extension GBAlertModal {
             vwBannerAndBelowDivider.snp.makeConstraints { (make: ConstraintMaker) -> Void in
                 make.height
                         .equalTo(properties?.space?.banner ?? .zero)
+            }
+        }
+
+        // Subtitle
+        if let svSubtitleContainer,
+           let vwSubtitle = vwSubtitle ?? lbSubtitle {
+            vwSubtitle.snp.makeConstraints { (make: ConstraintMaker) -> Void in
+                make.edges
+                        .equalTo(svSubtitleContainer.contentLayoutGuide)
+                make.width
+                        .equalTo(svSubtitleContainer.frameLayoutGuide)
+                make.height
+                        .equalTo(svSubtitleContainer.frameLayoutGuide)
+                        .priority(.low)
             }
         }
     }
@@ -446,6 +512,22 @@ private extension GBAlertModal {
         view.numberOfLines = 2
         view.minimumScaleFactor = 0.75
         view.adjustsFontSizeToFitWidth = true
+        view.textAlignment = .center
+        return view
+    }
+
+    func generateScrollForCustomViewDesign() -> UIScrollView {
+        let view = UIScrollView()
+        view.translatesAutoresizingMaskIntoConstraints = false
+        view.showsHorizontalScrollIndicator = false
+        view.showsVerticalScrollIndicator = true
+        return view
+    }
+
+    func generateLabelForSubtitleDesign() -> UILabel {
+        let view = UILabel(frame: .zero)
+        view.translatesAutoresizingMaskIntoConstraints = false
+        view.numberOfLines = 0
         view.textAlignment = .center
         return view
     }
