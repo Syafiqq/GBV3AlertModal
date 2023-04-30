@@ -97,6 +97,10 @@ private extension GBAlertModal {
     // MARK: Model
 
     func updateProperties(_ properties: Properties) {
+        self.properties = Properties(
+                baseTint: properties.baseTint
+                        ?? globalProperties.baseTint
+        )
     }
 }
 
