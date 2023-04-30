@@ -7,6 +7,7 @@ public extension GBAlertModal {
         case capsule(CapsuleTheme)
         case capsuleOutlined(CapsuleOutlineTheme)
         case plain(PlainTheme)
+        case obliqueBottomLeft(ObliqueBottomLeftTheme)
     }
 }
 
@@ -57,6 +58,28 @@ public extension GBAlertModal.ActionStyle {
                 titleColor: UIColor? = nil,
                 titleFont: UIFont? = nil
         ) {
+            self.titleColor = titleColor
+            self.titleFont = titleFont
+        }
+    }
+
+    struct ObliqueBottomLeftTheme {
+        public var unPressedColor: UIColor?
+        public var pressedColor: UIColor?
+        public var shadowColor: CGColor?
+        public var titleColor: UIColor?
+        public var titleFont: UIFont?
+
+        public init(
+                unPressedColor: UIColor? = nil,
+                pressedColor: UIColor? = nil,
+                shadowColor: CGColor? = nil,
+                titleColor: UIColor? = nil,
+                titleFont: UIFont? = nil
+        ) {
+            self.unPressedColor = unPressedColor
+            self.pressedColor = pressedColor
+            self.shadowColor = shadowColor
             self.titleColor = titleColor
             self.titleFont = titleFont
         }
@@ -119,6 +142,28 @@ internal extension GBAlertModal {
                 make.height
                         .equalTo(48)
             }
+        case .obliqueBottomLeft:
+            button.snp.makeConstraints { (make: ConstraintMaker) -> Void in
+                // Align
+                make.top
+                        .equalToSuperview()
+                        .offset(-3)
+                make.leading
+                        .equalToSuperview()
+                        .offset(3)
+                make.bottom
+                        .equalToSuperview()
+                        .offset(-3)
+                make.trailing
+                        .equalToSuperview()
+                        .offset(3)
+            }
+
+            parent.snp.makeConstraints { (make: ConstraintMaker) -> Void in
+                // Pin
+                make.height
+                        .equalTo(48)
+            }
         }
     }
 }
@@ -131,6 +176,8 @@ internal extension GBAlertModal {
             return generateButtonForCapsuleThemedDesign()
         case .plain:
             return generateButtonForPlainThemedDesign()
+        case .obliqueBottomLeft:
+            return generateButtonForObliqueThemedDesign()
         }
     }
 
@@ -147,6 +194,16 @@ internal extension GBAlertModal {
     func generateButtonForPlainThemedDesign() -> UIButton {
         let view = UIButton(type: .system)
         view.translatesAutoresizingMaskIntoConstraints = false
+        view.contentEdgeInsets = UIEdgeInsets(top: 6, left: 16, bottom: 6, right: 16)
+        view.titleLabel?.minimumScaleFactor = 0.5
+        view.titleLabel?.adjustsFontSizeToFitWidth = true
+        return view
+    }
+
+    func generateButtonForObliqueThemedDesign() -> UIButton {
+        let view = UIButton(type: .custom)
+        view.translatesAutoresizingMaskIntoConstraints = false
+        view.layer.cornerRadius = 8
         view.contentEdgeInsets = UIEdgeInsets(top: 6, left: 16, bottom: 6, right: 16)
         view.titleLabel?.minimumScaleFactor = 0.5
         view.titleLabel?.adjustsFontSizeToFitWidth = true
