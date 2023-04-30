@@ -4,13 +4,16 @@ extension GBAlertModal {
     public struct Properties {
         public let baseTint: UIColor?
         public let overlayColor: UIColor?
+        public let contentProperty: ContentProperty?
 
         public init(
                 baseTint: UIColor? = nil,
-                overlayColor: UIColor? = nil
+                overlayColor: UIColor? = nil,
+                contentProperty: ContentProperty? = nil
         ) {
             self.baseTint = baseTint
             self.overlayColor = overlayColor
+            self.contentProperty = contentProperty
         }
     }
 }
