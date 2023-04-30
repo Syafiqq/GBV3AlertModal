@@ -13,6 +13,8 @@ extension GBAlertModal {
         public let titleFont: UIFont?
         public let titleColor: UIColor?
 
+        public let space: ComponentSpace?
+
         public init(
                 baseTint: UIColor? = nil,
                 overlayColor: UIColor? = nil,
@@ -21,7 +23,8 @@ extension GBAlertModal {
                 padding: UIMinMaxEdgeInsets? = nil,
                 bannerRatio: CGFloat? = nil,
                 titleFont: UIFont? = nil,
-                titleColor: UIColor? = nil
+                titleColor: UIColor? = nil,
+                space: ComponentSpace? = nil
         ) {
             self.baseTint = baseTint
             self.overlayColor = overlayColor
@@ -31,6 +34,7 @@ extension GBAlertModal {
             self.bannerRatio = bannerRatio
             self.titleFont = titleFont
             self.titleColor = titleColor
+            self.space = space
         }
     }
 }
