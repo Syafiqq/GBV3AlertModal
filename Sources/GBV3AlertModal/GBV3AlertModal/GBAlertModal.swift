@@ -130,7 +130,9 @@ private extension GBAlertModal {
                 overlayColor: properties.overlayColor
                         ?? globalProperties.overlayColor,
                 contentProperty: properties.contentProperty
-                        ?? globalProperties.contentProperty
+                        ?? globalProperties.contentProperty,
+                margin: properties.margin
+                        ?? globalProperties.margin
         )
     }
 }
