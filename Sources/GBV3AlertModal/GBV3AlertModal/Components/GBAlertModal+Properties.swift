@@ -12,6 +12,8 @@ extension GBAlertModal {
         public let bannerRatio: CGFloat?
         public let titleFont: UIFont?
         public let titleColor: UIColor?
+        public let subtitleFont: UIFont?
+        public let subtitleColor: UIColor?
 
         public let space: ComponentSpace?
 
@@ -24,6 +26,8 @@ extension GBAlertModal {
                 bannerRatio: CGFloat? = nil,
                 titleFont: UIFont? = nil,
                 titleColor: UIColor? = nil,
+                subtitleFont: UIFont? = nil,
+                subtitleColor: UIColor? = nil,
                 space: ComponentSpace? = nil
         ) {
             self.baseTint = baseTint
@@ -34,6 +38,8 @@ extension GBAlertModal {
             self.bannerRatio = bannerRatio
             self.titleFont = titleFont
             self.titleColor = titleColor
+            self.subtitleFont = subtitleFont
+            self.subtitleColor = subtitleColor
             self.space = space
         }
     }
