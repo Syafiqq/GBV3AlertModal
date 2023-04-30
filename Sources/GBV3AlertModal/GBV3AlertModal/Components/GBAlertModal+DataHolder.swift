@@ -19,6 +19,9 @@ extension GBAlertModal {
         public let secondaryAction: String?
         public let secondaryActionStyle: ActionStyle?
 
+        public let showCloseButton: Bool
+        public let closeImage: UIImage?
+
         public init(
                 closeOnTapOverlay: Bool = false,
                 banner: UIImage? = nil,
@@ -30,7 +33,9 @@ extension GBAlertModal {
                 primaryAction: String? = nil,
                 primaryActionStyle: ActionStyle? = nil,
                 secondaryAction: String? = nil,
-                secondaryActionStyle: ActionStyle? = nil
+                secondaryActionStyle: ActionStyle? = nil,
+                showCloseButton: Bool = false,
+                closeImage: UIImage? = nil
         ) {
             self.closeOnTapOverlay = closeOnTapOverlay
             self.banner = banner
@@ -43,6 +48,8 @@ extension GBAlertModal {
             self.primaryActionStyle = primaryActionStyle
             self.secondaryAction = secondaryAction
             self.secondaryActionStyle = secondaryActionStyle
+            self.showCloseButton = showCloseButton
+            self.closeImage = closeImage
         }
     }
 }
