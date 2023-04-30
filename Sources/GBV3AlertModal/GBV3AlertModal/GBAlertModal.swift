@@ -187,7 +187,9 @@ private extension GBAlertModal {
                 contentProperty: properties.contentProperty
                         ?? globalProperties.contentProperty,
                 margin: properties.margin
-                        ?? globalProperties.margin
+                        ?? globalProperties.margin,
+                padding: properties.padding
+                        ?? globalProperties.padding
         )
     }
 }
