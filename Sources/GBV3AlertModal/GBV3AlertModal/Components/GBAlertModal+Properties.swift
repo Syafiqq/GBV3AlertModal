@@ -78,3 +78,21 @@ public extension GBAlertModal.Properties {
         }
     }
 }
+
+public extension GBAlertModal.Properties {
+    struct ComponentSpace {
+        public static var zero: Self {
+            Self()
+        }
+
+        public init(
+        ) {
+        }
+
+        public func copy(
+        ) -> Self {
+            Self(
+            )
+        }
+    }
+}
