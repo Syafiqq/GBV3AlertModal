@@ -5,6 +5,7 @@ import SnapKit
 public extension GBAlertModal {
     enum ActionStyle {
         case capsule(CapsuleTheme)
+        case capsuleOutlined(CapsuleOutlineTheme)
     }
 }
 
@@ -21,6 +22,28 @@ public extension GBAlertModal.ActionStyle {
         ) {
             self.backgroundColor = backgroundColor
             self.titleColor = titleColor
+            self.titleFont = titleFont
+        }
+    }
+
+    struct CapsuleOutlineTheme {
+        public var backgroundColor: UIColor?
+        public var titleColor: UIColor?
+        public var borderWidth: CGFloat?
+        public var borderColor: CGColor?
+        public var titleFont: UIFont?
+
+        public init(
+                backgroundColor: UIColor? = nil,
+                titleColor: UIColor? = nil,
+                borderWidth: CGFloat? = nil,
+                borderColor: CGColor? = nil,
+                titleFont: UIFont? = nil
+        ) {
+            self.backgroundColor = backgroundColor
+            self.titleColor = titleColor
+            self.borderWidth = borderWidth
+            self.borderColor = borderColor
             self.titleFont = titleFont
         }
     }
@@ -42,7 +65,8 @@ internal extension GBAlertModal {
 
     func configureButtonActionConstraint(_ button: UIButton, parent: UIView, style: ActionStyle) {
         switch style {
-        case .capsule:
+        case .capsule,
+             .capsuleOutlined:
             button.snp.makeConstraints { (make: ConstraintMaker) -> Void in
                 // Align
                 make.edges
@@ -61,7 +85,8 @@ internal extension GBAlertModal {
 internal extension GBAlertModal {
     func generateButtonForActionDesign(style: ActionStyle) -> UIButton {
         switch style {
-        case .capsule:
+        case .capsule,
+             .capsuleOutlined:
             return generateButtonForCapsuleThemedDesign()
         }
     }
