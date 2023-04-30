@@ -9,16 +9,26 @@ extension GBAlertModal {
         public let title: String?
         public let titleAttributed: NSAttributedString?
 
+        public let subtitle: String?
+        public let subtitleAttributed: NSAttributedString?
+        public weak var subtitleCustomView: UIView?
+
         public init(
                 closeOnTapOverlay: Bool = false,
                 banner: UIImage? = nil,
                 title: String? = nil,
-                titleAttributed: NSAttributedString? = nil
+                titleAttributed: NSAttributedString? = nil,
+                subtitle: String? = nil,
+                subtitleAttributed: NSAttributedString? = nil,
+                subtitleCustomView: UIView? = nil
         ) {
             self.closeOnTapOverlay = closeOnTapOverlay
             self.banner = banner
             self.title = title
             self.titleAttributed = titleAttributed
+            self.subtitle = subtitle
+            self.subtitleAttributed = subtitleAttributed
+            self.subtitleCustomView = subtitleCustomView
         }
     }
 }
