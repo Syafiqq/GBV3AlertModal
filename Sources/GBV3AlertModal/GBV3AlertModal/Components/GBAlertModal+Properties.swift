@@ -2,6 +2,10 @@ import UIKit
 
 extension GBAlertModal {
     public struct Properties {
+        public static var `default`: Self {
+            Self()
+        }
+
         public let baseTint: UIColor?
         public let overlayColor: UIColor?
         public let contentProperty: ContentProperty?
