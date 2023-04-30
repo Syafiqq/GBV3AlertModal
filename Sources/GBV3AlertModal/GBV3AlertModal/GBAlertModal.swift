@@ -90,6 +90,10 @@ public class GBAlertModal: UIView {
     }
 
     @objc
+    private func onSecondaryActionTapped() {
+    }
+
+    @objc
     private func onActionButtonPressed(_ sender: UIButton) {
     }
 
@@ -562,6 +566,12 @@ private extension GBAlertModal {
         btPrimaryAction?.addTarget(self, action: #selector(onActionButtonUnPressed(_:)), for: .touchDragExit)
         btPrimaryAction?.addTarget(self, action: #selector(onActionButtonUnPressed(_:)), for: .touchUpInside)
         btPrimaryAction?.addTarget(self, action: #selector(onActionButtonUnPressed(_:)), for: .touchUpOutside)
+        btSecondaryAction?.addTarget(self, action: #selector(onSecondaryActionTapped), for: .touchUpInside)
+        btSecondaryAction?.addTarget(self, action: #selector(onActionButtonPressed(_:)), for: .touchDown)
+        btSecondaryAction?.addTarget(self, action: #selector(onActionButtonPressed(_:)), for: .touchDragEnter)
+        btSecondaryAction?.addTarget(self, action: #selector(onActionButtonUnPressed(_:)), for: .touchDragExit)
+        btSecondaryAction?.addTarget(self, action: #selector(onActionButtonUnPressed(_:)), for: .touchUpInside)
+        btSecondaryAction?.addTarget(self, action: #selector(onActionButtonUnPressed(_:)), for: .touchUpOutside)
     }
 
     func unregisterEvents() {
@@ -578,6 +588,12 @@ private extension GBAlertModal {
         btPrimaryAction?.removeTarget(self, action: #selector(onActionButtonUnPressed(_:)), for: .touchDragExit)
         btPrimaryAction?.removeTarget(self, action: #selector(onActionButtonUnPressed(_:)), for: .touchUpInside)
         btPrimaryAction?.removeTarget(self, action: #selector(onActionButtonUnPressed(_:)), for: .touchUpOutside)
+        btSecondaryAction?.removeTarget(self, action: #selector(onSecondaryActionTapped), for: .touchUpInside)
+        btSecondaryAction?.removeTarget(self, action: #selector(onActionButtonPressed(_:)), for: .touchDown)
+        btSecondaryAction?.removeTarget(self, action: #selector(onActionButtonPressed(_:)), for: .touchDragEnter)
+        btSecondaryAction?.removeTarget(self, action: #selector(onActionButtonUnPressed(_:)), for: .touchDragExit)
+        btSecondaryAction?.removeTarget(self, action: #selector(onActionButtonUnPressed(_:)), for: .touchUpInside)
+        btSecondaryAction?.removeTarget(self, action: #selector(onActionButtonUnPressed(_:)), for: .touchUpOutside)
     }
 
     // MARK: Model
