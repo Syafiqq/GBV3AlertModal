@@ -83,6 +83,18 @@ public class GBAlertModal: UIView {
         }
     }
 
+    @objc
+    private func onPrimaryActionTapped() {
+    }
+
+    @objc
+    private func onActionButtonPressed(_ sender: UIButton) {
+    }
+
+    @objc
+    private func onActionButtonUnPressed(_ sender: UIButton) {
+    }
+
     // MARK: Public Function
 
     // MARK: Deinitialization
@@ -514,6 +526,13 @@ private extension GBAlertModal {
         vwOverlay?.isUserInteractionEnabled = true
         self.tapRecognizerOverlay = tapRecognizerOverlay
 
+        // Buttons
+        btPrimaryAction?.addTarget(self, action: #selector(onPrimaryActionTapped), for: .touchUpInside)
+        btPrimaryAction?.addTarget(self, action: #selector(onActionButtonPressed(_:)), for: .touchDown)
+        btPrimaryAction?.addTarget(self, action: #selector(onActionButtonPressed(_:)), for: .touchDragEnter)
+        btPrimaryAction?.addTarget(self, action: #selector(onActionButtonUnPressed(_:)), for: .touchDragExit)
+        btPrimaryAction?.addTarget(self, action: #selector(onActionButtonUnPressed(_:)), for: .touchUpInside)
+        btPrimaryAction?.addTarget(self, action: #selector(onActionButtonUnPressed(_:)), for: .touchUpOutside)
     }
 
     func unregisterEvents() {
@@ -522,6 +541,14 @@ private extension GBAlertModal {
             vwOverlay?.removeGestureRecognizer(tapRecognizerOverlay)
         }
         tapRecognizerOverlay = nil
+
+        // Buttons
+        btPrimaryAction?.removeTarget(self, action: #selector(onPrimaryActionTapped), for: .touchUpInside)
+        btPrimaryAction?.removeTarget(self, action: #selector(onActionButtonPressed(_:)), for: .touchDown)
+        btPrimaryAction?.removeTarget(self, action: #selector(onActionButtonPressed(_:)), for: .touchDragEnter)
+        btPrimaryAction?.removeTarget(self, action: #selector(onActionButtonUnPressed(_:)), for: .touchDragExit)
+        btPrimaryAction?.removeTarget(self, action: #selector(onActionButtonUnPressed(_:)), for: .touchUpInside)
+        btPrimaryAction?.removeTarget(self, action: #selector(onActionButtonUnPressed(_:)), for: .touchUpOutside)
     }
 
     // MARK: Model
