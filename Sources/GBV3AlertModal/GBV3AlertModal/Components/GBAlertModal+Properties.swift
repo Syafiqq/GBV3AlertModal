@@ -10,6 +10,8 @@ extension GBAlertModal {
         public let padding: UIMinMaxEdgeInsets?
 
         public let bannerRatio: CGFloat?
+        public let titleFont: UIFont?
+        public let titleColor: UIColor?
 
         public init(
                 baseTint: UIColor? = nil,
@@ -17,7 +19,9 @@ extension GBAlertModal {
                 contentProperty: ContentProperty? = nil,
                 margin: UIEdgeInsets? = nil,
                 padding: UIMinMaxEdgeInsets? = nil,
-                bannerRatio: CGFloat? = nil
+                bannerRatio: CGFloat? = nil,
+                titleFont: UIFont? = nil,
+                titleColor: UIColor? = nil
         ) {
             self.baseTint = baseTint
             self.overlayColor = overlayColor
@@ -25,6 +29,8 @@ extension GBAlertModal {
             self.margin = margin
             self.padding = padding
             self.bannerRatio = bannerRatio
+            self.titleFont = titleFont
+            self.titleColor = titleColor
         }
     }
 }
