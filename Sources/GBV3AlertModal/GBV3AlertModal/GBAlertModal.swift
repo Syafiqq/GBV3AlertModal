@@ -101,6 +101,7 @@ public class GBAlertModal: UIView {
 
     @objc
     private func onSecondaryActionTapped() {
+        dismissAndEmit(event: .secondary)
     }
 
     @objc
