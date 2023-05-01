@@ -4,9 +4,11 @@ PODS:
   - Cuckoo/Swift (1.10.3)
   - GBV3AlertModal (0.0.1):
     - LanguageManager-iOS (~> 1.2.6-beta.2)
+    - SnapKit (~> 5.6)
   - LanguageManager-iOS (1.2.6-beta.2)
   - Nimble (12.0.0)
   - Quick (6.1.0)
+  - SnapKit (5.6.0)
   - SwiftLint (0.51.0)
 
 DEPENDENCIES:
@@ -15,6 +17,7 @@ DEPENDENCIES:
   - LanguageManager-iOS (~> 1.2.6-beta.2)
   - Nimble (~> 12.0)
   - Quick (~> 6.1)
+  - SnapKit (~> 5.6)
   - SwiftLint (~> 0.51)
 
 SPEC REPOS:
@@ -24,6 +27,7 @@ SPEC REPOS:
     - Cuckoo
     - Nimble
     - Quick
+    - SnapKit
     - SwiftLint
 
 EXTERNAL SOURCES:
@@ -32,12 +36,13 @@ EXTERNAL SOURCES:
 
 SPEC CHECKSUMS:
   Cuckoo: 930598bd4ae95860c658b3eea30903d946ebef36
-  GBV3AlertModal: f8717d5b430d1e8547b3bc8269e29f2f1fd5b214
+  GBV3AlertModal: c60ce74a01d9c146ef79e9b269b16b033e04eb32
   LanguageManager-iOS: 5fac7a37b621cf2841d136ad6c46f21f15bb4de1
   Nimble: 02a4990866e51868303a466970cd1c81bb84a192
   Quick: 6676ffb409bf04abba2ff23902af2407bfc6ac90
+  SnapKit: e01d52ebb8ddbc333eefe2132acf85c8227d9c25
   SwiftLint: 1b7561918a19e23bfed960e40759086e70f4dba5
 
-PODFILE CHECKSUM: 5e2764ae13bebf7a0566fdbc0989ba62404fd43e
+PODFILE CHECKSUM: be780bfe33fa15f3202e40f63b24510b2cc9133b
 
 COCOAPODS: 1.12.1
