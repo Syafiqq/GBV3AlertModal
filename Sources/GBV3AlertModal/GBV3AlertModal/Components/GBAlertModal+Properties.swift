@@ -21,6 +21,7 @@ extension GBAlertModal {
         public let buttonActionShouldMatchParent: Bool?
         public let buttonActionOrientation: NSLayoutConstraint.Axis?
         public let primaryActionStyle: ActionStyle?
+        public let secondaryActionStyle: ActionStyle?
 
         public let closeButtonTint: UIColor?
 
@@ -40,6 +41,7 @@ extension GBAlertModal {
                 buttonActionShouldMatchParent: Bool? = false,
                 buttonActionOrientation: NSLayoutConstraint.Axis? = nil,
                 primaryActionStyle: ActionStyle? = nil,
+                secondaryActionStyle: ActionStyle? = nil,
                 closeButtonTint: UIColor? = nil,
                 space: ComponentSpace? = nil
         ) {
@@ -56,6 +58,7 @@ extension GBAlertModal {
             self.buttonActionShouldMatchParent = buttonActionShouldMatchParent
             self.buttonActionOrientation = buttonActionOrientation
             self.primaryActionStyle = primaryActionStyle
+            self.secondaryActionStyle = secondaryActionStyle
             self.closeButtonTint = closeButtonTint
             self.space = space
         }
@@ -74,6 +77,7 @@ extension GBAlertModal {
                 buttonActionShouldMatchParent: Bool? = false,
                 buttonActionOrientation: NSLayoutConstraint.Axis? = nil,
                 primaryActionStyle: ActionStyle? = nil,
+                secondaryActionStyle: ActionStyle? = nil,
                 closeButtonTint: UIColor? = nil,
                 space: ComponentSpace? = nil
         ) -> Self {
@@ -91,6 +95,7 @@ extension GBAlertModal {
                     buttonActionShouldMatchParent: buttonActionShouldMatchParent ?? self.buttonActionShouldMatchParent,
                     buttonActionOrientation: buttonActionOrientation ?? self.buttonActionOrientation,
                     primaryActionStyle: primaryActionStyle ?? self.primaryActionStyle,
+                    secondaryActionStyle: secondaryActionStyle ?? self.secondaryActionStyle,
                     closeButtonTint: closeButtonTint ?? self.closeButtonTint,
                     space: space ?? self.space
             )
