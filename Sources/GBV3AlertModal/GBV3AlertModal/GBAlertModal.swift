@@ -111,7 +111,7 @@ public class GBAlertModal: UIView {
            case ActionStyle.obliqueBottomLeft(let style) = primaryActionStyle {
             updateObliqueBottomLeftStylePressed(sender, style: style)
         } else if sender === btSecondaryAction,
-                  let secondaryActionStyle = dataHolder?.secondaryActionStyle,
+                  let secondaryActionStyle = properties?.secondaryActionStyle,
                   case ActionStyle.obliqueBottomLeft(let style) = secondaryActionStyle {
             updateObliqueBottomLeftStylePressed(sender, style: style)
         }
@@ -124,7 +124,7 @@ public class GBAlertModal: UIView {
            case ActionStyle.obliqueBottomLeft(let style) = primaryActionStyle {
             updateObliqueBottomLeftStyleUnPressed(sender, style: style)
         } else if sender === btSecondaryAction,
-                  let secondaryActionStyle = dataHolder?.secondaryActionStyle,
+                  let secondaryActionStyle = properties?.secondaryActionStyle,
                   case ActionStyle.obliqueBottomLeft(let style) = secondaryActionStyle {
             updateObliqueBottomLeftStyleUnPressed(sender, style: style)
         }
@@ -354,7 +354,7 @@ private extension GBAlertModal {
 
         // Setup secondaryAction
         if let secondaryAction = dataHolder?.secondaryAction,
-           let secondaryActionStyle = dataHolder?.secondaryActionStyle {
+           let secondaryActionStyle = properties?.secondaryActionStyle {
             let vwSecondaryAction = generateGenericViewDesign()
 
             let btSecondaryAction = generateButtonForActionDesign(style: secondaryActionStyle)
@@ -521,7 +521,7 @@ private extension GBAlertModal {
         // Secondary Action
         if let vwSecondaryAction,
            let btSecondaryAction,
-           let secondaryActionStyle = dataHolder?.secondaryActionStyle {
+           let secondaryActionStyle = properties?.secondaryActionStyle {
             configureButtonActionConstraint(btSecondaryAction, parent: vwSecondaryAction, style: secondaryActionStyle)
         }
 
