@@ -759,6 +759,8 @@ private extension GBAlertModal {
                         ?? globalProperties.buttonActionShouldMatchParent,
                 buttonActionOrientation: properties.buttonActionOrientation
                         ?? globalProperties.buttonActionOrientation,
+                primaryActionStyle: properties.primaryActionStyle
+                        ?? globalProperties.primaryActionStyle,
                 closeButtonTint: properties.closeButtonTint
                         ?? globalProperties.closeButtonTint,
                 space: properties.space
