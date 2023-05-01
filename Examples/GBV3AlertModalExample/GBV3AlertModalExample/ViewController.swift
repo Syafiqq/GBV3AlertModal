@@ -29,6 +29,9 @@ class ViewController: UIViewController {
                                 titleColor: Colors.geniebook_blue_navy,
                                 subtitleFont: FontHelper.DMSans.regular.font(16),
                                 buttonActionShouldMatchParent: true,
+                                primaryActionStyle: .obliqueBottomLeft(
+                                        Presentation.UiKit.V3AlertModal.obliqueBottomLeftTheme
+                                ),
                                 space: GBAlertModal.Properties.ComponentSpace(
                                         banner: 16,
                                         title: 12,
@@ -41,9 +44,6 @@ class ViewController: UIViewController {
                                 title: "You did it!".localized,
                                 subtitle: "AWESOME! You’ve completed an amazing 30-day learning streak. What’s even better, you’re building a wonderful learning habit.".localized,
                                 primaryAction: "Continue".localized,
-                                primaryActionStyle: .obliqueBottomLeft(
-                                        Presentation.UiKit.V3AlertModal.obliqueBottomLeftTheme
-                                ),
                                 completion: { _, _ in }
                         )
                 )
@@ -141,6 +141,7 @@ extension Presentation.UiKit.V3AlertModal {
                     titleColor: UIColor.Custom.primary,
                     subtitleFont: FontHelper.DMSans.regular.font(16),
                     subtitleColor: UIColor.Custom.textPrimaryDark,
+                    primaryActionStyle: .capsule(capsuleTheme),
                     closeButtonTint: .black,
                     space: Self.space
             )
@@ -200,7 +201,6 @@ extension Presentation.UiKit.V3AlertModal {
                     subtitleAttributed: nil,
                     subtitleCustomView: nil,
                     primaryAction: "action_okay".localized,
-                    primaryActionStyle: .capsule(capsuleTheme),
                     secondaryAction: nil,
                     secondaryActionStyle: nil,
                     showCloseButton: false,
