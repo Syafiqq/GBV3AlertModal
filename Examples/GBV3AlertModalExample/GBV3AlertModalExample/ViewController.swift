@@ -25,6 +25,8 @@ class ViewController: UIViewController {
         Presentation.UiKit.V3AlertModal(
                         properties: Presentation.UiKit.V3AlertModal.properties.copy(
                                 bannerRatio: 200.0 / 168.0,
+                                bannerMaxHeight: 168,
+                                bannerFixedHeight: 168,
                                 titleFont: FontHelper.DMSans.bold.font(24),
                                 titleColor: Colors.geniebook_blue_navy,
                                 subtitleFont: FontHelper.DMSans.regular.font(16),
