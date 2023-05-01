@@ -20,6 +20,7 @@ extension GBAlertModal {
         public let subtitleColor: UIColor?
         public let buttonActionShouldMatchParent: Bool?
         public let buttonActionOrientation: NSLayoutConstraint.Axis?
+        public let primaryActionStyle: ActionStyle?
 
         public let closeButtonTint: UIColor?
 
@@ -38,6 +39,7 @@ extension GBAlertModal {
                 subtitleColor: UIColor? = nil,
                 buttonActionShouldMatchParent: Bool? = false,
                 buttonActionOrientation: NSLayoutConstraint.Axis? = nil,
+                primaryActionStyle: ActionStyle? = nil,
                 closeButtonTint: UIColor? = nil,
                 space: ComponentSpace? = nil
         ) {
@@ -53,6 +55,7 @@ extension GBAlertModal {
             self.subtitleColor = subtitleColor
             self.buttonActionShouldMatchParent = buttonActionShouldMatchParent
             self.buttonActionOrientation = buttonActionOrientation
+            self.primaryActionStyle = primaryActionStyle
             self.closeButtonTint = closeButtonTint
             self.space = space
         }
@@ -70,6 +73,7 @@ extension GBAlertModal {
                 subtitleColor: UIColor? = nil,
                 buttonActionShouldMatchParent: Bool? = false,
                 buttonActionOrientation: NSLayoutConstraint.Axis? = nil,
+                primaryActionStyle: ActionStyle? = nil,
                 closeButtonTint: UIColor? = nil,
                 space: ComponentSpace? = nil
         ) -> Self {
@@ -86,6 +90,7 @@ extension GBAlertModal {
                     subtitleColor: subtitleColor ?? self.subtitleColor,
                     buttonActionShouldMatchParent: buttonActionShouldMatchParent ?? self.buttonActionShouldMatchParent,
                     buttonActionOrientation: buttonActionOrientation ?? self.buttonActionOrientation,
+                    primaryActionStyle: primaryActionStyle ?? self.primaryActionStyle,
                     closeButtonTint: closeButtonTint ?? self.closeButtonTint,
                     space: space ?? self.space
             )
