@@ -14,6 +14,7 @@ extension GBAlertModal {
         public let padding: UIMinMaxEdgeInsets?
 
         public let bannerRatio: CGFloat?
+        public let bannerMaxHeight: CGFloat?
         public let titleFont: UIFont?
         public let titleColor: UIColor?
         public let subtitleFont: UIFont?
@@ -34,6 +35,7 @@ extension GBAlertModal {
                 margin: UIEdgeInsets? = nil,
                 padding: UIMinMaxEdgeInsets? = nil,
                 bannerRatio: CGFloat? = nil,
+                bannerMaxHeight: CGFloat? = nil,
                 titleFont: UIFont? = nil,
                 titleColor: UIColor? = nil,
                 subtitleFont: UIFont? = nil,
@@ -51,6 +53,7 @@ extension GBAlertModal {
             self.margin = margin
             self.padding = padding
             self.bannerRatio = bannerRatio
+            self.bannerMaxHeight = bannerMaxHeight
             self.titleFont = titleFont
             self.titleColor = titleColor
             self.subtitleFont = subtitleFont
@@ -70,6 +73,7 @@ extension GBAlertModal {
                 margin: UIEdgeInsets? = nil,
                 padding: UIMinMaxEdgeInsets? = nil,
                 bannerRatio: CGFloat? = nil,
+                bannerMaxHeight: CGFloat? = nil,
                 titleFont: UIFont? = nil,
                 titleColor: UIColor? = nil,
                 subtitleFont: UIFont? = nil,
@@ -88,6 +92,7 @@ extension GBAlertModal {
                     margin: margin ?? self.margin,
                     padding: padding ?? self.padding,
                     bannerRatio: bannerRatio ?? self.bannerRatio,
+                    bannerMaxHeight: bannerMaxHeight ?? self.bannerMaxHeight,
                     titleFont: titleFont ?? self.titleFont,
                     titleColor: titleColor ?? self.titleColor,
                     subtitleFont: subtitleFont ?? self.subtitleFont,
