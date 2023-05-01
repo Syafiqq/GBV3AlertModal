@@ -461,6 +461,11 @@ private extension GBAlertModal {
                             .lessThanOrEqualTo(bannerMaxHeight)
                             .priority(UILayoutPriority(751))
                 }
+                if let bannerFixedHeight = properties?.bannerFixedHeight {
+                    make.height
+                            .equalTo(bannerFixedHeight)
+                            .priority(UILayoutPriority(251))
+                }
             }
         }
         if let ivBanner {
