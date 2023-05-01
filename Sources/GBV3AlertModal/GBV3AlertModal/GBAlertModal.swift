@@ -471,9 +471,11 @@ private extension GBAlertModal {
         if let ivBanner {
             ivBanner.snp.makeConstraints { (make: ConstraintMaker) -> Void in
                 // Align
-                make.leading.top
+                make.top
+                        .equalToSuperview()
+                make.leading
                         .greaterThanOrEqualToSuperview()
-                make.leading.top
+                make.leading
                         .equalToSuperview()
                         .priority(.low)
                 make.center
