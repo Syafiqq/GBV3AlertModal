@@ -24,10 +24,17 @@ class ViewController: UIViewController {
         print(Presentation.UiKit.V3AlertModal.holder.copy(title: "Testing").closeOnTapOverlay)
         Presentation.UiKit.V3AlertModal(
                         properties: Presentation.UiKit.V3AlertModal.properties.copy(
-                                bannerRatio: 168.0 / 200.0,
+                                bannerRatio: 200.0 / 168.0,
                                 titleFont: FontHelper.DMSans.bold.font(24),
                                 titleColor: Colors.geniebook_blue_navy,
-                                subtitleFont: FontHelper.DMSans.regular.font(16)
+                                subtitleFont: FontHelper.DMSans.regular.font(16),
+                                buttonActionShouldMatchParent: true,
+                                space: GBAlertModal.Properties.ComponentSpace(
+                                        banner: 16,
+                                        title: 12,
+                                        subtitle: 20,
+                                        interButton: 16
+                                )
                         ),
                         holder: Presentation.UiKit.V3AlertModal.holder.copy(
                                 banner: UIImage(named: "streak_win"),
@@ -147,13 +154,19 @@ extension Presentation.UiKit.V3AlertModal {
         GBAlertModal.Properties.ContentProperty(
                 backgroundColor: .white,
                 cornerRadius: 8,
-                maxWidth: 320
+                fixedWidth: UIDevice.current.userInterfaceIdiom == .pad ? 400 : 320,
+                maxWidth: UIDevice.current.userInterfaceIdiom == .pad ? 400 : 320,
+                childShouldMatchParent: true
         )
     }
 
     // MARK: Default Padding
     static var padding: UIMinMaxEdgeInsets {
-        UIMinMaxEdgeInsets(top: (20, 56), left: (20, 40), bottom: (20, 56), right: (20, 40))
+        if UIDevice.current.userInterfaceIdiom == .pad {
+            return UIMinMaxEdgeInsets(top: (40, 40), left: (48, 48), bottom: (32, 32), right: (48, 48))
+        } else {
+            return UIMinMaxEdgeInsets(top: (20, 40), left: (20, 48), bottom: (20, 32), right: (20, 48))
+        }
     }
 
     // MARK: Default Margin
@@ -231,7 +244,7 @@ extension Presentation.UiKit.V3AlertModal {
     // MARK: Action Theme -> Oblique
     static var obliqueBottomLeftTheme: GBAlertModal.ActionStyle.ObliqueBottomLeftTheme {
         GBAlertModal.ActionStyle.ObliqueBottomLeftTheme(
-                unPressedColor: UIColor(netHex: 0xEF7816),
+                unPressedColor: UIColor(netHex: 0xF7941E),
                 pressedColor: UIColor(netHex: 0x038CD5),
                 shadowColor: UIColor(netHex: 0xE57B41).cgColor,
                 titleColor: .white,
