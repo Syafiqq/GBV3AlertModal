@@ -107,7 +107,7 @@ public class GBAlertModal: UIView {
     @objc
     private func onActionButtonPressed(_ sender: UIButton) {
         if sender === btPrimaryAction,
-           let primaryActionStyle = dataHolder?.primaryActionStyle,
+           let primaryActionStyle = properties?.primaryActionStyle,
            case ActionStyle.obliqueBottomLeft(let style) = primaryActionStyle {
             updateObliqueBottomLeftStylePressed(sender, style: style)
         } else if sender === btSecondaryAction,
@@ -120,7 +120,7 @@ public class GBAlertModal: UIView {
     @objc
     private func onActionButtonUnPressed(_ sender: UIButton) {
         if sender === btPrimaryAction,
-           let primaryActionStyle = dataHolder?.primaryActionStyle,
+           let primaryActionStyle = properties?.primaryActionStyle,
            case ActionStyle.obliqueBottomLeft(let style) = primaryActionStyle {
             updateObliqueBottomLeftStyleUnPressed(sender, style: style)
         } else if sender === btSecondaryAction,
@@ -337,7 +337,7 @@ private extension GBAlertModal {
 
         // Setup primaryAction
         if let primaryAction = dataHolder?.primaryAction,
-           let primaryActionStyle = dataHolder?.primaryActionStyle {
+           let primaryActionStyle = properties?.primaryActionStyle {
             let vwPrimaryAction = generateGenericViewDesign()
 
             let btPrimaryAction = generateButtonForActionDesign(style: primaryActionStyle)
@@ -514,7 +514,7 @@ private extension GBAlertModal {
         // Primary Action
         if let vwPrimaryAction,
            let btPrimaryAction,
-           let primaryActionStyle = dataHolder?.primaryActionStyle {
+           let primaryActionStyle = properties?.primaryActionStyle {
             configureButtonActionConstraint(btPrimaryAction, parent: vwPrimaryAction, style: primaryActionStyle)
         }
 
