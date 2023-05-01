@@ -613,6 +613,7 @@ private extension GBAlertModal {
         }
     }
 
+    // swiftlint:disable:next function_body_length
     private func adjustSvContentContainerConstraint(_ svContentContainer: UIView) {
         svContentContainer.snp.remakeConstraints { (make: ConstraintMaker) -> Void in
             make.top
