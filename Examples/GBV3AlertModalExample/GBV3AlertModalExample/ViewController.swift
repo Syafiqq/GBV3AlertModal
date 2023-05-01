@@ -155,19 +155,15 @@ extension Presentation.UiKit.V3AlertModal {
         GBAlertModal.Properties.ContentProperty(
                 backgroundColor: .white,
                 cornerRadius: 8,
-                fixedWidth: UIDevice.current.userInterfaceIdiom == .pad ? 400 : 320,
-                maxWidth: UIDevice.current.userInterfaceIdiom == .pad ? 400 : 320,
+                fixedWidth: UIDevice.current.userInterfaceIdiom == .pad ? 300 : 256,
+                maxWidth: UIDevice.current.userInterfaceIdiom == .pad ? 300 : 256,
                 childShouldMatchParent: true
         )
     }
 
     // MARK: Default Padding
     static var padding: UIMinMaxEdgeInsets {
-        if UIDevice.current.userInterfaceIdiom == .pad {
-            return UIMinMaxEdgeInsets(top: (40, 40), left: (48, 48), bottom: (32, 32), right: (48, 48))
-        } else {
-            return UIMinMaxEdgeInsets(top: (20, 40), left: (20, 48), bottom: (20, 32), right: (20, 48))
-        }
+        UIMinMaxEdgeInsets(top: (20, 40), left: (20, 48), bottom: (20, 32), right: (20, 48))
     }
 
     // MARK: Default Margin
