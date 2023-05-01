@@ -202,7 +202,6 @@ extension Presentation.UiKit.V3AlertModal {
                     subtitleCustomView: nil,
                     primaryAction: "action_okay".localized,
                     secondaryAction: nil,
-                    secondaryActionStyle: nil,
                     showCloseButton: false,
                     closeImage: nil,
                     dismissOnAction: true,
