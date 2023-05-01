@@ -18,7 +18,6 @@ extension GBAlertModal {
         public weak var subtitleCustomView: UIView?
 
         public let primaryAction: String?
-        public let primaryActionStyle: ActionStyle?
 
         public let secondaryAction: String?
         public let secondaryActionStyle: ActionStyle?
@@ -38,7 +37,6 @@ extension GBAlertModal {
                 subtitleAttributed: NSAttributedString? = nil,
                 subtitleCustomView: UIView? = nil,
                 primaryAction: String? = nil,
-                primaryActionStyle: ActionStyle? = nil,
                 secondaryAction: String? = nil,
                 secondaryActionStyle: ActionStyle? = nil,
                 showCloseButton: Bool = false,
@@ -54,7 +52,6 @@ extension GBAlertModal {
             self.subtitleAttributed = subtitleAttributed
             self.subtitleCustomView = subtitleCustomView
             self.primaryAction = primaryAction
-            self.primaryActionStyle = primaryActionStyle
             self.secondaryAction = secondaryAction
             self.secondaryActionStyle = secondaryActionStyle
             self.showCloseButton = showCloseButton
@@ -72,7 +69,6 @@ extension GBAlertModal {
                 subtitleAttributed: NSAttributedString? = nil,
                 subtitleCustomView: UIView? = nil,
                 primaryAction: String? = nil,
-                primaryActionStyle: ActionStyle? = nil,
                 secondaryAction: String? = nil,
                 secondaryActionStyle: ActionStyle? = nil,
                 showCloseButton: Bool? = nil,
@@ -89,7 +85,6 @@ extension GBAlertModal {
                     subtitleAttributed: subtitleAttributed ?? self.subtitleAttributed,
                     subtitleCustomView: subtitleCustomView ?? self.subtitleCustomView,
                     primaryAction: primaryAction ?? self.primaryAction,
-                    primaryActionStyle: primaryActionStyle ?? self.primaryActionStyle,
                     secondaryAction: secondaryAction ?? self.secondaryAction,
                     secondaryActionStyle: secondaryActionStyle ?? self.secondaryActionStyle,
                     showCloseButton: showCloseButton ?? self.showCloseButton,
