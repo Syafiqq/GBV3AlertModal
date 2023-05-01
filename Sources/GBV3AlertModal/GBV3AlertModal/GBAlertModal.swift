@@ -610,13 +610,6 @@ private extension GBAlertModal {
             make.center
                     .equalToSuperview()
                     .priority(.low)
-
-            // Pin
-            if let maxWidth = properties?.contentProperty?.maxWidth {
-                make.width
-                        .lessThanOrEqualTo(maxWidth)
-                        .priority(.high)
-            }
         }
     }
 
@@ -679,6 +672,12 @@ private extension GBAlertModal {
                 make.width
                         .equalTo(fixedWidth)
                         .priority(.low)
+            }
+
+            if let maxWidth = properties?.contentProperty?.maxWidth {
+                make.width
+                        .lessThanOrEqualTo(maxWidth)
+                        .priority(.high)
             }
         }
     }
