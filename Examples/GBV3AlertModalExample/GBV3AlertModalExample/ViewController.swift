@@ -103,6 +103,7 @@ extension Presentation.UiKit {
 }
 
 extension Presentation.UiKit.V3AlertModal {
+    // MARK: - PROPERTIES
     private static var _properties: GBAlertModal.Properties?
     static var properties: GBAlertModal.Properties {
         let properties: GBAlertModal.Properties
@@ -112,10 +113,7 @@ extension Presentation.UiKit.V3AlertModal {
             properties = GBAlertModal.Properties(
                     baseTint: UIColor.Custom.accentSecondary,
                     overlayColor: Colors.text_primary.withAlphaComponent(0.6),
-                    contentProperty: GBAlertModal.Properties.ContentProperty(
-                            backgroundColor: .white,
-                            cornerRadius: 8
-                    ),
+                    contentProperty: Self.contentProperty,
                     margin: Self.margin,
                     padding: Self.padding,
                     bannerRatio: 1,
@@ -131,14 +129,26 @@ extension Presentation.UiKit.V3AlertModal {
         return properties
     }
 
+    // MARK: Content Property
+    static var contentProperty: GBAlertModal.Properties.ContentProperty {
+        GBAlertModal.Properties.ContentProperty(
+                backgroundColor: .white,
+                cornerRadius: 8,
+                maxWidth: 320
+        )
+    }
+
+    // MARK: Default Padding
     static var padding: UIMinMaxEdgeInsets {
         UIMinMaxEdgeInsets(top: (20, 56), left: (20, 40), bottom: (20, 56), right: (20, 40))
     }
 
+    // MARK: Default Margin
     static var margin: UIEdgeInsets {
         UIEdgeInsets(vertical: 40, horizontal: 20)
     }
 
+    // MARK: Default Space
     static var space: GBAlertModal.Properties.ComponentSpace {
         GBAlertModal.Properties.ComponentSpace(
                 banner: 24,
@@ -148,6 +158,7 @@ extension Presentation.UiKit.V3AlertModal {
         )
     }
 
+    // MARK: - DATA HOLDER
     private static var _holder: GBAlertModal.DataHolder?
     static var holder: GBAlertModal.DataHolder {
         let holder: GBAlertModal.DataHolder
@@ -162,10 +173,10 @@ extension Presentation.UiKit.V3AlertModal {
                     subtitle: nil,
                     subtitleAttributed: nil,
                     subtitleCustomView: nil,
-                    primaryAction: nil,
-                    primaryActionStyle: nil,
-                    secondaryAction: "action_okay".localized,
-                    secondaryActionStyle: .capsule(capsuleTheme),
+                    primaryAction: "action_okay".localized,
+                    primaryActionStyle: .capsule(capsuleTheme),
+                    secondaryAction: nil,
+                    secondaryActionStyle: nil,
                     showCloseButton: false,
                     closeImage: nil,
                     dismissOnAction: true,
@@ -176,6 +187,7 @@ extension Presentation.UiKit.V3AlertModal {
         return holder
     }
 
+    // MARK: Action Theme -> Capsule
     static var capsuleTheme: GBAlertModal.ActionStyle.CapsuleTheme {
         GBAlertModal.ActionStyle.CapsuleTheme(
                 backgroundColor: UIColor.Custom.accentSecondary,
@@ -184,6 +196,7 @@ extension Presentation.UiKit.V3AlertModal {
         )
     }
 
+    // MARK: Action Theme -> Capsule Outline
     static var capsuleOutlineTheme: GBAlertModal.ActionStyle.CapsuleOutlineTheme {
         GBAlertModal.ActionStyle.CapsuleOutlineTheme(
                 backgroundColor: .clear,
@@ -194,6 +207,7 @@ extension Presentation.UiKit.V3AlertModal {
         )
     }
 
+    // MARK: Action Theme -> Plain
     static var plainTheme: GBAlertModal.ActionStyle.PlainTheme {
         GBAlertModal.ActionStyle.PlainTheme(
                 titleColor: UIColor.Custom.accentSecondaryDark,
@@ -201,6 +215,7 @@ extension Presentation.UiKit.V3AlertModal {
         )
     }
 
+    // MARK: Action Theme -> Oblique
     static var obliqueBottomLeftTheme: GBAlertModal.ActionStyle.ObliqueBottomLeftTheme {
         GBAlertModal.ActionStyle.ObliqueBottomLeftTheme(
                 unPressedColor: UIColor(netHex: 0xEF7816),
