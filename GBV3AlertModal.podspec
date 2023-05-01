@@ -7,8 +7,8 @@ General Multipurpose Alert Modal
                             DESC
   s.homepage                = "https://geniebook.com"
   s.license                 = 'MIT'
-  s.author                  = { "" => "" }
-  s.source                  = { :git => "", :tag => s.version.to_s }
+  s.author                  = { "Geniebook" => "developer@geniebook.com" }
+  s.source                  = { :git => "https://bitbucket.org/beautyfu/ios-gb-v3-alert-modal.git", :tag => s.version.to_s }
 
   s.requires_arc            = true
 
