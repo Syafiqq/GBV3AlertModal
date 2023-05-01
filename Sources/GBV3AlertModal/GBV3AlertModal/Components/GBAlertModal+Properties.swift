@@ -82,7 +82,7 @@ extension GBAlertModal {
                 titleColor: UIColor? = nil,
                 subtitleFont: UIFont? = nil,
                 subtitleColor: UIColor? = nil,
-                buttonActionShouldMatchParent: Bool? = false,
+                buttonActionShouldMatchParent: Bool? = nil,
                 buttonActionOrientation: NSLayoutConstraint.Axis? = nil,
                 primaryActionStyle: ActionStyle? = nil,
                 secondaryActionStyle: ActionStyle? = nil,
