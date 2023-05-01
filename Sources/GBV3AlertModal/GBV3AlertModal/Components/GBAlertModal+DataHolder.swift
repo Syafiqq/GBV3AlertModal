@@ -20,7 +20,6 @@ extension GBAlertModal {
         public let primaryAction: String?
 
         public let secondaryAction: String?
-        public let secondaryActionStyle: ActionStyle?
 
         public let showCloseButton: Bool
         public let closeImage: UIImage?
@@ -38,7 +37,6 @@ extension GBAlertModal {
                 subtitleCustomView: UIView? = nil,
                 primaryAction: String? = nil,
                 secondaryAction: String? = nil,
-                secondaryActionStyle: ActionStyle? = nil,
                 showCloseButton: Bool = false,
                 closeImage: UIImage? = nil,
                 dismissOnAction: Bool = false,
@@ -53,7 +51,6 @@ extension GBAlertModal {
             self.subtitleCustomView = subtitleCustomView
             self.primaryAction = primaryAction
             self.secondaryAction = secondaryAction
-            self.secondaryActionStyle = secondaryActionStyle
             self.showCloseButton = showCloseButton
             self.closeImage = closeImage
             self.dismissOnAction = dismissOnAction
@@ -70,7 +67,6 @@ extension GBAlertModal {
                 subtitleCustomView: UIView? = nil,
                 primaryAction: String? = nil,
                 secondaryAction: String? = nil,
-                secondaryActionStyle: ActionStyle? = nil,
                 showCloseButton: Bool? = nil,
                 closeImage: UIImage? = nil,
                 dismissOnAction: Bool? = nil,
@@ -86,7 +82,6 @@ extension GBAlertModal {
                     subtitleCustomView: subtitleCustomView ?? self.subtitleCustomView,
                     primaryAction: primaryAction ?? self.primaryAction,
                     secondaryAction: secondaryAction ?? self.secondaryAction,
-                    secondaryActionStyle: secondaryActionStyle ?? self.secondaryActionStyle,
                     showCloseButton: showCloseButton ?? self.showCloseButton,
                     closeImage: closeImage ?? self.closeImage,
                     dismissOnAction: dismissOnAction ?? self.dismissOnAction,
