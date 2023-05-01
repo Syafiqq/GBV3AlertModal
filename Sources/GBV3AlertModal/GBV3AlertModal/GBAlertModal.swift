@@ -107,11 +107,11 @@ public class GBAlertModal: UIView {
     @objc
     private func onActionButtonPressed(_ sender: UIButton) {
         if sender === btPrimaryAction,
-           let primaryActionStyle = dataHolder?.primaryActionStyle,
+           let primaryActionStyle = properties?.primaryActionStyle,
            case ActionStyle.obliqueBottomLeft(let style) = primaryActionStyle {
             updateObliqueBottomLeftStylePressed(sender, style: style)
         } else if sender === btSecondaryAction,
-                  let secondaryActionStyle = dataHolder?.secondaryActionStyle,
+                  let secondaryActionStyle = properties?.secondaryActionStyle,
                   case ActionStyle.obliqueBottomLeft(let style) = secondaryActionStyle {
             updateObliqueBottomLeftStylePressed(sender, style: style)
         }
@@ -120,11 +120,11 @@ public class GBAlertModal: UIView {
     @objc
     private func onActionButtonUnPressed(_ sender: UIButton) {
         if sender === btPrimaryAction,
-           let primaryActionStyle = dataHolder?.primaryActionStyle,
+           let primaryActionStyle = properties?.primaryActionStyle,
            case ActionStyle.obliqueBottomLeft(let style) = primaryActionStyle {
             updateObliqueBottomLeftStyleUnPressed(sender, style: style)
         } else if sender === btSecondaryAction,
-                  let secondaryActionStyle = dataHolder?.secondaryActionStyle,
+                  let secondaryActionStyle = properties?.secondaryActionStyle,
                   case ActionStyle.obliqueBottomLeft(let style) = secondaryActionStyle {
             updateObliqueBottomLeftStyleUnPressed(sender, style: style)
         }
@@ -337,7 +337,7 @@ private extension GBAlertModal {
 
         // Setup primaryAction
         if let primaryAction = dataHolder?.primaryAction,
-           let primaryActionStyle = dataHolder?.primaryActionStyle {
+           let primaryActionStyle = properties?.primaryActionStyle {
             let vwPrimaryAction = generateGenericViewDesign()
 
             let btPrimaryAction = generateButtonForActionDesign(style: primaryActionStyle)
@@ -354,7 +354,7 @@ private extension GBAlertModal {
 
         // Setup secondaryAction
         if let secondaryAction = dataHolder?.secondaryAction,
-           let secondaryActionStyle = dataHolder?.secondaryActionStyle {
+           let secondaryActionStyle = properties?.secondaryActionStyle {
             let vwSecondaryAction = generateGenericViewDesign()
 
             let btSecondaryAction = generateButtonForActionDesign(style: secondaryActionStyle)
@@ -453,12 +453,29 @@ private extension GBAlertModal {
 
         // MARK: View Constraints
         // Banner
+        if let vwBanner {
+            vwBanner.snp.makeConstraints { (make: ConstraintMaker) -> Void in
+                // Pin
+                if let bannerMaxHeight = properties?.bannerMaxHeight {
+                    make.height
+                            .lessThanOrEqualTo(bannerMaxHeight)
+                            .priority(UILayoutPriority(751))
+                }
+                if let bannerFixedHeight = properties?.bannerFixedHeight {
+                    make.height
+                            .equalTo(bannerFixedHeight)
+                            .priority(UILayoutPriority(251))
+                }
+            }
+        }
         if let ivBanner {
             ivBanner.snp.makeConstraints { (make: ConstraintMaker) -> Void in
                 // Align
-                make.leading.top
+                make.top
+                        .equalToSuperview()
+                make.leading
                         .greaterThanOrEqualToSuperview()
-                make.leading.top
+                make.leading
                         .equalToSuperview()
                         .priority(.low)
                 make.center
@@ -514,14 +531,14 @@ private extension GBAlertModal {
         // Primary Action
         if let vwPrimaryAction,
            let btPrimaryAction,
-           let primaryActionStyle = dataHolder?.primaryActionStyle {
+           let primaryActionStyle = properties?.primaryActionStyle {
             configureButtonActionConstraint(btPrimaryAction, parent: vwPrimaryAction, style: primaryActionStyle)
         }
 
         // Secondary Action
         if let vwSecondaryAction,
            let btSecondaryAction,
-           let secondaryActionStyle = dataHolder?.secondaryActionStyle {
+           let secondaryActionStyle = properties?.secondaryActionStyle {
             configureButtonActionConstraint(btSecondaryAction, parent: vwSecondaryAction, style: secondaryActionStyle)
         }
 
@@ -610,22 +627,10 @@ private extension GBAlertModal {
             make.center
                     .equalToSuperview()
                     .priority(.low)
-
-            // Pin
-            if let fixedWidth = properties?.contentProperty?.fixedWidth {
-                make.width
-                        .equalTo(fixedWidth)
-                        .priority(.low)
-            }
-
-            if let maxWidth = properties?.contentProperty?.maxWidth {
-                make.width
-                        .lessThanOrEqualTo(maxWidth)
-                        .priority(.high)
-            }
         }
     }
 
+    // swiftlint:disable:next function_body_length
     private func adjustSvContentContainerConstraint(_ svContentContainer: UIView) {
         svContentContainer.snp.remakeConstraints { (make: ConstraintMaker) -> Void in
             make.top
@@ -679,6 +684,19 @@ private extension GBAlertModal {
             make.center
                     .equalToSuperview()
                     .priority(.low)
+
+            // Pin
+            if let fixedWidth = properties?.contentProperty?.fixedWidth {
+                make.width
+                        .equalTo(fixedWidth)
+                        .priority(.low)
+            }
+
+            if let maxWidth = properties?.contentProperty?.maxWidth {
+                make.width
+                        .lessThanOrEqualTo(maxWidth)
+                        .priority(.high)
+            }
         }
     }
 
@@ -747,6 +765,10 @@ private extension GBAlertModal {
                         ?? globalProperties.padding,
                 bannerRatio: properties.bannerRatio
                         ?? globalProperties.bannerRatio,
+                bannerMaxHeight: properties.bannerMaxHeight
+                        ?? globalProperties.bannerMaxHeight,
+                bannerFixedHeight: properties.bannerFixedHeight
+                        ?? globalProperties.bannerFixedHeight,
                 titleFont: properties.titleFont
                         ?? globalProperties.titleFont,
                 titleColor: properties.titleColor
@@ -759,6 +781,10 @@ private extension GBAlertModal {
                         ?? globalProperties.buttonActionShouldMatchParent,
                 buttonActionOrientation: properties.buttonActionOrientation
                         ?? globalProperties.buttonActionOrientation,
+                primaryActionStyle: properties.primaryActionStyle
+                        ?? globalProperties.primaryActionStyle,
+                secondaryActionStyle: properties.secondaryActionStyle
+                        ?? globalProperties.secondaryActionStyle,
                 closeButtonTint: properties.closeButtonTint
                         ?? globalProperties.closeButtonTint,
                 space: properties.space

@@ -14,12 +14,16 @@ extension GBAlertModal {
         public let padding: UIMinMaxEdgeInsets?
 
         public let bannerRatio: CGFloat?
+        public let bannerMaxHeight: CGFloat?
+        public let bannerFixedHeight: CGFloat?
         public let titleFont: UIFont?
         public let titleColor: UIColor?
         public let subtitleFont: UIFont?
         public let subtitleColor: UIColor?
         public let buttonActionShouldMatchParent: Bool?
         public let buttonActionOrientation: NSLayoutConstraint.Axis?
+        public let primaryActionStyle: ActionStyle?
+        public let secondaryActionStyle: ActionStyle?
 
         public let closeButtonTint: UIColor?
 
@@ -32,12 +36,16 @@ extension GBAlertModal {
                 margin: UIEdgeInsets? = nil,
                 padding: UIMinMaxEdgeInsets? = nil,
                 bannerRatio: CGFloat? = nil,
+                bannerMaxHeight: CGFloat? = nil,
+                bannerFixedHeight: CGFloat? = nil,
                 titleFont: UIFont? = nil,
                 titleColor: UIColor? = nil,
                 subtitleFont: UIFont? = nil,
                 subtitleColor: UIColor? = nil,
                 buttonActionShouldMatchParent: Bool? = false,
                 buttonActionOrientation: NSLayoutConstraint.Axis? = nil,
+                primaryActionStyle: ActionStyle? = nil,
+                secondaryActionStyle: ActionStyle? = nil,
                 closeButtonTint: UIColor? = nil,
                 space: ComponentSpace? = nil
         ) {
@@ -47,12 +55,16 @@ extension GBAlertModal {
             self.margin = margin
             self.padding = padding
             self.bannerRatio = bannerRatio
+            self.bannerMaxHeight = bannerMaxHeight
+            self.bannerFixedHeight = bannerFixedHeight
             self.titleFont = titleFont
             self.titleColor = titleColor
             self.subtitleFont = subtitleFont
             self.subtitleColor = subtitleColor
             self.buttonActionShouldMatchParent = buttonActionShouldMatchParent
             self.buttonActionOrientation = buttonActionOrientation
+            self.primaryActionStyle = primaryActionStyle
+            self.secondaryActionStyle = secondaryActionStyle
             self.closeButtonTint = closeButtonTint
             self.space = space
         }
@@ -64,12 +76,16 @@ extension GBAlertModal {
                 margin: UIEdgeInsets? = nil,
                 padding: UIMinMaxEdgeInsets? = nil,
                 bannerRatio: CGFloat? = nil,
+                bannerMaxHeight: CGFloat? = nil,
+                bannerFixedHeight: CGFloat? = nil,
                 titleFont: UIFont? = nil,
                 titleColor: UIColor? = nil,
                 subtitleFont: UIFont? = nil,
                 subtitleColor: UIColor? = nil,
                 buttonActionShouldMatchParent: Bool? = false,
                 buttonActionOrientation: NSLayoutConstraint.Axis? = nil,
+                primaryActionStyle: ActionStyle? = nil,
+                secondaryActionStyle: ActionStyle? = nil,
                 closeButtonTint: UIColor? = nil,
                 space: ComponentSpace? = nil
         ) -> Self {
@@ -80,12 +96,16 @@ extension GBAlertModal {
                     margin: margin ?? self.margin,
                     padding: padding ?? self.padding,
                     bannerRatio: bannerRatio ?? self.bannerRatio,
+                    bannerMaxHeight: bannerMaxHeight ?? self.bannerMaxHeight,
+                    bannerFixedHeight: bannerFixedHeight ?? self.bannerFixedHeight,
                     titleFont: titleFont ?? self.titleFont,
                     titleColor: titleColor ?? self.titleColor,
                     subtitleFont: subtitleFont ?? self.subtitleFont,
                     subtitleColor: subtitleColor ?? self.subtitleColor,
                     buttonActionShouldMatchParent: buttonActionShouldMatchParent ?? self.buttonActionShouldMatchParent,
                     buttonActionOrientation: buttonActionOrientation ?? self.buttonActionOrientation,
+                    primaryActionStyle: primaryActionStyle ?? self.primaryActionStyle,
+                    secondaryActionStyle: secondaryActionStyle ?? self.secondaryActionStyle,
                     closeButtonTint: closeButtonTint ?? self.closeButtonTint,
                     space: space ?? self.space
             )
