@@ -23,8 +23,21 @@ class ViewController: UIViewController {
 
         print(Presentation.UiKit.V3AlertModal.holder.copy(title: "Testing").closeOnTapOverlay)
         Presentation.UiKit.V3AlertModal(
+                        properties: Presentation.UiKit.V3AlertModal.properties.copy(
+                                bannerRatio: 168.0 / 200.0,
+                                titleFont: FontHelper.DMSans.bold.font(24),
+                                titleColor: Colors.geniebook_blue_navy,
+                                subtitleFont: FontHelper.DMSans.regular.font(16)
+                        ),
                         holder: Presentation.UiKit.V3AlertModal.holder.copy(
-                                title: "Testing"
+                                banner: UIImage(named: "streak_win"),
+                                title: "You did it!".localized,
+                                subtitle: "AWESOME! You’ve completed an amazing 30-day learning streak. What’s even better, you’re building a wonderful learning habit.".localized,
+                                primaryAction: "Continue".localized,
+                                primaryActionStyle: .obliqueBottomLeft(
+                                        Presentation.UiKit.V3AlertModal.obliqueBottomLeftTheme
+                                ),
+                                completion: { _, _ in }
                         )
                 )
                 .show(completion: {})
