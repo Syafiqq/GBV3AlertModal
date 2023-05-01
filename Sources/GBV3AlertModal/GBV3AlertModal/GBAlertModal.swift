@@ -760,6 +760,8 @@ private extension GBAlertModal {
                         ?? globalProperties.bannerRatio,
                 bannerMaxHeight: properties.bannerMaxHeight
                         ?? globalProperties.bannerMaxHeight,
+                bannerFixedHeight: properties.bannerFixedHeight
+                        ?? globalProperties.bannerFixedHeight,
                 titleFont: properties.titleFont
                         ?? globalProperties.titleFont,
                 titleColor: properties.titleColor
