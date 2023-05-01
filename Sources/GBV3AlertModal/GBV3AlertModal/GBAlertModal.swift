@@ -453,6 +453,16 @@ private extension GBAlertModal {
 
         // MARK: View Constraints
         // Banner
+        if let vwBanner {
+            vwBanner.snp.makeConstraints { (make: ConstraintMaker) -> Void in
+                // Pin
+                if let bannerMaxHeight = properties?.bannerMaxHeight {
+                    make.height
+                            .lessThanOrEqualTo(bannerMaxHeight)
+                            .priority(UILayoutPriority(751))
+                }
+            }
+        }
         if let ivBanner {
             ivBanner.snp.makeConstraints { (make: ConstraintMaker) -> Void in
                 // Align
