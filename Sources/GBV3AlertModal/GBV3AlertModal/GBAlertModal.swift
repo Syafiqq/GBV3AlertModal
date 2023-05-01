@@ -761,6 +761,8 @@ private extension GBAlertModal {
                         ?? globalProperties.buttonActionOrientation,
                 primaryActionStyle: properties.primaryActionStyle
                         ?? globalProperties.primaryActionStyle,
+                secondaryActionStyle: properties.secondaryActionStyle
+                        ?? globalProperties.secondaryActionStyle,
                 closeButtonTint: properties.closeButtonTint
                         ?? globalProperties.closeButtonTint,
                 space: properties.space
