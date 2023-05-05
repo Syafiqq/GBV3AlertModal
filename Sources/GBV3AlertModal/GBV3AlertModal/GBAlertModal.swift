@@ -311,7 +311,7 @@ private extension GBAlertModal {
                 vwSubtitle = lbSubtitle
                 self.lbSubtitle = lbSubtitle
             } else if let subtitle = dataHolder?.subtitleAttributed,
-                      subtitle.length <= 0 {
+                      subtitle.length > 0 {
                 let lbSubtitle = generateLabelForSubtitleDesign()
                 lbSubtitle.attributedText = subtitle
 
