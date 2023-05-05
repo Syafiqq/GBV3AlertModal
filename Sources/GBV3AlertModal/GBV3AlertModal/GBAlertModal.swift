@@ -283,7 +283,7 @@ private extension GBAlertModal {
             )
             self.lbTitle = lbTitle
         } else if let title = dataHolder?.titleAttributed,
-                  title.length <= 0 {
+                  title.length > 0 {
             let lbTitle = generateLabelForTitleDesign()
             lbTitle.attributedText = title
             self.lbTitle = lbTitle
