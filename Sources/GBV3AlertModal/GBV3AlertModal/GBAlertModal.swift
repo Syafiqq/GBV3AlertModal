@@ -689,7 +689,7 @@ private extension GBAlertModal {
             if let fixedWidth = properties?.contentProperty?.fixedWidth {
                 make.width
                         .equalTo(fixedWidth)
-                        .priority(.low)
+                        .priority(.medium)
             }
 
             if let maxWidth = properties?.contentProperty?.maxWidth {
