@@ -839,17 +839,47 @@ private extension GBAlertModal {
 
     @objc
     private func onKeyboardWillHideNotification(_ notification: Notification) {
-        fatalError("not yet implemented")
+        restoreDialogPosition()
     }
 
     @objc
     private func onKeyboardWillShowNotification(_ notification: Notification) {
-        fatalError("not yet implemented")
+        guard let userInfo = notification.userInfo,
+              let valueKeyboard = userInfo[UIResponder.keyboardFrameEndUserInfoKey] as? NSValue else {
+            return
+        }
+
+        let keyboardFrame = valueKeyboard.cgRectValue
+        adjustDialogPosition(keyboardFrame)
     }
 
     @objc
     private func onKeyboardChangeFrameNotification(_ notification: Notification) {
-        fatalError("not yet implemented")
+        guard let userInfo = notification.userInfo,
+              let valueKeyboard = userInfo[UIResponder.keyboardFrameEndUserInfoKey] as? NSValue else {
+            return
+        }
+
+        let keyboardFrame = valueKeyboard.cgRectValue
+        let deviceFrame = UIScreen.main.bounds
+
+        // It is just assumption
+        let isDocked = abs(deviceFrame.maxY - keyboardFrame.maxY) < 2 // Threshold
+                && abs(deviceFrame.maxX - keyboardFrame.maxX) < 2 // Threshold
+        let isMinimised = (deviceFrame.maxY - keyboardFrame.maxY) < 0
+                || (deviceFrame.maxX - keyboardFrame.maxX) < 0
+
+        if isDocked {
+            adjustDialogPosition(keyboardFrame)
+        } else {
+            if isMinimised {
+                restoreDialogPosition()
+            } else if keyboardFrame == .zero {
+                restoreDialogPosition()
+            } else {
+                adjustDialogPosition(keyboardFrame)
+            }
+        }
     }
 
     func restoreDialogPosition() {
