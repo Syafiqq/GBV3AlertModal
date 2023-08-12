@@ -2,6 +2,8 @@ import Foundation
 import UIKit
 import SnapKit
 
+private var kEmptySpaceForKeyboardExtension: CGFloat = 48
+
 // MARK: - LIFECYCLE AND CALLBACK
 
 public class GBAlertModal: UIView {
@@ -199,6 +201,7 @@ public class GBAlertModal: UIView {
     // MARK: Deinitialization
 
     deinit {
+        removeKeyboardEvents()
     }
 }
 
@@ -220,6 +223,8 @@ private extension GBAlertModal {
     func initEvents() {
         unregisterEvents()
         registerEvents()
+        removeKeyboardEvents()
+        listenKeyboardEvents()
     }
 
     func initData() {
@@ -793,9 +798,177 @@ private extension GBAlertModal {
     }
 }
 
+// MARK: - KEYBOARD
+
+private extension GBAlertModal {
+    func listenKeyboardEvents() {
+        let notificationCenter = NotificationCenter.default
+        notificationCenter.addObserver(
+                self,
+                selector: #selector(onKeyboardWillShowNotification),
+                name: UIResponder.keyboardWillShowNotification,
+                object: nil
+        )
+        notificationCenter.addObserver(
+                self,
+                selector: #selector(onKeyboardWillHideNotification),
+                name: UIResponder.keyboardWillHideNotification,
+                object: nil
+        )
+        notificationCenter.addObserver(
+                self,
+                selector: #selector(onKeyboardChangeFrameNotification),
+                name: UIResponder.keyboardWillChangeFrameNotification,
+                object: nil
+        )
+        notificationCenter.addObserver(
+                self,
+                selector: #selector(onKeyboardChangeFrameNotification),
+                name: UIResponder.keyboardDidChangeFrameNotification,
+                object: nil
+        )
+    }
+
+    func removeKeyboardEvents() {
+        let notificationCenter = NotificationCenter.default
+        notificationCenter.removeObserver(self, name: UIResponder.keyboardWillShowNotification, object: nil)
+        notificationCenter.removeObserver(self, name: UIResponder.keyboardWillHideNotification, object: nil)
+        notificationCenter.removeObserver(self, name: UIResponder.keyboardWillChangeFrameNotification, object: nil)
+        notificationCenter.removeObserver(self, name: UIResponder.keyboardDidChangeFrameNotification, object: nil)
+    }
+
+    @objc
+    private func onKeyboardWillHideNotification(_ notification: Notification) {
+        restoreDialogPosition()
+    }
+
+    @objc
+    private func onKeyboardWillShowNotification(_ notification: Notification) {
+        guard let userInfo = notification.userInfo,
+              let valueKeyboard = userInfo[UIResponder.keyboardFrameEndUserInfoKey] as? NSValue else {
+            return
+        }
+
+        let keyboardFrame = valueKeyboard.cgRectValue
+        adjustDialogPosition(keyboardFrame)
+    }
+
+    @objc
+    private func onKeyboardChangeFrameNotification(_ notification: Notification) {
+        guard let userInfo = notification.userInfo,
+              let valueKeyboard = userInfo[UIResponder.keyboardFrameEndUserInfoKey] as? NSValue else {
+            return
+        }
+
+        let keyboardFrame = valueKeyboard.cgRectValue
+        let deviceFrame = UIScreen.main.bounds
+
+        // It is just assumption
+        let isDocked = abs(deviceFrame.maxY - keyboardFrame.maxY) < 2 // Threshold
+                && abs(deviceFrame.maxX - keyboardFrame.maxX) < 2 // Threshold
+        let isMinimised = (deviceFrame.maxY - keyboardFrame.maxY) < 0
+                || (deviceFrame.maxX - keyboardFrame.maxX) < 0
+
+        if isDocked {
+            adjustDialogPosition(keyboardFrame)
+        } else {
+            if isMinimised {
+                restoreDialogPosition()
+            } else if keyboardFrame == .zero {
+                restoreDialogPosition()
+            } else {
+                adjustDialogPosition(keyboardFrame)
+            }
+        }
+    }
+
+    func restoreDialogPosition() {
+        vwContainer?.transform = .identity
+    }
+
+    // swiftlint:disable:next function_body_length
+    func adjustDialogPosition(_ keyboardFrame: CGRect) {
+        guard let vwContainer else {
+            return
+        }
+        // check if upper keyboard has more space than btm
+        if keyboardFrame.minY > (UIScreen.main.bounds.maxY - keyboardFrame.maxY) {
+            guard let bottomView = svMainActionContainer ?? svSubtitleContainer ?? lbTitle,
+                  let bottomViewSuperview = bottomView.superview else {
+                return
+            }
+            let bottomViewRelativeFrame = bottomViewSuperview.convert(
+                    bottomView.frame,
+                    to: nil
+            )
+            var difference = keyboardFrame.minY
+                    - bottomViewRelativeFrame.maxY
+                    - kEmptySpaceForKeyboardExtension
+
+            if let responder = firstResponder,
+               let responderSuperview = responder.superview {
+                let responderRelativeFrame = responderSuperview.convert(responder.frame, to: nil)
+                if difference + responderRelativeFrame.minY < 0 {
+                    difference = -responderRelativeFrame.minY
+                }
+            }
+
+            difference += vwContainer.transform.ty
+
+            guard difference < 0 else {
+                return
+            }
+            vwContainer.transform = .identity.translatedBy(x: 0, y: difference)
+        } else {
+            guard let bottomView = lbTitle ?? svSubtitleContainer ?? svMainActionContainer,
+                  let bottomViewSuperview = bottomView.superview else {
+                return
+            }
+            let bottomViewRelativeFrame = bottomViewSuperview.convert(
+                    bottomView.frame,
+                    to: nil
+            )
+            var difference = keyboardFrame.maxY
+                    - bottomViewRelativeFrame.minY
+                    + kEmptySpaceForKeyboardExtension
+
+            if let responder = firstResponder,
+               let responderSuperview = responder.superview {
+                let responderRelativeFrame = responderSuperview.convert(responder.frame, to: nil)
+                if difference + responderRelativeFrame.maxY > UIScreen.main.bounds.maxY {
+                    difference = UIScreen.main.bounds.maxY - responderRelativeFrame.maxY
+                }
+            }
+
+            difference += vwContainer.transform.ty
+
+            guard difference > 0 else {
+                return
+            }
+            vwContainer.transform = .identity.translatedBy(x: 0, y: difference)
+        }
+    }
+}
+
 // MARK: - DELEGATIONS
 
 // MARK: - EXTENSION
+
+private extension UIView {
+    var firstResponder: UIView? {
+        guard !isFirstResponder else {
+            return self
+        }
+
+        for subview in subviews {
+            if let firstResponder = subview.firstResponder {
+                return firstResponder
+            }
+        }
+
+        return nil
+    }
+}
 
 // MARK: - STATIC DETACHABLE
 
