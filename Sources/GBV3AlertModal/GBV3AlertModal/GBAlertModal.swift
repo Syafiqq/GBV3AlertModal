@@ -2,6 +2,8 @@ import Foundation
 import UIKit
 import SnapKit
 
+private var kEmptySpaceForKeyboardExtension: CGFloat = 48
+
 // MARK: - LIFECYCLE AND CALLBACK
 
 public class GBAlertModal: UIView {
@@ -849,11 +851,94 @@ private extension GBAlertModal {
     private func onKeyboardChangeFrameNotification(_ notification: Notification) {
         fatalError("not yet implemented")
     }
+
+    func restoreDialogPosition() {
+        vwContainer?.transform = .identity
+    }
+
+    // swiftlint:disable:next function_body_length
+    func adjustDialogPosition(_ keyboardFrame: CGRect) {
+        guard let vwContainer else {
+            return
+        }
+        // check if upper keyboard has more space than btm
+        if keyboardFrame.minY > (UIScreen.main.bounds.maxY - keyboardFrame.maxY) {
+            guard let bottomView = svMainActionContainer ?? svSubtitleContainer ?? lbTitle,
+                  let bottomViewSuperview = bottomView.superview else {
+                return
+            }
+            let bottomViewRelativeFrame = bottomViewSuperview.convert(
+                    bottomView.frame,
+                    to: nil
+            )
+            var difference = keyboardFrame.minY
+                    - bottomViewRelativeFrame.maxY
+                    - kEmptySpaceForKeyboardExtension
+
+            if let responder = firstResponder,
+               let responderSuperview = responder.superview {
+                let responderRelativeFrame = responderSuperview.convert(responder.frame, to: nil)
+                if difference + responderRelativeFrame.minY < 0 {
+                    difference = -responderRelativeFrame.minY
+                }
+            }
+
+            difference += vwContainer.transform.ty
+
+            guard difference < 0 else {
+                return
+            }
+            vwContainer.transform = .identity.translatedBy(x: 0, y: difference)
+        } else {
+            guard let bottomView = lbTitle ?? svSubtitleContainer ?? svMainActionContainer,
+                  let bottomViewSuperview = bottomView.superview else {
+                return
+            }
+            let bottomViewRelativeFrame = bottomViewSuperview.convert(
+                    bottomView.frame,
+                    to: nil
+            )
+            var difference = keyboardFrame.maxY
+                    - bottomViewRelativeFrame.minY
+                    + kEmptySpaceForKeyboardExtension
+
+            if let responder = firstResponder,
+               let responderSuperview = responder.superview {
+                let responderRelativeFrame = responderSuperview.convert(responder.frame, to: nil)
+                if difference + responderRelativeFrame.maxY > UIScreen.main.bounds.maxY {
+                    difference = UIScreen.main.bounds.maxY - responderRelativeFrame.maxY
+                }
+            }
+
+            difference += vwContainer.transform.ty
+
+            guard difference > 0 else {
+                return
+            }
+            vwContainer.transform = .identity.translatedBy(x: 0, y: difference)
+        }
+    }
 }
 
 // MARK: - DELEGATIONS
 
 // MARK: - EXTENSION
+
+private extension UIView {
+    var firstResponder: UIView? {
+        guard !isFirstResponder else {
+            return self
+        }
+
+        for subview in subviews {
+            if let firstResponder = subview.firstResponder {
+                return firstResponder
+            }
+        }
+
+        return nil
+    }
+}
 
 // MARK: - STATIC DETACHABLE
 
