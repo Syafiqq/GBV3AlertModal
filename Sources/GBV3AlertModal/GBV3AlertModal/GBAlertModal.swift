@@ -199,6 +199,7 @@ public class GBAlertModal: UIView {
     // MARK: Deinitialization
 
     deinit {
+        removeKeyboardEvents()
     }
 }
 
@@ -220,6 +221,8 @@ private extension GBAlertModal {
     func initEvents() {
         unregisterEvents()
         registerEvents()
+        removeKeyboardEvents()
+        listenKeyboardEvents()
     }
 
     func initData() {
@@ -790,6 +793,61 @@ private extension GBAlertModal {
                 space: properties.space
                         ?? globalProperties.space
         )
+    }
+}
+
+// MARK: - KEYBOARD
+
+private extension GBAlertModal {
+    func listenKeyboardEvents() {
+        let notificationCenter = NotificationCenter.default
+        notificationCenter.addObserver(
+                self,
+                selector: #selector(onKeyboardWillShowNotification),
+                name: UIResponder.keyboardWillShowNotification,
+                object: nil
+        )
+        notificationCenter.addObserver(
+                self,
+                selector: #selector(onKeyboardWillHideNotification),
+                name: UIResponder.keyboardWillHideNotification,
+                object: nil
+        )
+        notificationCenter.addObserver(
+                self,
+                selector: #selector(onKeyboardChangeFrameNotification),
+                name: UIResponder.keyboardWillChangeFrameNotification,
+                object: nil
+        )
+        notificationCenter.addObserver(
+                self,
+                selector: #selector(onKeyboardChangeFrameNotification),
+                name: UIResponder.keyboardDidChangeFrameNotification,
+                object: nil
+        )
+    }
+
+    func removeKeyboardEvents() {
+        let notificationCenter = NotificationCenter.default
+        notificationCenter.removeObserver(self, name: UIResponder.keyboardWillShowNotification, object: nil)
+        notificationCenter.removeObserver(self, name: UIResponder.keyboardWillHideNotification, object: nil)
+        notificationCenter.removeObserver(self, name: UIResponder.keyboardWillChangeFrameNotification, object: nil)
+        notificationCenter.removeObserver(self, name: UIResponder.keyboardDidChangeFrameNotification, object: nil)
+    }
+
+    @objc
+    private func onKeyboardWillHideNotification(_ notification: Notification) {
+        fatalError("not yet implemented")
+    }
+
+    @objc
+    private func onKeyboardWillShowNotification(_ notification: Notification) {
+        fatalError("not yet implemented")
+    }
+
+    @objc
+    private func onKeyboardChangeFrameNotification(_ notification: Notification) {
+        fatalError("not yet implemented")
     }
 }
 
