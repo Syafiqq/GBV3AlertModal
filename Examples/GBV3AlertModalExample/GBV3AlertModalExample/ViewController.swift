@@ -8,8 +8,12 @@
 
 import UIKit
 import GBV3AlertModal
+import SnapKit
 
 class ViewController: UIViewController {
+    private var abc: UIView!
+    private var abd: GBAlertModal!
+
     override func viewDidLoad() {
         super.viewDidLoad()
         // Do any additional setup after loading the view.
@@ -18,38 +22,75 @@ class ViewController: UIViewController {
         GBV3AlertModal.globalProperties = properties
     }
 
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+    }
+
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
+        let abc = UIView(frame: .zero)
+        abc.translatesAutoresizingMaskIntoConstraints = false
+        let v1 = generateFormTextFieldDesign()
+        let v2 = generateFormTextFieldDesign()
+        abc.addSubview(v1)
+        abc.addSubview(v2)
+        v1.snp.makeConstraints {
+            $0.top.directionalHorizontalEdges.equalToSuperview()
+            $0.height.equalTo(48)
+        }
+        v2.snp.makeConstraints {
+            $0.top.equalTo(v1.snp.bottom).offset(32)
+            $0.directionalHorizontalEdges.bottom.equalToSuperview()
+            $0.height.equalTo(48)
+        }
+        self.abc = abc
 
         print(Presentation.UiKit.V3AlertModal.holder.copy(title: "Testing").closeOnTapOverlay)
-        Presentation.UiKit.V3AlertModal(
-                        properties: Presentation.UiKit.V3AlertModal.properties.copy(
-                                bannerRatio: 200.0 / 168.0,
-                                bannerMaxHeight: 168,
-                                bannerFixedHeight: 168,
-                                titleFont: FontHelper.DMSans.bold.font(24),
-                                titleColor: Colors.geniebook_blue_navy,
-                                subtitleFont: FontHelper.DMSans.regular.font(16),
-                                buttonActionShouldMatchParent: true,
-                                primaryActionStyle: .obliqueBottomLeft(
-                                        Presentation.UiKit.V3AlertModal.obliqueBottomLeftTheme
-                                ),
-                                space: GBAlertModal.Properties.ComponentSpace(
-                                        banner: 16,
-                                        title: 12,
-                                        subtitle: 20,
-                                        interButton: 16
-                                )
+        let abd = Presentation.UiKit.V3AlertModal(
+                properties: Presentation.UiKit.V3AlertModal.properties.copy(
+                        titleFont: FontHelper.DMSans.bold.font(24),
+                        titleColor: Colors.geniebook_blue_navy,
+                        subtitleFont: FontHelper.DMSans.regular.font(16),
+                        buttonActionShouldMatchParent: true,
+                        primaryActionStyle: .obliqueBottomLeft(
+                                Presentation.UiKit.V3AlertModal.obliqueBottomLeftTheme
                         ),
-                        holder: Presentation.UiKit.V3AlertModal.holder.copy(
-                                banner: UIImage(named: "streak_win"),
-                                title: "You did it!".localized,
-                                subtitle: "AWESOME! You’ve completed an amazing 30-day learning streak. What’s even better, you’re building a wonderful learning habit.".localized,
-                                primaryAction: "Continue".localized,
-                                completion: { _, _ in }
+                        space: GBAlertModal.Properties.ComponentSpace(
+                                banner: 16,
+                                title: 12,
+                                subtitle: 20,
+                                interButton: 16
                         )
+                ),
+                holder: Presentation.UiKit.V3AlertModal.holder.copy(
+                        banner: nil,
+                        title: "Rename Worksheet".localized,
+                        subtitleCustomView: abc,
+                        primaryAction: "Done".localized,
+                        completion: { _, _ in }
                 )
-                .show(completion: {})
+        )
+        abd.show(completion: {})
+        self.abd = abd.dialog
+    }
+
+    override func viewWillDisappear(_ animated: Bool) {
+        super.viewWillDisappear(animated)
+    }
+
+    override func viewDidDisappear(_ animated: Bool) {
+        super.viewDidDisappear(animated)
+    }
+
+    private func generateFormTextFieldDesign() -> UITextField {
+        let view = UITextField(frame: .zero)
+        view.font = FontHelper.DMSans.regular.font(14)
+        view.tintColor = Colors.geniebook_blue_navy
+        view.textColor = Colors.geniebook_blue_navy
+        view.layer.cornerRadius = 8
+        view.layer.borderWidth = 1
+        view.layer.borderColor = UIColor.black.cgColor
+        return view
     }
 }
 
