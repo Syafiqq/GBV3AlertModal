@@ -1,6 +1,6 @@
 Pod::Spec.new do |s|
   s.name                    = "GBV3AlertModal"
-  s.version                 = "1.0.5"
+  s.version                 = "1.0.6"
   s.summary                 = "Summary"
   s.description             = <<-DESC
 General Multipurpose Alert Modal
