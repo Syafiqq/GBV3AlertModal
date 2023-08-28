@@ -26,6 +26,18 @@ public extension GBAlertModal.ActionStyle {
             self.titleColor = titleColor
             self.titleFont = titleFont
         }
+
+        public func copy(
+                backgroundColor: UIColor? = nil,
+                titleColor: UIColor? = nil,
+                titleFont: UIFont? = nil
+        ) -> Self {
+            Self(
+                    backgroundColor: backgroundColor,
+                    titleColor: titleColor,
+                    titleFont: titleFont
+            )
+        }
     }
 
     struct CapsuleOutlineTheme {
@@ -48,6 +60,22 @@ public extension GBAlertModal.ActionStyle {
             self.borderColor = borderColor
             self.titleFont = titleFont
         }
+
+        public func copy(
+                backgroundColor: UIColor? = nil,
+                titleColor: UIColor? = nil,
+                borderWidth: CGFloat? = nil,
+                borderColor: CGColor? = nil,
+                titleFont: UIFont? = nil
+        ) -> Self {
+            Self(
+                    backgroundColor: backgroundColor,
+                    titleColor: titleColor,
+                    borderWidth: borderWidth,
+                    borderColor: borderColor,
+                    titleFont: titleFont
+            )
+        }
     }
 
     struct PlainTheme {
@@ -60,6 +88,16 @@ public extension GBAlertModal.ActionStyle {
         ) {
             self.titleColor = titleColor
             self.titleFont = titleFont
+        }
+
+        public func copy(
+                titleColor: UIColor? = nil,
+                titleFont: UIFont? = nil
+        ) -> Self {
+            Self(
+                    titleColor: titleColor,
+                    titleFont: titleFont
+            )
         }
     }
 
@@ -82,6 +120,22 @@ public extension GBAlertModal.ActionStyle {
             self.shadowColor = shadowColor
             self.titleColor = titleColor
             self.titleFont = titleFont
+        }
+
+        public func copy(
+                unPressedColor: UIColor? = nil,
+                pressedColor: UIColor? = nil,
+                shadowColor: CGColor? = nil,
+                titleColor: UIColor? = nil,
+                titleFont: UIFont? = nil
+        ) -> Self {
+            Self(
+                    unPressedColor: unPressedColor,
+                    pressedColor: pressedColor,
+                    shadowColor: shadowColor,
+                    titleColor: titleColor,
+                    titleFont: titleFont
+            )
         }
     }
 }
