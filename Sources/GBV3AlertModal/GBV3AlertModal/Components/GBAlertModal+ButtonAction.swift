@@ -14,27 +14,37 @@ public extension GBAlertModal {
 public extension GBAlertModal.ActionStyle {
     struct CapsuleTheme {
         public var backgroundColor: UIColor?
+        public var backgroundDisableColor: UIColor?
         public var titleColor: UIColor?
+        public var titleDisableColor: UIColor?
         public var titleFont: UIFont?
 
         public init(
                 backgroundColor: UIColor? = nil,
+                backgroundDisableColor: UIColor? = nil,
                 titleColor: UIColor? = nil,
+                titleDisableColor: UIColor? = nil,
                 titleFont: UIFont? = nil
         ) {
             self.backgroundColor = backgroundColor
+            self.backgroundDisableColor = backgroundDisableColor
             self.titleColor = titleColor
+            self.titleDisableColor = titleDisableColor
             self.titleFont = titleFont
         }
 
         public func copy(
                 backgroundColor: UIColor? = nil,
+                backgroundDisableColor: UIColor? = nil,
                 titleColor: UIColor? = nil,
+                titleDisableColor: UIColor? = nil,
                 titleFont: UIFont? = nil
         ) -> Self {
             Self(
                     backgroundColor: backgroundColor ?? self.backgroundColor,
+                    backgroundDisableColor: backgroundDisableColor ?? self.backgroundDisableColor,
                     titleColor: titleColor ?? self.titleColor,
+                    titleDisableColor: titleDisableColor ?? self.titleDisableColor,
                     titleFont: titleFont ?? self.titleFont
             )
         }
