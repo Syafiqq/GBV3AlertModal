@@ -134,36 +134,46 @@ public extension GBAlertModal.ActionStyle {
     struct ObliqueBottomLeftTheme {
         public var unPressedColor: UIColor?
         public var pressedColor: UIColor?
+        public var disabledColor: UIColor?
         public var shadowColor: CGColor?
         public var titleColor: UIColor?
+        public var titleDisableColor: UIColor?
         public var titleFont: UIFont?
 
         public init(
                 unPressedColor: UIColor? = nil,
                 pressedColor: UIColor? = nil,
+                disabledColor: UIColor? = nil,
                 shadowColor: CGColor? = nil,
                 titleColor: UIColor? = nil,
+                titleDisableColor: UIColor? = nil,
                 titleFont: UIFont? = nil
         ) {
             self.unPressedColor = unPressedColor
             self.pressedColor = pressedColor
+            self.disabledColor = disabledColor
             self.shadowColor = shadowColor
             self.titleColor = titleColor
+            self.titleDisableColor = titleDisableColor
             self.titleFont = titleFont
         }
 
         public func copy(
                 unPressedColor: UIColor? = nil,
                 pressedColor: UIColor? = nil,
+                disabledColor: UIColor? = nil,
                 shadowColor: CGColor? = nil,
                 titleColor: UIColor? = nil,
+                titleDisableColor: UIColor? = nil,
                 titleFont: UIFont? = nil
         ) -> Self {
             Self(
                     unPressedColor: unPressedColor ?? self.unPressedColor,
                     pressedColor: pressedColor ?? self.pressedColor,
+                    disabledColor: disabledColor ?? self.disabledColor,
                     shadowColor: shadowColor ?? self.shadowColor,
                     titleColor: titleColor ?? self.titleColor,
+                    titleDisableColor: titleDisableColor ?? self.titleDisableColor,
                     titleFont: titleFont ?? self.titleFont
             )
         }
