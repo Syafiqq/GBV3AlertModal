@@ -105,22 +105,27 @@ public extension GBAlertModal.ActionStyle {
 
     struct PlainTheme {
         public var titleColor: UIColor?
+        public var titleDisableColor: UIColor?
         public var titleFont: UIFont?
 
         public init(
                 titleColor: UIColor? = nil,
+                titleDisableColor: UIColor? = nil,
                 titleFont: UIFont? = nil
         ) {
             self.titleColor = titleColor
+            self.titleDisableColor = titleDisableColor
             self.titleFont = titleFont
         }
 
         public func copy(
                 titleColor: UIColor? = nil,
+                titleDisableColor: UIColor? = nil,
                 titleFont: UIFont? = nil
         ) -> Self {
             Self(
                     titleColor: titleColor ?? self.titleColor,
+                    titleDisableColor: titleDisableColor ?? self.titleDisableColor,
                     titleFont: titleFont ?? self.titleFont
             )
         }
