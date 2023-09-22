@@ -198,6 +198,26 @@ public class GBAlertModal: UIView {
         layoutIfNeeded()
     }
 
+    public func changePrimaryActionEnableState(isEnable: Bool) {
+        guard let btPrimaryAction else {
+            return
+        }
+        btPrimaryAction.isEnabled = isEnable
+        if let style = properties?.primaryActionStyle {
+            configureButtonActionStyle(btPrimaryAction, style: style)
+        }
+    }
+
+    public func changeSecondaryActionEnableState(isEnable: Bool) {
+        guard let btSecondaryAction else {
+            return
+        }
+        btSecondaryAction.isEnabled = isEnable
+        if let style = properties?.primaryActionStyle {
+            configureButtonActionStyle(btSecondaryAction, style: style)
+        }
+    }
+
     // MARK: Deinitialization
 
     deinit {
