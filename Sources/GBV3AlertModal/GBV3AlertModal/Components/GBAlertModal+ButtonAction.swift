@@ -14,89 +14,119 @@ public extension GBAlertModal {
 public extension GBAlertModal.ActionStyle {
     struct CapsuleTheme {
         public var backgroundColor: UIColor?
+        public var backgroundDisableColor: UIColor?
         public var titleColor: UIColor?
+        public var titleDisableColor: UIColor?
         public var titleFont: UIFont?
 
         public init(
                 backgroundColor: UIColor? = nil,
+                backgroundDisableColor: UIColor? = nil,
                 titleColor: UIColor? = nil,
+                titleDisableColor: UIColor? = nil,
                 titleFont: UIFont? = nil
         ) {
             self.backgroundColor = backgroundColor
+            self.backgroundDisableColor = backgroundDisableColor
             self.titleColor = titleColor
+            self.titleDisableColor = titleDisableColor
             self.titleFont = titleFont
         }
 
         public func copy(
                 backgroundColor: UIColor? = nil,
+                backgroundDisableColor: UIColor? = nil,
                 titleColor: UIColor? = nil,
+                titleDisableColor: UIColor? = nil,
                 titleFont: UIFont? = nil
         ) -> Self {
             Self(
-                    backgroundColor: backgroundColor,
-                    titleColor: titleColor,
-                    titleFont: titleFont
+                    backgroundColor: backgroundColor ?? self.backgroundColor,
+                    backgroundDisableColor: backgroundDisableColor ?? self.backgroundDisableColor,
+                    titleColor: titleColor ?? self.titleColor,
+                    titleDisableColor: titleDisableColor ?? self.titleDisableColor,
+                    titleFont: titleFont ?? self.titleFont
             )
         }
     }
 
     struct CapsuleOutlineTheme {
         public var backgroundColor: UIColor?
+        public var backgroundDisableColor: UIColor?
         public var titleColor: UIColor?
+        public var titleDisableColor: UIColor?
         public var borderWidth: CGFloat?
         public var borderColor: CGColor?
+        public var borderDisableColor: CGColor?
         public var titleFont: UIFont?
 
         public init(
                 backgroundColor: UIColor? = nil,
+                backgroundDisableColor: UIColor? = nil,
                 titleColor: UIColor? = nil,
+                titleDisableColor: UIColor? = nil,
                 borderWidth: CGFloat? = nil,
                 borderColor: CGColor? = nil,
+                borderDisableColor: CGColor? = nil,
                 titleFont: UIFont? = nil
         ) {
             self.backgroundColor = backgroundColor
+            self.backgroundDisableColor = backgroundDisableColor
             self.titleColor = titleColor
+            self.titleDisableColor = titleDisableColor
             self.borderWidth = borderWidth
             self.borderColor = borderColor
+            self.borderDisableColor = borderDisableColor
             self.titleFont = titleFont
         }
 
         public func copy(
                 backgroundColor: UIColor? = nil,
+                backgroundDisableColor: UIColor? = nil,
                 titleColor: UIColor? = nil,
+                titleDisableColor: UIColor? = nil,
                 borderWidth: CGFloat? = nil,
                 borderColor: CGColor? = nil,
+                borderDisableColor: CGColor? = nil,
                 titleFont: UIFont? = nil
         ) -> Self {
             Self(
-                    backgroundColor: backgroundColor,
-                    titleColor: titleColor,
-                    borderWidth: borderWidth,
-                    borderColor: borderColor,
-                    titleFont: titleFont
+                    backgroundColor: backgroundColor ?? self.backgroundColor,
+                    backgroundDisableColor: backgroundDisableColor ?? self.backgroundDisableColor,
+                    titleColor: titleColor ?? self.titleColor,
+                    titleDisableColor: titleDisableColor ?? self.titleDisableColor,
+                    borderWidth: borderWidth ?? self.borderWidth,
+                    borderColor: borderColor ?? self.borderColor,
+                    borderDisableColor: borderDisableColor ?? self.borderDisableColor,
+                    titleFont: titleFont ?? self.titleFont
             )
         }
     }
 
     struct PlainTheme {
         public var titleColor: UIColor?
+        public var titleDisableColor: UIColor?
         public var titleFont: UIFont?
 
         public init(
                 titleColor: UIColor? = nil,
+                titleDisableColor: UIColor? = nil,
                 titleFont: UIFont? = nil
         ) {
             self.titleColor = titleColor
+            self.titleDisableColor = titleDisableColor
             self.titleFont = titleFont
         }
 
         public func copy(
                 titleColor: UIColor? = nil,
+                titleDisableColor: UIColor? = nil,
                 titleFont: UIFont? = nil
         ) -> Self {
             Self(
-                    titleColor: titleColor,
-                    titleFont: titleFont
+                    titleColor: titleColor ?? self.titleColor,
+                    titleDisableColor: titleDisableColor ?? self.titleDisableColor,
+                    titleFont: titleFont ?? self.titleFont
             )
         }
     }
@@ -104,37 +134,47 @@ public extension GBAlertModal.ActionStyle {
     struct ObliqueBottomLeftTheme {
         public var unPressedColor: UIColor?
         public var pressedColor: UIColor?
+        public var disabledColor: UIColor?
         public var shadowColor: CGColor?
         public var titleColor: UIColor?
+        public var titleDisableColor: UIColor?
         public var titleFont: UIFont?
 
         public init(
                 unPressedColor: UIColor? = nil,
                 pressedColor: UIColor? = nil,
+                disabledColor: UIColor? = nil,
                 shadowColor: CGColor? = nil,
                 titleColor: UIColor? = nil,
+                titleDisableColor: UIColor? = nil,
                 titleFont: UIFont? = nil
         ) {
             self.unPressedColor = unPressedColor
             self.pressedColor = pressedColor
+            self.disabledColor = disabledColor
             self.shadowColor = shadowColor
             self.titleColor = titleColor
+            self.titleDisableColor = titleDisableColor
             self.titleFont = titleFont
         }
 
         public func copy(
                 unPressedColor: UIColor? = nil,
                 pressedColor: UIColor? = nil,
+                disabledColor: UIColor? = nil,
                 shadowColor: CGColor? = nil,
                 titleColor: UIColor? = nil,
+                titleDisableColor: UIColor? = nil,
                 titleFont: UIFont? = nil
         ) -> Self {
             Self(
-                    unPressedColor: unPressedColor,
-                    pressedColor: pressedColor,
-                    shadowColor: shadowColor,
-                    titleColor: titleColor,
-                    titleFont: titleFont
+                    unPressedColor: unPressedColor ?? self.unPressedColor,
+                    pressedColor: pressedColor ?? self.pressedColor,
+                    disabledColor: disabledColor ?? self.disabledColor,
+                    shadowColor: shadowColor ?? self.shadowColor,
+                    titleColor: titleColor ?? self.titleColor,
+                    titleDisableColor: titleDisableColor ?? self.titleDisableColor,
+                    titleFont: titleFont ?? self.titleFont
             )
         }
     }
@@ -143,29 +183,54 @@ public extension GBAlertModal.ActionStyle {
 internal extension GBAlertModal {
     func configureButtonActionStyle(_ button: UIButton, title: String, style: ActionStyle) {
         button.setTitle(title, for: .normal)
+        configureButtonActionStyle(button, style: style)
+    }
+
+    func configureButtonActionStyle(_ button: UIButton, style: ActionStyle) {
         switch style {
         case .capsule(let style):
             button.layer.borderWidth = 0.0
             button.layer.borderColor = nil
-            button.backgroundColor = style.backgroundColor
-            button.setTitleColor(style.titleColor, for: .normal)
             button.setImage(nil, for: .normal)
             button.titleLabel?.font = style.titleFont
+            if button.isEnabled {
+                button.backgroundColor = style.backgroundColor
+                button.setTitleColor(style.titleColor, for: .normal)
+            } else {
+                button.backgroundColor = style.backgroundDisableColor
+                button.setTitleColor(style.titleDisableColor, for: .normal)
+            }
         case .capsuleOutlined(let style):
             button.layer.borderWidth = style.borderWidth ?? 0
-            button.layer.borderColor = style.borderColor
-            button.backgroundColor = style.backgroundColor
-            button.setTitleColor(style.titleColor, for: .normal)
             button.setImage(nil, for: .normal)
             button.titleLabel?.font = style.titleFont
+            if button.isEnabled {
+                button.backgroundColor = style.backgroundColor
+                button.setTitleColor(style.titleColor, for: .normal)
+                button.layer.borderColor = style.borderColor
+            } else {
+                button.backgroundColor = style.backgroundDisableColor
+                button.setTitleColor(style.titleDisableColor, for: .normal)
+                button.layer.borderColor = style.borderDisableColor
+            }
         case .plain(let style):
-            button.setTitleColor(style.titleColor, for: .normal)
             button.titleLabel?.font = style.titleFont
+            if button.isEnabled {
+                button.setTitleColor(style.titleColor, for: .normal)
+            } else {
+                button.setTitleColor(style.titleDisableColor, for: .normal)
+            }
         case .obliqueBottomLeft(let style):
-            button.backgroundColor = style.unPressedColor
-            button.setTitleColor(style.titleColor, for: .normal)
             button.titleLabel?.font = style.titleFont
-            updateObliqueBottomLeftStyleUnPressed(button, style: style)
+            if button.isEnabled {
+                button.backgroundColor = style.unPressedColor
+                button.setTitleColor(style.titleColor, for: .normal)
+                updateObliqueBottomLeftStyleUnPressed(button, style: style)
+            } else {
+                button.backgroundColor = style.disabledColor
+                button.setTitleColor(style.titleDisableColor, for: .normal)
+                updateObliqueBottomLeftStyleDisabled(button, style: style)
+            }
         }
     }
 
@@ -227,6 +292,10 @@ internal extension GBAlertModal {
     }
 
     func updateObliqueBottomLeftStylePressed(_ button: UIButton, style: ActionStyle.ObliqueBottomLeftTheme) {
+        guard button.isEnabled else {
+            updateObliqueBottomLeftStyleDisabled(button, style: style)
+            return
+        }
         UIView.animate(
                 withDuration: 0.1,
                 delay: 0,
@@ -244,6 +313,10 @@ internal extension GBAlertModal {
     }
 
     func updateObliqueBottomLeftStyleUnPressed(_ button: UIButton, style: ActionStyle.ObliqueBottomLeftTheme) {
+        guard button.isEnabled else {
+            updateObliqueBottomLeftStyleDisabled(button, style: style)
+            return
+        }
         UIView.animate(
                 withDuration: 0.1,
                 delay: 0,
@@ -261,6 +334,23 @@ internal extension GBAlertModal {
                             y: 3.0,
                             blur: 0.0
                     )
+                },
+                completion: { _ in }
+        )
+    }
+
+    func updateObliqueBottomLeftStyleDisabled(_ button: UIButton, style: ActionStyle.ObliqueBottomLeftTheme) {
+        UIView.animate(
+                withDuration: 0.1,
+                delay: 0,
+                options: UIView.AnimationOptions.curveEaseIn,
+                animations: { [weak self] in
+                    guard self != nil else {
+                        return
+                    }
+                    button.backgroundColor = style.disabledColor
+                    button.transform = .identity.translatedBy(x: -3, y: 3)
+                    button.layer.removeSketchShadow()
                 },
                 completion: { _ in }
         )
