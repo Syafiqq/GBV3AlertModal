@@ -200,8 +200,12 @@ internal extension GBAlertModal {
                 button.layer.borderColor = style.borderDisableColor
             }
         case .plain(let style):
-            button.setTitleColor(style.titleColor, for: .normal)
             button.titleLabel?.font = style.titleFont
+            if button.isEnabled {
+                button.setTitleColor(style.titleColor, for: .normal)
+            } else {
+                button.setTitleColor(style.titleDisableColor, for: .normal)
+            }
         case .obliqueBottomLeft(let style):
             button.backgroundColor = style.unPressedColor
             button.setTitleColor(style.titleColor, for: .normal)
