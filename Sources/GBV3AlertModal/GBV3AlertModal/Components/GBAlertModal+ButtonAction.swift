@@ -217,10 +217,16 @@ internal extension GBAlertModal {
                 button.setTitleColor(style.titleDisableColor, for: .normal)
             }
         case .obliqueBottomLeft(let style):
-            button.backgroundColor = style.unPressedColor
-            button.setTitleColor(style.titleColor, for: .normal)
             button.titleLabel?.font = style.titleFont
-            updateObliqueBottomLeftStyleUnPressed(button, style: style)
+            if button.isEnabled {
+                button.backgroundColor = style.unPressedColor
+                button.setTitleColor(style.titleColor, for: .normal)
+                updateObliqueBottomLeftStyleUnPressed(button, style: style)
+            } else {
+                button.backgroundColor = style.disabledColor
+                button.setTitleColor(style.titleDisableColor, for: .normal)
+                updateObliqueBottomLeftStyleDisabled(button, style: style)
+            }
         }
     }
 
@@ -282,6 +288,10 @@ internal extension GBAlertModal {
     }
 
     func updateObliqueBottomLeftStylePressed(_ button: UIButton, style: ActionStyle.ObliqueBottomLeftTheme) {
+        guard button.isEnabled else {
+            updateObliqueBottomLeftStyleDisabled(button, style: style)
+            return
+        }
         UIView.animate(
                 withDuration: 0.1,
                 delay: 0,
@@ -299,6 +309,10 @@ internal extension GBAlertModal {
     }
 
     func updateObliqueBottomLeftStyleUnPressed(_ button: UIButton, style: ActionStyle.ObliqueBottomLeftTheme) {
+        guard button.isEnabled else {
+            updateObliqueBottomLeftStyleDisabled(button, style: style)
+            return
+        }
         UIView.animate(
                 withDuration: 0.1,
                 delay: 0,
@@ -316,6 +330,23 @@ internal extension GBAlertModal {
                             y: 3.0,
                             blur: 0.0
                     )
+                },
+                completion: { _ in }
+        )
+    }
+
+    func updateObliqueBottomLeftStyleDisabled(_ button: UIButton, style: ActionStyle.ObliqueBottomLeftTheme) {
+        UIView.animate(
+                withDuration: 0.1,
+                delay: 0,
+                options: UIView.AnimationOptions.curveEaseIn,
+                animations: { [weak self] in
+                    guard self != nil else {
+                        return
+                    }
+                    button.backgroundColor = style.disabledColor
+                    button.transform = .identity.translatedBy(x: -3, y: 3)
+                    button.layer.removeSketchShadow()
                 },
                 completion: { _ in }
         )
