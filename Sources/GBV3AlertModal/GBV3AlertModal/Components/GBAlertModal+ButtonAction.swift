@@ -183,6 +183,10 @@ public extension GBAlertModal.ActionStyle {
 internal extension GBAlertModal {
     func configureButtonActionStyle(_ button: UIButton, title: String, style: ActionStyle) {
         button.setTitle(title, for: .normal)
+        configureButtonActionStyle(button, style: style)
+    }
+
+    func configureButtonActionStyle(_ button: UIButton, style: ActionStyle) {
         switch style {
         case .capsule(let style):
             button.layer.borderWidth = 0.0
