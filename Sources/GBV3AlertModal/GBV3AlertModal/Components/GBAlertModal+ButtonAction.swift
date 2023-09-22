@@ -130,11 +130,11 @@ public extension GBAlertModal.ActionStyle {
                 titleFont: UIFont? = nil
         ) -> Self {
             Self(
-                    unPressedColor: unPressedColor,
-                    pressedColor: pressedColor,
-                    shadowColor: shadowColor,
-                    titleColor: titleColor,
-                    titleFont: titleFont
+                    unPressedColor: unPressedColor ?? self.unPressedColor,
+                    pressedColor: pressedColor ?? self.pressedColor,
+                    shadowColor: shadowColor ?? self.shadowColor,
+                    titleColor: titleColor ?? self.titleColor,
+                    titleFont: titleFont ?? self.titleFont
             )
         }
     }
