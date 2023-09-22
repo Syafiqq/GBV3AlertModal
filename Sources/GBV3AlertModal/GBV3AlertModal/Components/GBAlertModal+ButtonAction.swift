@@ -183,11 +183,17 @@ internal extension GBAlertModal {
             }
         case .capsuleOutlined(let style):
             button.layer.borderWidth = style.borderWidth ?? 0
-            button.layer.borderColor = style.borderColor
-            button.backgroundColor = style.backgroundColor
-            button.setTitleColor(style.titleColor, for: .normal)
             button.setImage(nil, for: .normal)
             button.titleLabel?.font = style.titleFont
+            if button.isEnabled {
+                button.backgroundColor = style.backgroundColor
+                button.setTitleColor(style.titleColor, for: .normal)
+                button.layer.borderColor = style.borderColor
+            } else {
+                button.backgroundColor = style.backgroundDisableColor
+                button.setTitleColor(style.titleDisableColor, for: .normal)
+                button.layer.borderColor = style.borderDisableColor
+            }
         case .plain(let style):
             button.setTitleColor(style.titleColor, for: .normal)
             button.titleLabel?.font = style.titleFont
