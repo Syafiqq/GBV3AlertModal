@@ -69,11 +69,11 @@ public extension GBAlertModal.ActionStyle {
                 titleFont: UIFont? = nil
         ) -> Self {
             Self(
-                    backgroundColor: backgroundColor,
-                    titleColor: titleColor,
-                    borderWidth: borderWidth,
-                    borderColor: borderColor,
-                    titleFont: titleFont
+                    backgroundColor: backgroundColor ?? self.backgroundColor,
+                    titleColor: titleColor ?? self.titleColor,
+                    borderWidth: borderWidth ?? self.borderWidth,
+                    borderColor: borderColor ?? self.borderColor,
+                    titleFont: titleFont ?? self.titleFont
             )
         }
     }
