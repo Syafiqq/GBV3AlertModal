@@ -52,37 +52,52 @@ public extension GBAlertModal.ActionStyle {
 
     struct CapsuleOutlineTheme {
         public var backgroundColor: UIColor?
+        public var backgroundDisableColor: UIColor?
         public var titleColor: UIColor?
+        public var titleDisableColor: UIColor?
         public var borderWidth: CGFloat?
         public var borderColor: CGColor?
+        public var borderDisableColor: CGColor?
         public var titleFont: UIFont?
 
         public init(
                 backgroundColor: UIColor? = nil,
+                backgroundDisableColor: UIColor? = nil,
                 titleColor: UIColor? = nil,
+                titleDisableColor: UIColor? = nil,
                 borderWidth: CGFloat? = nil,
                 borderColor: CGColor? = nil,
+                borderDisableColor: CGColor? = nil,
                 titleFont: UIFont? = nil
         ) {
             self.backgroundColor = backgroundColor
+            self.backgroundDisableColor = backgroundDisableColor
             self.titleColor = titleColor
+            self.titleDisableColor = titleDisableColor
             self.borderWidth = borderWidth
             self.borderColor = borderColor
+            self.borderDisableColor = borderDisableColor
             self.titleFont = titleFont
         }
 
         public func copy(
                 backgroundColor: UIColor? = nil,
+                backgroundDisableColor: UIColor? = nil,
                 titleColor: UIColor? = nil,
+                titleDisableColor: UIColor? = nil,
                 borderWidth: CGFloat? = nil,
                 borderColor: CGColor? = nil,
+                borderDisableColor: CGColor? = nil,
                 titleFont: UIFont? = nil
         ) -> Self {
             Self(
                     backgroundColor: backgroundColor ?? self.backgroundColor,
+                    backgroundDisableColor: backgroundDisableColor ?? self.backgroundDisableColor,
                     titleColor: titleColor ?? self.titleColor,
+                    titleDisableColor: titleDisableColor ?? self.titleDisableColor,
                     borderWidth: borderWidth ?? self.borderWidth,
                     borderColor: borderColor ?? self.borderColor,
+                    borderDisableColor: borderDisableColor ?? self.borderDisableColor,
                     titleFont: titleFont ?? self.titleFont
             )
         }
