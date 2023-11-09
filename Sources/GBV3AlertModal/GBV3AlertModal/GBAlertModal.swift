@@ -9,39 +9,39 @@ private var kEmptySpaceForKeyboardExtension: CGFloat = 48
 public class GBAlertModal: UIView {
     // MARK: Outlets
     // Overlay
-    private(set) var vwOverlay: UIView?
+    public private(set) var vwOverlay: UIView?
 
     // Main Container
-    private(set) var vwContainer: UIView?
+    public private(set) var vwContainer: UIView?
 
     // Main Content
-    private(set) var svContentContainer: UIStackView?
+    public private(set) var svContentContainer: UIStackView?
 
     // Content
-    private(set) var vwBanner: UIView?
-    private(set) var ivBanner: UIImageView?
+    public private(set) var vwBanner: UIView?
+    public private(set) var ivBanner: UIImageView?
 
-    private(set) var lbTitle: UILabel?
+    public private(set) var lbTitle: UILabel?
 
-    private(set) var svSubtitleContainer: UIScrollView?
-    private(set) var lbSubtitle: UILabel?
-    private(set) weak var vwSubtitle: UIView?
+    public private(set) var svSubtitleContainer: UIScrollView?
+    public private(set) var lbSubtitle: UILabel?
+    public private(set) weak var vwSubtitle: UIView?
 
     // Main action container
-    private(set) var svMainActionContainer: UIStackView?
+    public private(set) var svMainActionContainer: UIStackView?
 
     // Action
-    private(set) var vwPrimaryAction: UIView?
-    private(set) var btPrimaryAction: UIButton?
-    private(set) var vwSecondaryAction: UIView?
-    private(set) var btSecondaryAction: UIButton?
+    public private(set) var vwPrimaryAction: UIView?
+    public private(set) var btPrimaryAction: UIButton?
+    public private(set) var vwSecondaryAction: UIView?
+    public private(set) var btSecondaryAction: UIButton?
 
-    private(set) var btCloseAction: UIButton?
+    public private(set) var btCloseAction: UIButton?
 
     // Divider
-    private(set) var vwBannerAndBelowDivider: UIView?
-    private(set) var vwTitleAndBelowDivider: UIView?
-    private(set) var vwSubtitleAndBelowDivider: UIView?
+    public private(set) var vwBannerAndBelowDivider: UIView?
+    public private(set) var vwTitleAndBelowDivider: UIView?
+    public private(set) var vwSubtitleAndBelowDivider: UIView?
 
     // MARK: Constraints
 
