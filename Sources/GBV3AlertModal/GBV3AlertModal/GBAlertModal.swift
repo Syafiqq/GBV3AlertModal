@@ -213,7 +213,7 @@ public class GBAlertModal: UIView {
             return
         }
         btSecondaryAction.isEnabled = isEnable
-        if let style = properties?.primaryActionStyle {
+        if let style = properties?.secondaryActionStyle {
             configureButtonActionStyle(btSecondaryAction, style: style)
         }
     }
