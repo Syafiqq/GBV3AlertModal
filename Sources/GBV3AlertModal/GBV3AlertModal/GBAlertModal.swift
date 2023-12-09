@@ -418,7 +418,7 @@ private extension GBAlertModal {
         // Setup Divider
         // Setup banner and its below
         if vwBanner != nil,
-           (lbTitle != nil || svSubtitleContainer != nil || svMainActionContainer != nil) {
+           lbTitle != nil || svSubtitleContainer != nil || svMainActionContainer != nil {
             let vwBannerAndBelowDivider = generateGenericViewDesign()
 
             self.vwBannerAndBelowDivider = vwBannerAndBelowDivider
@@ -428,7 +428,7 @@ private extension GBAlertModal {
 
         // Setup title and its below
         if lbTitle != nil,
-           (svSubtitleContainer != nil || svMainActionContainer != nil) {
+           svSubtitleContainer != nil || svMainActionContainer != nil {
             let vwTitleAndBelowDivider = generateGenericViewDesign()
 
             self.vwTitleAndBelowDivider = vwTitleAndBelowDivider
