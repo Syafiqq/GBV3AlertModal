@@ -238,19 +238,19 @@ internal extension GBAlertModal {
         switch style {
         case .capsule,
              .capsuleOutlined:
-            button.snp.makeConstraints { (make: ConstraintMaker) -> Void in
+            button.snp.makeConstraints { (make: ConstraintMaker) in
                 // Align
                 make.edges
                         .equalToSuperview()
             }
 
-            parent.snp.makeConstraints { (make: ConstraintMaker) -> Void in
+            parent.snp.makeConstraints { (make: ConstraintMaker) in
                 // Pin
                 make.height
                         .equalTo(48)
             }
         case .plain:
-            button.snp.makeConstraints { (make: ConstraintMaker) -> Void in
+            button.snp.makeConstraints { (make: ConstraintMaker) in
                 // Align
                 make.top
                         .equalToSuperview()
@@ -261,13 +261,13 @@ internal extension GBAlertModal {
                         .equalToSuperview()
             }
 
-            parent.snp.makeConstraints { (make: ConstraintMaker) -> Void in
+            parent.snp.makeConstraints { (make: ConstraintMaker) in
                 // Pin
                 make.height
                         .equalTo(48)
             }
         case .obliqueBottomLeft:
-            button.snp.makeConstraints { (make: ConstraintMaker) -> Void in
+            button.snp.makeConstraints { (make: ConstraintMaker) in
                 // Align
                 make.top
                         .equalToSuperview()
@@ -283,7 +283,7 @@ internal extension GBAlertModal {
                         .offset(3)
             }
 
-            parent.snp.makeConstraints { (make: ConstraintMaker) -> Void in
+            parent.snp.makeConstraints { (make: ConstraintMaker) in
                 // Pin
                 make.height
                         .equalTo(48)

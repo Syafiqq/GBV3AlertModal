@@ -149,7 +149,7 @@ public class GBAlertModal: UIView {
         transform = .identity
 
         parent.addSubview(self)
-        snp.makeConstraints { (make: ConstraintMaker) -> Void in
+        snp.makeConstraints { (make: ConstraintMaker) in
             make.edges
                     .equalTo(parent)
         }
@@ -213,7 +213,7 @@ public class GBAlertModal: UIView {
             return
         }
         btSecondaryAction.isEnabled = isEnable
-        if let style = properties?.primaryActionStyle {
+        if let style = properties?.secondaryActionStyle {
             configureButtonActionStyle(btSecondaryAction, style: style)
         }
     }
@@ -418,7 +418,7 @@ private extension GBAlertModal {
         // Setup Divider
         // Setup banner and its below
         if vwBanner != nil,
-           (lbTitle != nil || svSubtitleContainer != nil || svMainActionContainer != nil) {
+           lbTitle != nil || svSubtitleContainer != nil || svMainActionContainer != nil {
             let vwBannerAndBelowDivider = generateGenericViewDesign()
 
             self.vwBannerAndBelowDivider = vwBannerAndBelowDivider
@@ -428,7 +428,7 @@ private extension GBAlertModal {
 
         // Setup title and its below
         if lbTitle != nil,
-           (svSubtitleContainer != nil || svMainActionContainer != nil) {
+           svSubtitleContainer != nil || svMainActionContainer != nil {
             let vwTitleAndBelowDivider = generateGenericViewDesign()
 
             self.vwTitleAndBelowDivider = vwTitleAndBelowDivider
@@ -479,7 +479,7 @@ private extension GBAlertModal {
         // MARK: View Constraints
         // Banner
         if let vwBanner {
-            vwBanner.snp.makeConstraints { (make: ConstraintMaker) -> Void in
+            vwBanner.snp.makeConstraints { (make: ConstraintMaker) in
                 // Pin
                 if let bannerMaxHeight = properties?.bannerMaxHeight {
                     make.height
@@ -494,7 +494,7 @@ private extension GBAlertModal {
             }
         }
         if let ivBanner {
-            ivBanner.snp.makeConstraints { (make: ConstraintMaker) -> Void in
+            ivBanner.snp.makeConstraints { (make: ConstraintMaker) in
                 // Align
                 make.top
                         .equalToSuperview()
@@ -517,7 +517,7 @@ private extension GBAlertModal {
 
         // Banner divider
         if let vwBannerAndBelowDivider {
-            vwBannerAndBelowDivider.snp.makeConstraints { (make: ConstraintMaker) -> Void in
+            vwBannerAndBelowDivider.snp.makeConstraints { (make: ConstraintMaker) in
                 make.height
                         .equalTo(properties?.space?.banner ?? .zero)
             }
@@ -526,7 +526,7 @@ private extension GBAlertModal {
         // Subtitle
         if let svSubtitleContainer,
            let vwSubtitle = vwSubtitle ?? lbSubtitle {
-            vwSubtitle.snp.makeConstraints { (make: ConstraintMaker) -> Void in
+            vwSubtitle.snp.makeConstraints { (make: ConstraintMaker) in
                 make.edges
                         .equalTo(svSubtitleContainer.contentLayoutGuide)
                 make.width
@@ -539,7 +539,7 @@ private extension GBAlertModal {
 
         // Title Divider
         if let vwTitleAndBelowDivider {
-            vwTitleAndBelowDivider.snp.makeConstraints { (make: ConstraintMaker) -> Void in
+            vwTitleAndBelowDivider.snp.makeConstraints { (make: ConstraintMaker) in
                 make.height
                         .equalTo(properties?.space?.title ?? .zero)
             }
@@ -547,7 +547,7 @@ private extension GBAlertModal {
 
         // Subtitle Divider
         if let vwSubtitleAndBelowDivider {
-            vwSubtitleAndBelowDivider.snp.makeConstraints { (make: ConstraintMaker) -> Void in
+            vwSubtitleAndBelowDivider.snp.makeConstraints { (make: ConstraintMaker) in
                 make.height
                         .equalTo(properties?.space?.subtitle ?? .zero)
             }
@@ -569,7 +569,7 @@ private extension GBAlertModal {
 
         // Close Action
         if let btCloseAction {
-            btCloseAction.snp.makeConstraints { (make: ConstraintMaker) -> Void in
+            btCloseAction.snp.makeConstraints { (make: ConstraintMaker) in
                 make.top.trailing
                         .equalToSuperview()
                 make.size
@@ -626,7 +626,7 @@ private extension GBAlertModal {
     }
 
     private func adjustVwContainerConstraint(_ vwContainer: UIView) {
-        vwContainer.snp.remakeConstraints { (make: ConstraintMaker) -> Void in
+        vwContainer.snp.remakeConstraints { (make: ConstraintMaker) in
             // Align
             make.top
                     .greaterThanOrEqualTo(safeAreaLayoutGuide)
@@ -657,7 +657,7 @@ private extension GBAlertModal {
 
     // swiftlint:disable:next function_body_length
     private func adjustSvContentContainerConstraint(_ svContentContainer: UIView) {
-        svContentContainer.snp.remakeConstraints { (make: ConstraintMaker) -> Void in
+        svContentContainer.snp.remakeConstraints { (make: ConstraintMaker) in
             make.top
                     .greaterThanOrEqualToSuperview()
                     .offset(
@@ -1009,7 +1009,7 @@ private extension GBAlertModal {
         vwContainer.addSubview(svContentContainer)
 
         // MARK: View Constraints
-        vwOverlay.snp.makeConstraints { (make: ConstraintMaker) -> Void in
+        vwOverlay.snp.makeConstraints { (make: ConstraintMaker) in
             make.edges
                     .equalToSuperview()
         }
