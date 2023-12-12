@@ -6,7 +6,7 @@ private var kEmptySpaceForKeyboardExtension: CGFloat = 48
 
 // MARK: - LIFECYCLE AND CALLBACK
 
-public class GBAlertModal: UIView {
+open class GBAlertModal: UIView {
     // MARK: Outlets
     // Overlay
     public private(set) var vwOverlay: UIView?
@@ -72,7 +72,7 @@ public class GBAlertModal: UIView {
         initData()
     }
 
-    required init?(coder: NSCoder) {
+    public required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
 
