@@ -21,6 +21,7 @@ end
 
 def example_lib_pods
   pod 'GBV3AlertModal', :path => './'
+  pod 'lottie-ios', '= 3.5.0'
 end
 
 target 'GBV3AlertModal' do
