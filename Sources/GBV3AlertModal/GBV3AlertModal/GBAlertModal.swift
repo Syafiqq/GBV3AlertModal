@@ -80,6 +80,14 @@ open class GBAlertModal: UIView {
 
     // MARK: Override Function
 
+    override public func layoutSubviews() {
+        super.layoutSubviews()
+
+        if let svContentContainer {
+            adjustSvContentContainerConstraintWidth(svContentContainer)
+        }
+    }
+
     // MARK: Callback
 
     @objc
