@@ -266,8 +266,10 @@ public extension Presentation.UiKit.V3AlertModal {
         GBAlertModal.Properties.ContentProperty(
                 backgroundColor: .white,
                 cornerRadius: 16,
-                fixedWidth: UIDevice.current.userInterfaceIdiom == .pad ? 300 : 256,
-                maxWidth: UIDevice.current.userInterfaceIdiom == .pad ? 300 : 256,
+                fixedWidthPortrait: UIDevice.current.userInterfaceIdiom == .pad ? 300 : 256,
+                maxWidthPortrait: UIDevice.current.userInterfaceIdiom == .pad ? 300 : 256,
+                fixedWidthLandscape: UIDevice.current.userInterfaceIdiom == .pad ? 440 : 440,
+                maxWidthLandscape: UIDevice.current.userInterfaceIdiom == .pad ? 440 : 440,
                 childShouldMatchParent: true
         )
     }
