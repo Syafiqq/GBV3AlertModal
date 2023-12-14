@@ -711,13 +711,19 @@ private extension GBAlertModal {
                     .priority(.low)
 
             // Pin
-            if let fixedWidth = properties?.contentProperty?.fixedWidth {
+            let fixedWidth = UIWindow.isLandscape
+                ? properties?.contentProperty?.fixedWidthLandscape ?? properties?.contentProperty?.fixedWidthPortrait
+                : properties?.contentProperty?.fixedWidthPortrait ?? properties?.contentProperty?.fixedWidthLandscape
+            if let fixedWidth {
                 make.width
                         .equalTo(fixedWidth)
                         .priority(.medium)
             }
 
-            if let maxWidth = properties?.contentProperty?.maxWidth {
+            let maxWidth = UIWindow.isLandscape
+                ? properties?.contentProperty?.maxWidthLandscape ?? properties?.contentProperty?.maxWidthPortrait
+                : properties?.contentProperty?.maxWidthPortrait ?? properties?.contentProperty?.maxWidthLandscape
+            if let maxWidth {
                 make.width
                         .lessThanOrEqualTo(maxWidth)
                         .priority(.high)
