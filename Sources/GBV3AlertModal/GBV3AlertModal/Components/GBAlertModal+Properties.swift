@@ -121,36 +121,46 @@ public extension GBAlertModal.Properties {
 
         public let backgroundColor: UIColor?
         public let cornerRadius: CGFloat
-        public let fixedWidth: CGFloat?
-        public let maxWidth: CGFloat?
+        public let fixedWidthPortrait: CGFloat?
+        public let maxWidthPortrait: CGFloat?
+        public let fixedWidthLandscape: CGFloat?
+        public let maxWidthLandscape: CGFloat?
         public let childShouldMatchParent: Bool
 
         public init(
                 backgroundColor: UIColor? = nil,
                 cornerRadius: CGFloat = .zero,
-                fixedWidth: CGFloat? = nil,
-                maxWidth: CGFloat? = nil,
+                fixedWidthPortrait: CGFloat? = nil,
+                maxWidthPortrait: CGFloat? = nil,
+                fixedWidthLandscape: CGFloat? = nil,
+                maxWidthLandscape: CGFloat? = nil,
                 childShouldMatchParent: Bool = false
         ) {
             self.backgroundColor = backgroundColor
             self.cornerRadius = cornerRadius
-            self.fixedWidth = fixedWidth
-            self.maxWidth = maxWidth
+            self.fixedWidthPortrait = fixedWidthPortrait
+            self.maxWidthPortrait = maxWidthPortrait
+            self.fixedWidthLandscape = fixedWidthLandscape
+            self.maxWidthLandscape = maxWidthLandscape
             self.childShouldMatchParent = childShouldMatchParent
         }
 
         public func copy(
                 backgroundColor: UIColor? = nil,
                 cornerRadius: CGFloat? = nil,
-                fixedWidth: CGFloat? = nil,
-                maxWidth: CGFloat? = nil,
+                fixedWidthPortrait: CGFloat? = nil,
+                maxWidthPortrait: CGFloat? = nil,
+                fixedWidthLandscape: CGFloat? = nil,
+                maxWidthLandscape: CGFloat? = nil,
                 childShouldMatchParent: Bool? = nil
         ) -> Self {
             Self(
                     backgroundColor: backgroundColor ?? self.backgroundColor,
                     cornerRadius: cornerRadius ?? self.cornerRadius,
-                    fixedWidth: fixedWidth ?? self.fixedWidth,
-                    maxWidth: maxWidth ?? self.maxWidth,
+                    fixedWidthPortrait: fixedWidthPortrait ?? self.fixedWidthPortrait,
+                    maxWidthPortrait: maxWidthPortrait ?? self.maxWidthPortrait,
+                    fixedWidthLandscape: fixedWidthLandscape ?? self.fixedWidthLandscape,
+                    maxWidthLandscape: maxWidthLandscape ?? self.maxWidthLandscape,
                     childShouldMatchParent: childShouldMatchParent ?? self.childShouldMatchParent
             )
         }
