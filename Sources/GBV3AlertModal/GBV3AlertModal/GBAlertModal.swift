@@ -731,6 +731,29 @@ private extension GBAlertModal {
         }
     }
 
+    private func adjustSvContentContainerConstraintWidth(_ svContentContainer: UIView) {
+        svContentContainer.snp.updateConstraints { (make: ConstraintMaker) in
+            // Pin
+            let fixedWidth = UIWindow.isLandscape
+                ? properties?.contentProperty?.fixedWidthLandscape ?? properties?.contentProperty?.fixedWidthPortrait
+                : properties?.contentProperty?.fixedWidthPortrait ?? properties?.contentProperty?.fixedWidthLandscape
+            if let fixedWidth {
+                make.width
+                        .equalTo(fixedWidth)
+                        .priority(.medium)
+            }
+
+            let maxWidth = UIWindow.isLandscape
+                ? properties?.contentProperty?.maxWidthLandscape ?? properties?.contentProperty?.maxWidthPortrait
+                : properties?.contentProperty?.maxWidthPortrait ?? properties?.contentProperty?.maxWidthLandscape
+            if let maxWidth {
+                make.width
+                        .lessThanOrEqualTo(maxWidth)
+                        .priority(.high)
+            }
+        }
+    }
+
     // MARK: ViewModel
     func registerEvents() {
         // Gestures
