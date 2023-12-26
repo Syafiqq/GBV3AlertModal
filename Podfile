@@ -25,7 +25,7 @@ end
 
 target 'GBV3AlertModal' do
   project 'Sources/GBV3AlertModal/GBV3AlertModal.xcodeproj'
-  platform :ios, '11.0'
+  platform :ios, '13.0'
 
   # Comment the next line if you don't want to use dynamic frameworks
   use_frameworks!
@@ -47,7 +47,7 @@ end
 
 target 'GBV3AlertModalExample' do
   project 'Examples/GBV3AlertModalExample/GBV3AlertModalExample.xcodeproj'
-  platform :ios, '11.0'
+  platform :ios, '13.0'
 
   # Comment the next line if you don't want to use dynamic frameworks
   use_frameworks!
@@ -72,12 +72,7 @@ end
 post_install do |installer|
   installer.pods_project.targets.each do |t|
     t.build_configurations.each do |config|
-      case t.name
-      when "Cuckoo", "Quick", "Nimble"
-        config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '13.0'
-      else
-        config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '11.0'
-      end
+      config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '13.0'
     end
   end
 end
