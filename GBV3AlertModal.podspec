@@ -12,7 +12,7 @@ General Multipurpose Alert Modal
 
   s.requires_arc            = true
 
-  s.ios.deployment_target   = '11.0'
+  s.ios.deployment_target   = '13.0'
 
   s.source_files            = 'Sources/GBV3AlertModal/GBV3AlertModal/**/*.swift'
 
