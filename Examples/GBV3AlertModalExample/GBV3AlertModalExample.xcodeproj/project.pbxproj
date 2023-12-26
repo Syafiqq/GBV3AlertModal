@@ -327,6 +327,7 @@
 			inputFileListPaths = (
 			);
 			inputPaths = (
+				"$(PODS_PODFILE_DIR_PATH)/Examples/GBV3AlertModalExample/GBV3AlertModalExample",
 			);
 			name = Linting;
 			outputFileListPaths = (
@@ -346,6 +347,7 @@
 			inputFileListPaths = (
 			);
 			inputPaths = (
+				"$(PODS_PODFILE_DIR_PATH)/Examples/GBV3AlertModalExample/GBV3AlertModalExampleTests",
 			);
 			name = Linting;
 			outputFileListPaths = (
