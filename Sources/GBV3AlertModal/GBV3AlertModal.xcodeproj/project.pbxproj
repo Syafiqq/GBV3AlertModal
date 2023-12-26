@@ -655,7 +655,6 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 12C2E91F1D62E48C76012D03 /* Pods-GBV3AlertModal-GBV3AlertModalTests.debug.xcconfig */;
 			buildSettings = {
-				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 12;
 				DEVELOPMENT_TEAM = 68M5L3KNEH;
@@ -677,7 +676,6 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 5545F781B442D5BFF3370D20 /* Pods-GBV3AlertModal-GBV3AlertModalTests.release.xcconfig */;
 			buildSettings = {
-				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 12;
 				DEVELOPMENT_TEAM = 68M5L3KNEH;
