@@ -171,7 +171,6 @@ open class GBAlertModal: UIView {
                 withDuration: 0.2,
                 animations: { [weak self] in
                     self?.alpha = 0
-                    self?.transform = .identity.scaledBy(x: 2, y: 2)
                 },
                 completion: { [weak self] _ in
                     self?.removeFromSuperview()
