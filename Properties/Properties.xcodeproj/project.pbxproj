@@ -16,7 +16,7 @@
 		59CBA8202939C7FD0037E7B4 /* Podfile */ = {isa = PBXFileReference; lastKnownFileType = text; name = Podfile; path = ../Podfile; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.ruby; };
 		59CBA8212939C7FD0037E7B4 /* .swiftlint.yml */ = {isa = PBXFileReference; lastKnownFileType = text.yaml; name = .swiftlint.yml; path = ../.swiftlint.yml; sourceTree = "<group>"; };
 		59CBA8222939C7FD0037E7B4 /* .swiftlint_example_test.yml */ = {isa = PBXFileReference; lastKnownFileType = text.yaml; name = .swiftlint_example_test.yml; path = ../.swiftlint_example_test.yml; sourceTree = "<group>"; };
-		59CBA8232939C7FD0037E7B4 /* GBV3AlertModal.podspec */ = {isa = PBXFileReference; lastKnownFileType = text; name = GBV3AlertModal.podspec; path = ../GBV3AlertModal.podspec; sourceTree = "<group>"; };
+		59CBA8232939C7FD0037E7B4 /* GBV3AlertModal.podspec */ = {isa = PBXFileReference; lastKnownFileType = text; name = GBV3AlertModal.podspec; path = ../GBV3AlertModal.podspec; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.ruby; };
 		59CBA8242939C7FD0037E7B4 /* Script */ = {isa = PBXFileReference; lastKnownFileType = folder; name = Script; path = ../Script; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
