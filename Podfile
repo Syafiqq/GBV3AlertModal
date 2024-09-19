@@ -5,7 +5,7 @@ workspace 'GBV3AlertModal'
 # Uncomment the next line to define a global platform for your project
 
 def dev_pods
-  pod 'SwiftLint', '~> 0.51'
+  pod 'SwiftLint', '~> 0.57'
 end
 
 def lib_pods
