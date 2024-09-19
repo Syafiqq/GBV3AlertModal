@@ -20,7 +20,7 @@ def lib_test_pods
 end
 
 def example_lib_pods
-  lib_pods
+  pod 'GBV3AlertModal', :path => './'
 end
 
 target 'GBV3AlertModal' do
