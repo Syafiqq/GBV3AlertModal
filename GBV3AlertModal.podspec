@@ -18,6 +18,6 @@ General Multipurpose Alert Modal
 
   s.swift_version = '5.6'
 
-  s.dependency 'LanguageManager-iOS', '~> 1.2.9-beta.2'
+  s.dependency 'LanguageManager-iOS', '~> 1.3.1-beta.1'
   s.dependency 'SnapKit', '~> 5.7'
 end
