@@ -1,12 +1,12 @@
 PODS:
-  - Cuckoo (1.10.3):
-    - Cuckoo/Swift (= 1.10.3)
-  - Cuckoo/Swift (1.10.3)
+  - Cuckoo (1.10.4):
+    - Cuckoo/Swift (= 1.10.4)
+  - Cuckoo/Swift (1.10.4)
   - LanguageManager-iOS (1.2.9)
   - Nimble (12.3.0)
   - Quick (6.1.0)
   - SnapKit (5.7.1)
-  - SwiftLint (0.57.0)
+  - SwiftLint (0.63.0)
 
 DEPENDENCIES:
   - Cuckoo (~> 1.10)
@@ -17,7 +17,7 @@ DEPENDENCIES:
   - SwiftLint (~> 0.57)
 
 SPEC REPOS:
-  trunk:
+  https://github.com/CocoaPods/Specs.git:
     - Cuckoo
     - LanguageManager-iOS
     - Nimble
@@ -26,13 +26,13 @@ SPEC REPOS:
     - SwiftLint
 
 SPEC CHECKSUMS:
-  Cuckoo: 930598bd4ae95860c658b3eea30903d946ebef36
+  Cuckoo: 20b8aed94022e0e43e90f7c9e4fb0c86f0926a01
   LanguageManager-iOS: c1dbb2329fc4b8c0dbc0b0d386a11ea9553a359b
   Nimble: f8a8219d16f176429b951e8f7e72df5c23ceddc0
   Quick: 6676ffb409bf04abba2ff23902af2407bfc6ac90
   SnapKit: d612e99e678a2d3b95bf60b0705ed0a35c03484a
-  SwiftLint: eb47480d47c982481592c195c221d11013a679cc
+  SwiftLint: e9074baeb1a9fc1e78a4055967f73860313c6a9e
 
-PODFILE CHECKSUM: 9fd004dc5ca710d6ac6e260411832adb38952561
+PODFILE CHECKSUM: 5c40a8b7dd73aceccacdd9fc196acdc9b112e8c4
 
-COCOAPODS: 1.15.2
+COCOAPODS: 1.16.2
