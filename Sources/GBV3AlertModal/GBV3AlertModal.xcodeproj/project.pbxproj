@@ -7,7 +7,6 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		06DA5AA5376BA32B7D8DB1B8 /* Pods_GBV3AlertModal_GBV3AlertModalTests.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0E9FEFF1AAD0C51BD6CD455F /* Pods_GBV3AlertModal_GBV3AlertModalTests.framework */; };
 		593ED24C2935CFA9007BC45A /* GBV3AlertModal.docc in Sources */ = {isa = PBXBuildFile; fileRef = 593ED24B2935CFA9007BC45A /* GBV3AlertModal.docc */; };
 		593ED2522935CFA9007BC45A /* GBV3AlertModal.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 593ED2472935CFA9007BC45A /* GBV3AlertModal.framework */; };
 		593ED2572935CFA9007BC45A /* GBV3AlertModalTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 593ED2562935CFA9007BC45A /* GBV3AlertModalTests.swift */; };
@@ -26,7 +25,6 @@
 		65B8CB4C5DBA6103913DF02C /* GBV3AlertModal.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65B8CCF436BFA68301C842E8 /* GBV3AlertModal.swift */; };
 		65B8CB6CC0A001DD6F9034C0 /* UIEdgeInset+Manipulation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65B8C095A1E531D67BCA9BBB /* UIEdgeInset+Manipulation.swift */; };
 		65B8CE33125189D3D1CCDC00 /* GBAlertModal+Properties.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65B8C533E4B76C4781471FC2 /* GBAlertModal+Properties.swift */; };
-		DAE3C726BE474CB1552C4672 /* Pods_GBV3AlertModal.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 3F132D23E0D92A9E7C37C9BE /* Pods_GBV3AlertModal.framework */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -40,14 +38,6 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
-		07E60423242738625B08B5F7 /* Pods-GBV3AlertModalTests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-GBV3AlertModalTests.release.xcconfig"; path = "Target Support Files/Pods-GBV3AlertModalTests/Pods-GBV3AlertModalTests.release.xcconfig"; sourceTree = "<group>"; };
-		09412B351DA2C7831D41485B /* Pods-GBV3AlertModal.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-GBV3AlertModal.release.xcconfig"; path = "Target Support Files/Pods-GBV3AlertModal/Pods-GBV3AlertModal.release.xcconfig"; sourceTree = "<group>"; };
-		0E9FEFF1AAD0C51BD6CD455F /* Pods_GBV3AlertModal_GBV3AlertModalTests.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_GBV3AlertModal_GBV3AlertModalTests.framework; sourceTree = BUILT_PRODUCTS_DIR; };
-		12C2E91F1D62E48C76012D03 /* Pods-GBV3AlertModal-GBV3AlertModalTests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-GBV3AlertModal-GBV3AlertModalTests.debug.xcconfig"; path = "Target Support Files/Pods-GBV3AlertModal-GBV3AlertModalTests/Pods-GBV3AlertModal-GBV3AlertModalTests.debug.xcconfig"; sourceTree = "<group>"; };
-		147FA6809C4954FF37377822 /* Pods-GBV3AlertModal.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-GBV3AlertModal.debug.xcconfig"; path = "Target Support Files/Pods-GBV3AlertModal/Pods-GBV3AlertModal.debug.xcconfig"; sourceTree = "<group>"; };
-		3412C19EE79C2A33D01FB623 /* Pods-GBV3AlertModalTests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-GBV3AlertModalTests.debug.xcconfig"; path = "Target Support Files/Pods-GBV3AlertModalTests/Pods-GBV3AlertModalTests.debug.xcconfig"; sourceTree = "<group>"; };
-		3F132D23E0D92A9E7C37C9BE /* Pods_GBV3AlertModal.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_GBV3AlertModal.framework; sourceTree = BUILT_PRODUCTS_DIR; };
-		5545F781B442D5BFF3370D20 /* Pods-GBV3AlertModal-GBV3AlertModalTests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-GBV3AlertModal-GBV3AlertModalTests.release.xcconfig"; path = "Target Support Files/Pods-GBV3AlertModal-GBV3AlertModalTests/Pods-GBV3AlertModal-GBV3AlertModalTests.release.xcconfig"; sourceTree = "<group>"; };
 		593ED2472935CFA9007BC45A /* GBV3AlertModal.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = GBV3AlertModal.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		593ED24A2935CFA9007BC45A /* GBV3AlertModal.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = GBV3AlertModal.h; sourceTree = "<group>"; };
 		593ED24B2935CFA9007BC45A /* GBV3AlertModal.docc */ = {isa = PBXFileReference; lastKnownFileType = folder.documentationcatalog; path = GBV3AlertModal.docc; sourceTree = "<group>"; };
@@ -78,7 +68,6 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				DAE3C726BE474CB1552C4672 /* Pods_GBV3AlertModal.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -87,7 +76,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				593ED2522935CFA9007BC45A /* GBV3AlertModal.framework in Frameworks */,
-				06DA5AA5376BA32B7D8DB1B8 /* Pods_GBV3AlertModal_GBV3AlertModalTests.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -101,8 +89,6 @@
 				593ED2492935CFA9007BC45A /* GBV3AlertModal */,
 				593ED2552935CFA9007BC45A /* GBV3AlertModalTests */,
 				593ED2482935CFA9007BC45A /* Products */,
-				653F7E887296796C8D9C1E5A /* Pods */,
-				878E0B7A7ACFFF4724765B96 /* Frameworks */,
 				65B8C217DB1BBC34E7756F5E /* GBAlertModal.swift */,
 			);
 			sourceTree = "<group>";
@@ -146,20 +132,6 @@
 			path = i18n;
 			sourceTree = "<group>";
 		};
-		653F7E887296796C8D9C1E5A /* Pods */ = {
-			isa = PBXGroup;
-			children = (
-				147FA6809C4954FF37377822 /* Pods-GBV3AlertModal.debug.xcconfig */,
-				09412B351DA2C7831D41485B /* Pods-GBV3AlertModal.release.xcconfig */,
-				12C2E91F1D62E48C76012D03 /* Pods-GBV3AlertModal-GBV3AlertModalTests.debug.xcconfig */,
-				5545F781B442D5BFF3370D20 /* Pods-GBV3AlertModal-GBV3AlertModalTests.release.xcconfig */,
-				3412C19EE79C2A33D01FB623 /* Pods-GBV3AlertModalTests.debug.xcconfig */,
-				07E60423242738625B08B5F7 /* Pods-GBV3AlertModalTests.release.xcconfig */,
-			);
-			name = Pods;
-			path = ../../Pods;
-			sourceTree = "<group>";
-		};
 		65B8C53374FE7664B3D1A75E /* Components */ = {
 			isa = PBXGroup;
 			children = (
@@ -184,15 +156,6 @@
 			path = Extensions;
 			sourceTree = "<group>";
 		};
-		878E0B7A7ACFFF4724765B96 /* Frameworks */ = {
-			isa = PBXGroup;
-			children = (
-				3F132D23E0D92A9E7C37C9BE /* Pods_GBV3AlertModal.framework */,
-				0E9FEFF1AAD0C51BD6CD455F /* Pods_GBV3AlertModal_GBV3AlertModalTests.framework */,
-			);
-			name = Frameworks;
-			sourceTree = "<group>";
-		};
 /* End PBXGroup section */
 
 /* Begin PBXHeadersBuildPhase section */
@@ -211,10 +174,8 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 593ED25B2935CFA9007BC45A /* Build configuration list for PBXNativeTarget "GBV3AlertModal" */;
 			buildPhases = (
-				7146F1F2F0666BC3DCD81A7A /* [CP] Check Pods Manifest.lock */,
 				593ED2422935CFA9007BC45A /* Headers */,
 				593ED2432935CFA9007BC45A /* Sources */,
-				5901DC5929370CAE00FF0A94 /* Linting */,
 				593ED2442935CFA9007BC45A /* Frameworks */,
 				593ED2452935CFA9007BC45A /* Resources */,
 			);
@@ -231,12 +192,9 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 593ED25E2935CFA9007BC45A /* Build configuration list for PBXNativeTarget "GBV3AlertModalTests" */;
 			buildPhases = (
-				A29B66BBF0E1292ECDBAEE1F /* [CP] Check Pods Manifest.lock */,
 				593ED24D2935CFA9007BC45A /* Sources */,
-				5901DC5A29370CD200FF0A94 /* Linting */,
 				593ED24E2935CFA9007BC45A /* Frameworks */,
 				593ED24F2935CFA9007BC45A /* Resources */,
-				FA3A47A536C73BEB5E813C70 /* [CP] Embed Pods Frameworks */,
 			);
 			buildRules = (
 			);
@@ -306,110 +264,6 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
-
-/* Begin PBXShellScriptBuildPhase section */
-		5901DC5929370CAE00FF0A94 /* Linting */ = {
-			isa = PBXShellScriptBuildPhase;
-			alwaysOutOfDate = 1;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputFileListPaths = (
-			);
-			inputPaths = (
-				"$(PODS_PODFILE_DIR_PATH)/Sources/GBV3AlertModal/GBV3AlertModal",
-			);
-			name = Linting;
-			outputFileListPaths = (
-			);
-			outputPaths = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "\"${PODS_ROOT}/SwiftLint/swiftlint\" lint --config \"${PODS_PODFILE_DIR_PATH}/.swiftlint.yml\" --strict\n";
-		};
-		5901DC5A29370CD200FF0A94 /* Linting */ = {
-			isa = PBXShellScriptBuildPhase;
-			alwaysOutOfDate = 1;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputFileListPaths = (
-			);
-			inputPaths = (
-				"$(PODS_PODFILE_DIR_PATH)/Sources/GBV3AlertModal/GBV3AlertModalTests",
-			);
-			name = Linting;
-			outputFileListPaths = (
-			);
-			outputPaths = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "\"${PODS_ROOT}/SwiftLint/swiftlint\" lint --config \"${PODS_PODFILE_DIR_PATH}/.swiftlint_test.yml\" --strict\n";
-		};
-		7146F1F2F0666BC3DCD81A7A /* [CP] Check Pods Manifest.lock */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputFileListPaths = (
-			);
-			inputPaths = (
-				"${PODS_PODFILE_DIR_PATH}/Podfile.lock",
-				"${PODS_ROOT}/Manifest.lock",
-			);
-			name = "[CP] Check Pods Manifest.lock";
-			outputFileListPaths = (
-			);
-			outputPaths = (
-				"$(DERIVED_FILE_DIR)/Pods-GBV3AlertModal-checkManifestLockResult.txt",
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
-			showEnvVarsInLog = 0;
-		};
-		A29B66BBF0E1292ECDBAEE1F /* [CP] Check Pods Manifest.lock */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputFileListPaths = (
-			);
-			inputPaths = (
-				"${PODS_PODFILE_DIR_PATH}/Podfile.lock",
-				"${PODS_ROOT}/Manifest.lock",
-			);
-			name = "[CP] Check Pods Manifest.lock";
-			outputFileListPaths = (
-			);
-			outputPaths = (
-				"$(DERIVED_FILE_DIR)/Pods-GBV3AlertModal-GBV3AlertModalTests-checkManifestLockResult.txt",
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
-			showEnvVarsInLog = 0;
-		};
-		FA3A47A536C73BEB5E813C70 /* [CP] Embed Pods Frameworks */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputFileListPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-GBV3AlertModal-GBV3AlertModalTests/Pods-GBV3AlertModal-GBV3AlertModalTests-frameworks-${CONFIGURATION}-input-files.xcfilelist",
-			);
-			name = "[CP] Embed Pods Frameworks";
-			outputFileListPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-GBV3AlertModal-GBV3AlertModalTests/Pods-GBV3AlertModal-GBV3AlertModalTests-frameworks-${CONFIGURATION}-output-files.xcfilelist",
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-GBV3AlertModal-GBV3AlertModalTests/Pods-GBV3AlertModal-GBV3AlertModalTests-frameworks.sh\"\n";
-			showEnvVarsInLog = 0;
-		};
-/* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		593ED2432935CFA9007BC45A /* Sources */ = {
@@ -591,7 +445,6 @@
 		};
 		593ED25C2935CFA9007BC45A /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 147FA6809C4954FF37377822 /* Pods-GBV3AlertModal.debug.xcconfig */;
 			buildSettings = {
 				CODE_SIGN_IDENTITY = "";
 				CODE_SIGN_STYLE = Automatic;
@@ -628,7 +481,6 @@
 		};
 		593ED25D2935CFA9007BC45A /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 09412B351DA2C7831D41485B /* Pods-GBV3AlertModal.release.xcconfig */;
 			buildSettings = {
 				CODE_SIGN_IDENTITY = "";
 				CODE_SIGN_STYLE = Automatic;
@@ -665,7 +517,6 @@
 		};
 		593ED25F2935CFA9007BC45A /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 12C2E91F1D62E48C76012D03 /* Pods-GBV3AlertModal-GBV3AlertModalTests.debug.xcconfig */;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 13;
@@ -686,7 +537,6 @@
 		};
 		593ED2602935CFA9007BC45A /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 5545F781B442D5BFF3370D20 /* Pods-GBV3AlertModal-GBV3AlertModalTests.release.xcconfig */;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 13;
