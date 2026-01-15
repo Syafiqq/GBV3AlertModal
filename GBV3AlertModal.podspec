@@ -1,6 +1,6 @@
 Pod::Spec.new do |s|
   s.name                    = "GBV3AlertModal"
-  s.version                 = "3.0.1"
+  s.version                 = "3.0.4"
   s.summary                 = "Summary"
   s.description             = <<-DESC
 General Multipurpose Alert Modal
@@ -18,6 +18,6 @@ General Multipurpose Alert Modal
 
   s.swift_version = '5.6'
 
-  s.dependency 'LanguageManager-iOS', '~> 1.2.9-beta.1'
+  s.dependency 'LanguageManager-iOS', '~> 1.3.1-beta.1'
   s.dependency 'SnapKit', '~> 5.7'
 end

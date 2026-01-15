@@ -8,8 +8,6 @@
 
 /* Begin PBXBuildFile section */
 		0F35F090BA815AEECCCFAD8E /* Pods_GBV3AlertModalExampleTests.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = FA45B8C4696D0CBC88488962 /* Pods_GBV3AlertModalExampleTests.framework */; };
-		5946EC7129FF78F200EE1C34 /* GBV3AlertModal.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 5946EC7029FF78F200EE1C34 /* GBV3AlertModal.framework */; };
-		5946EC7229FF78F200EE1C34 /* GBV3AlertModal.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 5946EC7029FF78F200EE1C34 /* GBV3AlertModal.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		5962A4B32935DFA100183658 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5962A4B22935DFA100183658 /* AppDelegate.swift */; };
 		5962A4B72935DFA100183658 /* ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5962A4B62935DFA100183658 /* ViewController.swift */; };
 		5962A4BA2935DFA100183658 /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 5962A4B82935DFA100183658 /* Main.storyboard */; };
@@ -39,25 +37,10 @@
 		};
 /* End PBXContainerItemProxy section */
 
-/* Begin PBXCopyFilesBuildPhase section */
-		5946EC7329FF78F200EE1C34 /* Embed Frameworks */ = {
-			isa = PBXCopyFilesBuildPhase;
-			buildActionMask = 2147483647;
-			dstPath = "";
-			dstSubfolderSpec = 10;
-			files = (
-				5946EC7229FF78F200EE1C34 /* GBV3AlertModal.framework in Embed Frameworks */,
-			);
-			name = "Embed Frameworks";
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-/* End PBXCopyFilesBuildPhase section */
-
 /* Begin PBXFileReference section */
 		000691E42DCB89CE2C2240A0 /* Pods-GBV3AlertModalExampleTests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-GBV3AlertModalExampleTests.release.xcconfig"; path = "Target Support Files/Pods-GBV3AlertModalExampleTests/Pods-GBV3AlertModalExampleTests.release.xcconfig"; sourceTree = "<group>"; };
 		107C63735F152D798633262C /* Pods-GBV3AlertModalExample.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-GBV3AlertModalExample.debug.xcconfig"; path = "Target Support Files/Pods-GBV3AlertModalExample/Pods-GBV3AlertModalExample.debug.xcconfig"; sourceTree = "<group>"; };
 		1B7F02D18FDAAAFE64A644C9 /* Pods_GBV3AlertModalExample.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_GBV3AlertModalExample.framework; sourceTree = BUILT_PRODUCTS_DIR; };
-		5946EC7029FF78F200EE1C34 /* GBV3AlertModal.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = GBV3AlertModal.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		5962A4AF2935DFA100183658 /* GBV3AlertModalExample.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = GBV3AlertModalExample.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		5962A4B22935DFA100183658 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		5962A4B62935DFA100183658 /* ViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewController.swift; sourceTree = "<group>"; };
@@ -84,7 +67,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				A3F62B095EBD54CB58E525AF /* Pods_GBV3AlertModalExample.framework in Frameworks */,
-				5946EC7129FF78F200EE1C34 /* GBV3AlertModal.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -162,7 +144,6 @@
 		8127A5D3838CD9E3B9355832 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
-				5946EC7029FF78F200EE1C34 /* GBV3AlertModal.framework */,
 				1B7F02D18FDAAAFE64A644C9 /* Pods_GBV3AlertModalExample.framework */,
 				B918DDD2951E369B2EAC3AA8 /* Pods_GBV3AlertModalExample_GBV3AlertModalExampleUITests.framework */,
 				FA45B8C4696D0CBC88488962 /* Pods_GBV3AlertModalExampleTests.framework */,
@@ -197,7 +178,6 @@
 				5962A4AC2935DFA100183658 /* Frameworks */,
 				5962A4AD2935DFA100183658 /* Resources */,
 				A6516F984BD8140B620082AC /* [CP] Embed Pods Frameworks */,
-				5946EC7329FF78F200EE1C34 /* Embed Frameworks */,
 			);
 			buildRules = (
 			);
