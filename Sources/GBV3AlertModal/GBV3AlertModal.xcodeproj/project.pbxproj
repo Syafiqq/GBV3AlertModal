@@ -12,7 +12,6 @@
 		593ED2572935CFA9007BC45A /* GBV3AlertModalTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 593ED2562935CFA9007BC45A /* GBV3AlertModalTests.swift */; };
 		593ED2582935CFA9007BC45A /* GBV3AlertModal.h in Headers */ = {isa = PBXBuildFile; fileRef = 593ED24A2935CFA9007BC45A /* GBV3AlertModal.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		59685EA429FE82F20037BB17 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 59685EA329FE82F20037BB17 /* Assets.xcassets */; };
-		5983ACDD2F1887F600A7BBF9 /* SnapKit in Frameworks */ = {isa = PBXBuildFile; productRef = 5983ACDC2F1887F600A7BBF9 /* SnapKit */; };
 		59D1458D2936F74000339673 /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = 59D1458F2936F74000339673 /* Localizable.strings */; };
 		59E7D6B12B2B924100567075 /* UIWindow+Orientation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 59E7D6B02B2B924100567075 /* UIWindow+Orientation.swift */; };
 		65B8C024F75B496244F258AB /* UIButton+Rounded.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65B8C1D3D6037BEC5F091505 /* UIButton+Rounded.swift */; };
@@ -69,7 +68,6 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				5983ACDD2F1887F600A7BBF9 /* SnapKit in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -238,10 +236,6 @@
 				"zh-Hans",
 			);
 			mainGroup = 593ED23D2935CFA9007BC45A;
-			packageReferences = (
-				5983ACDB2F1887F600A7BBF9 /* XCRemoteSwiftPackageReference "SnapKit" */,
-				5983ACDE2F1888B800A7BBF9 /* XCRemoteSwiftPackageReference "SwiftLintPlugins" */,
-			);
 			productRefGroup = 593ED2482935CFA9007BC45A /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
@@ -592,33 +586,6 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
-
-/* Begin XCRemoteSwiftPackageReference section */
-		5983ACDB2F1887F600A7BBF9 /* XCRemoteSwiftPackageReference "SnapKit" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/SnapKit/SnapKit.git";
-			requirement = {
-				kind = upToNextMajorVersion;
-				minimumVersion = 5.7.1;
-			};
-		};
-		5983ACDE2F1888B800A7BBF9 /* XCRemoteSwiftPackageReference "SwiftLintPlugins" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/SimplyDanny/SwiftLintPlugins";
-			requirement = {
-				kind = exactVersion;
-				version = 0.57.0;
-			};
-		};
-/* End XCRemoteSwiftPackageReference section */
-
-/* Begin XCSwiftPackageProductDependency section */
-		5983ACDC2F1887F600A7BBF9 /* SnapKit */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 5983ACDB2F1887F600A7BBF9 /* XCRemoteSwiftPackageReference "SnapKit" */;
-			productName = SnapKit;
-		};
-/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 593ED23E2935CFA9007BC45A /* Project object */;
 }
