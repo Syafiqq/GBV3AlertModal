@@ -3,12 +3,11 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 56;
+	objectVersion = 60;
 	objects = {
 
 /* Begin PBXBuildFile section */
-		5946EC7129FF78F200EE1C34 /* GBV3AlertModal.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 5946EC7029FF78F200EE1C34 /* GBV3AlertModal.framework */; };
-		5946EC7229FF78F200EE1C34 /* GBV3AlertModal.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 5946EC7029FF78F200EE1C34 /* GBV3AlertModal.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		594562E42F25264600C6BB65 /* GBV3AlertModal in Frameworks */ = {isa = PBXBuildFile; productRef = 594562E32F25264600C6BB65 /* GBV3AlertModal */; };
 		5962A4B32935DFA100183658 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5962A4B22935DFA100183658 /* AppDelegate.swift */; };
 		5962A4B72935DFA100183658 /* ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5962A4B62935DFA100183658 /* ViewController.swift */; };
 		5962A4BA2935DFA100183658 /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 5962A4B82935DFA100183658 /* Main.storyboard */; };
@@ -36,22 +35,7 @@
 		};
 /* End PBXContainerItemProxy section */
 
-/* Begin PBXCopyFilesBuildPhase section */
-		5946EC7329FF78F200EE1C34 /* Embed Frameworks */ = {
-			isa = PBXCopyFilesBuildPhase;
-			buildActionMask = 2147483647;
-			dstPath = "";
-			dstSubfolderSpec = 10;
-			files = (
-				5946EC7229FF78F200EE1C34 /* GBV3AlertModal.framework in Embed Frameworks */,
-			);
-			name = "Embed Frameworks";
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-/* End PBXCopyFilesBuildPhase section */
-
 /* Begin PBXFileReference section */
-		5946EC7029FF78F200EE1C34 /* GBV3AlertModal.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = GBV3AlertModal.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		5962A4AF2935DFA100183658 /* GBV3AlertModalExample.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = GBV3AlertModalExample.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		5962A4B22935DFA100183658 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		5962A4B62935DFA100183658 /* ViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewController.swift; sourceTree = "<group>"; };
@@ -71,7 +55,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				5946EC7129FF78F200EE1C34 /* GBV3AlertModal.framework in Frameworks */,
+				594562E42F25264600C6BB65 /* GBV3AlertModal in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -99,7 +83,6 @@
 				5962A4C82935DFA200183658 /* GBV3AlertModalExampleTests */,
 				5962A4D22935DFA200183658 /* GBV3AlertModalExampleUITests */,
 				5962A4B02935DFA100183658 /* Products */,
-				8127A5D3838CD9E3B9355832 /* Frameworks */,
 			);
 			sourceTree = "<group>";
 		};
@@ -143,14 +126,6 @@
 			path = GBV3AlertModalExampleUITests;
 			sourceTree = "<group>";
 		};
-		8127A5D3838CD9E3B9355832 /* Frameworks */ = {
-			isa = PBXGroup;
-			children = (
-				5946EC7029FF78F200EE1C34 /* GBV3AlertModal.framework */,
-			);
-			name = Frameworks;
-			sourceTree = "<group>";
-		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -161,7 +136,6 @@
 				5962A4AB2935DFA100183658 /* Sources */,
 				5962A4AC2935DFA100183658 /* Frameworks */,
 				5962A4AD2935DFA100183658 /* Resources */,
-				5946EC7329FF78F200EE1C34 /* Embed Frameworks */,
 			);
 			buildRules = (
 			);
@@ -240,6 +214,9 @@
 				Base,
 			);
 			mainGroup = 5962A4A62935DFA100183658;
+			packageReferences = (
+				594562E22F25264600C6BB65 /* XCLocalSwiftPackageReference "../../Library/GBV3AlertModal" */,
+			);
 			productRefGroup = 5962A4B02935DFA100183658 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
@@ -646,6 +623,20 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCLocalSwiftPackageReference section */
+		594562E22F25264600C6BB65 /* XCLocalSwiftPackageReference "../../Library/GBV3AlertModal" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = ../../Library/GBV3AlertModal;
+		};
+/* End XCLocalSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		594562E32F25264600C6BB65 /* GBV3AlertModal */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = GBV3AlertModal;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 5962A4A72935DFA100183658 /* Project object */;
 }
