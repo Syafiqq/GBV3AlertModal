@@ -18,7 +18,7 @@ extension CALayer {
         if spread == 0 {
             shadowPath = nil
         } else {
-            let dx = -spread // swiftlint:disable:this variable_name
+            let dx = -spread // swiftlint:disable:this identifier_name
             let rect = bounds.insetBy(dx: dx, dy: dx)
             shadowPath = UIBezierPath(rect: rect).cgPath
         }
