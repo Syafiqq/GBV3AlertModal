@@ -2,15 +2,12 @@
 <Workspace
    version = "1.0">
    <FileRef
-      location = "group:Sources/GBV3AlertModal/GBV3AlertModal.xcodeproj">
+      location = "group:Library/GBV3AlertModal">
    </FileRef>
    <FileRef
       location = "group:Examples/GBV3AlertModalExample/GBV3AlertModalExample.xcodeproj">
    </FileRef>
    <FileRef
       location = "group:Properties/Properties.xcodeproj">
-   </FileRef>
-   <FileRef
-      location = "group:Pods/Pods.xcodeproj">
    </FileRef>
 </Workspace>

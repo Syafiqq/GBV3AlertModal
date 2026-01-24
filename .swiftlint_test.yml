@@ -74,7 +74,7 @@ analyzer_rules:
   - explicit_self
   - unused_import
 included: # paths to include during linting. `--path` is ignored if present.
-  - Sources/GBV3AlertModal/GBV3AlertModalTests
+  - Library/GBV3AlertModal/Tests/GBV3AlertModalTests
 excluded: # paths to ignore during linting. Takes precedence over `included`.
   - ./**/*Mocks.swift
   - ./**/*/*.example.swift
