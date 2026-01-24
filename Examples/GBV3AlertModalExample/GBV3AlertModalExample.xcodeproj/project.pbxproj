@@ -3,13 +3,11 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 56;
+	objectVersion = 60;
 	objects = {
 
 /* Begin PBXBuildFile section */
-		0F35F090BA815AEECCCFAD8E /* Pods_GBV3AlertModalExampleTests.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = FA45B8C4696D0CBC88488962 /* Pods_GBV3AlertModalExampleTests.framework */; };
-		5946EC7129FF78F200EE1C34 /* GBV3AlertModal.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 5946EC7029FF78F200EE1C34 /* GBV3AlertModal.framework */; };
-		5946EC7229FF78F200EE1C34 /* GBV3AlertModal.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 5946EC7029FF78F200EE1C34 /* GBV3AlertModal.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		594562E42F25264600C6BB65 /* GBV3AlertModal in Frameworks */ = {isa = PBXBuildFile; productRef = 594562E32F25264600C6BB65 /* GBV3AlertModal */; };
 		5962A4B32935DFA100183658 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5962A4B22935DFA100183658 /* AppDelegate.swift */; };
 		5962A4B72935DFA100183658 /* ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5962A4B62935DFA100183658 /* ViewController.swift */; };
 		5962A4BA2935DFA100183658 /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 5962A4B82935DFA100183658 /* Main.storyboard */; };
@@ -18,8 +16,6 @@
 		5962A4CA2935DFA200183658 /* GBV3AlertModalExampleTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5962A4C92935DFA200183658 /* GBV3AlertModalExampleTests.swift */; };
 		5962A4D42935DFA200183658 /* GBV3AlertModalExampleUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5962A4D32935DFA200183658 /* GBV3AlertModalExampleUITests.swift */; };
 		5962A4D62935DFA200183658 /* GBV3AlertModalExampleUITestsLaunchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5962A4D52935DFA200183658 /* GBV3AlertModalExampleUITestsLaunchTests.swift */; };
-		8AE6DF00C2621EBAF89816B8 /* Pods_GBV3AlertModalExample_GBV3AlertModalExampleUITests.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B918DDD2951E369B2EAC3AA8 /* Pods_GBV3AlertModalExample_GBV3AlertModalExampleUITests.framework */; };
-		A3F62B095EBD54CB58E525AF /* Pods_GBV3AlertModalExample.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1B7F02D18FDAAAFE64A644C9 /* Pods_GBV3AlertModalExample.framework */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -39,25 +35,7 @@
 		};
 /* End PBXContainerItemProxy section */
 
-/* Begin PBXCopyFilesBuildPhase section */
-		5946EC7329FF78F200EE1C34 /* Embed Frameworks */ = {
-			isa = PBXCopyFilesBuildPhase;
-			buildActionMask = 2147483647;
-			dstPath = "";
-			dstSubfolderSpec = 10;
-			files = (
-				5946EC7229FF78F200EE1C34 /* GBV3AlertModal.framework in Embed Frameworks */,
-			);
-			name = "Embed Frameworks";
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-/* End PBXCopyFilesBuildPhase section */
-
 /* Begin PBXFileReference section */
-		000691E42DCB89CE2C2240A0 /* Pods-GBV3AlertModalExampleTests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-GBV3AlertModalExampleTests.release.xcconfig"; path = "Target Support Files/Pods-GBV3AlertModalExampleTests/Pods-GBV3AlertModalExampleTests.release.xcconfig"; sourceTree = "<group>"; };
-		107C63735F152D798633262C /* Pods-GBV3AlertModalExample.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-GBV3AlertModalExample.debug.xcconfig"; path = "Target Support Files/Pods-GBV3AlertModalExample/Pods-GBV3AlertModalExample.debug.xcconfig"; sourceTree = "<group>"; };
-		1B7F02D18FDAAAFE64A644C9 /* Pods_GBV3AlertModalExample.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_GBV3AlertModalExample.framework; sourceTree = BUILT_PRODUCTS_DIR; };
-		5946EC7029FF78F200EE1C34 /* GBV3AlertModal.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = GBV3AlertModal.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		5962A4AF2935DFA100183658 /* GBV3AlertModalExample.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = GBV3AlertModalExample.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		5962A4B22935DFA100183658 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		5962A4B62935DFA100183658 /* ViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewController.swift; sourceTree = "<group>"; };
@@ -70,12 +48,6 @@
 		5962A4CF2935DFA200183658 /* GBV3AlertModalExampleUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = GBV3AlertModalExampleUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		5962A4D32935DFA200183658 /* GBV3AlertModalExampleUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GBV3AlertModalExampleUITests.swift; sourceTree = "<group>"; };
 		5962A4D52935DFA200183658 /* GBV3AlertModalExampleUITestsLaunchTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GBV3AlertModalExampleUITestsLaunchTests.swift; sourceTree = "<group>"; };
-		716D753FD77C149DDE6A5FE1 /* Pods-GBV3AlertModalExample-GBV3AlertModalExampleUITests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-GBV3AlertModalExample-GBV3AlertModalExampleUITests.debug.xcconfig"; path = "Target Support Files/Pods-GBV3AlertModalExample-GBV3AlertModalExampleUITests/Pods-GBV3AlertModalExample-GBV3AlertModalExampleUITests.debug.xcconfig"; sourceTree = "<group>"; };
-		A26519B706EE68860F1FFA54 /* Pods-GBV3AlertModalExampleTests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-GBV3AlertModalExampleTests.debug.xcconfig"; path = "Target Support Files/Pods-GBV3AlertModalExampleTests/Pods-GBV3AlertModalExampleTests.debug.xcconfig"; sourceTree = "<group>"; };
-		B918DDD2951E369B2EAC3AA8 /* Pods_GBV3AlertModalExample_GBV3AlertModalExampleUITests.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_GBV3AlertModalExample_GBV3AlertModalExampleUITests.framework; sourceTree = BUILT_PRODUCTS_DIR; };
-		BCCB58961561174508C7E298 /* Pods-GBV3AlertModalExample-GBV3AlertModalExampleUITests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-GBV3AlertModalExample-GBV3AlertModalExampleUITests.release.xcconfig"; path = "Target Support Files/Pods-GBV3AlertModalExample-GBV3AlertModalExampleUITests/Pods-GBV3AlertModalExample-GBV3AlertModalExampleUITests.release.xcconfig"; sourceTree = "<group>"; };
-		D90A4A70DAD81C3A9E0C6105 /* Pods-GBV3AlertModalExample.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-GBV3AlertModalExample.release.xcconfig"; path = "Target Support Files/Pods-GBV3AlertModalExample/Pods-GBV3AlertModalExample.release.xcconfig"; sourceTree = "<group>"; };
-		FA45B8C4696D0CBC88488962 /* Pods_GBV3AlertModalExampleTests.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_GBV3AlertModalExampleTests.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -83,8 +55,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				A3F62B095EBD54CB58E525AF /* Pods_GBV3AlertModalExample.framework in Frameworks */,
-				5946EC7129FF78F200EE1C34 /* GBV3AlertModal.framework in Frameworks */,
+				594562E42F25264600C6BB65 /* GBV3AlertModal in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -92,7 +63,6 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				0F35F090BA815AEECCCFAD8E /* Pods_GBV3AlertModalExampleTests.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -100,7 +70,6 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				8AE6DF00C2621EBAF89816B8 /* Pods_GBV3AlertModalExample_GBV3AlertModalExampleUITests.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -114,8 +83,6 @@
 				5962A4C82935DFA200183658 /* GBV3AlertModalExampleTests */,
 				5962A4D22935DFA200183658 /* GBV3AlertModalExampleUITests */,
 				5962A4B02935DFA100183658 /* Products */,
-				D9FE830C5F04C8342434C256 /* Pods */,
-				8127A5D3838CD9E3B9355832 /* Frameworks */,
 			);
 			sourceTree = "<group>";
 		};
@@ -159,31 +126,6 @@
 			path = GBV3AlertModalExampleUITests;
 			sourceTree = "<group>";
 		};
-		8127A5D3838CD9E3B9355832 /* Frameworks */ = {
-			isa = PBXGroup;
-			children = (
-				5946EC7029FF78F200EE1C34 /* GBV3AlertModal.framework */,
-				1B7F02D18FDAAAFE64A644C9 /* Pods_GBV3AlertModalExample.framework */,
-				B918DDD2951E369B2EAC3AA8 /* Pods_GBV3AlertModalExample_GBV3AlertModalExampleUITests.framework */,
-				FA45B8C4696D0CBC88488962 /* Pods_GBV3AlertModalExampleTests.framework */,
-			);
-			name = Frameworks;
-			sourceTree = "<group>";
-		};
-		D9FE830C5F04C8342434C256 /* Pods */ = {
-			isa = PBXGroup;
-			children = (
-				107C63735F152D798633262C /* Pods-GBV3AlertModalExample.debug.xcconfig */,
-				D90A4A70DAD81C3A9E0C6105 /* Pods-GBV3AlertModalExample.release.xcconfig */,
-				716D753FD77C149DDE6A5FE1 /* Pods-GBV3AlertModalExample-GBV3AlertModalExampleUITests.debug.xcconfig */,
-				BCCB58961561174508C7E298 /* Pods-GBV3AlertModalExample-GBV3AlertModalExampleUITests.release.xcconfig */,
-				A26519B706EE68860F1FFA54 /* Pods-GBV3AlertModalExampleTests.debug.xcconfig */,
-				000691E42DCB89CE2C2240A0 /* Pods-GBV3AlertModalExampleTests.release.xcconfig */,
-			);
-			name = Pods;
-			path = ../../Pods;
-			sourceTree = "<group>";
-		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -191,13 +133,9 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 5962A4D92935DFA200183658 /* Build configuration list for PBXNativeTarget "GBV3AlertModalExample" */;
 			buildPhases = (
-				BBBECF9CB0601125C46736F7 /* [CP] Check Pods Manifest.lock */,
 				5962A4AB2935DFA100183658 /* Sources */,
-				5901DC5B29370CFA00FF0A94 /* Linting */,
 				5962A4AC2935DFA100183658 /* Frameworks */,
 				5962A4AD2935DFA100183658 /* Resources */,
-				A6516F984BD8140B620082AC /* [CP] Embed Pods Frameworks */,
-				5946EC7329FF78F200EE1C34 /* Embed Frameworks */,
 			);
 			buildRules = (
 			);
@@ -212,12 +150,9 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 5962A4DC2935DFA200183658 /* Build configuration list for PBXNativeTarget "GBV3AlertModalExampleTests" */;
 			buildPhases = (
-				646648FF6C1CD8F232EC83CD /* [CP] Check Pods Manifest.lock */,
 				5962A4C12935DFA200183658 /* Sources */,
-				5901DC5C29370D1700FF0A94 /* Linting */,
 				5962A4C22935DFA200183658 /* Frameworks */,
 				5962A4C32935DFA200183658 /* Resources */,
-				8CDE72A3834EDAFB55C172F8 /* [CP] Embed Pods Frameworks */,
 			);
 			buildRules = (
 			);
@@ -233,12 +168,9 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 5962A4DF2935DFA200183658 /* Build configuration list for PBXNativeTarget "GBV3AlertModalExampleUITests" */;
 			buildPhases = (
-				EBC09674F79931B0422C2BE6 /* [CP] Check Pods Manifest.lock */,
 				5962A4CB2935DFA200183658 /* Sources */,
-				5901DC5D29370D2900FF0A94 /* Linting */,
 				5962A4CC2935DFA200183658 /* Frameworks */,
 				5962A4CD2935DFA200183658 /* Resources */,
-				37EAB5CE6BDE044E8D7AA23C /* [CP] Embed Pods Frameworks */,
 			);
 			buildRules = (
 			);
@@ -282,6 +214,9 @@
 				Base,
 			);
 			mainGroup = 5962A4A62935DFA100183658;
+			packageReferences = (
+				594562E22F25264600C6BB65 /* XCLocalSwiftPackageReference "../../Library/GBV3AlertModal" */,
+			);
 			productRefGroup = 5962A4B02935DFA100183658 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
@@ -319,185 +254,6 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
-
-/* Begin PBXShellScriptBuildPhase section */
-		37EAB5CE6BDE044E8D7AA23C /* [CP] Embed Pods Frameworks */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputFileListPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-GBV3AlertModalExample-GBV3AlertModalExampleUITests/Pods-GBV3AlertModalExample-GBV3AlertModalExampleUITests-frameworks-${CONFIGURATION}-input-files.xcfilelist",
-			);
-			name = "[CP] Embed Pods Frameworks";
-			outputFileListPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-GBV3AlertModalExample-GBV3AlertModalExampleUITests/Pods-GBV3AlertModalExample-GBV3AlertModalExampleUITests-frameworks-${CONFIGURATION}-output-files.xcfilelist",
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-GBV3AlertModalExample-GBV3AlertModalExampleUITests/Pods-GBV3AlertModalExample-GBV3AlertModalExampleUITests-frameworks.sh\"\n";
-			showEnvVarsInLog = 0;
-		};
-		5901DC5B29370CFA00FF0A94 /* Linting */ = {
-			isa = PBXShellScriptBuildPhase;
-			alwaysOutOfDate = 1;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputFileListPaths = (
-			);
-			inputPaths = (
-				"$(PODS_PODFILE_DIR_PATH)/Examples/GBV3AlertModalExample/GBV3AlertModalExample",
-			);
-			name = Linting;
-			outputFileListPaths = (
-			);
-			outputPaths = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "\"${PODS_ROOT}/SwiftLint/swiftlint\" lint --config \"${PODS_PODFILE_DIR_PATH}/.swiftlint_example.yml\" --strict\n";
-		};
-		5901DC5C29370D1700FF0A94 /* Linting */ = {
-			isa = PBXShellScriptBuildPhase;
-			alwaysOutOfDate = 1;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputFileListPaths = (
-			);
-			inputPaths = (
-				"$(PODS_PODFILE_DIR_PATH)/Examples/GBV3AlertModalExample/GBV3AlertModalExampleTests",
-			);
-			name = Linting;
-			outputFileListPaths = (
-			);
-			outputPaths = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "\"${PODS_ROOT}/SwiftLint/swiftlint\" lint --config \"${PODS_PODFILE_DIR_PATH}/.swiftlint_example_test.yml\" --strict\n";
-		};
-		5901DC5D29370D2900FF0A94 /* Linting */ = {
-			isa = PBXShellScriptBuildPhase;
-			alwaysOutOfDate = 1;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputFileListPaths = (
-			);
-			inputPaths = (
-			);
-			name = Linting;
-			outputFileListPaths = (
-			);
-			outputPaths = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "\"${PODS_ROOT}/SwiftLint/swiftlint\" lint --config \"${PODS_PODFILE_DIR_PATH}/.swiftlint_example_test.yml\" --strict\n";
-		};
-		646648FF6C1CD8F232EC83CD /* [CP] Check Pods Manifest.lock */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputFileListPaths = (
-			);
-			inputPaths = (
-				"${PODS_PODFILE_DIR_PATH}/Podfile.lock",
-				"${PODS_ROOT}/Manifest.lock",
-			);
-			name = "[CP] Check Pods Manifest.lock";
-			outputFileListPaths = (
-			);
-			outputPaths = (
-				"$(DERIVED_FILE_DIR)/Pods-GBV3AlertModalExampleTests-checkManifestLockResult.txt",
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
-			showEnvVarsInLog = 0;
-		};
-		8CDE72A3834EDAFB55C172F8 /* [CP] Embed Pods Frameworks */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputFileListPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-GBV3AlertModalExampleTests/Pods-GBV3AlertModalExampleTests-frameworks-${CONFIGURATION}-input-files.xcfilelist",
-			);
-			name = "[CP] Embed Pods Frameworks";
-			outputFileListPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-GBV3AlertModalExampleTests/Pods-GBV3AlertModalExampleTests-frameworks-${CONFIGURATION}-output-files.xcfilelist",
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-GBV3AlertModalExampleTests/Pods-GBV3AlertModalExampleTests-frameworks.sh\"\n";
-			showEnvVarsInLog = 0;
-		};
-		A6516F984BD8140B620082AC /* [CP] Embed Pods Frameworks */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputFileListPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-GBV3AlertModalExample/Pods-GBV3AlertModalExample-frameworks-${CONFIGURATION}-input-files.xcfilelist",
-			);
-			name = "[CP] Embed Pods Frameworks";
-			outputFileListPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-GBV3AlertModalExample/Pods-GBV3AlertModalExample-frameworks-${CONFIGURATION}-output-files.xcfilelist",
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-GBV3AlertModalExample/Pods-GBV3AlertModalExample-frameworks.sh\"\n";
-			showEnvVarsInLog = 0;
-		};
-		BBBECF9CB0601125C46736F7 /* [CP] Check Pods Manifest.lock */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputFileListPaths = (
-			);
-			inputPaths = (
-				"${PODS_PODFILE_DIR_PATH}/Podfile.lock",
-				"${PODS_ROOT}/Manifest.lock",
-			);
-			name = "[CP] Check Pods Manifest.lock";
-			outputFileListPaths = (
-			);
-			outputPaths = (
-				"$(DERIVED_FILE_DIR)/Pods-GBV3AlertModalExample-checkManifestLockResult.txt",
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
-			showEnvVarsInLog = 0;
-		};
-		EBC09674F79931B0422C2BE6 /* [CP] Check Pods Manifest.lock */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputFileListPaths = (
-			);
-			inputPaths = (
-				"${PODS_PODFILE_DIR_PATH}/Podfile.lock",
-				"${PODS_ROOT}/Manifest.lock",
-			);
-			name = "[CP] Check Pods Manifest.lock";
-			outputFileListPaths = (
-			);
-			outputPaths = (
-				"$(DERIVED_FILE_DIR)/Pods-GBV3AlertModalExample-GBV3AlertModalExampleUITests-checkManifestLockResult.txt",
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
-			showEnvVarsInLog = 0;
-		};
-/* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		5962A4AB2935DFA100183658 /* Sources */ = {
@@ -679,7 +435,6 @@
 		};
 		5962A4DA2935DFA200183658 /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 107C63735F152D798633262C /* Pods-GBV3AlertModalExample.debug.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
@@ -712,7 +467,6 @@
 		};
 		5962A4DB2935DFA200183658 /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = D90A4A70DAD81C3A9E0C6105 /* Pods-GBV3AlertModalExample.release.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
@@ -745,7 +499,6 @@
 		};
 		5962A4DD2935DFA200183658 /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = A26519B706EE68860F1FFA54 /* Pods-GBV3AlertModalExampleTests.debug.xcconfig */;
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
@@ -768,7 +521,6 @@
 		};
 		5962A4DE2935DFA200183658 /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 000691E42DCB89CE2C2240A0 /* Pods-GBV3AlertModalExampleTests.release.xcconfig */;
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
@@ -791,7 +543,6 @@
 		};
 		5962A4E02935DFA200183658 /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 716D753FD77C149DDE6A5FE1 /* Pods-GBV3AlertModalExample-GBV3AlertModalExampleUITests.debug.xcconfig */;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
@@ -813,7 +564,6 @@
 		};
 		5962A4E12935DFA200183658 /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = BCCB58961561174508C7E298 /* Pods-GBV3AlertModalExample-GBV3AlertModalExampleUITests.release.xcconfig */;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
@@ -873,6 +623,20 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCLocalSwiftPackageReference section */
+		594562E22F25264600C6BB65 /* XCLocalSwiftPackageReference "../../Library/GBV3AlertModal" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = ../../Library/GBV3AlertModal;
+		};
+/* End XCLocalSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		594562E32F25264600C6BB65 /* GBV3AlertModal */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = GBV3AlertModal;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 5962A4A72935DFA100183658 /* Project object */;
 }
