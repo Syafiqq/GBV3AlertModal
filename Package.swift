@@ -28,6 +28,10 @@ let package = Package(
                 "SnapKit"
             ],
             path: "Library/GBV3AlertModal/Sources/GBV3AlertModal",
+            resources: [
+                .process("Assets.xcassets"),
+                .process("i18n"),
+            ],
             plugins: [
             ]
         ),

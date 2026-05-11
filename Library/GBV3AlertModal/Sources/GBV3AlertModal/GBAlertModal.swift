@@ -616,7 +616,7 @@ private extension GBAlertModal {
         btCloseAction?.setImage(
                 dataHolder?.closeImage ?? UIImage(
                         named: "ic_fa_xmark_24",
-                        in: Bundle(for: Self.self),
+                        in: Bundle.module,
                         compatibleWith: nil
                 ),
                 for: .normal
