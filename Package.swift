@@ -5,7 +5,6 @@ import PackageDescription
 
 let package = Package(
     name: "GBV3AlertModal",
-    defaultLocalization: "en",
     platforms: [
         .iOS(.v13)
     ],
@@ -30,7 +29,6 @@ let package = Package(
             path: "Library/GBV3AlertModal/Sources/GBV3AlertModal",
             resources: [
                 .process("Assets.xcassets"),
-                .process("i18n"),
             ],
             plugins: [
             ]
