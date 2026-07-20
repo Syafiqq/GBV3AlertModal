@@ -1,0 +1,24 @@
+{
+  "originHash" : "eac1745fe6bf9a9c30a5a741a41388f862dd9a06c52b0f2157ecff84e1de9df7",
+  "pins" : [
+    {
+      "identity" : "gbv3alertmodal",
+      "kind" : "remoteSourceControl",
+      "location" : "git@github.com:Syafiqq/GBV3AlertModal.git",
+      "state" : {
+        "branch" : "main",
+        "revision" : "73aced46efee7821e46ae785a064fddb4bc0aa3d"
+      }
+    },
+    {
+      "identity" : "snapkit",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/SnapKit/SnapKit.git",
+      "state" : {
+        "revision" : "2842e6e84e82eb9a8dac0100ca90d9444b0307f4",
+        "version" : "5.7.1"
+      }
+    }
+  ],
+  "version" : 3
+}
