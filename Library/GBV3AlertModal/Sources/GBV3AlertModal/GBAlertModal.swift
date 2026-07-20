@@ -9,13 +9,19 @@ private var kEmptySpaceForKeyboardExtension: CGFloat = 48
 open class GBAlertModal: UIView {
     // MARK: Outlets
     // Overlay
-    public private(set) var vwOverlay: UIView?
+    // Setter widened from `private(set)` to `internal(set)`: assigned from `initDesign` in
+    // GBAlertModal+ViewFactory.swift (different file, same module).
+    public internal(set) var vwOverlay: UIView?
 
     // Main Container
-    public private(set) var vwContainer: UIView?
+    // Setter widened from `private(set)` to `internal(set)`: assigned from `initDesign` in
+    // GBAlertModal+ViewFactory.swift (different file, same module).
+    public internal(set) var vwContainer: UIView?
 
     // Main Content
-    public private(set) var svContentContainer: UIStackView?
+    // Setter widened from `private(set)` to `internal(set)`: assigned from `initDesign` in
+    // GBAlertModal+ViewFactory.swift (different file, same module).
+    public internal(set) var svContentContainer: UIStackView?
 
     // Content
     public private(set) var vwBanner: UIView?
@@ -86,40 +92,6 @@ open class GBAlertModal: UIView {
 // MARK: - PRIVATE FUNCTIONS
 
 private extension GBAlertModal {
-    // MARK: Init Functions
-    func initViews() {
-        translatesAutoresizingMaskIntoConstraints = false
-
-        vwContainer?.clipsToBounds = true
-
-        unregisterDialogView()
-        adjustBaseDialogConstraint()
-        registerDialogView()
-        adjustDialogViewStyle()
-    }
-
-    func initEvents() {
-        unregisterEvents()
-        registerEvents()
-        removeKeyboardEvents()
-        listenKeyboardEvents()
-    }
-
-    func initData() {
-    }
-
-    /// The current render decisions, computed by the pure `resolve(...)` mirror from the
-    /// live view state. Orientation is read here (via `UIWindow.isLandscape`) and passed in
-    /// so the resolver itself stays deterministic.
-    func makeResolvedModal() -> ResolvedModal {
-        Self.resolve(
-                properties: properties,
-                holder: dataHolder ?? .default,
-                isLandscape: UIWindow.isLandscape,
-                isPad: UIDevice.current.userInterfaceIdiom == .pad
-        )
-    }
-
     // MARK: Views
 
     // Widened from `private` to `internal`: called from `updateDialog` in
@@ -462,43 +434,8 @@ private extension GBAlertModal {
     }
 
     // Widened from `private` to `internal`: called from `updateDialog` in
-    // GBAlertModal+Lifecycle.swift (different file, same module).
-    internal func adjustDialogViewStyle() {
-        let resolved = makeResolvedModal()
-
-        // Base View
-        tintColor = properties?.baseTint
-
-        // Overlay
-        vwOverlay?.backgroundColor = properties?.overlayColor
-
-        // Content Container
-        vwContainer?.backgroundColor = properties?.contentProperty?.backgroundColor
-        vwContainer?.layer.cornerRadius = properties?.contentProperty?.cornerRadius ?? .zero
-
-        // Content Container Stack
-        svContentContainer?.alignment = properties?.contentProperty?.childShouldMatchParent == true ? .fill : .center
-
-        // Button Action Stack
-        svMainActionContainer?.alignment = resolved.buttonsMatchParent ? .fill : .center
-
-        // Button Action Orientation
-        svMainActionContainer?.axis = resolved.buttonAxis
-
-        // Close Button
-        btCloseAction?.tintColor = properties?.closeButtonTint
-        btCloseAction?.setImage(
-                dataHolder?.closeImage ?? UIImage(
-                        named: "ic_fa_xmark_24",
-                        in: Bundle.module,
-                        compatibleWith: nil
-                ),
-                for: .normal
-        )
-    }
-
-    // Widened from `private` to `internal`: called from `updateDialog` in
-    // GBAlertModal+Lifecycle.swift (different file, same module).
+    // GBAlertModal+Lifecycle.swift and from `initViews` in GBAlertModal+Model.swift
+    // (different files, same module).
     internal func adjustBaseDialogConstraint() {
         if let vwContainer = vwContainer {
             adjustVwContainerConstraint(vwContainer)
@@ -508,7 +445,9 @@ private extension GBAlertModal {
         }
     }
 
-    private func adjustVwContainerConstraint(_ vwContainer: UIView) {
+    // Widened from `private` to `internal`: called from `initDesign` in
+    // GBAlertModal+ViewFactory.swift (different file, same module).
+    internal func adjustVwContainerConstraint(_ vwContainer: UIView) {
         vwContainer.snp.remakeConstraints { (make: ConstraintMaker) in
             // Align
             make.top
@@ -539,7 +478,9 @@ private extension GBAlertModal {
     }
 
     // swiftlint:disable:next function_body_length
-    private func adjustSvContentContainerConstraint(_ svContentContainer: UIView) {
+    // Widened from `private` to `internal`: called from `initDesign` in
+    // GBAlertModal+ViewFactory.swift (different file, same module).
+    internal func adjustSvContentContainerConstraint(_ svContentContainer: UIView) {
         svContentContainer.snp.remakeConstraints { (make: ConstraintMaker) in
             make.top
                     .greaterThanOrEqualToSuperview()
@@ -642,57 +583,14 @@ private extension GBAlertModal {
             return (fixed, max)
         }
     }
-
-    // MARK: Model
-
-    // Widened from `private` to `internal`: called from `updateDialog` in
-    // GBAlertModal+Lifecycle.swift (different file, same module).
-    internal func updateProperties(_ properties: Properties) {
-        self.properties = Properties(
-                baseTint: properties.baseTint
-                        ?? globalProperties.baseTint,
-                overlayColor: properties.overlayColor
-                        ?? globalProperties.overlayColor,
-                contentProperty: properties.contentProperty
-                        ?? globalProperties.contentProperty,
-                margin: properties.margin
-                        ?? globalProperties.margin,
-                padding: properties.padding
-                        ?? globalProperties.padding,
-                bannerRatio: properties.bannerRatio
-                        ?? globalProperties.bannerRatio,
-                bannerMaxHeight: properties.bannerMaxHeight
-                        ?? globalProperties.bannerMaxHeight,
-                bannerFixedHeight: properties.bannerFixedHeight
-                        ?? globalProperties.bannerFixedHeight,
-                titleFont: properties.titleFont
-                        ?? globalProperties.titleFont,
-                titleColor: properties.titleColor
-                        ?? globalProperties.titleColor,
-                subtitleFont: properties.subtitleFont
-                        ?? globalProperties.subtitleFont,
-                subtitleColor: properties.subtitleColor
-                        ?? globalProperties.subtitleColor,
-                buttonActionShouldMatchParent: properties.buttonActionShouldMatchParent
-                        ?? globalProperties.buttonActionShouldMatchParent,
-                buttonActionOrientation: properties.buttonActionOrientation
-                        ?? globalProperties.buttonActionOrientation,
-                primaryActionStyle: properties.primaryActionStyle
-                        ?? globalProperties.primaryActionStyle,
-                secondaryActionStyle: properties.secondaryActionStyle
-                        ?? globalProperties.secondaryActionStyle,
-                closeButtonTint: properties.closeButtonTint
-                        ?? globalProperties.closeButtonTint,
-                space: properties.space
-                        ?? globalProperties.space
-        )
-    }
 }
 
 // MARK: - KEYBOARD
 
 private extension GBAlertModal {
-    func listenKeyboardEvents() {
+    // Widened from `private` to `internal`: called from `initEvents` in
+    // GBAlertModal+Model.swift (different file, same module).
+    internal func listenKeyboardEvents() {
         let notificationCenter = NotificationCenter.default
         notificationCenter.addObserver(
                 self,
@@ -720,7 +618,10 @@ private extension GBAlertModal {
         )
     }
 
-    func removeKeyboardEvents() {
+    // Widened from `private` to `internal`: called from `initEvents` in
+    // GBAlertModal+Model.swift (different file, same module); also used by `deinit`
+    // in this file.
+    internal func removeKeyboardEvents() {
         let notificationCenter = NotificationCenter.default
         notificationCenter.removeObserver(self, name: UIResponder.keyboardWillShowNotification, object: nil)
         notificationCenter.removeObserver(self, name: UIResponder.keyboardWillHideNotification, object: nil)
@@ -864,97 +765,3 @@ private extension UIView {
 // MARK: - STATIC DETACHABLE
 
 // MARK: - TRACKING
-
-// MARK: - DESIGN
-
-private extension GBAlertModal {
-    func initDesign() {
-        // MARK: View Initialization
-        let vwOverlay = generateGenericViewDesign()
-        let vwContainer = generateGenericViewDesign()
-        let svContentContainer = generateStackViewForContentDesign()
-
-        // MARK: View Graph
-        addSubview(vwOverlay)
-        addSubview(vwContainer)
-        vwContainer.addSubview(svContentContainer)
-
-        // MARK: View Constraints
-        vwOverlay.snp.makeConstraints { (make: ConstraintMaker) in
-            make.edges
-                    .equalToSuperview()
-        }
-
-        adjustVwContainerConstraint(vwContainer)
-        adjustSvContentContainerConstraint(svContentContainer)
-
-        // MARK: View Assign
-        self.vwOverlay = vwOverlay
-        self.vwContainer = vwContainer
-        self.svContentContainer = svContentContainer
-    }
-
-    func generateGenericViewDesign() -> UIView {
-        let view = UIView(frame: .zero)
-        view.translatesAutoresizingMaskIntoConstraints = false
-        return view
-    }
-
-    func generateStackViewForContentDesign() -> UIStackView {
-        let view = UIStackView()
-        view.translatesAutoresizingMaskIntoConstraints = false
-        view.axis = .vertical
-        view.distribution = .fill
-        view.alignment = .center
-        view.spacing = 0
-        return view
-    }
-
-    func generateImageViewForBannerDesign() -> UIImageView {
-        let view = UIImageView()
-        view.translatesAutoresizingMaskIntoConstraints = false
-        view.contentMode = .scaleAspectFit
-        return view
-    }
-
-    func generateLabelForTitleDesign() -> UILabel {
-        let view = UILabel(frame: .zero)
-        view.translatesAutoresizingMaskIntoConstraints = false
-        view.numberOfLines = 2
-        view.minimumScaleFactor = 0.75
-        view.adjustsFontSizeToFitWidth = true
-        view.textAlignment = .center
-        return view
-    }
-
-    func generateScrollForCustomViewDesign() -> UIScrollView {
-        let view = UIScrollView()
-        view.translatesAutoresizingMaskIntoConstraints = false
-        view.showsHorizontalScrollIndicator = false
-        view.showsVerticalScrollIndicator = true
-        return view
-    }
-
-    func generateLabelForSubtitleDesign() -> UILabel {
-        let view = UILabel(frame: .zero)
-        view.translatesAutoresizingMaskIntoConstraints = false
-        view.numberOfLines = 0
-        view.textAlignment = .center
-        return view
-    }
-
-    func generateStackViewForMainButtonDesign() -> UIStackView {
-        let view = UIStackView()
-        view.translatesAutoresizingMaskIntoConstraints = false
-        view.axis = .vertical
-        view.distribution = .fillEqually
-        view.alignment = .center
-        return view
-    }
-
-    func generateButtonForCloseDesign() -> UIButton {
-        let view = UIButton(type: .system)
-        view.translatesAutoresizingMaskIntoConstraints = false
-        return view
-    }
-}
