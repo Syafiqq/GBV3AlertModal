@@ -257,6 +257,18 @@ private extension GBAlertModal {
     func initData() {
     }
 
+    /// The current render decisions, computed by the pure `resolve(...)` mirror from the
+    /// live view state. Orientation is read here (via `UIWindow.isLandscape`) and passed in
+    /// so the resolver itself stays deterministic.
+    func makeResolvedModal() -> ResolvedModal {
+        Self.resolve(
+                properties: properties,
+                holder: dataHolder ?? .default,
+                isLandscape: UIWindow.isLandscape,
+                isPad: UIDevice.current.userInterfaceIdiom == .pad
+        )
+    }
+
     // MARK: Views
 
     func unregisterDialogView() {
@@ -286,9 +298,11 @@ private extension GBAlertModal {
 
     // swiftlint:disable:next function_body_length cyclomatic_complexity
     func registerDialogView() {
+        let resolved = makeResolvedModal()
+
         // MARK: View Initialization
         // Setup banner
-        if let banner = dataHolder?.banner {
+        if resolved.showsBanner, let banner = dataHolder?.banner {
             let vwBanner = generateGenericViewDesign()
             let ivBanner = generateImageViewForBannerDesign()
             ivBanner.image = banner
@@ -303,22 +317,26 @@ private extension GBAlertModal {
         }
 
         // Setup title
-        if let title = dataHolder?.title,
-           !title.isEmpty {
-            let lbTitle = generateLabelForTitleDesign()
-            lbTitle.attributedText = NSAttributedString(
-                    string: title,
-                    attributes: [
-                        .font: properties?.titleFont,
-                        .foregroundColor: properties?.titleColor
-                    ].compactMapValues({ $0 })
-            )
-            self.lbTitle = lbTitle
-        } else if let title = dataHolder?.titleAttributed,
-                  title.length > 0 {
-            let lbTitle = generateLabelForTitleDesign()
-            lbTitle.attributedText = title
-            self.lbTitle = lbTitle
+        if resolved.showsTitle {
+            if let title = dataHolder?.title,
+               !title.isEmpty {
+                let lbTitle = generateLabelForTitleDesign()
+                lbTitle.attributedText = NSAttributedString(
+                        string: title,
+                        attributes: [
+                            .font: properties?.titleFont,
+                            .foregroundColor: properties?.titleColor
+                        ].compactMapValues({ $0 })
+                )
+                self.lbTitle = lbTitle
+            } else if let title = dataHolder?.titleAttributed,
+                      title.length > 0 {
+                let lbTitle = generateLabelForTitleDesign()
+                lbTitle.attributedText = title
+                self.lbTitle = lbTitle
+            } else {
+                lbTitle = nil
+            }
         } else {
             lbTitle = nil
         }
@@ -329,8 +347,8 @@ private extension GBAlertModal {
                    dataHolder?.subtitleCustomView != nil {
             let svSubtitleContainer = generateScrollForCustomViewDesign()
             let vwSubtitle: UIView?
-            if let subtitle = dataHolder?.subtitle,
-               !subtitle.isEmpty {
+            switch resolved.subtitle {
+            case .plain(let subtitle):
                 let lbSubtitle = generateLabelForSubtitleDesign()
                 lbSubtitle.attributedText = NSAttributedString(
                         string: subtitle,
@@ -342,17 +360,16 @@ private extension GBAlertModal {
 
                 vwSubtitle = lbSubtitle
                 self.lbSubtitle = lbSubtitle
-            } else if let subtitle = dataHolder?.subtitleAttributed,
-                      subtitle.length > 0 {
+            case .attributed:
                 let lbSubtitle = generateLabelForSubtitleDesign()
-                lbSubtitle.attributedText = subtitle
+                lbSubtitle.attributedText = dataHolder?.subtitleAttributed
 
                 vwSubtitle = lbSubtitle
                 self.lbSubtitle = lbSubtitle
-            } else if let subtitle = dataHolder?.subtitleCustomView {
-                vwSubtitle = subtitle
-                self.vwSubtitle = subtitle
-            } else {
+            case .custom:
+                vwSubtitle = dataHolder?.subtitleCustomView
+                self.vwSubtitle = dataHolder?.subtitleCustomView
+            case .none:
                 vwSubtitle = nil
             }
 
@@ -368,7 +385,8 @@ private extension GBAlertModal {
         }
 
         // Setup primaryAction
-        if let primaryAction = dataHolder?.primaryAction,
+        if resolved.showsPrimary,
+           let primaryAction = dataHolder?.primaryAction,
            let primaryActionStyle = properties?.primaryActionStyle {
             let vwPrimaryAction = generateGenericViewDesign()
 
@@ -385,7 +403,8 @@ private extension GBAlertModal {
         }
 
         // Setup secondaryAction
-        if let secondaryAction = dataHolder?.secondaryAction,
+        if resolved.showsSecondary,
+           let secondaryAction = dataHolder?.secondaryAction,
            let secondaryActionStyle = properties?.secondaryActionStyle {
             let vwSecondaryAction = generateGenericViewDesign()
 
@@ -402,7 +421,7 @@ private extension GBAlertModal {
         }
 
         // Setup main action container
-        if vwPrimaryAction != nil || vwSecondaryAction != nil {
+        if resolved.showsPrimary || resolved.showsSecondary {
             let svMainActionContainer = generateStackViewForMainButtonDesign()
             svMainActionContainer.spacing = properties?.space?.interButton ?? .zero
 
@@ -412,7 +431,7 @@ private extension GBAlertModal {
         }
 
         // Setup close action
-        if dataHolder?.showCloseButton == true,
+        if resolved.showsCloseButton,
            let vwContainer = vwContainer {
             let btCloseAction = generateButtonForCloseDesign()
             vwContainer.addSubview(btCloseAction)
@@ -590,6 +609,8 @@ private extension GBAlertModal {
     }
 
     func adjustDialogViewStyle() {
+        let resolved = makeResolvedModal()
+
         // Base View
         tintColor = properties?.baseTint
 
@@ -604,12 +625,10 @@ private extension GBAlertModal {
         svContentContainer?.alignment = properties?.contentProperty?.childShouldMatchParent == true ? .fill : .center
 
         // Button Action Stack
-        svMainActionContainer?.alignment = properties?.buttonActionShouldMatchParent == true ? .fill : .center
+        svMainActionContainer?.alignment = resolved.buttonsMatchParent ? .fill : .center
 
         // Button Action Orientation
-        if let buttonActionOrientation = properties?.buttonActionOrientation {
-            svMainActionContainer?.axis = buttonActionOrientation
-        }
+        svMainActionContainer?.axis = resolved.buttonAxis
 
         // Close Button
         btCloseAction?.tintColor = properties?.closeButtonTint
@@ -718,18 +737,12 @@ private extension GBAlertModal {
                     .priority(.low)
 
             // Pin
-            let fixedWidth = UIWindow.isLandscape
-                ? properties?.contentProperty?.fixedWidthLandscape ?? properties?.contentProperty?.fixedWidthPortrait
-                : properties?.contentProperty?.fixedWidthPortrait ?? properties?.contentProperty?.fixedWidthLandscape
+            let (fixedWidth, maxWidth) = resolvedContentWidths()
             if let fixedWidth {
                 make.width
                         .equalTo(fixedWidth)
                         .priority(.medium)
             }
-
-            let maxWidth = UIWindow.isLandscape
-                ? properties?.contentProperty?.maxWidthLandscape ?? properties?.contentProperty?.maxWidthPortrait
-                : properties?.contentProperty?.maxWidthPortrait ?? properties?.contentProperty?.maxWidthLandscape
             if let maxWidth {
                 make.width
                         .lessThanOrEqualTo(maxWidth)
@@ -741,23 +754,33 @@ private extension GBAlertModal {
     private func adjustSvContentContainerConstraintWidth(_ svContentContainer: UIView) {
         svContentContainer.snp.updateConstraints { (make: ConstraintMaker) in
             // Pin
-            let fixedWidth = UIWindow.isLandscape
-                ? properties?.contentProperty?.fixedWidthLandscape ?? properties?.contentProperty?.fixedWidthPortrait
-                : properties?.contentProperty?.fixedWidthPortrait ?? properties?.contentProperty?.fixedWidthLandscape
+            let (fixedWidth, maxWidth) = resolvedContentWidths()
             if let fixedWidth {
                 make.width
                         .equalTo(fixedWidth)
                         .priority(.medium)
             }
-
-            let maxWidth = UIWindow.isLandscape
-                ? properties?.contentProperty?.maxWidthLandscape ?? properties?.contentProperty?.maxWidthPortrait
-                : properties?.contentProperty?.maxWidthPortrait ?? properties?.contentProperty?.maxWidthLandscape
             if let maxWidth {
                 make.width
                         .lessThanOrEqualTo(maxWidth)
                         .priority(.high)
             }
+        }
+    }
+
+    /// The fixed / max content-width constraints to apply, unpacked from the pure resolver's
+    /// `WidthResolution`. Both may be present at once, mirroring the two independent `if let`s
+    /// this replaced.
+    private func resolvedContentWidths() -> (fixed: CGFloat?, max: CGFloat?) {
+        switch makeResolvedModal().contentWidth {
+        case .flexible:
+            return (nil, nil)
+        case .fixed(let fixed):
+            return (fixed, nil)
+        case .max(let max):
+            return (nil, max)
+        case .fixedAndMax(let fixed, let max):
+            return (fixed, max)
         }
     }
 
