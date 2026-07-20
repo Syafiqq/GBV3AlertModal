@@ -46,14 +46,14 @@ open class GBAlertModal: UIView {
     // MARK: Constraints
 
     // MARK: Attributes Gestures
-    private var tapRecognizerOverlay: UIGestureRecognizer?
+    var tapRecognizerOverlay: UIGestureRecognizer?
 
     // MARK: ViewModel
 
     // MARK: Private Properties
 
-    private var properties: Properties?
-    private var dataHolder: DataHolder?
+    var properties: Properties?
+    var dataHolder: DataHolder?
 
     // MARK: Data
 
@@ -74,155 +74,6 @@ open class GBAlertModal: UIView {
 
     public required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
-    }
-
-    // MARK: Lifecycle
-
-    // MARK: Override Function
-
-    override public func layoutSubviews() {
-        super.layoutSubviews()
-
-        if let svContentContainer {
-            adjustSvContentContainerConstraintWidth(svContentContainer)
-        }
-    }
-
-    // MARK: Callback
-
-    @objc
-    private func onOverlayTapped(_ sender: UITapGestureRecognizer) {
-        guard dataHolder?.closeOnTapOverlay == true else {
-            return
-        }
-
-        switch sender.state {
-        case .ended:
-            dismissAndEmit(event: .close)
-        default:
-            break
-        }
-    }
-
-    @objc
-    private func onPrimaryActionTapped() {
-        dismissAndEmit(event: .primary)
-    }
-
-    @objc
-    private func onSecondaryActionTapped() {
-        dismissAndEmit(event: .secondary)
-    }
-
-    @objc
-    private func onActionButtonPressed(_ sender: UIButton) {
-        if sender === btPrimaryAction,
-           let primaryActionStyle = properties?.primaryActionStyle,
-           case ActionStyle.obliqueBottomLeft(let style) = primaryActionStyle {
-            updateObliqueBottomLeftStylePressed(sender, style: style)
-        } else if sender === btSecondaryAction,
-                  let secondaryActionStyle = properties?.secondaryActionStyle,
-                  case ActionStyle.obliqueBottomLeft(let style) = secondaryActionStyle {
-            updateObliqueBottomLeftStylePressed(sender, style: style)
-        }
-    }
-
-    @objc
-    private func onActionButtonUnPressed(_ sender: UIButton) {
-        if sender === btPrimaryAction,
-           let primaryActionStyle = properties?.primaryActionStyle,
-           case ActionStyle.obliqueBottomLeft(let style) = primaryActionStyle {
-            updateObliqueBottomLeftStyleUnPressed(sender, style: style)
-        } else if sender === btSecondaryAction,
-                  let secondaryActionStyle = properties?.secondaryActionStyle,
-                  case ActionStyle.obliqueBottomLeft(let style) = secondaryActionStyle {
-            updateObliqueBottomLeftStyleUnPressed(sender, style: style)
-        }
-    }
-
-    @objc
-    private func onCloseTapped() {
-        dismissAndEmit(event: .close)
-    }
-
-    // MARK: Public Function
-
-    public func show(parent: UIView, completion onShown: @escaping () -> Void) {
-        weak var parent = parent
-        guard let parent else {
-            return
-        }
-
-        alpha = 1
-        transform = .identity
-
-        parent.addSubview(self)
-        snp.makeConstraints { (make: ConstraintMaker) in
-            make.edges
-                    .equalTo(parent)
-        }
-
-        onShown()
-    }
-
-    @objc
-    public func hide() {
-        UIView.animate(
-                withDuration: 0.2,
-                animations: { [weak self] in
-                    self?.alpha = 0
-                },
-                completion: { [weak self] _ in
-                    self?.removeFromSuperview()
-                }
-        )
-    }
-
-    public func dismiss() {
-        if dataHolder?.dismissOnAction == true {
-            hide()
-        }
-    }
-
-    public func dismissAndEmit(event: ActionType) {
-        if dataHolder?.dismissOnAction == true {
-            hide()
-        }
-        dataHolder?.completion?(self, event)
-    }
-
-    public func updateDialog(holder: DataHolder, properties: Properties?) {
-        dataHolder = holder
-        updateProperties(properties ?? self.properties ?? globalProperties)
-
-        unregisterDialogView()
-        unregisterEvents()
-        adjustBaseDialogConstraint()
-        registerDialogView()
-        adjustDialogViewStyle()
-        registerEvents()
-        updateConstraintsIfNeeded()
-        layoutIfNeeded()
-    }
-
-    public func changePrimaryActionEnableState(isEnable: Bool) {
-        guard let btPrimaryAction else {
-            return
-        }
-        btPrimaryAction.isEnabled = isEnable
-        if let style = properties?.primaryActionStyle {
-            configureButtonActionStyle(btPrimaryAction, style: style)
-        }
-    }
-
-    public func changeSecondaryActionEnableState(isEnable: Bool) {
-        guard let btSecondaryAction else {
-            return
-        }
-        btSecondaryAction.isEnabled = isEnable
-        if let style = properties?.secondaryActionStyle {
-            configureButtonActionStyle(btSecondaryAction, style: style)
-        }
     }
 
     // MARK: Deinitialization
@@ -271,7 +122,9 @@ private extension GBAlertModal {
 
     // MARK: Views
 
-    func unregisterDialogView() {
+    // Widened from `private` to `internal`: called from `updateDialog` in
+    // GBAlertModal+Lifecycle.swift (different file, same module).
+    internal func unregisterDialogView() {
         svContentContainer?.removeAllArrangedSubviews()
 
         vwBanner?.removeFromSuperview()
@@ -297,7 +150,9 @@ private extension GBAlertModal {
     }
 
     // swiftlint:disable:next function_body_length cyclomatic_complexity
-    func registerDialogView() {
+    // Widened from `private` to `internal`: called from `updateDialog` in
+    // GBAlertModal+Lifecycle.swift (different file, same module).
+    internal func registerDialogView() {
         let resolved = makeResolvedModal()
 
         // MARK: View Initialization
@@ -606,7 +461,9 @@ private extension GBAlertModal {
         }
     }
 
-    func adjustDialogViewStyle() {
+    // Widened from `private` to `internal`: called from `updateDialog` in
+    // GBAlertModal+Lifecycle.swift (different file, same module).
+    internal func adjustDialogViewStyle() {
         let resolved = makeResolvedModal()
 
         // Base View
@@ -640,7 +497,9 @@ private extension GBAlertModal {
         )
     }
 
-    func adjustBaseDialogConstraint() {
+    // Widened from `private` to `internal`: called from `updateDialog` in
+    // GBAlertModal+Lifecycle.swift (different file, same module).
+    internal func adjustBaseDialogConstraint() {
         if let vwContainer = vwContainer {
             adjustVwContainerConstraint(vwContainer)
         }
@@ -749,7 +608,9 @@ private extension GBAlertModal {
         }
     }
 
-    private func adjustSvContentContainerConstraintWidth(_ svContentContainer: UIView) {
+    // Widened from `private` to `internal`: called from `layoutSubviews` in
+    // GBAlertModal+Lifecycle.swift (different file, same module).
+    internal func adjustSvContentContainerConstraintWidth(_ svContentContainer: UIView) {
         svContentContainer.snp.updateConstraints { (make: ConstraintMaker) in
             // Pin
             let (fixedWidth, maxWidth) = resolvedContentWidths()
@@ -782,58 +643,11 @@ private extension GBAlertModal {
         }
     }
 
-    // MARK: ViewModel
-    func registerEvents() {
-        // Gestures
-        let tapRecognizerOverlay = UITapGestureRecognizer(target: self, action: #selector(onOverlayTapped))
-        vwOverlay?.addGestureRecognizer(tapRecognizerOverlay)
-        vwOverlay?.isUserInteractionEnabled = true
-        self.tapRecognizerOverlay = tapRecognizerOverlay
-
-        // Buttons
-        btPrimaryAction?.addTarget(self, action: #selector(onPrimaryActionTapped), for: .touchUpInside)
-        btPrimaryAction?.addTarget(self, action: #selector(onActionButtonPressed(_:)), for: .touchDown)
-        btPrimaryAction?.addTarget(self, action: #selector(onActionButtonPressed(_:)), for: .touchDragEnter)
-        btPrimaryAction?.addTarget(self, action: #selector(onActionButtonUnPressed(_:)), for: .touchDragExit)
-        btPrimaryAction?.addTarget(self, action: #selector(onActionButtonUnPressed(_:)), for: .touchUpInside)
-        btPrimaryAction?.addTarget(self, action: #selector(onActionButtonUnPressed(_:)), for: .touchUpOutside)
-        btSecondaryAction?.addTarget(self, action: #selector(onSecondaryActionTapped), for: .touchUpInside)
-        btSecondaryAction?.addTarget(self, action: #selector(onActionButtonPressed(_:)), for: .touchDown)
-        btSecondaryAction?.addTarget(self, action: #selector(onActionButtonPressed(_:)), for: .touchDragEnter)
-        btSecondaryAction?.addTarget(self, action: #selector(onActionButtonUnPressed(_:)), for: .touchDragExit)
-        btSecondaryAction?.addTarget(self, action: #selector(onActionButtonUnPressed(_:)), for: .touchUpInside)
-        btSecondaryAction?.addTarget(self, action: #selector(onActionButtonUnPressed(_:)), for: .touchUpOutside)
-
-        btCloseAction?.addTarget(self, action: #selector(onCloseTapped), for: .touchUpInside)
-    }
-
-    func unregisterEvents() {
-        // Gestures
-        if let tapRecognizerOverlay = tapRecognizerOverlay {
-            vwOverlay?.removeGestureRecognizer(tapRecognizerOverlay)
-        }
-        tapRecognizerOverlay = nil
-
-        // Buttons
-        btPrimaryAction?.removeTarget(self, action: #selector(onPrimaryActionTapped), for: .touchUpInside)
-        btPrimaryAction?.removeTarget(self, action: #selector(onActionButtonPressed(_:)), for: .touchDown)
-        btPrimaryAction?.removeTarget(self, action: #selector(onActionButtonPressed(_:)), for: .touchDragEnter)
-        btPrimaryAction?.removeTarget(self, action: #selector(onActionButtonUnPressed(_:)), for: .touchDragExit)
-        btPrimaryAction?.removeTarget(self, action: #selector(onActionButtonUnPressed(_:)), for: .touchUpInside)
-        btPrimaryAction?.removeTarget(self, action: #selector(onActionButtonUnPressed(_:)), for: .touchUpOutside)
-        btSecondaryAction?.removeTarget(self, action: #selector(onSecondaryActionTapped), for: .touchUpInside)
-        btSecondaryAction?.removeTarget(self, action: #selector(onActionButtonPressed(_:)), for: .touchDown)
-        btSecondaryAction?.removeTarget(self, action: #selector(onActionButtonPressed(_:)), for: .touchDragEnter)
-        btSecondaryAction?.removeTarget(self, action: #selector(onActionButtonUnPressed(_:)), for: .touchDragExit)
-        btSecondaryAction?.removeTarget(self, action: #selector(onActionButtonUnPressed(_:)), for: .touchUpInside)
-        btSecondaryAction?.removeTarget(self, action: #selector(onActionButtonUnPressed(_:)), for: .touchUpOutside)
-
-        btCloseAction?.removeTarget(self, action: #selector(onCloseTapped), for: .touchUpInside)
-    }
-
     // MARK: Model
 
-    func updateProperties(_ properties: Properties) {
+    // Widened from `private` to `internal`: called from `updateDialog` in
+    // GBAlertModal+Lifecycle.swift (different file, same module).
+    internal func updateProperties(_ properties: Properties) {
         self.properties = Properties(
                 baseTint: properties.baseTint
                         ?? globalProperties.baseTint,
