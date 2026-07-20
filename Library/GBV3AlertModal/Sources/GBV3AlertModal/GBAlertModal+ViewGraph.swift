@@ -34,13 +34,34 @@ internal extension GBAlertModal {
         btCloseAction?.removeFromSuperview()
     }
 
-    // swiftlint:disable:next function_body_length cyclomatic_complexity
     // Widened from `private` to `internal`: called from `updateDialog` in
     // GBAlertModal+Lifecycle.swift (different file, same module).
+    //
+    // Thin orchestrator: build each component (init + own subview wiring), then assemble the
+    // stack-view graph, then install constraints — in the exact same order as the original
+    // monolith so the produced view tree + constraints are unchanged.
     internal func registerDialogView() {
         let resolved = makeResolvedModal()
 
         // MARK: View Initialization
+        buildBannerComponent(resolved)
+        buildTitleComponent(resolved)
+        buildSubtitleComponent(resolved)
+        buildActionComponents(resolved)
+        buildCloseComponent(resolved)
+        buildDividers()
+
+        // MARK: View Graph
+        assembleViewGraph()
+
+        // MARK: View Constraints
+        installConstraints()
+    }
+
+    // MARK: Component Builders
+
+    /// Creates + assigns `vwBanner` / `ivBanner` and nests the image inside the banner view.
+    private func buildBannerComponent(_ resolved: ResolvedModal) {
         // Setup banner
         if resolved.showsBanner, let banner = dataHolder?.banner {
             let vwBanner = generateGenericViewDesign()
@@ -55,7 +76,10 @@ internal extension GBAlertModal {
             vwBanner = nil
             ivBanner = nil
         }
+    }
 
+    /// Creates + assigns `lbTitle` from either the plain or attributed title source.
+    private func buildTitleComponent(_ resolved: ResolvedModal) {
         // Setup title
         if resolved.showsTitle {
             if let title = dataHolder?.title,
@@ -78,7 +102,11 @@ internal extension GBAlertModal {
         } else {
             lbTitle = nil
         }
+    }
 
+    /// Creates + assigns `svSubtitleContainer` and its inner `lbSubtitle` / `vwSubtitle`,
+    /// nesting the resolved subtitle content inside the scroll container.
+    private func buildSubtitleComponent(_ resolved: ResolvedModal) {
         // Setup subtitle
         if dataHolder?.subtitle != nil ||
                    dataHolder?.subtitleAttributed != nil ||
@@ -121,7 +149,12 @@ internal extension GBAlertModal {
             lbSubtitle = nil
             vwSubtitle = nil
         }
+    }
 
+    /// Creates + assigns the primary / secondary action views and the main action container
+    /// that will host them, in the original init order (primary, secondary, container).
+    // swiftlint:disable:next function_body_length
+    private func buildActionComponents(_ resolved: ResolvedModal) {
         // Setup primaryAction
         if resolved.showsPrimary,
            let primaryAction = dataHolder?.primaryAction,
@@ -167,7 +200,10 @@ internal extension GBAlertModal {
         } else {
             svMainActionContainer = nil
         }
+    }
 
+    /// Creates + assigns `btCloseAction` and adds it directly onto `vwContainer`.
+    private func buildCloseComponent(_ resolved: ResolvedModal) {
         // Setup close action
         if resolved.showsCloseButton,
            let vwContainer = vwContainer {
@@ -178,7 +214,12 @@ internal extension GBAlertModal {
         } else {
             btCloseAction = nil
         }
+    }
 
+    /// Creates the inter-component spacer dividers. Each divider's presence depends on which
+    /// other components exist, so this runs after all component builders (matching the original
+    /// "Setup Divider" block that closed the View Initialization section).
+    private func buildDividers() {
         // Setup Divider
         // Setup banner and its below
         if vwBanner != nil,
@@ -209,8 +250,13 @@ internal extension GBAlertModal {
         } else {
             vwSubtitleAndBelowDivider = nil
         }
+    }
 
-        // MARK: View Graph
+    // MARK: View Graph
+
+    /// Wires the arranged-subview hierarchy: actions into the main action container, then the
+    /// content rows into `svContentContainer`, in the original compile order.
+    private func assembleViewGraph() {
         // Compile View
 
         [
@@ -239,8 +285,13 @@ internal extension GBAlertModal {
                     }
                     svContentContainer?.addArrangedSubview(view)
                 }
+    }
 
-        // MARK: View Constraints
+    // MARK: View Constraints
+
+    /// Installs the SnapKit constraints for every built node, in the original constraint order.
+    // swiftlint:disable:next function_body_length
+    private func installConstraints() {
         // Banner
         if let vwBanner {
             vwBanner.snp.makeConstraints { (make: ConstraintMaker) in
