@@ -334,8 +334,6 @@ private extension GBAlertModal {
                 let lbTitle = generateLabelForTitleDesign()
                 lbTitle.attributedText = title
                 self.lbTitle = lbTitle
-            } else {
-                lbTitle = nil
             }
         } else {
             lbTitle = nil

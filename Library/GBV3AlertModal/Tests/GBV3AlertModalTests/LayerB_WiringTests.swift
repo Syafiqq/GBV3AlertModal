@@ -307,6 +307,87 @@ final class LayerB_WiringTests: XCTestCase {
         XCTAssertTrue(modal.btCloseAction?.image(for: .normal) === image)
     }
 
+    // MARK: - DataHolder: closeOnTapOverlay (behavioral — overlay tap dismiss wiring)
+
+    /// A `UITapGestureRecognizer` whose `.state` always reads as `.ended`.
+    ///
+    /// Two approaches were tried and rejected first:
+    /// - Forcing state via KVC (`setValue(_:forKey:)`) is silently a no-op: read back
+    ///   immediately after the call, `state` was still `.possible`.
+    /// - Assigning `self.state = .ended` from within a `UIGestureRecognizer` subclass method
+    ///   (the mechanism Apple's own subclasses use) was *also* observed to be discarded here —
+    ///   even attached to a live view, the underlying state reverted to `.possible` by the time
+    ///   it was read back, because there's no real touch sequence driving UIKit's gesture
+    ///   environment through the transition.
+    ///
+    /// Overriding the `state` accessor itself sidesteps both problems: it's still a genuine
+    /// `UITapGestureRecognizer` instance (satisfies `onOverlayTapped(_:)`'s parameter type), and
+    /// the override guarantees `sender.state == .ended` is what the guarded code actually
+    /// observes — exactly the value UIKit reports at the moment it invokes the target-action for
+    /// a completed tap.
+    private final class EndedTapGestureRecognizer: UITapGestureRecognizer {
+        override var state: UIGestureRecognizer.State {
+            get { .ended }
+            set { /* no-op: this stand-in always reports .ended regardless of internal writes */ }
+        }
+    }
+
+    /// Drives `onOverlayTapped(_:)` — the `@objc private` handler wired to the real overlay-tap
+    /// gesture recognizer in `registerEvents()` (`vwOverlay?.addGestureRecognizer(tapRecognizerOverlay)`,
+    /// target `self`, action `onOverlayTapped(_:)`) — through the exact target-action selector
+    /// UIKit would invoke. `private` stays invisible to `#selector(...)` from the test target even
+    /// under `@testable import` (Swift `private` isn't relaxed by `@testable`), so the selector is
+    /// invoked at the Objective-C runtime level via `perform(_:with:)`. This exercises the real
+    /// `dataHolder?.closeOnTapOverlay == true` guard and the `sender.state == .ended` switch
+    /// inside `onOverlayTapped(_:)` — not a stand-in for either. The registration check below
+    /// confirms the wiring itself (recognizer actually attached to `vwOverlay`) independently of
+    /// the state used to drive the handler.
+    private func simulateOverlayTap(_ modal: GBAlertModal) {
+        guard modal.vwOverlay?.gestureRecognizers?.contains(where: { $0 is UITapGestureRecognizer }) == true else {
+            XCTFail("expected overlay tap gesture recognizer to be registered on vwOverlay")
+            return
+        }
+        _ = modal.perform(Selector(("onOverlayTapped:")), with: EndedTapGestureRecognizer())
+    }
+
+    func test_closeOnTapOverlayTrue_overlayTapDismissesAndEmitsClose() {
+        var emitted: GBAlertModal.ActionType?
+        let holder = GeniePresets.oneButton().copy(
+            closeOnTapOverlay: true,
+            dismissOnAction: true,
+            completion: { _, type in emitted = type }
+        )
+        let modal = GBAlertModal(properties: GeniePresets.standardProperties(), holder: holder)
+        let host = renderForSnapshot(modal, size: portrait)
+        XCTAssertTrue(host.subviews.contains(modal))
+
+        simulateOverlayTap(modal)
+
+        assertAction(emitted, is: .close)
+
+        let expectation = expectation(description: "overlay tap dismisses modal")
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { expectation.fulfill() }
+        wait(for: [expectation], timeout: 2.0)
+        XCTAssertFalse(host.subviews.contains(modal))
+    }
+
+    func test_closeOnTapOverlayFalse_overlayTapDoesNotDismissOrEmit() {
+        var emitted: GBAlertModal.ActionType?
+        let holder = GeniePresets.oneButton().copy(
+            closeOnTapOverlay: false,
+            dismissOnAction: true,
+            completion: { _, type in emitted = type }
+        )
+        let modal = GBAlertModal(properties: GeniePresets.standardProperties(), holder: holder)
+        let host = renderForSnapshot(modal, size: portrait)
+        XCTAssertTrue(host.subviews.contains(modal))
+
+        simulateOverlayTap(modal)
+
+        XCTAssertNil(emitted)
+        XCTAssertTrue(host.subviews.contains(modal))
+    }
+
     // MARK: - Static defaults (Properties.default / ContentProperty.default / ComponentSpace.zero / DataHolder.default)
 
     func test_propertiesDefault_matchesDocumentedDefaults() {
