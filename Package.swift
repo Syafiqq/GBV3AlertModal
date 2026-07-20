@@ -17,6 +17,7 @@ let package = Package(
     ],
     dependencies: [
         .package(url: "https://github.com/SnapKit/SnapKit.git", from: "5.7.0"),
+        .package(url: "https://github.com/pointfreeco/swift-snapshot-testing.git", from: "1.17.0"),
     ],
     targets: [
         // Targets are the basic building blocks of a package, defining a module or a test suite.
@@ -37,6 +38,7 @@ let package = Package(
             name: "GBV3AlertModalTests",
             dependencies: [
                 "GBV3AlertModal",
+                .product(name: "SnapshotTesting", package: "swift-snapshot-testing"),
             ],
             path: "Library/GBV3AlertModal/Tests/GBV3AlertModalTests",
             plugins: [
