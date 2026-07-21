@@ -341,67 +341,46 @@ private extension GBAlertModal {
         vwContainer?.transform = .identity
     }
 
-    // swiftlint:disable:next function_body_length
+    // Geometry now lives in `ModalKeyboardAvoider.offset(...)` (Sources/Support); this function
+    // keeps only notification-era view state: which anchor view to read, coordinate conversion,
+    // and applying the resulting transform.
     func adjustDialogPosition(_ keyboardFrame: CGRect) {
         guard let vwContainer else {
             return
         }
-        // check if upper keyboard has more space than btm
-        if keyboardFrame.minY > (UIScreen.main.bounds.maxY - keyboardFrame.maxY) {
-            guard let bottomView = svMainActionContainer ?? svSubtitleContainer ?? lbTitle,
-                  let bottomViewSuperview = bottomView.superview else {
-                return
-            }
-            let bottomViewRelativeFrame = bottomViewSuperview.convert(
-                    bottomView.frame,
-                    to: nil
-            )
-            var difference = keyboardFrame.minY
-                    - bottomViewRelativeFrame.maxY
-                    - kEmptySpaceForKeyboardExtension
 
-            if let responder = firstResponder,
-               let responderSuperview = responder.superview {
-                let responderRelativeFrame = responderSuperview.convert(responder.frame, to: nil)
-                if difference + responderRelativeFrame.minY < 0 {
-                    difference = -responderRelativeFrame.minY
-                }
-            }
+        let avoider = ModalKeyboardAvoider()
+        let screenMaxY = UIScreen.main.bounds.maxY
+        let keyboardHasMoreSpaceAbove = avoider.keyboardHasMoreSpaceAbove(
+                keyboardFrame: keyboardFrame,
+                screenMaxY: screenMaxY
+        )
 
-            difference += vwContainer.transform.ty
-
-            guard difference < 0 else {
-                return
-            }
-            vwContainer.transform = .identity.translatedBy(x: 0, y: difference)
-        } else {
-            guard let bottomView = lbTitle ?? svSubtitleContainer ?? svMainActionContainer,
-                  let bottomViewSuperview = bottomView.superview else {
-                return
-            }
-            let bottomViewRelativeFrame = bottomViewSuperview.convert(
-                    bottomView.frame,
-                    to: nil
-            )
-            var difference = keyboardFrame.maxY
-                    - bottomViewRelativeFrame.minY
-                    + kEmptySpaceForKeyboardExtension
-
-            if let responder = firstResponder,
-               let responderSuperview = responder.superview {
-                let responderRelativeFrame = responderSuperview.convert(responder.frame, to: nil)
-                if difference + responderRelativeFrame.maxY > UIScreen.main.bounds.maxY {
-                    difference = UIScreen.main.bounds.maxY - responderRelativeFrame.maxY
-                }
-            }
-
-            difference += vwContainer.transform.ty
-
-            guard difference > 0 else {
-                return
-            }
-            vwContainer.transform = .identity.translatedBy(x: 0, y: difference)
+        let bottomView = keyboardHasMoreSpaceAbove
+                ? (svMainActionContainer ?? svSubtitleContainer ?? lbTitle)
+                : (lbTitle ?? svSubtitleContainer ?? svMainActionContainer)
+        guard let bottomView, let bottomViewSuperview = bottomView.superview else {
+            return
         }
+        let anchorFrame = bottomViewSuperview.convert(bottomView.frame, to: nil)
+
+        var responderFrame: CGRect?
+        if let responder = firstResponder, let responderSuperview = responder.superview {
+            responderFrame = responderSuperview.convert(responder.frame, to: nil)
+        }
+
+        guard let difference = avoider.offset(
+                keyboardHasMoreSpaceAbove: keyboardHasMoreSpaceAbove,
+                keyboardFrame: keyboardFrame,
+                anchorFrame: anchorFrame,
+                responderFrame: responderFrame,
+                currentTransformY: vwContainer.transform.ty,
+                screenMaxY: screenMaxY,
+                emptySpace: kEmptySpaceForKeyboardExtension
+        ) else {
+            return
+        }
+        vwContainer.transform = .identity.translatedBy(x: 0, y: difference)
     }
 }
 
