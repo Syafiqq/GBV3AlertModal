@@ -249,6 +249,46 @@ final class LayerB_WiringTests: XCTestCase {
         XCTAssertEqual(modal.lbSubtitle?.textColor, .systemOrange)
     }
 
+    // Task 10: an empty-but-non-nil `subtitle` (no attributed, no custom view) must resolve to
+    // `ResolvedModal.SubtitleKind.none` (already true, see LayerA) AND must not cause
+    // `buildSubtitleComponent`'s outer gate to build an empty subtitle scroll container. Before
+    // the fix, the gate was a raw `dataHolder?.subtitle != nil` check, which is true for `""`,
+    // so a container was allocated even though nothing was ever added to it.
+    func test_emptySubtitle_doesNotBuildSubtitleContainer() {
+        let holder = GeniePresets.oneButton().copy(subtitle: "")
+        let modal = GBAlertModal(properties: GeniePresets.standardProperties(), holder: holder)
+        _ = renderForSnapshot(modal, size: portrait)
+
+        XCTAssertNil(modal.svSubtitleContainer)
+        XCTAssertNil(modal.lbSubtitle)
+        XCTAssertNil(modal.vwSubtitle)
+    }
+
+    // Task 10: the outer-gate bug is only *observable* across an update — a fresh build with an
+    // empty subtitle already ends up with a nil `svSubtitleContainer` (the inner `if let
+    // vwSubtitle` guard never assigns it for `.none`), but before the fix, updating an *existing*
+    // real subtitle down to `""` left the stale (now-detached, empty) `svSubtitleContainer` from
+    // the previous render assigned on `self`, which `assembleViewGraph()` then re-adds to the
+    // stack view as an empty row. The `resolved.subtitle != .none` gate fixes this because its
+    // `else` branch explicitly nils `svSubtitleContainer` / `lbSubtitle` / `vwSubtitle`.
+    func test_updateDialog_emptySubtitle_clearsStaleSubtitleContainer() {
+        let modal = GBAlertModal(properties: GeniePresets.standardProperties(), holder: GeniePresets.oneButton())
+        _ = renderForSnapshot(modal, size: portrait)
+        guard let staleContainer = modal.svSubtitleContainer else {
+            return XCTFail("precondition: real subtitle must build a container")
+        }
+
+        modal.updateDialog(holder: GeniePresets.oneButton().copy(subtitle: ""), properties: nil)
+
+        XCTAssertNil(modal.svSubtitleContainer)
+        XCTAssertNil(modal.lbSubtitle)
+        XCTAssertNil(modal.vwSubtitle)
+        XCTAssertFalse(
+            (modal.svContentContainer?.arrangedSubviews ?? []).contains { $0 === staleContainer },
+            "the stale (now-empty) subtitle container from the previous render must not remain in the arranged-subview graph"
+        )
+    }
+
     // MARK: - Properties: buttonActionShouldMatchParent, buttonActionOrientation (rendered view)
     // (structural correctness of these two already exhaustively covered by LayerA_ResolverTests;
     // these two confirm the resolved value actually reaches the live `svMainActionContainer`.)

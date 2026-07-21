@@ -140,6 +140,16 @@ final class LayerA_ResolverTests: XCTestCase {
         XCTAssertEqual(r.subtitle, .none)
     }
 
+    // Task 10: locks the contract that an empty-but-non-nil `subtitle` (no attributed, no
+    // custom view) resolves to `.none`, same as a nil subtitle — this is what
+    // `buildSubtitleComponent`'s outer gate (`resolved.subtitle != .none`) now relies on to skip
+    // building an empty subtitle scroll container.
+    func test_resolve_subtitle_emptyPlainOnlyResolvesToNone() {
+        let holder = GBAlertModal.DataHolder(subtitle: "")
+        let r = GBAlertModal.resolve(properties: nil, holder: holder, isLandscape: false)
+        XCTAssertEqual(r.subtitle, .none)
+    }
+
     // MARK: - Button axis (buttonActionOrientation)
 
     func test_resolve_buttonAxis_horizontalWhenExplicit() {

@@ -108,9 +108,7 @@ internal extension GBAlertModal {
     /// nesting the resolved subtitle content inside the scroll container.
     private func buildSubtitleComponent(_ resolved: ResolvedModal) {
         // Setup subtitle
-        if dataHolder?.subtitle != nil ||
-                   dataHolder?.subtitleAttributed != nil ||
-                   dataHolder?.subtitleCustomView != nil {
+        if resolved.subtitle != .none {
             let svSubtitleContainer = generateScrollForCustomViewDesign()
             let vwSubtitle: UIView?
             switch resolved.subtitle {
