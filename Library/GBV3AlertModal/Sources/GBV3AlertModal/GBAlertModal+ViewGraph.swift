@@ -291,9 +291,29 @@ internal extension GBAlertModal {
     // swiftlint:disable:next function_body_length
     private func installConstraints() {
         // Banner
+        // The image's natural-aspect multiplier (bannerRatio == nil path only) is computed once
+        // here so both the vwBanner height-driver constraint and the ivBanner fill constraints
+        // below can reference it.
+        let bannerHeightMultiplier: CGFloat? = {
+            guard properties?.bannerRatio == nil,
+                  let image = ivBanner?.image else {
+                return nil
+            }
+            return ModalLayout.bannerHeightMultiplier(imageSize: image.size)
+        }()
         if let vwBanner {
             vwBanner.snp.makeConstraints { (make: ConstraintMaker) in
                 // Pin
+                // Natural-aspect height driver (bannerRatio == nil): lower priority than
+                // bannerMaxHeight's cap (751) so the cap wins and scaleAspectFit letterboxes
+                // the image inside the capped box, but present so vwBanner (which otherwise has
+                // no other height source) resolves to the image's own aspect by default.
+                if let bannerHeightMultiplier {
+                    make.height
+                            .equalTo(vwBanner.snp.width)
+                            .multipliedBy(bannerHeightMultiplier)
+                            .priority(UILayoutPriority(700))
+                }
                 if let bannerMaxHeight = properties?.bannerMaxHeight {
                     make.height
                             .lessThanOrEqualTo(bannerMaxHeight)
@@ -308,22 +328,48 @@ internal extension GBAlertModal {
         }
         if let ivBanner {
             ivBanner.snp.makeConstraints { (make: ConstraintMaker) in
-                // Align
-                make.top
-                        .equalToSuperview()
-                make.leading
-                        .greaterThanOrEqualToSuperview()
-                make.leading
-                        .equalToSuperview()
-                        .priority(.low)
-                make.center
-                        .equalToSuperview()
-
-                // Pin
                 if let ratio = properties?.bannerRatio {
+                    // Back-compat: bannerRatio provided — EXACT original behavior, unchanged.
+                    // Align
+                    make.top
+                            .equalToSuperview()
+                    make.leading
+                            .greaterThanOrEqualToSuperview()
+                    make.leading
+                            .equalToSuperview()
+                            .priority(.low)
+                    make.center
+                            .equalToSuperview()
+
+                    // Pin
                     make.width
                             .equalTo(ivBanner.snp.height)
                             .multipliedBy(ratio)
+                } else if bannerHeightMultiplier != nil {
+                    // bannerRatio == nil + valid image: fill the card width and let the image's
+                    // natural aspect (applied to vwBanner above) size the slot, instead of the
+                    // old centered/intrinsic-size behavior.
+                    make.top
+                            .equalToSuperview()
+                    make.leading
+                            .equalToSuperview()
+                    make.trailing
+                            .equalToSuperview()
+                    make.bottom
+                            .equalToSuperview()
+                } else {
+                    // bannerRatio == nil and no usable image size (should not happen given
+                    // `showsBanner` already gates on a non-zero-size image) — fall back to the
+                    // original nil-ratio alignment so we degrade rather than mis-render.
+                    make.top
+                            .equalToSuperview()
+                    make.leading
+                            .greaterThanOrEqualToSuperview()
+                    make.leading
+                            .equalToSuperview()
+                            .priority(.low)
+                    make.center
+                            .equalToSuperview()
                 }
             }
         }

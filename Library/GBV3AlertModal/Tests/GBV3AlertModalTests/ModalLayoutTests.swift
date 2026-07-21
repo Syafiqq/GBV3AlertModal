@@ -102,4 +102,44 @@ final class ModalLayoutTests: XCTestCase {
         XCTAssertEqual(result.trailingMin, -7)
         XCTAssertEqual(result.trailingMax, -8)
     }
+
+    // MARK: - bannerHeightMultiplier
+    //
+    // Used by `GBAlertModal+ViewGraph.swift`'s `installConstraints` for the `bannerRatio == nil`
+    // path: `height = width * multiplier`, where `multiplier = imageSize.height / imageSize.width`.
+
+    func test_bannerHeightMultiplier_16x9_returns0_5625() {
+        let result = ModalLayout.bannerHeightMultiplier(imageSize: CGSize(width: 160, height: 90))
+        XCTAssertEqual(result ?? -1, 0.5625, accuracy: 0.0001)
+    }
+
+    func test_bannerHeightMultiplier_9x16_returns1_7778() {
+        let result = ModalLayout.bannerHeightMultiplier(imageSize: CGSize(width: 90, height: 160))
+        XCTAssertEqual(result ?? -1, 1.7778, accuracy: 0.0001)
+    }
+
+    func test_bannerHeightMultiplier_square_returns1_0() {
+        let result = ModalLayout.bannerHeightMultiplier(imageSize: CGSize(width: 100, height: 100))
+        XCTAssertEqual(result ?? -1, 1.0, accuracy: 0.0001)
+    }
+
+    func test_bannerHeightMultiplier_zeroWidth_returnsNil() {
+        let result = ModalLayout.bannerHeightMultiplier(imageSize: CGSize(width: 0, height: 100))
+        XCTAssertNil(result)
+    }
+
+    func test_bannerHeightMultiplier_zeroHeight_returnsNil() {
+        let result = ModalLayout.bannerHeightMultiplier(imageSize: CGSize(width: 100, height: 0))
+        XCTAssertNil(result)
+    }
+
+    func test_bannerHeightMultiplier_zeroSize_returnsNil() {
+        let result = ModalLayout.bannerHeightMultiplier(imageSize: .zero)
+        XCTAssertNil(result)
+    }
+
+    func test_bannerHeightMultiplier_negativeSize_returnsNil() {
+        let result = ModalLayout.bannerHeightMultiplier(imageSize: CGSize(width: -10, height: 10))
+        XCTAssertNil(result)
+    }
 }

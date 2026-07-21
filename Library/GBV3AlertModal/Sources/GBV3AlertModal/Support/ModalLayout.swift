@@ -65,4 +65,18 @@ enum ModalLayout {
                 trailingMax: -(padding?.rightMax ?? .zero)
         )
     }
+
+    /// Height-to-width multiplier for a banner rendered at its image's NATURAL aspect ratio
+    /// (used by `GBAlertModal+ViewGraph.swift`'s `installConstraints` when `bannerRatio` is
+    /// `nil` — the back-compat `bannerRatio`-provided path is untouched and does not call this).
+    /// `height = width * multiplier`, so a 16:9 (wide) image returns `9/16 == 0.5625` and a
+    /// 9:16 (tall) image returns `16/9 == 1.777...`. Nil/zero-guarded: any non-positive width or
+    /// height (including `UIImage()`'s degenerate `.zero` size) returns `nil` so the caller can
+    /// fall back rather than divide by zero / propagate a nonsensical multiplier.
+    static func bannerHeightMultiplier(imageSize: CGSize) -> CGFloat? {
+        guard imageSize.width > 0, imageSize.height > 0 else {
+            return nil
+        }
+        return imageSize.height / imageSize.width
+    }
 }

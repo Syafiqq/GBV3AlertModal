@@ -32,6 +32,40 @@ enum GeniePresets {
         )
     }
 
+    /// Same shape as `standardProperties()` but with `bannerRatio: nil` — exercises the
+    /// natural-image-aspect banner path (`GBAlertModal+ViewGraph.swift`'s `installConstraints`).
+    /// Built directly (not via `.copy()`): `Properties.copy()` falls back to the original value
+    /// when `nil` is passed, so it cannot be used to *unset* `bannerRatio` from `standardProperties()`'s `1`.
+    ///
+    /// `bannerMaxHeight` defaults to `nil` (pure natural aspect, unbounded) but callers under a
+    /// tight landscape card height (this fixture's landscape budget is ~182pt of content height)
+    /// should pass a cap — see `BannerAspectStressTests`, which found a tall (9:16) or even
+    /// square banner left uncapped fights the title/subtitle for space under strict Auto Layout
+    /// priority tiers and squeezes them to near-zero height; capping the banner keeps the rest
+    /// of the content at its full natural size and lets `scaleAspectFit` letterbox the banner.
+    static func standardPropertiesNilBannerRatio(bannerMaxHeight: CGFloat? = nil) -> GBAlertModal.Properties {
+        GBAlertModal.Properties(
+            baseTint: .systemBlue,
+            overlayColor: UIColor.black.withAlphaComponent(0.6),
+            contentProperty: contentProperty,
+            margin: margin,
+            padding: padding,
+            bannerRatio: nil,
+            bannerMaxHeight: bannerMaxHeight,
+            bannerFixedHeight: nil,
+            titleFont: .boldSystemFont(ofSize: 24),
+            titleColor: .label,
+            subtitleFont: .systemFont(ofSize: 16),
+            subtitleColor: .secondaryLabel,
+            buttonActionShouldMatchParent: true,
+            buttonActionOrientation: .vertical,
+            primaryActionStyle: .obliqueBottomLeft(obliqueBottomLeftTheme),
+            secondaryActionStyle: .plain(plainTheme),
+            closeButtonTint: .black,
+            space: space
+        )
+    }
+
     static func popupProperties() -> GBAlertModal.Properties {
         standardProperties().copy(
             padding: UIMinMaxEdgeInsets(
@@ -133,6 +167,12 @@ enum GeniePresets {
         // height and squeezes title/subtitle out — a pre-existing constraint quirk unrelated
         // to Task 8, sidestepped here by supplying an image that already satisfies the ratio.
         base().copy(banner: .gbv3TestSolid(width: 64, height: 64))
+    }
+
+    /// A banner holder with an arbitrary (possibly non-square) image, for exercising the
+    /// natural-aspect banner path (`bannerRatio: nil`, see `standardPropertiesNilBannerRatio()`).
+    static func withBanner(width: CGFloat, height: CGFloat) -> GBAlertModal.DataHolder {
+        base().copy(banner: .gbv3TestSolid(width: width, height: height))
     }
 
     static func withCloseButton() -> GBAlertModal.DataHolder {
