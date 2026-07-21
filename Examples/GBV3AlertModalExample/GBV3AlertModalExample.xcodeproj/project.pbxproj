@@ -3,16 +3,11 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 60;
+	objectVersion = 77;
 	objects = {
 
 /* Begin PBXBuildFile section */
 		5907CCAA2F258613006DF5A5 /* GBV3AlertModal in Frameworks */ = {isa = PBXBuildFile; productRef = 5907CCA92F258613006DF5A5 /* GBV3AlertModal */; };
-		5962A4B32935DFA100183658 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5962A4B22935DFA100183658 /* AppDelegate.swift */; };
-		5962A4B72935DFA100183658 /* ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5962A4B62935DFA100183658 /* ViewController.swift */; };
-		5962A4BA2935DFA100183658 /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 5962A4B82935DFA100183658 /* Main.storyboard */; };
-		5962A4BC2935DFA200183658 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 5962A4BB2935DFA200183658 /* Assets.xcassets */; };
-		5962A4BF2935DFA200183658 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 5962A4BD2935DFA200183658 /* LaunchScreen.storyboard */; };
 		5962A4CA2935DFA200183658 /* GBV3AlertModalExampleTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5962A4C92935DFA200183658 /* GBV3AlertModalExampleTests.swift */; };
 		5962A4D42935DFA200183658 /* GBV3AlertModalExampleUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5962A4D32935DFA200183658 /* GBV3AlertModalExampleUITests.swift */; };
 		5962A4D62935DFA200183658 /* GBV3AlertModalExampleUITestsLaunchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5962A4D52935DFA200183658 /* GBV3AlertModalExampleUITestsLaunchTests.swift */; };
@@ -37,18 +32,33 @@
 
 /* Begin PBXFileReference section */
 		5962A4AF2935DFA100183658 /* GBV3AlertModalExample.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = GBV3AlertModalExample.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		5962A4B22935DFA100183658 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
-		5962A4B62935DFA100183658 /* ViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewController.swift; sourceTree = "<group>"; };
-		5962A4B92935DFA100183658 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/Main.storyboard; sourceTree = "<group>"; };
-		5962A4BB2935DFA200183658 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
-		5962A4BE2935DFA200183658 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
-		5962A4C02935DFA200183658 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		5962A4C52935DFA200183658 /* GBV3AlertModalExampleTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = GBV3AlertModalExampleTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		5962A4C92935DFA200183658 /* GBV3AlertModalExampleTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GBV3AlertModalExampleTests.swift; sourceTree = "<group>"; };
 		5962A4CF2935DFA200183658 /* GBV3AlertModalExampleUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = GBV3AlertModalExampleUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		5962A4D32935DFA200183658 /* GBV3AlertModalExampleUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GBV3AlertModalExampleUITests.swift; sourceTree = "<group>"; };
 		5962A4D52935DFA200183658 /* GBV3AlertModalExampleUITestsLaunchTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GBV3AlertModalExampleUITestsLaunchTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		2C900388D44C7837D3ED1A6E /* Exceptions for "GBV3AlertModalExample" folder in "GBV3AlertModalExample" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 5962A4AE2935DFA100183658 /* GBV3AlertModalExample */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
+/* Begin PBXFileSystemSynchronizedRootGroup section */
+		AC2006C6BA6E8D27A8C6647C /* GBV3AlertModalExample */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				2C900388D44C7837D3ED1A6E /* Exceptions for "GBV3AlertModalExample" folder in "GBV3AlertModalExample" target */,
+			);
+			path = GBV3AlertModalExample;
+			sourceTree = "<group>";
+		};
+/* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
 		5962A4AC2935DFA100183658 /* Frameworks */ = {
@@ -79,7 +89,7 @@
 		5962A4A62935DFA100183658 = {
 			isa = PBXGroup;
 			children = (
-				5962A4B12935DFA100183658 /* GBV3AlertModalExample */,
+				AC2006C6BA6E8D27A8C6647C /* GBV3AlertModalExample */,
 				5962A4C82935DFA200183658 /* GBV3AlertModalExampleTests */,
 				5962A4D22935DFA200183658 /* GBV3AlertModalExampleUITests */,
 				5962A4B02935DFA100183658 /* Products */,
@@ -94,19 +104,6 @@
 				5962A4CF2935DFA200183658 /* GBV3AlertModalExampleUITests.xctest */,
 			);
 			name = Products;
-			sourceTree = "<group>";
-		};
-		5962A4B12935DFA100183658 /* GBV3AlertModalExample */ = {
-			isa = PBXGroup;
-			children = (
-				5962A4B22935DFA100183658 /* AppDelegate.swift */,
-				5962A4B62935DFA100183658 /* ViewController.swift */,
-				5962A4B82935DFA100183658 /* Main.storyboard */,
-				5962A4BB2935DFA200183658 /* Assets.xcassets */,
-				5962A4BD2935DFA200183658 /* LaunchScreen.storyboard */,
-				5962A4C02935DFA200183658 /* Info.plist */,
-			);
-			path = GBV3AlertModalExample;
 			sourceTree = "<group>";
 		};
 		5962A4C82935DFA200183658 /* GBV3AlertModalExampleTests */ = {
@@ -140,6 +137,9 @@
 			buildRules = (
 			);
 			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				AC2006C6BA6E8D27A8C6647C /* GBV3AlertModalExample */,
 			);
 			name = GBV3AlertModalExample;
 			productName = GBV3AlertModalExample;
@@ -190,7 +190,7 @@
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
 				LastSwiftUpdateCheck = 1410;
-				LastUpgradeCheck = 1510;
+				LastUpgradeCheck = 2600;
 				TargetAttributes = {
 					5962A4AE2935DFA100183658 = {
 						CreatedOnToolsVersion = 14.1;
@@ -206,7 +206,7 @@
 				};
 			};
 			buildConfigurationList = 5962A4AA2935DFA100183658 /* Build configuration list for PBXProject "GBV3AlertModalExample" */;
-			compatibilityVersion = "Xcode 14.0";
+			compatibilityVersion = "Xcode 16.0";
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
@@ -215,7 +215,7 @@
 			);
 			mainGroup = 5962A4A62935DFA100183658;
 			packageReferences = (
-				5907CCA82F258613006DF5A5 /* XCRemoteSwiftPackageReference "GBV3AlertModal" */,
+				C26FFF611997680E529907C4 /* XCLocalSwiftPackageReference ".." */,
 			);
 			productRefGroup = 5962A4B02935DFA100183658 /* Products */;
 			projectDirPath = "";
@@ -233,9 +233,6 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				5962A4BF2935DFA200183658 /* LaunchScreen.storyboard in Resources */,
-				5962A4BC2935DFA200183658 /* Assets.xcassets in Resources */,
-				5962A4BA2935DFA100183658 /* Main.storyboard in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -260,8 +257,6 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				5962A4B72935DFA100183658 /* ViewController.swift in Sources */,
-				5962A4B32935DFA100183658 /* AppDelegate.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -296,25 +291,6 @@
 			targetProxy = 5962A4D02935DFA200183658 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
-
-/* Begin PBXVariantGroup section */
-		5962A4B82935DFA100183658 /* Main.storyboard */ = {
-			isa = PBXVariantGroup;
-			children = (
-				5962A4B92935DFA100183658 /* Base */,
-			);
-			name = Main.storyboard;
-			sourceTree = "<group>";
-		};
-		5962A4BD2935DFA200183658 /* LaunchScreen.storyboard */ = {
-			isa = PBXVariantGroup;
-			children = (
-				5962A4BE2935DFA200183658 /* Base */,
-			);
-			name = LaunchScreen.storyboard;
-			sourceTree = "<group>";
-		};
-/* End PBXVariantGroup section */
 
 /* Begin XCBuildConfiguration section */
 		5962A4D72935DFA200183658 /* Debug */ = {
@@ -624,21 +600,17 @@
 		};
 /* End XCConfigurationList section */
 
-/* Begin XCRemoteSwiftPackageReference section */
-		5907CCA82F258613006DF5A5 /* XCRemoteSwiftPackageReference "GBV3AlertModal" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "git@github.com:Syafiqq/GBV3AlertModal.git";
-			requirement = {
-				branch = main;
-				kind = branch;
-			};
+/* Begin XCLocalSwiftPackageReference section */
+		C26FFF611997680E529907C4 /* XCLocalSwiftPackageReference ".." */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = ../..;
 		};
-/* End XCRemoteSwiftPackageReference section */
+/* End XCLocalSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
 		5907CCA92F258613006DF5A5 /* GBV3AlertModal */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = 5907CCA82F258613006DF5A5 /* XCRemoteSwiftPackageReference "GBV3AlertModal" */;
+			package = C26FFF611997680E529907C4 /* XCLocalSwiftPackageReference ".." */;
 			productName = GBV3AlertModal;
 		};
 /* End XCSwiftPackageProductDependency section */
