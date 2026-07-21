@@ -106,11 +106,6 @@ enum GeniePresets {
 
     // MARK: - Holders
 
-    /// Strong references to any custom subtitle views handed out via `subtitleCustomView`
-    /// (a `weak var` on `DataHolder`), so they outlive the builder call for the duration of
-    /// the test process.
-    private static var retainedViews: [UIView] = []
-
     private static func base() -> GBAlertModal.DataHolder {
         GBAlertModal.DataHolder(
             closeOnTapOverlay: true,
@@ -158,7 +153,6 @@ enum GeniePresets {
             textView.bottomAnchor.constraint(equalTo: container.bottomAnchor),
             textView.heightAnchor.constraint(equalToConstant: 44)
         ])
-        retainedViews.append(container)
 
         // Built directly (not via `.copy()`): `DataHolder.copy()` falls back to the
         // original value when `nil` is passed, so it cannot be used to *unset*
@@ -195,7 +189,6 @@ enum GeniePresets {
             datePicker.trailingAnchor.constraint(equalTo: container.trailingAnchor),
             datePicker.bottomAnchor.constraint(equalTo: container.bottomAnchor)
         ])
-        retainedViews.append(container)
 
         return GBAlertModal.DataHolder(
             closeOnTapOverlay: true,
