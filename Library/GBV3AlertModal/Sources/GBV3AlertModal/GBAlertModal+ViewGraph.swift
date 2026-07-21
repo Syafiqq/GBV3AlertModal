@@ -304,10 +304,24 @@ internal extension GBAlertModal {
         if let vwBanner {
             vwBanner.snp.makeConstraints { (make: ConstraintMaker) in
                 // Pin
-                // Natural-aspect height driver (bannerRatio == nil): lower priority than
-                // bannerMaxHeight's cap (751) so the cap wins and scaleAspectFit letterboxes
-                // the image inside the capped box, but present so vwBanner (which otherwise has
-                // no other height source) resolves to the image's own aspect by default.
+                // Natural-aspect height driver (bannerRatio == nil), priority 700. This sizes the
+                // banner slot to the image's own aspect (height == width * imageH/imageW). It must
+                // sit ABOVE the content-container's vertical content-hugging (`.defaultLow`, 250):
+                // that hugging wants the stack as SHORT as possible, so a driver below 250 loses to
+                // it and the banner COLLAPSES to a sliver even when there is ample room (verified —
+                // dropping this below 250 letterboxes the image into a tiny centered strip). 700 is
+                // comfortably above 250 so the banner expands to natural aspect whenever it fits.
+                //
+                // Yet the banner is decorative and must YIELD to essential content when space is
+                // tight: a very tall image (e.g. 200x2000 → multiplier 10) otherwise asks for
+                // thousands of points and, inside the margin-bounded card, starves the title and
+                // subtitle to zero height. Two things make it yield without lowering this driver
+                // (which would trip the collapse above): the title label's default vertical
+                // compression resistance (750) already out-ranks this 700 driver, and the subtitle
+                // scroll's `frameLayoutGuide`-height tie is raised to 749 *only when this
+                // natural-aspect path is active* (see the Subtitle block) so it too out-ranks 700.
+                // The image view's own intrinsic vertical resistance is separately dropped to 249
+                // (see the ivBanner block) so the raw pixel height can't fight the content either.
                 if let bannerHeightMultiplier {
                     make.height
                             .equalTo(vwBanner.snp.width)
@@ -357,6 +371,15 @@ internal extension GBAlertModal {
                             .equalToSuperview()
                     make.bottom
                             .equalToSuperview()
+
+                    // The image view's INTRINSIC pixel height (e.g. 2000pt for a 200x2000 banner)
+                    // otherwise fights the content: at UIImageView's default vertical compression
+                    // resistance (750) it ties the title (750) and out-ranks the subtitle, so a
+                    // very tall image starves both to zero height inside the margin-bounded card.
+                    // The banner slot is sized by vwBanner's width-multiplier equality (above) and
+                    // scaleAspectFit letterboxes the image, so the image view itself must impose no
+                    // vertical size — drop its resistance below every content priority.
+                    ivBanner.setContentCompressionResistancePriority(UILayoutPriority(249), for: .vertical)
                 } else {
                     // bannerRatio == nil and no usable image size (should not happen given
                     // `showsBanner` already gates on a non-zero-size image) — fall back to the
@@ -390,9 +413,26 @@ internal extension GBAlertModal {
                         .equalTo(svSubtitleContainer.contentLayoutGuide)
                 make.width
                         .equalTo(svSubtitleContainer.frameLayoutGuide)
+                // Tie the scroll's VISIBLE (frame) height to its content height so the subtitle
+                // keeps its intrinsic height rather than collapsing to a zero-height scroll slot,
+                // while still yielding (shrink-and-scroll) to `.required` so a subtitle taller than
+                // the card can't force the card past its margins.
+                //
+                // Priority is conditional on the banner path:
+                //  • `.low` (250) by default — the baseline. Under a tight (e.g. landscape) card
+                //    the subtitle is then the weakest content and shrink-and-scrolls to fit, which
+                //    is the recorded behavior of every non-natural-aspect dialog. Raising it
+                //    globally would stop that compression and diff those landscape snapshots.
+                //  • 749 when the natural-aspect banner path is active (`bannerHeightMultiplier`
+                //    non-nil, i.e. bannerRatio == nil with a valid image). There the decorative
+                //    banner's height driver sits at 700 (see the Banner block); the subtitle must
+                //    out-rank it so a very tall banner yields to the subtitle instead of starving
+                //    it to zero height. Still below `.required` (1000) so an over-tall subtitle
+                //    keeps shrinking-and-scrolling. Scoping the bump to this path leaves every
+                //    ratio-banner / bannerless dialog at `.low`, so their snapshots don't move.
                 make.height
                         .equalTo(svSubtitleContainer.frameLayoutGuide)
-                        .priority(.low)
+                        .priority(bannerHeightMultiplier != nil ? UILayoutPriority(749) : UILayoutPriority.defaultLow)
             }
         }
 

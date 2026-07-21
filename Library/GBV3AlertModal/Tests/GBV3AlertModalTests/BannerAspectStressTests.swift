@@ -96,6 +96,28 @@ final class BannerAspectStressTests: XCTestCase {
         XCTAssertEqual(vwBanner.bounds.height / vwBanner.bounds.width, 160.0 / 90.0, accuracy: 0.01)
     }
 
+    // MARK: - Tall uncapped banner must yield to title/subtitle (regression)
+
+    /// A very tall banner (200x2000 → natural multiplier 10) with NO `bannerMaxHeight` set.
+    /// The banner's natural-aspect height driver wants ~2200pt, far more than the portrait
+    /// card can offer. Content is essential and must keep its intrinsic height; the banner is
+    /// decorative and must COMPRESS (scaleAspectFit letterboxes it). Before the fix, the banner
+    /// won the vertical-space competition and the title + subtitle collapsed to ~0 height.
+    func test_tallBanner_uncapped_titleAndSubtitleSurvive() {
+        let modal = GBAlertModal(properties: GeniePresets.standardPropertiesNilBannerRatio(),
+                                  holder: GeniePresets.withBanner(width: 200, height: 2000))
+        _ = renderForSnapshot(modal, size: portrait)
+
+        let titleH = modal.lbTitle?.frame.height ?? -1
+        let subtitleContainerH = modal.svSubtitleContainer?.frame.height ?? -1
+
+        // Content wins: title + subtitle keep their intrinsic height; the banner (decorative)
+        // compresses into the leftover space (scaleAspectFit letterboxes the tall image).
+        XCTAssertGreaterThan(titleH, 0, "title must keep its intrinsic height, not collapse")
+        XCTAssertGreaterThan(subtitleContainerH, 0, "subtitle must stay visible, not collapse")
+        assertContentNotSqueezed(modal)
+    }
+
     // MARK: - Behavioral assert helper
 
     /// Proof of "no squeeze-off": after render, the title, subtitle, and primary-action button
