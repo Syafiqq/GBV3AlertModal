@@ -33,6 +33,9 @@ extension GBAlertModal {
     func initData() {
     }
 
+    // Widened from `private` to `internal`: called from `registerDialogView` in
+    // GBAlertModal+ViewGraph.swift, `resolvedContentWidths` in GBAlertModal+Layout.swift,
+    // and `adjustDialogViewStyle` in GBAlertModal+Style.swift (different files, same module).
     /// The current render decisions, computed by the pure `resolve(...)` mirror from the
     /// live view state. Orientation is read here from the modal's *own* bounds (`self` is
     /// pinned to its parent's edges, so `bounds` reflects the actual host/screen size) rather
@@ -41,9 +44,6 @@ extension GBAlertModal {
     /// `bounds == .zero`, so this defaults to portrait; `makeResolvedModal()` is re-invoked on
     /// every `layoutSubviews` (via `adjustSvContentContainerConstraintWidth`), so the final
     /// resolved state after layout is correct.
-    // Widened from `private` to `internal`: called from `registerDialogView` and
-    // `resolvedContentWidths` in GBAlertModal.swift, and from `adjustDialogViewStyle` in
-    // GBAlertModal+Style.swift (different files, same module).
     func makeResolvedModal() -> ResolvedModal {
         Self.resolve(
                 properties: properties,

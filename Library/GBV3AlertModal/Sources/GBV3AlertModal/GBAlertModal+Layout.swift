@@ -46,12 +46,12 @@ extension GBAlertModal {
         }
     }
 
-    // swiftlint:disable:next function_body_length
     // Moved verbatim from GBAlertModal.swift (Task 6). Implicitly `internal`: called from
     // `initDesign` in GBAlertModal+ViewFactory.swift (different file, same module), plus
     // `adjustBaseDialogConstraint` above. The eight inset offsets are now resolved by
     // `ModalLayout.resolveContentPadding(padding:)` (pure, unit-tested); the SnapKit application
     // stays here.
+    // swiftlint:disable:next function_body_length
     func adjustSvContentContainerConstraint(_ svContentContainer: UIView) {
         let padding = ModalLayout.resolveContentPadding(padding: properties?.padding)
         svContentContainer.snp.remakeConstraints { (make: ConstraintMaker) in
