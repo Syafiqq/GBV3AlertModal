@@ -22,10 +22,11 @@ final class GalleryViewController: UITableViewController {
 
     private static let cellReuseIdentifier = "DialogEntryCell"
 
-    /// The full traversal order: the 26 Geniebook shapes followed by the
-    /// sampled stress matrix, combined into one list so `step(by:)` wraps
-    /// across both groups uniformly.
-    private static let allEntries: [DialogEntry] = DialogCatalog.entries + StressCatalog.entries
+    /// The full traversal order: the 26 Geniebook shapes, followed by the
+    /// sampled stress matrix, followed by the title/subtitle/button-style/
+    /// button-state variants — combined into one list so `step(by:)` wraps
+    /// across all three groups uniformly.
+    private static let allEntries: [DialogEntry] = DialogCatalog.entries + StressCatalog.entries + VariantsCatalog.entries
 
     private let sections: [Section]
 

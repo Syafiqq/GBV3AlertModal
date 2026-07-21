@@ -64,6 +64,21 @@ enum GalleryPresets {
         titleFont: GallerySHSans.heavy.font(16)
     )
 
+    /// Mirrors `Presentation.UiKit.V3AlertModal.capsuleOutlineTheme`. Confirmed against
+    /// `geniebook-student-ios-distribution/Common/Common/Custom/Components/AlertModal/V3AlertModal+GBV3AlertModal.swift`:
+    /// clear background (both states), `labelSubtitle` border/title, `borderLight` disabled
+    /// border/title, `borderWidth` 2, heavy 16pt title font.
+    static let capsuleOutlinedTheme = GBAlertModal.ActionStyle.CapsuleOutlineTheme(
+        backgroundColor: .clear,
+        backgroundDisableColor: .clear,
+        titleColor: GalleryColor.labelSubtitle,
+        titleDisableColor: GalleryColor.borderLight,
+        borderWidth: 2,
+        borderColor: GalleryColor.labelSubtitle.cgColor,
+        borderDisableColor: GalleryColor.borderLight.cgColor,
+        titleFont: GallerySHSans.heavy.font(16)
+    )
+
     /// Mirrors `Presentation.UiKit.V3AlertModal.plainTheme`.
     static let plainTheme = GBAlertModal.ActionStyle.PlainTheme(
         titleColor: GalleryColor.accentSecondaryDark,
