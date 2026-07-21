@@ -28,7 +28,27 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
             didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
             // swiftlint:disable:previous discouraged_optional_collection
     ) -> Bool {
-        true
+        let window = UIWindow(frame: UIScreen.main.bounds)
+        let gallery = GalleryViewController()
+        window.rootViewController = UINavigationController(rootViewController: gallery)
+        window.makeKeyAndVisible()
+        self.window = window
+
+        let floatingControl = FloatingTraversalControl()
+        window.addSubview(floatingControl)
+        NSLayoutConstraint.activate([
+            floatingControl.centerXAnchor.constraint(equalTo: window.centerXAnchor),
+            floatingControl.bottomAnchor.constraint(equalTo: window.safeAreaLayoutGuide.bottomAnchor, constant: -12),
+            floatingControl.leadingAnchor.constraint(greaterThanOrEqualTo: window.leadingAnchor, constant: 16),
+            floatingControl.trailingAnchor.constraint(lessThanOrEqualTo: window.trailingAnchor, constant: -16)
+        ])
+
+        gallery.floatingControl = floatingControl
+        floatingControl.onPrev = { [weak gallery] in gallery?.step(by: -1) }
+        floatingControl.onNext = { [weak gallery] in gallery?.step(by: 1) }
+        gallery.syncFloatingControl()
+
+        return true
     }
 
     func applicationDidBecomeActive(_ application: UIApplication) {
