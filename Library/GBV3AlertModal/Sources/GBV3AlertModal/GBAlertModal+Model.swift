@@ -34,8 +34,13 @@ extension GBAlertModal {
     }
 
     /// The current render decisions, computed by the pure `resolve(...)` mirror from the
-    /// live view state. Orientation is read here (via `UIWindow.isLandscape`) and passed in
-    /// so the resolver itself stays deterministic.
+    /// live view state. Orientation is read here from the modal's *own* bounds (`self` is
+    /// pinned to its parent's edges, so `bounds` reflects the actual host/screen size) rather
+    /// than the window scene's real orientation — this makes the landscape width branch
+    /// follow the actual layout size and keeps it deterministic/testable. Before first layout
+    /// `bounds == .zero`, so this defaults to portrait; `makeResolvedModal()` is re-invoked on
+    /// every `layoutSubviews` (via `adjustSvContentContainerConstraintWidth`), so the final
+    /// resolved state after layout is correct.
     // Widened from `private` to `internal`: called from `registerDialogView` and
     // `resolvedContentWidths` in GBAlertModal.swift, and from `adjustDialogViewStyle` in
     // GBAlertModal+Style.swift (different files, same module).
@@ -43,7 +48,7 @@ extension GBAlertModal {
         Self.resolve(
                 properties: properties,
                 holder: dataHolder ?? .default,
-                isLandscape: UIWindow.isLandscape
+                isLandscape: bounds.width > bounds.height
         )
     }
 

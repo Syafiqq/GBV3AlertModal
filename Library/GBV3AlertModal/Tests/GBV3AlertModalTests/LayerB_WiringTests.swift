@@ -108,6 +108,40 @@ final class LayerB_WiringTests: XCTestCase {
         XCTAssertEqual(c?.constant, 222)
     }
 
+    /// Proves `isLandscape` is derived from the render host's own bounds
+    /// (`bounds.width > bounds.height`), not `UIWindow.isLandscape` (the real scene
+    /// orientation, which stays portrait in the simulator regardless of the host size passed
+    /// to `renderForSnapshot`). Uses a preset with *unequal* fixed portrait/landscape widths
+    /// (all shipped Genie presets use equal widths, so this fixture is test-local) so the
+    /// branch is observable in the resolved width constraint constant.
+    func test_contentFixedWidth_followsHostGeometry_notWindowScene() {
+        let cp = GBAlertModal.Properties.ContentProperty(fixedWidthPortrait: 200, fixedWidthLandscape: 320)
+        let props = GeniePresets.standardProperties().copy(contentProperty: cp)
+
+        let landscapeHost = CGSize(width: 844, height: 390)
+        let landscapeModal = GBAlertModal(properties: props, holder: GeniePresets.oneButton())
+        _ = renderForSnapshot(landscapeModal, size: landscapeHost)
+        guard let landscapeSv = landscapeModal.svContentContainer else {
+            XCTFail("expected svContentContainer")
+            return
+        }
+        let landscapeConstraint = landscapeSv.constraints.first {
+            $0.firstItem === landscapeSv && $0.firstAttribute == .width && $0.secondItem == nil
+        }
+        XCTAssertEqual(landscapeConstraint?.constant, 320)
+
+        let portraitModal = GBAlertModal(properties: props, holder: GeniePresets.oneButton())
+        _ = renderForSnapshot(portraitModal, size: portrait)
+        guard let portraitSv = portraitModal.svContentContainer else {
+            XCTFail("expected svContentContainer")
+            return
+        }
+        let portraitConstraint = portraitSv.constraints.first {
+            $0.firstItem === portraitSv && $0.firstAttribute == .width && $0.secondItem == nil
+        }
+        XCTAssertEqual(portraitConstraint?.constant, 200)
+    }
+
     // MARK: - Properties: margin, padding (constraint-constant introspection — no snapshot)
 
     func test_marginAppliedToContainerConstraints() {

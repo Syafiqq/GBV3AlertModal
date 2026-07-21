@@ -4,10 +4,10 @@ import UIKit
 /// Renders `modal` into a fixed-size host and forces a full layout pass so it can be
 /// captured deterministically with `assertSnapshot`.
 ///
-/// `GBAlertModal` reads `UIWindow.isLandscape` (via `UIApplication.shared.windows.first?.windowScene`)
-/// while computing its content width, so the modal is hosted inside a real, key `UIWindow`
-/// attached to the active `UIWindowScene` rather than a detached plain `UIView`. This keeps
-/// `layoutSubviews()` / `adjustSvContentContainerConstraintWidth` deterministic across runs.
+/// `GBAlertModal` derives `isLandscape` from its own `bounds` (`bounds.width > bounds.height`)
+/// while computing its content width, so hosting inside a real, key `UIWindow` sized to
+/// `size` is what drives that branch deterministically — the modal is pinned to its parent's
+/// edges, so its bounds after layout match the host size passed in here.
 @discardableResult
 func renderForSnapshot(_ modal: GBAlertModal, size: CGSize) -> UIView {
     let window: UIWindow
