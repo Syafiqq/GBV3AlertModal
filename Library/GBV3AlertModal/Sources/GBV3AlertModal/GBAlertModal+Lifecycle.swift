@@ -20,11 +20,6 @@ extension GBAlertModal {
     // MARK: Public Function
 
     public func show(parent: UIView, completion onShown: @escaping () -> Void) {
-        weak var parent = parent
-        guard let parent else {
-            return
-        }
-
         alpha = 1
         transform = .identity
 
@@ -51,13 +46,13 @@ extension GBAlertModal {
     }
 
     public func dismiss() {
-        if dataHolder?.dismissOnAction == true {
+        if makeResolvedModal().dismissOnAction == true {
             hide()
         }
     }
 
     public func dismissAndEmit(event: ActionType) {
-        if dataHolder?.dismissOnAction == true {
+        if makeResolvedModal().dismissOnAction == true {
             hide()
         }
         dataHolder?.completion?(self, event)

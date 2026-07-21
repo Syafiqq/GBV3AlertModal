@@ -43,8 +43,7 @@ extension GBAlertModal {
         Self.resolve(
                 properties: properties,
                 holder: dataHolder ?? .default,
-                isLandscape: UIWindow.isLandscape,
-                isPad: UIDevice.current.userInterfaceIdiom == .pad
+                isLandscape: UIWindow.isLandscape
         )
     }
 

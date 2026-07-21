@@ -12,12 +12,12 @@ final class LayerA_ResolverTests: XCTestCase {
 
     func test_resolve_bannerVisibleWhenImagePresent() {
         let holder = GBAlertModal.DataHolder(banner: UIImage())
-        let r = GBAlertModal.resolve(properties: nil, holder: holder, isLandscape: false, isPad: false)
+        let r = GBAlertModal.resolve(properties: nil, holder: holder, isLandscape: false)
         XCTAssertTrue(r.showsBanner)
     }
 
     func test_resolve_noBannerWhenNil() {
-        let r = GBAlertModal.resolve(properties: nil, holder: .default, isLandscape: false, isPad: false)
+        let r = GBAlertModal.resolve(properties: nil, holder: .default, isLandscape: false)
         XCTAssertFalse(r.showsBanner)
     }
 
@@ -25,36 +25,36 @@ final class LayerA_ResolverTests: XCTestCase {
 
     func test_resolve_titleVisibleWhenPlainNonEmpty() {
         let holder = GBAlertModal.DataHolder(title: "Hello")
-        let r = GBAlertModal.resolve(properties: nil, holder: holder, isLandscape: false, isPad: false)
+        let r = GBAlertModal.resolve(properties: nil, holder: holder, isLandscape: false)
         XCTAssertTrue(r.showsTitle)
     }
 
     func test_resolve_titleHiddenWhenPlainEmptyAndNoAttributed() {
         let holder = GBAlertModal.DataHolder(title: "")
-        let r = GBAlertModal.resolve(properties: nil, holder: holder, isLandscape: false, isPad: false)
+        let r = GBAlertModal.resolve(properties: nil, holder: holder, isLandscape: false)
         XCTAssertFalse(r.showsTitle)
     }
 
     func test_resolve_titleVisibleWhenAttributedNonEmpty() {
         let holder = GBAlertModal.DataHolder(titleAttributed: NSAttributedString(string: "Hi"))
-        let r = GBAlertModal.resolve(properties: nil, holder: holder, isLandscape: false, isPad: false)
+        let r = GBAlertModal.resolve(properties: nil, holder: holder, isLandscape: false)
         XCTAssertTrue(r.showsTitle)
     }
 
     func test_resolve_titleHiddenWhenAttributedEmpty() {
         let holder = GBAlertModal.DataHolder(titleAttributed: NSAttributedString(string: ""))
-        let r = GBAlertModal.resolve(properties: nil, holder: holder, isLandscape: false, isPad: false)
+        let r = GBAlertModal.resolve(properties: nil, holder: holder, isLandscape: false)
         XCTAssertFalse(r.showsTitle)
     }
 
     func test_resolve_titleHiddenWhenBothNil() {
-        let r = GBAlertModal.resolve(properties: nil, holder: .default, isLandscape: false, isPad: false)
+        let r = GBAlertModal.resolve(properties: nil, holder: .default, isLandscape: false)
         XCTAssertFalse(r.showsTitle)
     }
 
     func test_resolve_titleFallsBackToAttributedWhenPlainEmpty() {
         let holder = GBAlertModal.DataHolder(title: "", titleAttributed: NSAttributedString(string: "Hi"))
-        let r = GBAlertModal.resolve(properties: nil, holder: holder, isLandscape: false, isPad: false)
+        let r = GBAlertModal.resolve(properties: nil, holder: holder, isLandscape: false)
         XCTAssertTrue(r.showsTitle)
     }
 
@@ -62,25 +62,25 @@ final class LayerA_ResolverTests: XCTestCase {
 
     func test_resolve_subtitle_plainOnly() {
         let holder = GBAlertModal.DataHolder(subtitle: "Sub")
-        let r = GBAlertModal.resolve(properties: nil, holder: holder, isLandscape: false, isPad: false)
+        let r = GBAlertModal.resolve(properties: nil, holder: holder, isLandscape: false)
         XCTAssertEqual(r.subtitle, .plain("Sub"))
     }
 
     func test_resolve_subtitle_attributedOnly() {
         let holder = GBAlertModal.DataHolder(subtitleAttributed: NSAttributedString(string: "Sub"))
-        let r = GBAlertModal.resolve(properties: nil, holder: holder, isLandscape: false, isPad: false)
+        let r = GBAlertModal.resolve(properties: nil, holder: holder, isLandscape: false)
         XCTAssertEqual(r.subtitle, .attributed)
     }
 
     func test_resolve_subtitle_customOnly() {
         let view = UIView()
         let holder = GBAlertModal.DataHolder(subtitleCustomView: view)
-        let r = GBAlertModal.resolve(properties: nil, holder: holder, isLandscape: false, isPad: false)
+        let r = GBAlertModal.resolve(properties: nil, holder: holder, isLandscape: false)
         XCTAssertEqual(r.subtitle, .custom)
     }
 
     func test_resolve_subtitle_noneWhenNothingSet() {
-        let r = GBAlertModal.resolve(properties: nil, holder: .default, isLandscape: false, isPad: false)
+        let r = GBAlertModal.resolve(properties: nil, holder: .default, isLandscape: false)
         XCTAssertEqual(r.subtitle, .none)
     }
 
@@ -91,7 +91,7 @@ final class LayerA_ResolverTests: XCTestCase {
                 subtitleAttributed: NSAttributedString(string: "Attributed"),
                 subtitleCustomView: view
         )
-        let r = GBAlertModal.resolve(properties: nil, holder: holder, isLandscape: false, isPad: false)
+        let r = GBAlertModal.resolve(properties: nil, holder: holder, isLandscape: false)
         XCTAssertEqual(r.subtitle, .plain("Plain wins"))
     }
 
@@ -101,20 +101,20 @@ final class LayerA_ResolverTests: XCTestCase {
                 subtitleAttributed: NSAttributedString(string: "Attributed"),
                 subtitleCustomView: view
         )
-        let r = GBAlertModal.resolve(properties: nil, holder: holder, isLandscape: false, isPad: false)
+        let r = GBAlertModal.resolve(properties: nil, holder: holder, isLandscape: false)
         XCTAssertEqual(r.subtitle, .attributed)
     }
 
     func test_resolve_subtitle_emptyPlainFallsThroughToAttributed() {
         let holder = GBAlertModal.DataHolder(subtitle: "", subtitleAttributed: NSAttributedString(string: "Attributed"))
-        let r = GBAlertModal.resolve(properties: nil, holder: holder, isLandscape: false, isPad: false)
+        let r = GBAlertModal.resolve(properties: nil, holder: holder, isLandscape: false)
         XCTAssertEqual(r.subtitle, .attributed)
     }
 
     func test_resolve_subtitle_emptyPlainFallsThroughToCustom() {
         let view = UIView()
         let holder = GBAlertModal.DataHolder(subtitle: "", subtitleCustomView: view)
-        let r = GBAlertModal.resolve(properties: nil, holder: holder, isLandscape: false, isPad: false)
+        let r = GBAlertModal.resolve(properties: nil, holder: holder, isLandscape: false)
         XCTAssertEqual(r.subtitle, .custom)
     }
 
@@ -124,13 +124,13 @@ final class LayerA_ResolverTests: XCTestCase {
                 subtitleAttributed: NSAttributedString(string: ""),
                 subtitleCustomView: view
         )
-        let r = GBAlertModal.resolve(properties: nil, holder: holder, isLandscape: false, isPad: false)
+        let r = GBAlertModal.resolve(properties: nil, holder: holder, isLandscape: false)
         XCTAssertEqual(r.subtitle, .custom)
     }
 
     func test_resolve_subtitle_emptyPlainAndEmptyAttributedFallsThroughToNone() {
         let holder = GBAlertModal.DataHolder(subtitle: "", subtitleAttributed: NSAttributedString(string: ""))
-        let r = GBAlertModal.resolve(properties: nil, holder: holder, isLandscape: false, isPad: false)
+        let r = GBAlertModal.resolve(properties: nil, holder: holder, isLandscape: false)
         XCTAssertEqual(r.subtitle, .none)
     }
 
@@ -138,24 +138,24 @@ final class LayerA_ResolverTests: XCTestCase {
 
     func test_resolve_buttonAxis_horizontalWhenExplicit() {
         let properties = GBAlertModal.Properties(buttonActionOrientation: .horizontal)
-        let r = GBAlertModal.resolve(properties: properties, holder: .default, isLandscape: false, isPad: false)
+        let r = GBAlertModal.resolve(properties: properties, holder: .default, isLandscape: false)
         XCTAssertEqual(r.buttonAxis, .horizontal)
     }
 
     func test_resolve_buttonAxis_verticalWhenExplicit() {
         let properties = GBAlertModal.Properties(buttonActionOrientation: .vertical)
-        let r = GBAlertModal.resolve(properties: properties, holder: .default, isLandscape: false, isPad: false)
+        let r = GBAlertModal.resolve(properties: properties, holder: .default, isLandscape: false)
         XCTAssertEqual(r.buttonAxis, .vertical)
     }
 
     func test_resolve_buttonAxis_defaultsToVerticalWhenNil() {
         let properties = GBAlertModal.Properties(buttonActionOrientation: nil)
-        let r = GBAlertModal.resolve(properties: properties, holder: .default, isLandscape: false, isPad: false)
+        let r = GBAlertModal.resolve(properties: properties, holder: .default, isLandscape: false)
         XCTAssertEqual(r.buttonAxis, .vertical)
     }
 
     func test_resolve_buttonAxis_defaultsToVerticalWhenPropertiesNil() {
-        let r = GBAlertModal.resolve(properties: nil, holder: .default, isLandscape: false, isPad: false)
+        let r = GBAlertModal.resolve(properties: nil, holder: .default, isLandscape: false)
         XCTAssertEqual(r.buttonAxis, .vertical)
     }
 
@@ -163,19 +163,19 @@ final class LayerA_ResolverTests: XCTestCase {
 
     func test_resolve_buttonsMatchParent_trueWhenExplicitTrue() {
         let properties = GBAlertModal.Properties(buttonActionShouldMatchParent: true)
-        let r = GBAlertModal.resolve(properties: properties, holder: .default, isLandscape: false, isPad: false)
+        let r = GBAlertModal.resolve(properties: properties, holder: .default, isLandscape: false)
         XCTAssertTrue(r.buttonsMatchParent)
     }
 
     func test_resolve_buttonsMatchParent_falseWhenExplicitFalse() {
         let properties = GBAlertModal.Properties(buttonActionShouldMatchParent: false)
-        let r = GBAlertModal.resolve(properties: properties, holder: .default, isLandscape: false, isPad: false)
+        let r = GBAlertModal.resolve(properties: properties, holder: .default, isLandscape: false)
         XCTAssertFalse(r.buttonsMatchParent)
     }
 
     func test_resolve_buttonsMatchParent_falseWhenNil() {
         let properties = GBAlertModal.Properties(buttonActionShouldMatchParent: nil)
-        let r = GBAlertModal.resolve(properties: properties, holder: .default, isLandscape: false, isPad: false)
+        let r = GBAlertModal.resolve(properties: properties, holder: .default, isLandscape: false)
         XCTAssertFalse(r.buttonsMatchParent)
     }
 
@@ -184,48 +184,48 @@ final class LayerA_ResolverTests: XCTestCase {
     func test_resolve_primary_shownWhenStringAndStylePresent() {
         let properties = GBAlertModal.Properties(primaryActionStyle: .plain(.init()))
         let holder = GBAlertModal.DataHolder(primaryAction: "OK")
-        let r = GBAlertModal.resolve(properties: properties, holder: holder, isLandscape: false, isPad: false)
+        let r = GBAlertModal.resolve(properties: properties, holder: holder, isLandscape: false)
         XCTAssertTrue(r.showsPrimary)
     }
 
     func test_resolve_primary_hiddenWhenStyleMissing() {
         let holder = GBAlertModal.DataHolder(primaryAction: "OK")
-        let r = GBAlertModal.resolve(properties: nil, holder: holder, isLandscape: false, isPad: false)
+        let r = GBAlertModal.resolve(properties: nil, holder: holder, isLandscape: false)
         XCTAssertFalse(r.showsPrimary)
     }
 
     func test_resolve_primary_hiddenWhenStringMissing() {
         let properties = GBAlertModal.Properties(primaryActionStyle: .plain(.init()))
-        let r = GBAlertModal.resolve(properties: properties, holder: .default, isLandscape: false, isPad: false)
+        let r = GBAlertModal.resolve(properties: properties, holder: .default, isLandscape: false)
         XCTAssertFalse(r.showsPrimary)
     }
 
     func test_resolve_primary_hiddenWhenBothMissing() {
-        let r = GBAlertModal.resolve(properties: nil, holder: .default, isLandscape: false, isPad: false)
+        let r = GBAlertModal.resolve(properties: nil, holder: .default, isLandscape: false)
         XCTAssertFalse(r.showsPrimary)
     }
 
     func test_resolve_secondary_shownWhenStringAndStylePresent() {
         let properties = GBAlertModal.Properties(secondaryActionStyle: .plain(.init()))
         let holder = GBAlertModal.DataHolder(secondaryAction: "Cancel")
-        let r = GBAlertModal.resolve(properties: properties, holder: holder, isLandscape: false, isPad: false)
+        let r = GBAlertModal.resolve(properties: properties, holder: holder, isLandscape: false)
         XCTAssertTrue(r.showsSecondary)
     }
 
     func test_resolve_secondary_hiddenWhenStyleMissing() {
         let holder = GBAlertModal.DataHolder(secondaryAction: "Cancel")
-        let r = GBAlertModal.resolve(properties: nil, holder: holder, isLandscape: false, isPad: false)
+        let r = GBAlertModal.resolve(properties: nil, holder: holder, isLandscape: false)
         XCTAssertFalse(r.showsSecondary)
     }
 
     func test_resolve_secondary_hiddenWhenStringMissing() {
         let properties = GBAlertModal.Properties(secondaryActionStyle: .plain(.init()))
-        let r = GBAlertModal.resolve(properties: properties, holder: .default, isLandscape: false, isPad: false)
+        let r = GBAlertModal.resolve(properties: properties, holder: .default, isLandscape: false)
         XCTAssertFalse(r.showsSecondary)
     }
 
     func test_resolve_secondary_hiddenWhenBothMissing() {
-        let r = GBAlertModal.resolve(properties: nil, holder: .default, isLandscape: false, isPad: false)
+        let r = GBAlertModal.resolve(properties: nil, holder: .default, isLandscape: false)
         XCTAssertFalse(r.showsSecondary)
     }
 
@@ -233,50 +233,50 @@ final class LayerA_ResolverTests: XCTestCase {
 
     func test_resolve_showsCloseButton_trueWhenSet() {
         let holder = GBAlertModal.DataHolder(showCloseButton: true)
-        let r = GBAlertModal.resolve(properties: nil, holder: holder, isLandscape: false, isPad: false)
+        let r = GBAlertModal.resolve(properties: nil, holder: holder, isLandscape: false)
         XCTAssertTrue(r.showsCloseButton)
     }
 
     func test_resolve_showsCloseButton_falseWhenUnset() {
         let holder = GBAlertModal.DataHolder(showCloseButton: false)
-        let r = GBAlertModal.resolve(properties: nil, holder: holder, isLandscape: false, isPad: false)
+        let r = GBAlertModal.resolve(properties: nil, holder: holder, isLandscape: false)
         XCTAssertFalse(r.showsCloseButton)
     }
 
     func test_resolve_dismissOnAction_trueWhenSet() {
         let holder = GBAlertModal.DataHolder(dismissOnAction: true)
-        let r = GBAlertModal.resolve(properties: nil, holder: holder, isLandscape: false, isPad: false)
+        let r = GBAlertModal.resolve(properties: nil, holder: holder, isLandscape: false)
         XCTAssertTrue(r.dismissOnAction)
     }
 
     func test_resolve_dismissOnAction_falseWhenUnset() {
         let holder = GBAlertModal.DataHolder(dismissOnAction: false)
-        let r = GBAlertModal.resolve(properties: nil, holder: holder, isLandscape: false, isPad: false)
+        let r = GBAlertModal.resolve(properties: nil, holder: holder, isLandscape: false)
         XCTAssertFalse(r.dismissOnAction)
     }
 
     func test_resolve_closeOnTapOverlay_trueWhenSet() {
         let holder = GBAlertModal.DataHolder(closeOnTapOverlay: true)
-        let r = GBAlertModal.resolve(properties: nil, holder: holder, isLandscape: false, isPad: false)
+        let r = GBAlertModal.resolve(properties: nil, holder: holder, isLandscape: false)
         XCTAssertTrue(r.closeOnTapOverlay)
     }
 
     func test_resolve_closeOnTapOverlay_falseWhenUnset() {
         let holder = GBAlertModal.DataHolder(closeOnTapOverlay: false)
-        let r = GBAlertModal.resolve(properties: nil, holder: holder, isLandscape: false, isPad: false)
+        let r = GBAlertModal.resolve(properties: nil, holder: holder, isLandscape: false)
         XCTAssertFalse(r.closeOnTapOverlay)
     }
 
     // MARK: - contentWidth: flexible (no content property / no widths)
 
     func test_resolve_contentWidth_flexibleWhenPropertiesNil() {
-        let r = GBAlertModal.resolve(properties: nil, holder: .default, isLandscape: false, isPad: false)
+        let r = GBAlertModal.resolve(properties: nil, holder: .default, isLandscape: false)
         XCTAssertEqual(r.contentWidth, .flexible)
     }
 
     func test_resolve_contentWidth_flexibleWhenContentPropertyHasNoWidths() {
         let properties = GBAlertModal.Properties(contentProperty: .init())
-        let r = GBAlertModal.resolve(properties: properties, holder: .default, isLandscape: false, isPad: false)
+        let r = GBAlertModal.resolve(properties: properties, holder: .default, isLandscape: false)
         XCTAssertEqual(r.contentWidth, .flexible)
     }
 
@@ -288,7 +288,7 @@ final class LayerA_ResolverTests: XCTestCase {
                 fixedWidthLandscape: 300
         )
         let properties = GBAlertModal.Properties(contentProperty: contentProperty)
-        let r = GBAlertModal.resolve(properties: properties, holder: .default, isLandscape: false, isPad: false)
+        let r = GBAlertModal.resolve(properties: properties, holder: .default, isLandscape: false)
         XCTAssertEqual(r.contentWidth, .fixed(200))
     }
 
@@ -298,21 +298,21 @@ final class LayerA_ResolverTests: XCTestCase {
                 fixedWidthLandscape: 300
         )
         let properties = GBAlertModal.Properties(contentProperty: contentProperty)
-        let r = GBAlertModal.resolve(properties: properties, holder: .default, isLandscape: true, isPad: false)
+        let r = GBAlertModal.resolve(properties: properties, holder: .default, isLandscape: true)
         XCTAssertEqual(r.contentWidth, .fixed(300))
     }
 
     func test_resolve_contentWidth_fixedOnly_landscapeFallsBackToPortraitWhenLandscapeNil() {
         let contentProperty = GBAlertModal.Properties.ContentProperty(fixedWidthPortrait: 200)
         let properties = GBAlertModal.Properties(contentProperty: contentProperty)
-        let r = GBAlertModal.resolve(properties: properties, holder: .default, isLandscape: true, isPad: false)
+        let r = GBAlertModal.resolve(properties: properties, holder: .default, isLandscape: true)
         XCTAssertEqual(r.contentWidth, .fixed(200))
     }
 
     func test_resolve_contentWidth_fixedOnly_portraitFallsBackToLandscapeWhenPortraitNil() {
         let contentProperty = GBAlertModal.Properties.ContentProperty(fixedWidthLandscape: 300)
         let properties = GBAlertModal.Properties(contentProperty: contentProperty)
-        let r = GBAlertModal.resolve(properties: properties, holder: .default, isLandscape: false, isPad: false)
+        let r = GBAlertModal.resolve(properties: properties, holder: .default, isLandscape: false)
         XCTAssertEqual(r.contentWidth, .fixed(300))
     }
 
@@ -324,7 +324,7 @@ final class LayerA_ResolverTests: XCTestCase {
                 maxWidthLandscape: 250
         )
         let properties = GBAlertModal.Properties(contentProperty: contentProperty)
-        let r = GBAlertModal.resolve(properties: properties, holder: .default, isLandscape: false, isPad: false)
+        let r = GBAlertModal.resolve(properties: properties, holder: .default, isLandscape: false)
         XCTAssertEqual(r.contentWidth, .max(150))
     }
 
@@ -334,21 +334,21 @@ final class LayerA_ResolverTests: XCTestCase {
                 maxWidthLandscape: 250
         )
         let properties = GBAlertModal.Properties(contentProperty: contentProperty)
-        let r = GBAlertModal.resolve(properties: properties, holder: .default, isLandscape: true, isPad: false)
+        let r = GBAlertModal.resolve(properties: properties, holder: .default, isLandscape: true)
         XCTAssertEqual(r.contentWidth, .max(250))
     }
 
     func test_resolve_contentWidth_maxOnly_landscapeFallsBackToPortraitWhenLandscapeNil() {
         let contentProperty = GBAlertModal.Properties.ContentProperty(maxWidthPortrait: 150)
         let properties = GBAlertModal.Properties(contentProperty: contentProperty)
-        let r = GBAlertModal.resolve(properties: properties, holder: .default, isLandscape: true, isPad: false)
+        let r = GBAlertModal.resolve(properties: properties, holder: .default, isLandscape: true)
         XCTAssertEqual(r.contentWidth, .max(150))
     }
 
     func test_resolve_contentWidth_maxOnly_portraitFallsBackToLandscapeWhenPortraitNil() {
         let contentProperty = GBAlertModal.Properties.ContentProperty(maxWidthLandscape: 250)
         let properties = GBAlertModal.Properties(contentProperty: contentProperty)
-        let r = GBAlertModal.resolve(properties: properties, holder: .default, isLandscape: false, isPad: false)
+        let r = GBAlertModal.resolve(properties: properties, holder: .default, isLandscape: false)
         XCTAssertEqual(r.contentWidth, .max(250))
     }
 
@@ -362,7 +362,7 @@ final class LayerA_ResolverTests: XCTestCase {
                 maxWidthLandscape: 250
         )
         let properties = GBAlertModal.Properties(contentProperty: contentProperty)
-        let r = GBAlertModal.resolve(properties: properties, holder: .default, isLandscape: false, isPad: false)
+        let r = GBAlertModal.resolve(properties: properties, holder: .default, isLandscape: false)
         XCTAssertEqual(r.contentWidth, .fixedAndMax(fixed: 200, max: 150))
     }
 
@@ -374,7 +374,7 @@ final class LayerA_ResolverTests: XCTestCase {
                 maxWidthLandscape: 250
         )
         let properties = GBAlertModal.Properties(contentProperty: contentProperty)
-        let r = GBAlertModal.resolve(properties: properties, holder: .default, isLandscape: true, isPad: false)
+        let r = GBAlertModal.resolve(properties: properties, holder: .default, isLandscape: true)
         XCTAssertEqual(r.contentWidth, .fixedAndMax(fixed: 300, max: 250))
     }
 }

@@ -6,7 +6,7 @@ import UIKit
 extension GBAlertModal {
     @objc
     func onOverlayTapped(_ sender: UITapGestureRecognizer) {
-        guard dataHolder?.closeOnTapOverlay == true else {
+        guard makeResolvedModal().closeOnTapOverlay == true else {
             return
         }
 

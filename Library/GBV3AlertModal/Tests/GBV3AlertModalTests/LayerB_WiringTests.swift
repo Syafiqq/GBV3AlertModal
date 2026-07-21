@@ -388,6 +388,105 @@ final class LayerB_WiringTests: XCTestCase {
         XCTAssertTrue(host.subviews.contains(modal))
     }
 
+    // MARK: - ResolvedModal is the effective source of truth for dismissOnAction / closeOnTapOverlay (Task 7)
+
+    /// `dismiss()`, `dismissAndEmit(event:)`, and `onOverlayTapped(_:)` now branch on
+    /// `makeResolvedModal().dismissOnAction` / `.closeOnTapOverlay` instead of reading
+    /// `dataHolder?.dismissOnAction` / `dataHolder?.closeOnTapOverlay` directly.
+    ///
+    /// `resolve(...)` computes these two fields as a direct, untransformed pass-through of the
+    /// holder (`let dismissOnAction = holder.dismissOnAction`, see
+    /// `GBAlertModal+ResolvedModal.swift`) — by design there is no input for which the resolved
+    /// value and the raw holder value disagree, and `makeResolvedModal()` is declared in a
+    /// same-module class extension so it cannot be overridden from the test target to force an
+    /// artificial divergence either (Swift: "instance method ... is declared in extension of
+    /// 'GBAlertModal' and cannot be overridden"). So instead of proving non-equivalence, these
+    /// tests assert runtime behavior directly against the value the public `resolve(...)` entry
+    /// point computes for the exact same `(properties, holder)` pair — i.e. against
+    /// `ResolvedModal`, the documented single source of truth, rather than against the `holder`
+    /// field informally assumed to match it. If a future change makes `resolve(...)`'s
+    /// computation for these fields diverge from the raw holder value without updating the
+    /// call sites to match, these tests catch it; the pre-existing
+    /// `test_dismiss_removesWhenDismissOnActionTrue` / `test_closeOnTapOverlayTrue_...` tests
+    /// above continue to guard the holder-driven behavior itself.
+    func test_dismiss_matchesResolvedDismissOnAction_true() {
+        let properties = GeniePresets.standardProperties()
+        let holder = GeniePresets.oneButton().copy(dismissOnAction: true)
+        let resolved = GBAlertModal.resolve(properties: properties, holder: holder, isLandscape: false)
+        XCTAssertTrue(resolved.dismissOnAction)
+
+        let modal = GBAlertModal(properties: properties, holder: holder)
+        let host = UIView()
+        modal.show(parent: host, completion: {})
+        modal.dismiss()
+
+        let expectation = expectation(description: "dismiss matches resolved.dismissOnAction == true")
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { expectation.fulfill() }
+        wait(for: [expectation], timeout: 2.0)
+        XCTAssertFalse(host.subviews.contains(modal))
+    }
+
+    func test_dismiss_matchesResolvedDismissOnAction_false() {
+        let properties = GeniePresets.standardProperties()
+        let holder = GeniePresets.oneButton().copy(dismissOnAction: false)
+        let resolved = GBAlertModal.resolve(properties: properties, holder: holder, isLandscape: false)
+        XCTAssertFalse(resolved.dismissOnAction)
+
+        let modal = GBAlertModal(properties: properties, holder: holder)
+        let host = UIView()
+        modal.show(parent: host, completion: {})
+        modal.dismiss()
+
+        let expectation = expectation(description: "dismiss matches resolved.dismissOnAction == false")
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { expectation.fulfill() }
+        wait(for: [expectation], timeout: 2.0)
+        XCTAssertTrue(host.subviews.contains(modal))
+    }
+
+    func test_onOverlayTapped_matchesResolvedCloseOnTapOverlay_true() {
+        let properties = GeniePresets.standardProperties()
+        var emitted: GBAlertModal.ActionType?
+        let holder = GeniePresets.oneButton().copy(
+            closeOnTapOverlay: true,
+            dismissOnAction: true,
+            completion: { _, type in emitted = type }
+        )
+        let resolved = GBAlertModal.resolve(properties: properties, holder: holder, isLandscape: false)
+        XCTAssertTrue(resolved.closeOnTapOverlay)
+
+        let modal = GBAlertModal(properties: properties, holder: holder)
+        let host = renderForSnapshot(modal, size: portrait)
+
+        simulateOverlayTap(modal)
+
+        assertAction(emitted, is: .close)
+
+        let expectation = expectation(description: "overlay tap matches resolved.closeOnTapOverlay == true")
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { expectation.fulfill() }
+        wait(for: [expectation], timeout: 2.0)
+        XCTAssertFalse(host.subviews.contains(modal))
+    }
+
+    func test_onOverlayTapped_matchesResolvedCloseOnTapOverlay_false() {
+        let properties = GeniePresets.standardProperties()
+        var emitted: GBAlertModal.ActionType?
+        let holder = GeniePresets.oneButton().copy(
+            closeOnTapOverlay: false,
+            dismissOnAction: true,
+            completion: { _, type in emitted = type }
+        )
+        let resolved = GBAlertModal.resolve(properties: properties, holder: holder, isLandscape: false)
+        XCTAssertFalse(resolved.closeOnTapOverlay)
+
+        let modal = GBAlertModal(properties: properties, holder: holder)
+        let host = renderForSnapshot(modal, size: portrait)
+
+        simulateOverlayTap(modal)
+
+        XCTAssertNil(emitted)
+        XCTAssertTrue(host.subviews.contains(modal))
+    }
+
     // MARK: - Static defaults (Properties.default / ContentProperty.default / ComponentSpace.zero / DataHolder.default)
 
     func test_propertiesDefault_matchesDocumentedDefaults() {

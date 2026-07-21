@@ -46,13 +46,12 @@ extension GBAlertModal {
     }
 
     /// Compute the render decisions for the given input. Pure: orientation is passed in
-    /// (`isLandscape`, `isPad`) rather than read from `UIWindow`, so the result is
-    /// deterministic and unit-testable. The view passes whatever it currently computes.
+    /// (`isLandscape`) rather than read from `UIWindow`, so the result is deterministic and
+    /// unit-testable. The view passes whatever it currently computes.
     public static func resolve(
             properties: Properties?,
             holder: DataHolder,
-            isLandscape: Bool,
-            isPad: Bool
+            isLandscape: Bool
     ) -> ResolvedModal {
         // Banner — `registerDialogView`: `if let banner = dataHolder?.banner`.
         let showsBanner = holder.banner != nil
