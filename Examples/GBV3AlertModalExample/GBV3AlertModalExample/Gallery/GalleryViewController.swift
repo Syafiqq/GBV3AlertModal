@@ -3,11 +3,11 @@
 //  GBV3AlertModalExample
 //
 //  Root screen of the Dialog Gallery: a grouped list of every
-//  `DialogCatalog.entries` shape (sectioned by `entry.category`, in catalog
-//  order), plus traversal glue for the `FloatingTraversalControl` installed
-//  by `AppDelegate` on the key window. Tapping a row — or stepping the
-//  floating control — dismisses whichever `SampleAlertModal` is currently
-//  shown and presents the newly selected one.
+//  `DialogCatalog.entries + StressCatalog.entries` shape (sectioned by
+//  `entry.category`, in catalog order), plus traversal glue for the
+//  `FloatingTraversalControl` installed by `AppDelegate` on the key window.
+//  Tapping a row — or stepping the floating control — dismisses whichever
+//  `SampleAlertModal` is currently shown and presents the newly selected one.
 //
 
 import UIKit
@@ -16,11 +16,16 @@ import GBV3AlertModal
 final class GalleryViewController: UITableViewController {
     private struct Section {
         let category: String
-        /// (index into `DialogCatalog.entries`, the entry itself), in catalog order.
+        /// (index into `Self.allEntries`, the entry itself), in catalog order.
         let rows: [(globalIndex: Int, entry: DialogEntry)]
     }
 
     private static let cellReuseIdentifier = "DialogEntryCell"
+
+    /// The full traversal order: the 26 Geniebook shapes followed by the
+    /// sampled stress matrix, combined into one list so `step(by:)` wraps
+    /// across both groups uniformly.
+    private static let allEntries: [DialogEntry] = DialogCatalog.entries + StressCatalog.entries
 
     private let sections: [Section]
 
@@ -28,7 +33,7 @@ final class GalleryViewController: UITableViewController {
     /// `AppDelegate`). Weak: the window owns it, we only sync it.
     weak var floatingControl: FloatingTraversalControl?
 
-    /// Index into `DialogCatalog.entries` of the entry the floating control
+    /// Index into `Self.allEntries` of the entry the floating control
     /// (and, once a row has been tapped, the presented modal) currently points at.
     private var currentIndex: Int = 0
 
@@ -41,7 +46,7 @@ final class GalleryViewController: UITableViewController {
     init() {
         var order: [String] = []
         var buckets: [String: [(Int, DialogEntry)]] = [:]
-        for (index, entry) in DialogCatalog.entries.enumerated() {
+        for (index, entry) in Self.allEntries.enumerated() {
             if buckets[entry.category] == nil {
                 buckets[entry.category] = []
                 order.append(entry.category)
@@ -63,7 +68,7 @@ final class GalleryViewController: UITableViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        title = "Dialog Gallery (\(DialogCatalog.entries.count))"
+        title = "Dialog Gallery (\(Self.allEntries.count))"
         tableView.register(UITableViewCell.self, forCellReuseIdentifier: Self.cellReuseIdentifier)
     }
 
@@ -71,7 +76,7 @@ final class GalleryViewController: UITableViewController {
 
     /// Steps `currentIndex` by `offset` (wrapping around both ends), then presents that entry.
     func step(by offset: Int) {
-        let count = DialogCatalog.entries.count
+        let count = Self.allEntries.count
         guard count > 0 else {
             return
         }
@@ -79,16 +84,27 @@ final class GalleryViewController: UITableViewController {
         presentEntry(at: next)
     }
 
-    /// Dismisses whatever's currently shown, builds+shows `DialogCatalog.entries[globalIndex]`,
+    /// Looks up an entry by its exact `name` (e.g. `"stress-maxed-vertical"`) and presents
+    /// it. Used only by `AppDelegate`'s `GB_STRESS_ENTRY` launch-environment hook, which
+    /// exists so a specific gallery entry can be driven straight from `xcrun simctl launch`
+    /// for scripted/CI screenshotting without needing UI automation.
+    func presentEntry(named name: String) {
+        guard let index = Self.allEntries.firstIndex(where: { $0.name == name }) else {
+            return
+        }
+        presentEntry(at: index)
+    }
+
+    /// Dismisses whatever's currently shown, builds+shows `Self.allEntries[globalIndex]`,
     /// and syncs the floating control label + the table's selected row.
     func presentEntry(at globalIndex: Int) {
-        guard DialogCatalog.entries.indices.contains(globalIndex) else {
+        guard Self.allEntries.indices.contains(globalIndex) else {
             return
         }
 
         currentModal?.hide()
 
-        let entry = DialogCatalog.entries[globalIndex]
+        let entry = Self.allEntries[globalIndex]
         let modal = entry.make()
         modal.show()
         currentModal = modal
@@ -102,11 +118,11 @@ final class GalleryViewController: UITableViewController {
     /// Pushes the current `currentIndex` state to the floating control's label without
     /// presenting anything — used once at launch so the pill isn't blank before any tap.
     func syncFloatingControl() {
-        guard DialogCatalog.entries.indices.contains(currentIndex) else {
+        guard Self.allEntries.indices.contains(currentIndex) else {
             return
         }
-        let entry = DialogCatalog.entries[currentIndex]
-        floatingControl?.setLabel("\(entry.name) (\(currentIndex + 1)/\(DialogCatalog.entries.count))")
+        let entry = Self.allEntries[currentIndex]
+        floatingControl?.setLabel("\(entry.name) (\(currentIndex + 1)/\(Self.allEntries.count))")
     }
 
     /// The dialogs `show()` themselves as subviews of the key window (see
@@ -161,6 +177,8 @@ final class GalleryViewController: UITableViewController {
     // MARK: - UITableViewDelegate
 
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+        // A manual row tap is a manual traversal too — stop any running auto-next.
+        floatingControl?.pauseAutoPlay()
         let globalIndex = sections[indexPath.section].rows[indexPath.row].globalIndex
         presentEntry(at: globalIndex)
     }

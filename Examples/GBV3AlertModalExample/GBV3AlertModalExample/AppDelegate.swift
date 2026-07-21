@@ -48,6 +48,15 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         floatingControl.onNext = { [weak gallery] in gallery?.step(by: 1) }
         gallery.syncFloatingControl()
 
+        // Debug-only hook: `SIMCTL_CHILD_GB_STRESS_ENTRY=<entry-name> xcrun simctl launch ...`
+        // presents that entry immediately on launch, so a specific gallery entry (e.g. a
+        // Stress shape) can be screenshotted from a script without UI automation.
+        if let entryName = ProcessInfo.processInfo.environment["GB_STRESS_ENTRY"] {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [weak gallery] in
+                gallery?.presentEntry(named: entryName)
+            }
+        }
+
         return true
     }
 
