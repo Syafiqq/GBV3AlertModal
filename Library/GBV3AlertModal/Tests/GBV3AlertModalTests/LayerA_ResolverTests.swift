@@ -11,13 +11,19 @@ final class LayerA_ResolverTests: XCTestCase {
     // MARK: - Banner (seeded by Task 3)
 
     func test_resolve_bannerVisibleWhenImagePresent() {
-        let holder = GBAlertModal.DataHolder(banner: UIImage())
+        let holder = GBAlertModal.DataHolder(banner: UIImage.gbv3TestSolid(width: 4, height: 4))
         let r = GBAlertModal.resolve(properties: nil, holder: holder, isLandscape: false)
         XCTAssertTrue(r.showsBanner)
     }
 
     func test_resolve_noBannerWhenNil() {
         let r = GBAlertModal.resolve(properties: nil, holder: .default, isLandscape: false)
+        XCTAssertFalse(r.showsBanner)
+    }
+
+    func test_resolve_noBannerWhenImageIsZeroSize() {
+        let holder = GBAlertModal.DataHolder(banner: UIImage())
+        let r = GBAlertModal.resolve(properties: nil, holder: holder, isLandscape: false)
         XCTAssertFalse(r.showsBanner)
     }
 

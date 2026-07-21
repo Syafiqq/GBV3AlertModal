@@ -130,7 +130,14 @@ enum GeniePresets {
     }
 
     static func withBanner() -> GBAlertModal.DataHolder {
-        base().copy(banner: UIImage())
+        // A real, non-zero-size image — after Task 8's fix, a zero-size `UIImage()` collapses
+        // the banner slot entirely, so this fixture needs actual pixels to keep exercising a
+        // *visible* banner (as opposed to duplicating the no-banner case). Square, matching
+        // `standardProperties().bannerRatio == 1`: the banner view's width==height constraint
+        // is required, so a non-square source image fights it under the tight landscape card
+        // height and squeezes title/subtitle out — a pre-existing constraint quirk unrelated
+        // to Task 8, sidestepped here by supplying an image that already satisfies the ratio.
+        base().copy(banner: .gbv3TestSolid(width: 64, height: 64))
     }
 
     static func withCloseButton() -> GBAlertModal.DataHolder {

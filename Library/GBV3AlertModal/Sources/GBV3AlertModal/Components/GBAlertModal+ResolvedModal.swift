@@ -53,8 +53,13 @@ extension GBAlertModal {
             holder: DataHolder,
             isLandscape: Bool
     ) -> ResolvedModal {
-        // Banner — `registerDialogView`: `if let banner = dataHolder?.banner`.
-        let showsBanner = holder.banner != nil
+        // Banner — `registerDialogView`: `if let banner = dataHolder?.banner`. A degenerate
+        // (nil OR zero-size) image reserves no banner slot: a zero-size `UIImage()` has no
+        // pixels to render and would otherwise leave an empty gap above the title.
+        let showsBanner: Bool = {
+            guard let banner = holder.banner else { return false }
+            return banner.size.width > 0 && banner.size.height > 0
+        }()
 
         // Title — `registerDialogView`: non-empty plain title, else non-empty attributed title.
         let hasPlainTitle = (holder.title?.isEmpty == false)
