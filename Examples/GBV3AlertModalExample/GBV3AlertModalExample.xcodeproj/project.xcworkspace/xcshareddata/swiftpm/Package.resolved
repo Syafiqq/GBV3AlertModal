@@ -1,15 +1,6 @@
 {
-  "originHash" : "eac1745fe6bf9a9c30a5a741a41388f862dd9a06c52b0f2157ecff84e1de9df7",
+  "originHash" : "585f56132c0d7d6433d212f6bc29b2c5658b2062ce435f27b85effbd11b59adc",
   "pins" : [
-    {
-      "identity" : "gbv3alertmodal",
-      "kind" : "remoteSourceControl",
-      "location" : "git@github.com:Syafiqq/GBV3AlertModal.git",
-      "state" : {
-        "branch" : "main",
-        "revision" : "73aced46efee7821e46ae785a064fddb4bc0aa3d"
-      }
-    },
     {
       "identity" : "snapkit",
       "kind" : "remoteSourceControl",
