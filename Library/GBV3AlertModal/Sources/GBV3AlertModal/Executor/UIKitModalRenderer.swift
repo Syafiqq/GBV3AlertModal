@@ -16,11 +16,11 @@ public final class UIKitModalRenderer: ModalRenderer {
 
     var live: [ModalID: Live] = [:]           // internal for @testable assertions
     private var factories: [ObjectIdentifier: Any] = [:]
-    private let windowProvider: () -> UIWindow?
+    private let windowProvider: (() -> UIWindow?)?
 
     public init(
         alertProperties: GBAlertModal.Properties,
-        windowProvider: @escaping () -> UIWindow? = { UIKitModalRenderer.keyWindow }
+        windowProvider: (() -> UIWindow?)? = nil
     ) {
         self.windowProvider = windowProvider
         register(AlertDialog.self) { descriptor, resolve in
@@ -38,6 +38,7 @@ public final class UIKitModalRenderer: ModalRenderer {
     ) {
         guard let factory = factories[ObjectIdentifier(D.self)] as? Factory<D> else {
             assertionFailure("No factory registered for \(D.self)")
+            resolve(D.dismissedResult)
             return
         }
 
@@ -51,7 +52,10 @@ public final class UIKitModalRenderer: ModalRenderer {
 
         let (properties, holder) = factory(descriptor, gate)
         let modal = GBAlertModal(properties: properties, holder: holder)
-        guard let window = windowProvider() else { return }
+        guard let window = windowProvider?() ?? UIKitModalRenderer.keyWindow else {
+            resolve(D.dismissedResult)
+            return
+        }
         modal.show(parent: window, completion: {})
 
         live[id] = Live(
@@ -79,7 +83,7 @@ public final class UIKitModalRenderer: ModalRenderer {
         live[id] = nil
     }
 
-    public nonisolated static var keyWindow: UIWindow? {
+    public static var keyWindow: UIWindow? {
         UIApplication.shared.connectedScenes
             .compactMap { $0 as? UIWindowScene }
             .flatMap { $0.windows }

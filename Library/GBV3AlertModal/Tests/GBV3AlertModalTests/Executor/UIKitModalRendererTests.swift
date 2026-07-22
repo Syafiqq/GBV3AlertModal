@@ -55,4 +55,16 @@ final class UIKitModalRendererTests: XCTestCase {
         XCTAssertEqual(received, [.primary])
         XCTAssertNil(renderer.live[id])
     }
+
+    func test_present_noWindowAvailable_resolvesDismissed() {
+        let renderer = UIKitModalRenderer(alertProperties: GeniePresets.standardProperties(),
+                                           windowProvider: { nil })
+        let id = ModalID()
+        var received: AlertDialog.Result?
+
+        renderer.present(AlertDialog(title: "T", primary: "OK"), id: id) { received = $0 }
+
+        XCTAssertEqual(received, .dismissed)
+        XCTAssertNil(renderer.live[id])
+    }
 }
