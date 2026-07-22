@@ -1,10 +1,5 @@
 import UIKit
 
-// Forward stub: the real `UIKitModalRenderer` class arrives in Task 3. Kept here just so
-// Task 1 (this mapping + its test) compiles standalone. DELETE this stub in Task 3 Step 3
-// when the real class lands.
-@MainActor public final class UIKitModalRenderer {}
-
 extension UIKitModalRenderer {
     /// Descriptor→`DataHolder` mapping for the built-in `AlertDialog`. Kept separate so the
     /// mapping is unit-testable without a window (Task 1) and reused by the factory (Task 3).
