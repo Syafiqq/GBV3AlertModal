@@ -1,5 +1,3 @@
-import UIKit
-
 /// The VM-facing front door. Pure descriptors in; a token out. No UIKit types cross this API.
 @MainActor
 public protocol ModalExecutor {

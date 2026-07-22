@@ -18,6 +18,10 @@ public final class ModalToken<Result: Sendable> {
     public init() {}
 
     /// Suspends until resolved; returns the cached value immediately once resolved (replayable).
+    // ponytail: an awaiter leaks its continuation only in the accepted "orphan" case — a modal
+    // presented but never torn down (no tap, no dismiss). Every renderer-driven teardown path
+    // resolves. Close the orphan gap via the coordinator's owner-scoped await cancellation
+    // (withTaskCancellationHandler) when that lands — see docs/superpowers/notes/2026-07-22-modal-executor-estimate.md.
     public var result: Result {
         get async {
             if let resolved { return resolved }

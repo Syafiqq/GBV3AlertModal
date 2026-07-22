@@ -30,11 +30,18 @@ final class ModalExecutorTests: XCTestCase {
 
     func test_asyncConvenience_returnsResult() async {
         let (executor, renderer) = makeExecutor()
-        // Kick off the await, then drive the tap once the modal is live.
+        // `presentAndWait` synchronously presents (populating `renderer.live`) then suspends on the
+        // result. Spin (bounded) until the modal is live instead of assuming a single `Task.yield()`
+        // is enough — the async-let child's scheduling is not guaranteed after exactly one yield,
+        // which made the fixed-yield version hang under some schedules.
         async let result = executor.presentAndWait(AlertDialog(title: "T", primary: "OK"))
-        await Task.yield()
-        // The convenience presented via the same renderer; grab the single live modal.
-        renderer.live.values.first?.modal.dismissAndEmit(event: .primary)
+        var modal: GBAlertModal?
+        for _ in 0..<1000 where modal == nil {
+            await Task.yield()
+            modal = renderer.live.values.first?.modal
+        }
+        XCTAssertNotNil(modal, "presentAndWait never presented a modal")
+        modal?.dismissAndEmit(event: .primary)
         let value = await result
         XCTAssertEqual(value, .primary)
     }
