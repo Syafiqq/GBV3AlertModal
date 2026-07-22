@@ -8,7 +8,7 @@ import UIKit
 extension UIKitModalRenderer {
     /// Descriptor→`DataHolder` mapping for the built-in `AlertDialog`. Kept separate so the
     /// mapping is unit-testable without a window (Task 1) and reused by the factory (Task 3).
-    public enum AlertHolder {
+    @MainActor public enum AlertHolder {
         public static func make(
             for descriptor: AlertDialog,
             resolve: @escaping (AlertDialog.Result) -> Void

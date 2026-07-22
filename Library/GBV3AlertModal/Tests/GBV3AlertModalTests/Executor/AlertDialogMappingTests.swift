@@ -5,7 +5,7 @@ import UIKit
 /// The executor does not change rendering — it only builds a `DataHolder`. This asserts the
 /// AlertDialog→DataHolder mapping produces the SAME render decisions the Layer-A resolver
 /// already guards, using `GBAlertModal.resolve(...)` as the oracle. No new snapshots.
-final class AlertDialogMappingTests: XCTestCase {
+@MainActor final class AlertDialogMappingTests: XCTestCase {
     func test_alertDialog_mapsToExpectedResolvedModal() {
         let descriptor = AlertDialog(
             title: "Title", subtitle: "Body", primary: "OK", secondary: "Cancel"
