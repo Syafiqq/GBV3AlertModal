@@ -289,4 +289,110 @@ final class RootScreenModalCoordinatorTests: XCTestCase {
 
         XCTAssertEqual(renderer.lastShownTitle, "A", "nothing to preempt: shows normally")
     }
+
+    // MARK: hardening — full ordering, dedup lifecycle, combined paths, edges
+
+    func test_priority_drainsWholeQueueInPriorityThenFIFOorder() {
+        let renderer = SpyRenderer()
+        let coordinator = RootScreenModalCoordinator(renderer: renderer)
+
+        _ = coordinator.present(alert("A"), priority: 0) // shown
+        _ = coordinator.present(alert("B"), priority: 1)
+        _ = coordinator.present(alert("C"), priority: 3)
+        _ = coordinator.present(alert("D"), priority: 1) // equal to B, arrived later → after B
+
+        renderer.userResolveLast(AlertDialog.Result.primary) // A -> C (highest)
+        renderer.userResolveLast(AlertDialog.Result.primary) // C -> B (pri 1, before D)
+        renderer.userResolveLast(AlertDialog.Result.primary) // B -> D
+        renderer.userResolveLast(AlertDialog.Result.primary) // D -> done
+
+        XCTAssertEqual(renderer.shownTitles, ["A", "C", "B", "D"], "priority desc, stable FIFO within equal")
+    }
+
+    func test_dedup_keyIsReusableAfterItsRequestResolves() {
+        let renderer = SpyRenderer()
+        let coordinator = RootScreenModalCoordinator(renderer: renderer)
+
+        _ = coordinator.present(alert("A"), dedupKey: "k")   // shown
+        renderer.userResolveLast(AlertDialog.Result.primary)  // A resolves → key frees
+        _ = coordinator.present(alert("B"), dedupKey: "k")   // same key, prior resolved → not a dup
+
+        XCTAssertEqual(renderer.shownTitles, ["A", "B"], "a key frees on resolve and can be reused")
+    }
+
+    func test_dedup_dropsAgainstAQueuedItemNotOnlyTheShownOne() {
+        let renderer = SpyRenderer()
+        let coordinator = RootScreenModalCoordinator(renderer: renderer)
+
+        _ = coordinator.present(alert("A"))                       // shown, no key
+        _ = coordinator.present(alert("B"), dedupKey: "k")       // queued
+        let dup = coordinator.present(alert("B2"), dedupKey: "k") // duplicate of a QUEUED item
+
+        renderer.userResolveLast(AlertDialog.Result.primary)      // A -> B
+        XCTAssertEqual(renderer.shownTitles, ["A", "B"], "duplicate of a queued item is dropped")
+
+        let resolved = expectation(description: "dup resolves")
+        var result: AlertDialog.Result?
+        Task { result = await dup.result; resolved.fulfill() }
+        wait(for: [resolved], timeout: 1.0)
+        XCTAssertEqual(result, .dismissed)
+    }
+
+    func test_interrupt_preemptsAheadOfAHigherPriorityQueuedItem() {
+        let renderer = SpyRenderer()
+        let coordinator = RootScreenModalCoordinator(renderer: renderer)
+
+        _ = coordinator.present(alert("A"), priority: 0)  // shown
+        _ = coordinator.present(alert("B"), priority: 10) // queued, high priority
+        _ = coordinator.present(alert("C"), interrupt: true)
+
+        XCTAssertEqual(renderer.lastShownTitle, "C", "interrupt jumps ahead of even a higher-priority queued item")
+        renderer.userResolveLast(AlertDialog.Result.primary) // C -> B (highest queued)
+        XCTAssertEqual(renderer.lastShownTitle, "B")
+    }
+
+    func test_conservation_acrossNormalDedupInterruptAndDrain() {
+        let renderer = SpyRenderer()
+        let coordinator = RootScreenModalCoordinator(renderer: renderer)
+
+        let t1 = coordinator.present(alert("A"))                  // shown
+        let t2 = coordinator.present(alert("B"), dedupKey: "k")  // queued
+        let t3 = coordinator.present(alert("C"), dedupKey: "k")  // dedup-dropped
+        let t4 = coordinator.present(alert("D"), interrupt: true) // preempts A
+        let t5 = coordinator.present(alert("E"))                  // queued
+
+        renderer.userResolveLast(AlertDialog.Result.primary)      // resolve whatever is shown
+        coordinator.drain()                                       // tear down the rest
+
+        let all = expectation(description: "every entered request resolves")
+        var results: [AlertDialog.Result?] = []
+        Task {
+            results = [await t1.result, await t2.result, await t3.result, await t4.result, await t5.result]
+            all.fulfill()
+        }
+        wait(for: [all], timeout: 1.0)
+        XCTAssertFalse(results.contains(nil), "conservation: no request is left unresolved across mixed paths")
+    }
+
+    func test_drain_whenEmpty_isNoOp() {
+        let renderer = SpyRenderer()
+        let coordinator = RootScreenModalCoordinator(renderer: renderer)
+
+        coordinator.drain()
+
+        XCTAssertEqual(renderer.shown.count, 0)
+        XCTAssertEqual(renderer.dismissed.count, 0)
+    }
+
+    func test_hideThenShow_withNothingShown_isSafeAndResumes() {
+        let renderer = SpyRenderer()
+        let coordinator = RootScreenModalCoordinator(renderer: renderer)
+
+        coordinator.hide()
+        coordinator.show()
+        XCTAssertEqual(renderer.hidden.count, 0, "no current modal: hide/show touch nothing")
+
+        _ = coordinator.present(alert("A"))
+        XCTAssertEqual(renderer.lastShownTitle, "A", "queue still shows normally afterwards")
+    }
 }

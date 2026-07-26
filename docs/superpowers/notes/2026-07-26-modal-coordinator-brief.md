@@ -62,6 +62,19 @@
 > priority request can starve under a steady stream of higher; fine for bounded student-app rate, add
 > aging if it appears. Tests: +3 priority, +3 interrupt (incl. supersede-resolves conservation), +2
 > executor routing. PR-1 gap (presentAndWait-through-coordinator cancel) still open, unchanged.
+>
+> **HARDENING PASS (2026-07-26, full suite 215/215 green, +10).** Adversarial coverage sweep found
+> and fixed a real bug: **`executor.dismiss(token)` on a QUEUED modal was a no-op** — it routed
+> straight to the renderer (which only knows shown modals), so the token never resolved and the modal
+> resurfaced when the queue advanced. Fix: `executor.dismiss` routes through the coordinator when
+> installed; new `RootScreenModalCoordinator.dismiss(id)` — shown → `renderer.dismiss` (gate resolves
+> + advances), queued → remove + free key + resolve `.dismissed`. New characterization tests (all
+> passed, locking behavior): full priority-order drain, dedup key reuse-after-resolve, dedup against a
+> QUEUED item, interrupt jumping ahead of a higher-priority queued item, conservation across
+> normal+dedup+interrupt+drain mixed, drain-when-empty no-op, hide/show with nothing shown, unbounded
+> direct-path overlap (3), dismiss-shown-advances. **LIMITATION (ponytail-noted at `update`):**
+> updating a still-QUEUED modal is a no-op (it shows with its original descriptor); add coordinator-
+> side queued rebuild only if a real stateful-while-queued case appears.
 
 ---
 

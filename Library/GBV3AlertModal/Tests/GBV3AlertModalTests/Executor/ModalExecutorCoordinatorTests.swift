@@ -87,4 +87,55 @@ final class ModalExecutorCoordinatorTests: XCTestCase {
         wait(for: [drained], timeout: 1.0)
         XCTAssertEqual(results, [.dismissed, .dismissed])
     }
+
+    // MARK: hardening — unbounded direct path, dismiss/update through the coordinator
+
+    func test_directPath_isUnbounded_manyModalsOverlap() {
+        let renderer = SpyRenderer()
+        let executor = DefaultModalExecutor(renderer: renderer) // no coordinator
+
+        _ = executor.present(alert("A"))
+        _ = executor.present(alert("B"))
+        _ = executor.present(alert("C"))
+
+        XCTAssertEqual(renderer.shown.count, 3, "no coordinator = unbounded; all three overlap")
+    }
+
+    func test_withCoordinator_dismissShownToken_resolvesAndAdvances() {
+        let renderer = SpyRenderer()
+        let executor = DefaultModalExecutor(renderer: renderer)
+        executor.coordinator = RootScreenModalCoordinator(renderer: renderer)
+
+        let ta = executor.present(alert("A")) // shown
+        _ = executor.present(alert("B"))      // queued
+
+        executor.dismiss(ta)
+
+        XCTAssertEqual(renderer.shownTitles, ["A", "B"], "dismissing the shown modal advances the queue")
+        let resolved = expectation(description: "shown dismiss resolves")
+        var result: AlertDialog.Result?
+        Task { result = await ta.result; resolved.fulfill() }
+        wait(for: [resolved], timeout: 1.0)
+        XCTAssertEqual(result, .dismissed)
+    }
+
+    func test_withCoordinator_dismissQueuedToken_resolvesAndNeverShows() {
+        let renderer = SpyRenderer()
+        let executor = DefaultModalExecutor(renderer: renderer)
+        executor.coordinator = RootScreenModalCoordinator(renderer: renderer)
+
+        _ = executor.present(alert("A"))      // shown
+        let tb = executor.present(alert("B")) // queued
+
+        executor.dismiss(tb) // cancel the queued request
+
+        let resolved = expectation(description: "queued dismiss resolves")
+        var result: AlertDialog.Result?
+        Task { result = await tb.result; resolved.fulfill() }
+        wait(for: [resolved], timeout: 1.0)
+        XCTAssertEqual(result, .dismissed, "dismissing a queued token resolves it")
+
+        renderer.userResolveLast(AlertDialog.Result.primary) // resolve A
+        XCTAssertEqual(renderer.shownTitles, ["A"], "a dismissed queued modal must never appear")
+    }
 }

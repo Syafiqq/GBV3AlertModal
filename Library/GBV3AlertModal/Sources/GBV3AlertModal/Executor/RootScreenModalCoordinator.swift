@@ -114,4 +114,17 @@ public final class RootScreenModalCoordinator {
         if let current { renderer.setHidden(current.id, false) }
         showNextIfIdle()
     }
+
+    /// Dismiss a specific request by id. Shown → tear down (its gate resolves + advances). Queued →
+    /// remove it, free its dedup key, and resolve it `.dismissed` (a queued dismiss must not resurface
+    /// later). Unknown/already-resolved → no-op.
+    func dismiss(_ id: ModalID) {
+        if current?.id == id {
+            renderer.dismiss(id)
+        } else if let index = queue.firstIndex(where: { $0.id == id }) {
+            let pending = queue.remove(at: index)
+            if let key = pending.key { activeKeys.remove(key) }
+            pending.resolveDismissed()
+        }
+    }
 }

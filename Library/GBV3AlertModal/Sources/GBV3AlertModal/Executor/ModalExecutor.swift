@@ -63,10 +63,15 @@ public final class DefaultModalExecutor: ModalExecutor {
     }
 
     public func update<D: ModalDescriptor>(_ token: ModalToken<D.Result>, to descriptor: D) {
+        // Direct to renderer: works for a shown modal (coordinated or not). ponytail: updating a
+        // still-QUEUED modal is a no-op — it shows with its original descriptor. Add coordinator-side
+        // queued rebuild only if a real stateful-while-queued case appears.
         renderer.update(token.id, to: descriptor)
     }
 
     public func dismiss<R>(_ token: ModalToken<R>) {
-        renderer.dismiss(token.id)
+        // Route through the coordinator so a QUEUED token is removed + resolved, not silently ignored
+        // (a bare renderer.dismiss only knows shown modals, so a queued dismiss would resurface later).
+        if let coordinator { coordinator.dismiss(token.id) } else { renderer.dismiss(token.id) }
     }
 }
