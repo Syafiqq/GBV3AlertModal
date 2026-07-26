@@ -7,6 +7,7 @@ import XCTest
 final class SpyRenderer: ModalRenderer {
     struct Shown {
         let id: ModalID
+        let descriptor: Any              // to assert which request is on screen
         let resolveWith: (Any) -> Void   // simulate a user action
         let resolveDismissed: () -> Void // simulate renderer teardown
     }
@@ -16,10 +17,15 @@ final class SpyRenderer: ModalRenderer {
     func present<D: ModalDescriptor>(_ descriptor: D, id: ModalID, resolve: @escaping (D.Result) -> Void) {
         shown.append(Shown(
             id: id,
+            descriptor: descriptor,
             resolveWith: { resolve($0 as! D.Result) },
             resolveDismissed: { resolve(D.dismissedResult) }
         ))
     }
+
+    // MARK: assertion helper
+    var shownTitles: [String] { shown.compactMap { ($0.descriptor as? AlertDialog)?.title } }
+    var lastShownTitle: String? { (shown.last?.descriptor as? AlertDialog)?.title }
 
     func update<D: ModalDescriptor>(_ id: ModalID, to descriptor: D) {}
 
@@ -206,5 +212,81 @@ final class RootScreenModalCoordinatorTests: XCTestCase {
         coordinator.show()
 
         XCTAssertEqual(renderer.hidden[t1.id], false, "show un-hides the current modal")
+    }
+
+    // MARK: priority (keep-current: pin the shown modal, order the rest by priority)
+
+    func test_priority_higherPriorityQueuedShowsFirst() {
+        let renderer = SpyRenderer()
+        let coordinator = RootScreenModalCoordinator(renderer: renderer)
+
+        _ = coordinator.present(alert("A"), priority: 0) // shown
+        _ = coordinator.present(alert("B"), priority: 1) // queued
+        _ = coordinator.present(alert("C"), priority: 5) // queued, highest
+
+        renderer.userResolveLast(AlertDialog.Result.primary) // A resolves; next is the highest queued
+
+        XCTAssertEqual(renderer.lastShownTitle, "C", "highest-priority queued request shows next")
+    }
+
+    func test_priority_higherArrivalDoesNotPreemptShownModal() {
+        let renderer = SpyRenderer()
+        let coordinator = RootScreenModalCoordinator(renderer: renderer)
+
+        _ = coordinator.present(alert("A"), priority: 0)  // shown
+        _ = coordinator.present(alert("B"), priority: 10) // higher, but must NOT preempt
+
+        XCTAssertEqual(renderer.shown.count, 1, "keep-current: a higher-priority arrival never preempts")
+        XCTAssertEqual(renderer.lastShownTitle, "A", "the shown modal is pinned")
+    }
+
+    func test_priority_equalPriorityIsFIFO() {
+        let renderer = SpyRenderer()
+        let coordinator = RootScreenModalCoordinator(renderer: renderer)
+
+        _ = coordinator.present(alert("A"), priority: 0) // shown
+        _ = coordinator.present(alert("B"), priority: 0)
+        _ = coordinator.present(alert("C"), priority: 0)
+
+        renderer.userResolveLast(AlertDialog.Result.primary) // A resolves
+        XCTAssertEqual(renderer.lastShownTitle, "B", "equal priority preserves arrival order")
+        renderer.userResolveLast(AlertDialog.Result.primary) // B resolves
+        XCTAssertEqual(renderer.lastShownTitle, "C")
+    }
+
+    // MARK: interrupt (per-request kill-switch — preempt the shown modal)
+
+    func test_interrupt_preemptsShownModal() {
+        let renderer = SpyRenderer()
+        let coordinator = RootScreenModalCoordinator(renderer: renderer)
+
+        let a = coordinator.present(alert("A")) // shown
+        _ = coordinator.present(alert("B"), interrupt: true)
+
+        XCTAssertEqual(renderer.lastShownTitle, "B", "interrupt shows immediately, preempting current")
+        XCTAssertEqual(renderer.dismissed, [a.id], "the preempted modal is torn down")
+    }
+
+    func test_interrupt_preemptedModalResolvesDismissed() {
+        let renderer = SpyRenderer()
+        let coordinator = RootScreenModalCoordinator(renderer: renderer)
+
+        let a = coordinator.present(alert("A")) // shown
+        _ = coordinator.present(alert("B"), interrupt: true)
+
+        let resolved = expectation(description: "preempted resolves")
+        var result: AlertDialog.Result?
+        Task { result = await a.result; resolved.fulfill() }
+        wait(for: [resolved], timeout: 1.0)
+        XCTAssertEqual(result, .dismissed, "preempted (superseded) modal still resolves — invariant")
+    }
+
+    func test_interrupt_whenIdleShowsImmediately() {
+        let renderer = SpyRenderer()
+        let coordinator = RootScreenModalCoordinator(renderer: renderer)
+
+        _ = coordinator.present(alert("A"), interrupt: true)
+
+        XCTAssertEqual(renderer.lastShownTitle, "A", "nothing to preempt: shows normally")
     }
 }

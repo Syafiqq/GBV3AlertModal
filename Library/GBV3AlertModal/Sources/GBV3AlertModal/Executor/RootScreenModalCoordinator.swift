@@ -18,6 +18,7 @@ public final class RootScreenModalCoordinator {
     private struct Pending {
         let id: ModalID
         let key: AnyHashable?
+        let priority: Int
         let show: () -> Void
         let resolveDismissed: () -> Void
     }
@@ -30,7 +31,9 @@ public final class RootScreenModalCoordinator {
     public init(renderer: ModalRenderer) { self.renderer = renderer }
 
     @discardableResult
-    func present<D: ModalDescriptor>(_ descriptor: D, dedupKey: AnyHashable? = nil) -> ModalToken<D.Result> {
+    func present<D: ModalDescriptor>(
+        _ descriptor: D, dedupKey: AnyHashable? = nil, priority: Int = 0, interrupt: Bool = false
+    ) -> ModalToken<D.Result> {
         let token = ModalToken<D.Result>(dismissedValue: D.dismissedResult)
 
         if let key = dedupKey, activeKeys.contains(key) {
@@ -39,9 +42,10 @@ public final class RootScreenModalCoordinator {
         }
         if let key = dedupKey { activeKeys.insert(key) }
 
-        queue.append(Pending(
+        let pending = Pending(
             id: token.id,
             key: dedupKey,
+            priority: priority,
             show: { [weak self] in
                 guard let self else { return }
                 self.renderer.present(descriptor, id: token.id) { [weak self] result in
@@ -50,9 +54,28 @@ public final class RootScreenModalCoordinator {
                 }
             },
             resolveDismissed: { token.resolve(D.dismissedResult) }
-        ))
-        showNextIfIdle()
+        )
+
+        if interrupt {
+            // Kill-switch: jump the whole queue and preempt the shown modal. Tearing down `current`
+            // resolves it (via its gate) and finish() then advances to this interrupter at queue front.
+            queue.insert(pending, at: 0)
+            if let current { renderer.dismiss(current.id) } else { showNextIfIdle() }
+        } else {
+            enqueue(pending)
+            showNextIfIdle()
+        }
         return token
+    }
+
+    /// Insert by priority — higher first, stable FIFO within equal priority. `current` is not in
+    /// `queue`, so the shown modal is never reordered: this is the app's `rearrangeDialog` (pin the
+    /// shown one, order the rest).
+    /// ponytail: no aging — a low-priority request can starve under a steady stream of higher ones.
+    /// Fine for a student app's bounded interaction rate; add priority-aging if starvation shows up.
+    private func enqueue(_ pending: Pending) {
+        let index = queue.firstIndex { $0.priority < pending.priority } ?? queue.count
+        queue.insert(pending, at: index)
     }
 
     private func showNextIfIdle() {

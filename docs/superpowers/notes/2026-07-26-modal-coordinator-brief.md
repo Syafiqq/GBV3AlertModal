@@ -47,7 +47,21 @@
 > coordinator, if its await is cancelled, resolves the token (no hang — invariant holds) but leaves
 > the modal visible + `current` stuck, because the coordinator doesn't wire `token.onDrop`. Stuck
 > modal = Mediocristan, same class as deferred per-request scope. Close when scope/cancel lands.
-> Branch `feat/modal-executor-capability`, UNMERGED, not committed by the building session.
+> Branch `feat/modal-executor-capability`, UNMERGED. PR-1 committed `71eebcc`.
+>
+> **PR-2 SHIPPED (2026-07-26, TDD, full suite 205/205 green, +8).** Priority + interrupt on the same
+> `RootScreenModalCoordinator`. Priority = `Int` (default 0, higher = more urgent; app maps its
+> 21-case `DialogType` → Int). `enqueue` inserts by priority, stable FIFO within equal, `current`
+> never reordered = keep-current `rearrangeDialog`. Interrupt = per-request `interrupt: Bool` kill-
+> switch: insert at queue front + `renderer.dismiss(current)`, whose gate resolves the preempted
+> token `.dismissed` (supersede conservation path) and `finish()` advances to the interrupter; idle =
+> shows normally; default false never preempts. Front door grew to
+> `present(_:dedupKey:priority:interrupt:)` (extended the requirement + kept the bare convenience;
+> no options struct — Swift's prefer-no-defaults rule keeps `present(x)` unambiguous). priority/
+> interrupt inert on the direct path. **Starvation:** no aging (ponytail-noted at `enqueue`) — a low-
+> priority request can starve under a steady stream of higher; fine for bounded student-app rate, add
+> aging if it appears. Tests: +3 priority, +3 interrupt (incl. supersede-resolves conservation), +2
+> executor routing. PR-1 gap (presentAndWait-through-coordinator cancel) still open, unchanged.
 
 ---
 

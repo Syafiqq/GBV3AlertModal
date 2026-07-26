@@ -45,6 +45,31 @@ final class ModalExecutorCoordinatorTests: XCTestCase {
         XCTAssertEqual(result, .dismissed)
     }
 
+    func test_withCoordinator_priorityRoutedThroughFrontDoor() {
+        let renderer = SpyRenderer()
+        let executor = DefaultModalExecutor(renderer: renderer)
+        executor.coordinator = RootScreenModalCoordinator(renderer: renderer)
+
+        _ = executor.present(alert("A"), priority: 0) // shown
+        _ = executor.present(alert("B"), priority: 1)
+        _ = executor.present(alert("C"), priority: 5)
+        renderer.userResolveLast(AlertDialog.Result.primary) // A resolves
+
+        XCTAssertEqual(renderer.lastShownTitle, "C", "priority routes through the executor to the coordinator")
+    }
+
+    func test_withCoordinator_interruptRoutedThroughFrontDoor() {
+        let renderer = SpyRenderer()
+        let executor = DefaultModalExecutor(renderer: renderer)
+        executor.coordinator = RootScreenModalCoordinator(renderer: renderer)
+
+        let a = executor.present(alert("A")) // shown
+        _ = executor.present(alert("B"), interrupt: true)
+
+        XCTAssertEqual(renderer.lastShownTitle, "B", "interrupt routes through and preempts")
+        XCTAssertEqual(renderer.dismissed, [a.id])
+    }
+
     func test_clearingCoordinator_drainsPreviousQueue() {
         let renderer = SpyRenderer()
         let executor = DefaultModalExecutor(renderer: renderer)
