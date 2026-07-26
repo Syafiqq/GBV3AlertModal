@@ -1,3 +1,6 @@
+> **SUPERSEDED (2026-07-26)** by `2026-07-26-modal-coordinator-brief.md`. Design is now locked (two
+> /council passes) — do not act on the pre-decision recommendations below; kept for history only.
+
 # Brief: Modal Stack / Queue — coordinating multiple modals
 
 **Status:** pre-decision brief. Not scheduled. Read before building modal coordination.
