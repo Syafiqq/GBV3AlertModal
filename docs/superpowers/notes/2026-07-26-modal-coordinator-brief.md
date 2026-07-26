@@ -1,5 +1,56 @@
 # Brief: Modal Coordinator — PR-1/PR-2 (pick up in a fresh session)
 
+> **PR-1 FINAL (2026-07-26, 3rd council pass — Torvalds/Rams/Taleb/Feynman, ponytail lens).**
+> This section SUPERSEDES the two-coordinator/protocol design in §2 below for PR-1. Nothing here is
+> silently dropped — each cut is a fresh-lens reversal of the earlier lock, reasoned below.
+>
+> 1. **Cut `BaseModalCoordinator`.** The executor→renderer direct path in `DefaultModalExecutor`
+>    ALREADY is today's unbounded/overlap behavior. A passthrough class only existed to dodge a
+>    nil-check. Executor holds ONE optional concrete `RootScreenModalCoordinator?`; `nil` = the shipped
+>    direct path, untouched.
+> 2. **No `ModalCoordinator` protocol** in PR-1 (one impl). Lifecycle methods (`hide/show/pause/resume`)
+>    MUST stay on the concrete type — a protocol/Base would silently no-op them (the "silent trap").
+>    Add the protocol at rule-of-three.
+> 3. **Name: `RootScreenModalCoordinator`** — app-agnostic. It owns visibility lifecycle: hide-on-push,
+>    show-on-pop, driven by the app's root/tab screen. (Considered `MainTab…`; kept neutral so the lib
+>    vocabulary stays decoupled from app navigation.)
+> 4. Behavior: **serial (1-at-a-time, dimmed-fullscreen geometry), unbounded queue, dedup-by-key
+>    (nil=none, duplicate=drop-new).**
+> 5. **Lifecycle on the concrete type:** `hide()/show()` (+ `pause()/resume()` — port app
+>    `DialogQueue` pause/restart). Hide/show is NOT a terminal exit — it must NOT resolve the token.
+>    Needs one new renderer method `setHidden(_ id:, _:)` (toggle visibility without teardown).
+> 6. **Resolve-on-every-exit invariant** + conservation test over paths that EXIST in PR-1:
+>    normal-resolve, dedup-drop, screen-teardown-drain. (Do NOT test supersede/owner-deinit — those
+>    features don't ship yet; a green test over an unreachable path is false robustness.)
+> 7. **Teardown drain (load-bearing here, not speculative):** when the owning root screen
+>    pops-and-deallocs, the coordinator drains + resolves its queue `.superseded` (== dismissedValue
+>    for now) on deinit/uninstall. A settable property/deinit, NOT `setCoordinator`-returns-previous.
+> 8. Front door: **`present(descriptor, dedupKey:)`**. No `priority:` (dishonest no-op) and no
+>    public `scope:` param yet.
+> 9. **Deferred (add on real reproducer):** per-request scope/owner cancel (orphan token deallocs
+>    clean, parks no continuation, CANNOT hang — harm is a lingering, self-correcting modal =
+>    Mediocristan; the coordinator is already screen-scoped); `priority:`+interrupt (PR-2);
+>    `ModalOutcome` enum; coordinator protocol/stack; queue cap/TTL; SwiftUI renderer.
+> 10. **Flag (note in code, don't build):** dedup-drop resolving with `dismissedValue` is
+>     indistinguishable from a user dismiss — `ModalOutcome` closes that later.
+>
+> **PR-1 SHIPPED (2026-07-26, TDD, full suite 197/197 green, was 182).** Files added:
+> `Executor/RootScreenModalCoordinator.swift` (serial, dedup-by-key drop-new, `drain()`,
+> `hide()/show()` with `isHidden` pause gate; owns queued tokens strongly — a fire-and-forget queued
+> `present()` must still show, which is why drain is load-bearing). `ModalRenderer` gained
+> `setHidden(_:_:)` (UIKit: `modal.isHidden`, no teardown). `DefaultModalExecutor` gained
+> `var coordinator: RootScreenModalCoordinator?` (`didSet { oldValue?.drain() }` = handoff-drain) and
+> front door `present(_:dedupKey:)` (protocol requirement + defaulted convenience; `presentAndWait`
+> unchanged). Tests: `RootScreenModalCoordinatorTests` (11) + `ModalExecutorCoordinatorTests` (4),
+> with `SpyRenderer` fake; async assertions bounded via `XCTestExpectation` (brief §9).
+> **KNOWN GAP (deferred, ponytail-noted in ModalExecutor.swift):** `presentAndWait` routed THROUGH a
+> coordinator, if its await is cancelled, resolves the token (no hang — invariant holds) but leaves
+> the modal visible + `current` stuck, because the coordinator doesn't wire `token.onDrop`. Stuck
+> modal = Mediocristan, same class as deferred per-request scope. Close when scope/cancel lands.
+> Branch `feat/modal-executor-capability`, UNMERGED, not committed by the building session.
+
+---
+
 **Status:** design locked (via two /council passes), token slice shipped, coordinator NOT built.
 **Branch:** `feat/modal-executor-capability` (off `refactor/decompose-modal`, unmerged).
 **Supersedes:** `2026-07-21-modal-stack-queue-brief.md` (pre-decision; do not act on its recommendations).

@@ -77,6 +77,10 @@ public final class UIKitModalRenderer: ModalRenderer {
         live[id]?.resolveDismissed()
     }
 
+    public func setHidden(_ id: ModalID, _ isHidden: Bool) {
+        live[id]?.modal.isHidden = isHidden // ponytail: UIView toggle; keeps the modal in `live`, no teardown
+    }
+
     private func teardown(_ id: ModalID) {
         guard let entry = live[id] else { return }
         if entry.modal.superview != nil { entry.modal.hide() }
