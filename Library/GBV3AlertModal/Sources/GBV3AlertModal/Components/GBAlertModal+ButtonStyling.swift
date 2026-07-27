@@ -196,26 +196,26 @@ internal extension GBAlertModal {
         let view = GBRoundedButton(type: .system)
         view.translatesAutoresizingMaskIntoConstraints = false
         view.rounded = true
-        view.contentInsets = UIEdgeInsets(top: 6, left: 16, bottom: 6, right: 16)
+        view.contentEdgeInsets = UIEdgeInsets(top: 6, left: 16, bottom: 6, right: 16)
         view.titleLabel?.minimumScaleFactor = 0.5
         view.titleLabel?.adjustsFontSizeToFitWidth = true
         return view
     }
 
     func generateButtonForPlainThemedDesign() -> UIButton {
-        let view = InsetButton(type: .system)
+        let view = UIButton(type: .system)
         view.translatesAutoresizingMaskIntoConstraints = false
-        view.contentInsets = UIEdgeInsets(top: 6, left: 16, bottom: 6, right: 16)
+        view.contentEdgeInsets = UIEdgeInsets(top: 6, left: 16, bottom: 6, right: 16)
         view.titleLabel?.minimumScaleFactor = 0.5
         view.titleLabel?.adjustsFontSizeToFitWidth = true
         return view
     }
 
     func generateButtonForObliqueThemedDesign() -> UIButton {
-        let view = InsetButton(type: .custom)
+        let view = UIButton(type: .custom)
         view.translatesAutoresizingMaskIntoConstraints = false
         view.layer.cornerRadius = 8
-        view.contentInsets = UIEdgeInsets(top: 6, left: 16, bottom: 6, right: 16)
+        view.contentEdgeInsets = UIEdgeInsets(top: 6, left: 16, bottom: 6, right: 16)
         view.titleLabel?.minimumScaleFactor = 0.5
         view.titleLabel?.adjustsFontSizeToFitWidth = true
         return view
