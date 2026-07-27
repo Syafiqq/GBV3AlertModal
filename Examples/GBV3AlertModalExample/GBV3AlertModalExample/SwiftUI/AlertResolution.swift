@@ -35,3 +35,10 @@ func resolve(_ interaction: AlertInteraction, _ config: AlertDialog) -> AlertDia
     case .overlayTapped:   return config.closeOnTapOverlay ? .dismissed : nil
     }
 }
+
+/// Guards the double-tap / stale-async race: an in-flight async result (e.g. a "generating…"
+/// task fired from a primary tap) should only be applied if its captured generation still
+/// matches the current one. A later tap, or a dismissal, bumps the generation and supersedes it.
+func shouldApply(resultGeneration: Int, currentGeneration: Int) -> Bool {
+    resultGeneration == currentGeneration
+}

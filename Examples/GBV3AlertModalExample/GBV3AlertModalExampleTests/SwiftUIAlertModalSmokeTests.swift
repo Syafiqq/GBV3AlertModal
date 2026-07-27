@@ -25,11 +25,19 @@ final class SwiftUIAlertModalSmokeTests: XCTestCase {
         window.rootViewController = nil
     }
 
+    /// Pure-SwiftUI content (e.g. `Text`) renders straight to `CALayer` sublayers on this SDK
+    /// without necessarily creating a child `UIView` — only UIKit-interop content (e.g. a
+    /// `ProgressView`'s backing `UIActivityIndicatorView`) shows up in `.subviews`. Checking
+    /// either confirms the hosting controller actually built non-trivial content.
+    private func hasBuiltViewGraph(_ view: UIView) -> Bool {
+        !view.subviews.isEmpty || !(view.layer.sublayers ?? []).isEmpty
+    }
+
     private func assertBuilds(_ config: AlertDialog, _ message: String) {
         let (window, host) = host(SwiftUIAlertModal(config: config) { _ in })
         defer { teardown(window) }
         XCTAssertFalse(host.view.bounds.isEmpty, "\(message): host view was not laid out")
-        XCTAssertFalse(host.view.subviews.isEmpty, "\(message): view graph is empty")
+        XCTAssertTrue(hasBuiltViewGraph(host.view), "\(message): view graph is empty")
     }
 
     func test_minimal_config_builds() {
@@ -52,5 +60,31 @@ final class SwiftUIAlertModalSmokeTests: XCTestCase {
             ),
             "full"
         )
+    }
+
+    // MARK: presentation-state params (primaryEnabled / isPrimaryLoading)
+
+    func test_primary_loading_state_builds() {
+        let (window, host) = host(
+            SwiftUIAlertModal(
+                config: AlertDialog(title: "Generate your worksheet", subtitle: "This will use one credit.", primary: "Generate", secondary: "Cancel"),
+                isPrimaryLoading: true
+            ) { _ in }
+        )
+        defer { teardown(window) }
+        XCTAssertFalse(host.view.bounds.isEmpty, "loading: host view was not laid out")
+        XCTAssertTrue(hasBuiltViewGraph(host.view), "loading: view graph is empty")
+    }
+
+    func test_primary_disabled_state_builds() {
+        let (window, host) = host(
+            SwiftUIAlertModal(
+                config: AlertDialog(title: "Title", subtitle: "Subtitle", primary: "OK"),
+                primaryEnabled: false
+            ) { _ in }
+        )
+        defer { teardown(window) }
+        XCTAssertFalse(host.view.bounds.isEmpty, "disabled: host view was not laid out")
+        XCTAssertTrue(hasBuiltViewGraph(host.view), "disabled: view graph is empty")
     }
 }

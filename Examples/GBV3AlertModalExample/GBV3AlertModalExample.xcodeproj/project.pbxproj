@@ -10,6 +10,10 @@
 		5907CCAA2F258613006DF5A5 /* GBV3AlertModal in Frameworks */ = {isa = PBXBuildFile; productRef = 5907CCA92F258613006DF5A5 /* GBV3AlertModal */; };
 		5962A4CA2935DFA200183658 /* GBV3AlertModalExampleTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5962A4C92935DFA200183658 /* GBV3AlertModalExampleTests.swift */; };
 		3567F5F9DB3772B53171BFDA /* DialogCatalogSmokeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 67D7397FE64CF510E4C54DDA /* DialogCatalogSmokeTests.swift */; };
+		15D837B7443427679455B3AA /* AlertResolutionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 208B6DB5BEF6BE7A0B59FDFB /* AlertResolutionTests.swift */; };
+		368CAF3A43206A9CDAA09FAB /* SwiftUIAlertModalSmokeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E57904A58A5B83CC314F570 /* SwiftUIAlertModalSmokeTests.swift */; };
+		16EF31E2A1BDDBAEC29CA9AC /* SwiftUIDemoScreenSmokeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E2CF600334B8B8CA32375C4B /* SwiftUIDemoScreenSmokeTests.swift */; };
+		01B9BAB389F03BF4E18FF491 /* GenerationGuardTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE42C37D4823D8857ABCACE7 /* GenerationGuardTests.swift */; };
 		5962A4D42935DFA200183658 /* GBV3AlertModalExampleUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5962A4D32935DFA200183658 /* GBV3AlertModalExampleUITests.swift */; };
 		5962A4D62935DFA200183658 /* GBV3AlertModalExampleUITestsLaunchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5962A4D52935DFA200183658 /* GBV3AlertModalExampleUITestsLaunchTests.swift */; };
 /* End PBXBuildFile section */
@@ -36,6 +40,10 @@
 		5962A4C52935DFA200183658 /* GBV3AlertModalExampleTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = GBV3AlertModalExampleTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		5962A4C92935DFA200183658 /* GBV3AlertModalExampleTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GBV3AlertModalExampleTests.swift; sourceTree = "<group>"; };
 		67D7397FE64CF510E4C54DDA /* DialogCatalogSmokeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DialogCatalogSmokeTests.swift; sourceTree = "<group>"; };
+		208B6DB5BEF6BE7A0B59FDFB /* AlertResolutionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlertResolutionTests.swift; sourceTree = "<group>"; };
+		0E57904A58A5B83CC314F570 /* SwiftUIAlertModalSmokeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SwiftUIAlertModalSmokeTests.swift; sourceTree = "<group>"; };
+		E2CF600334B8B8CA32375C4B /* SwiftUIDemoScreenSmokeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SwiftUIDemoScreenSmokeTests.swift; sourceTree = "<group>"; };
+		EE42C37D4823D8857ABCACE7 /* GenerationGuardTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GenerationGuardTests.swift; sourceTree = "<group>"; };
 		5962A4CF2935DFA200183658 /* GBV3AlertModalExampleUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = GBV3AlertModalExampleUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		5962A4D32935DFA200183658 /* GBV3AlertModalExampleUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GBV3AlertModalExampleUITests.swift; sourceTree = "<group>"; };
 		5962A4D52935DFA200183658 /* GBV3AlertModalExampleUITestsLaunchTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GBV3AlertModalExampleUITestsLaunchTests.swift; sourceTree = "<group>"; };
@@ -113,6 +121,10 @@
 			children = (
 				5962A4C92935DFA200183658 /* GBV3AlertModalExampleTests.swift */,
 				67D7397FE64CF510E4C54DDA /* DialogCatalogSmokeTests.swift */,
+				208B6DB5BEF6BE7A0B59FDFB /* AlertResolutionTests.swift */,
+				0E57904A58A5B83CC314F570 /* SwiftUIAlertModalSmokeTests.swift */,
+				E2CF600334B8B8CA32375C4B /* SwiftUIDemoScreenSmokeTests.swift */,
+				EE42C37D4823D8857ABCACE7 /* GenerationGuardTests.swift */,
 			);
 			path = GBV3AlertModalExampleTests;
 			sourceTree = "<group>";
@@ -269,6 +281,10 @@
 			files = (
 				5962A4CA2935DFA200183658 /* GBV3AlertModalExampleTests.swift in Sources */,
 				3567F5F9DB3772B53171BFDA /* DialogCatalogSmokeTests.swift in Sources */,
+				15D837B7443427679455B3AA /* AlertResolutionTests.swift in Sources */,
+				368CAF3A43206A9CDAA09FAB /* SwiftUIAlertModalSmokeTests.swift in Sources */,
+				16EF31E2A1BDDBAEC29CA9AC /* SwiftUIDemoScreenSmokeTests.swift in Sources */,
+				01B9BAB389F03BF4E18FF491 /* GenerationGuardTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

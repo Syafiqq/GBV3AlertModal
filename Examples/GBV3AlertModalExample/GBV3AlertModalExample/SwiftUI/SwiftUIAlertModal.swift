@@ -7,6 +7,10 @@ import GBV3AlertModal
 struct SwiftUIAlertModal: View {
     let config: AlertDialog
     var scrim: Color = Color.black.opacity(0.6)
+    /// Presentation state — NOT part of `AlertDialog`. The caller (demo screen / real app)
+    /// owns this; the view only reads it. Mirrors the real app's enabled/loading primary button.
+    var primaryEnabled: Bool = true
+    var isPrimaryLoading: Bool = false
     let onAction: (AlertDialog.Result) -> Void
 
     private var resolved: ResolvedAlert { ResolvedAlert(config) }
@@ -48,14 +52,22 @@ struct SwiftUIAlertModal: View {
                     .multilineTextAlignment(.center)
             }
             Button { route(.primaryTapped) } label: {
-                Text(config.primary)
-                    .font(.body.weight(.medium))
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 12)
-                    .background(Color.accentColor)
-                    .foregroundColor(.white)
-                    .clipShape(Capsule())
+                Group {
+                    if isPrimaryLoading {
+                        ProgressView()
+                            .tint(.white)
+                    } else {
+                        Text(config.primary)
+                    }
+                }
+                .font(.body.weight(.medium))
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 12)
+                .background(Color.accentColor)
+                .foregroundColor(.white)
+                .clipShape(Capsule())
             }
+            .disabled(!primaryEnabled || isPrimaryLoading)
             if resolved.showsSecondary, let secondary = config.secondary {
                 Button { route(.secondaryTapped) } label: {
                     Text(secondary)
