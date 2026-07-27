@@ -5,6 +5,8 @@ import XCTest
 import GBV3AlertModal
 @testable import GBV3AlertModalExample
 
+// @MainActor: hosts SwiftUI/UIKit views in a UIWindow, which is main-actor under Swift 6.
+@MainActor
 final class SwiftUIAlertModalSmokeTests: XCTestCase {
 
     /// Hosts a SwiftUI view in a throwaway key window and forces a layout pass,
