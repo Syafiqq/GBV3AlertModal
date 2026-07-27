@@ -1,7 +1,7 @@
 import Foundation
 import UIKit
 
-private var kEmptySpaceForKeyboardExtension: CGFloat = 48
+private let kEmptySpaceForKeyboardExtension: CGFloat = 48
 
 // MARK: - LIFECYCLE AND CALLBACK
 
@@ -131,7 +131,9 @@ private extension GBAlertModal {
     // Widened from `private` to `internal`: called from `initEvents` in
     // GBAlertModal+Model.swift (different file, same module); also used by `deinit`
     // in this file.
-    internal func removeKeyboardEvents() {
+    // nonisolated: only calls thread-safe `NotificationCenter.removeObserver`, so it is safe to invoke
+    // from `deinit` (a nonisolated context) without hopping to the main actor.
+    nonisolated internal func removeKeyboardEvents() {
         let notificationCenter = NotificationCenter.default
         notificationCenter.removeObserver(self, name: UIResponder.keyboardWillShowNotification, object: nil)
         notificationCenter.removeObserver(self, name: UIResponder.keyboardWillHideNotification, object: nil)

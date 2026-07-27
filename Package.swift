@@ -31,6 +31,13 @@ let package = Package(
             resources: [
                 .process("Assets.xcassets"),
             ],
+            swiftSettings: [
+                // Swift 6 strict-concurrency READY (not flipped): complete checking as warnings in
+                // Swift 5 mode. A ratchet — new concurrency violations surface here before a future
+                // language-mode flip. NOT `.unsafeFlags` (which disqualifies the package as a
+                // dependency); experimental-feature settings are dependency-safe.
+                .enableExperimentalFeature("StrictConcurrency"),
+            ],
             plugins: [
             ]
         ),
