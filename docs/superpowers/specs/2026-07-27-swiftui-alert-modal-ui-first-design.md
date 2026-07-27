@@ -23,6 +23,12 @@ This is a **judgment prototype**. Visuals are content-faithful but provisional; 
    `.fullScreenCover`: those are edge-anchored full covers and structurally cannot produce a *centered
    dimmed card*. The idiomatic SwiftUI centered-card IS an overlay. Also keeps presentation authority in
    one slot (no competing SwiftUI presentation lifecycle).
+   - **Invariant to build to (verified in current UIKit code):** every dialog is a **full-screen scrim +
+     centered card**. `GBAlertModal` pins to the parent's edges (`+Lifecycle.swift:27`); `vwOverlay` pins
+     `edges.equalToSuperview()` (`+ViewFactory.swift:22`) with `backgroundColor = overlayColor`
+     (`+Style.swift:17`) — dimmed *or* `.clear`/transparent, same full-screen view either way; the card
+     (`vwContainer`) floats centered on top. The SwiftUI view mirrors this exactly:
+     `ZStack { Color(scrim).ignoresSafeArea(); Card() }`, scrim color the only variable (default dimmed).
 3. **State: item-driven** — `@State private var active: AlertConfig?` in the demo screen. Not a `Bool`
    toggle, not an `ObservableObject`. Single source of truth; mirrors `presentAndWait(config:)` shape.
 4. **Fidelity: content-faithful, native idioms.** Same slots + hierarchy + behavior as `GBAlertModal`.
