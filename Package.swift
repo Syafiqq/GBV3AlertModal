@@ -1,5 +1,6 @@
-// swift-tools-version: 5.9
+// swift-tools-version: 6.0
 // The swift-tools-version declares the minimum version of Swift required to build this package.
+// tools 6.0 => Swift 6 language mode is the default for all targets (strict concurrency = errors).
 
 import PackageDescription
 
@@ -31,13 +32,8 @@ let package = Package(
             resources: [
                 .process("Assets.xcassets"),
             ],
-            swiftSettings: [
-                // Swift 6 strict-concurrency READY (not flipped): complete checking as warnings in
-                // Swift 5 mode. A ratchet — new concurrency violations surface here before a future
-                // language-mode flip. NOT `.unsafeFlags` (which disqualifies the package as a
-                // dependency); experimental-feature settings are dependency-safe.
-                .enableExperimentalFeature("StrictConcurrency"),
-            ],
+            // No swiftSettings needed: tools-version 6.0 makes Swift 6 the default language mode
+            // for every target here, so strict-concurrency violations are compile ERRORS.
             plugins: [
             ]
         ),

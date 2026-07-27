@@ -17,6 +17,9 @@ import UIKit
 /// reference inside `GBAlertModal.init` would be too late — the weak field would already be
 /// nil. The only fix that actually closes this window is making `DataHolder` itself hold the
 /// view strongly.
+// @MainActor: this test builds and renders a UIKit `GBAlertModal` with a non-Sendable
+// `subtitleCustomView` (UIView), so it must run on the main actor under Swift 6.
+@MainActor
 final class SubtitleCustomViewLifetimeTests: XCTestCase {
     /// Builds a holder whose `subtitleCustomView` has exactly one strong reference — the local
     /// inside this function — before returning. No caller-visible variable retains the view.

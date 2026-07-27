@@ -20,7 +20,9 @@ import UIKit
 /// the moment it touched `previous.isHidden`. Tearing the host down in an `addTeardownBlock`
 /// after every render (below) guarantees this is `nil` across every test boundary, so no stale
 /// UIKit object is ever dereferenced by a later test.
-private var previousSnapshotHostWindow: UIWindow?
+// nonisolated(unsafe): only ever touched on the main thread (see the note above — XCTest test
+// bodies and teardown blocks both run on main), so there is no real race to guard.
+nonisolated(unsafe) private var previousSnapshotHostWindow: UIWindow?
 
 /// Detaches the retained host window from its scene and releases every strong path into it, so
 /// no UIKit object survives the test that created it. Idempotent and safe to call when nothing

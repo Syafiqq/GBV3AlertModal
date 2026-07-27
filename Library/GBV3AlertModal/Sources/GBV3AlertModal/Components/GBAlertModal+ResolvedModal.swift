@@ -48,7 +48,9 @@ extension GBAlertModal {
     /// Compute the render decisions for the given input. Pure: orientation is passed in
     /// (`isLandscape`) rather than read from `UIWindow`, so the result is deterministic and
     /// unit-testable. The view passes whatever it currently computes.
-    public static func resolve(
+    /// `nonisolated`: genuinely pure (value inputs only, no main-actor state), so it is callable
+    /// off the main actor — matching its role as the exhaustive, testable resolver.
+    nonisolated public static func resolve(
             properties: Properties?,
             holder: DataHolder,
             isLandscape: Bool
