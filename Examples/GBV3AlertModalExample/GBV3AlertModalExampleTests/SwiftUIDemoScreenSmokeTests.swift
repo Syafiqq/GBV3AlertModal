@@ -4,6 +4,7 @@ import UIKit
 import XCTest
 @testable import GBV3AlertModalExample
 
+@MainActor
 final class SwiftUIDemoScreenSmokeTests: XCTestCase {
 
     private func layoutPass(_ window: UIWindow) {

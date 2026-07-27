@@ -16,6 +16,7 @@
 import UIKit
 import GBV3AlertModal
 
+@MainActor
 enum VariantsCatalog {
     static let entries: [DialogEntry] =
         titleEntries

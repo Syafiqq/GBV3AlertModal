@@ -35,6 +35,7 @@ extension UIColor {
 // MARK: - GalleryColor
 
 /// The 12 exact catalog colors (`UIColor.Genie.*` / `Colors.*` equivalents).
+@MainActor
 enum GalleryColor {
     /// `UIColor.Genie.accentSecondary` — `properties.baseTint`
     static let accentSecondary = UIColor(hex: 0xF7A440)
@@ -81,6 +82,7 @@ enum GalleryColor {
 
 /// Weight accessor mapping to the bundled OpenSans PostScript names
 /// (registered via `Info.plist` `UIAppFonts`), mirroring `FontHelper.SHSans`.
+@MainActor
 enum GallerySHSans {
     case regular
     case medium

@@ -20,6 +20,7 @@
 
 import UIKit
 
+@MainActor
 final class FloatingTraversalControl: UIView {
     /// Invoked when `‹ Prev` is tapped. Wired by `AppDelegate` to `GalleryViewController.step(by: -1)`.
     var onPrev: (() -> Void)?
@@ -155,7 +156,12 @@ final class FloatingTraversalControl: UIView {
     private func startTimer() {
         stopTimer()
         let newTimer = Timer(timeInterval: interval, repeats: true) { [weak self] _ in
-            self?.onNext?()
+            // `RunLoop.main.add(_:forMode:)` below guarantees this fires on the main
+            // thread/actor, same as a plain `Timer.scheduledTimer` would — `assumeIsolated`
+            // just makes that existing guarantee visible to the type system.
+            MainActor.assumeIsolated {
+                self?.onNext?()
+            }
         }
         // `.common` (not `.default`) so auto-play keeps ticking while the table view is
         // being scrolled/tracked — a plain `scheduledTimer` would silently stall then.

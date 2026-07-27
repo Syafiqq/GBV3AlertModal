@@ -14,6 +14,7 @@
 import UIKit
 import GBV3AlertModal
 
+@MainActor
 enum GalleryPresets {
     // MARK: - Content Property
 

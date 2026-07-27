@@ -20,6 +20,7 @@
 import UIKit
 import GBV3AlertModal
 
+@MainActor
 enum StressCatalog {
     static let entries: [DialogEntry] =
         axisSweepEntries

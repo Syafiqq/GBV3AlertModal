@@ -11,6 +11,7 @@
 import UIKit
 import GBV3AlertModal
 
+@MainActor
 final class SampleAlertModal: GBAlertModal {
     /// Presents this modal over the current key window.
     /// Mirrors `V3AlertModal.show()`'s `AppCompatHelper.keyWindow` lookup using

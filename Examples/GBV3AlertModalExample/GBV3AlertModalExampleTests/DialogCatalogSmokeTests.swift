@@ -15,6 +15,7 @@ import UIKit
 import XCTest
 @testable import GBV3AlertModalExample
 
+@MainActor
 final class DialogCatalogSmokeTests: XCTestCase {
     /// Hosts `modal` in a fresh, key `UIWindow` sized like an iPhone screen,
     /// forces layout, and returns the window so the caller can tear it down.

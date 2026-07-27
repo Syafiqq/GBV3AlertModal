@@ -157,7 +157,6 @@ extension FontHelper.DMSans {
         case .mediumItalic: return FontHelper.create(name: "DMSans-MediumItalic", withSize: size)
         case .bold: return FontHelper.create(name: "DMSans-Bold", withSize: size)
         case .boldItalic: return FontHelper.create(name: "DMSans-BoldItalic", withSize: size)
-        default: return FontHelper.create(name: "null", withSize: size)
         }
     }
 
@@ -181,7 +180,6 @@ extension FontHelper.OpenSans {
         case .extraBoldItalic: return FontHelper.create(name: "OpenSans-ExtraBoldItalic", withSize: size)
         case .light: return FontHelper.create(name: "OpenSans-Light", withSize: size)
         case .lightItalic: return FontHelper.create(name: "OpenSans-LightItalic", withSize: size)
-        default: return FontHelper.create(name: "null", withSize: size)
         }
     }
 
@@ -354,13 +352,13 @@ extension UIColor {
 
 extension UIStackView {
     // MARK: Manipulate Subview
-    @discardableResult
     func removeAllArrangedSubviews() {
         arrangedSubviews.forEach {
             removeArrangedSubViewProperly($0)
         }
     }
 
+    @discardableResult
     func removeArrangedSubViewProperly(_ view: UIView) -> UIView {
         removeArrangedSubview(view)
         NSLayoutConstraint.deactivate(view.constraints)
@@ -368,13 +366,13 @@ extension UIStackView {
         return view
     }
 
-    @discardableResult
     func removeAllArrangedSubviewsSafe() {
         arrangedSubviews.forEach {
             removeArrangedSubViewProperlySafe($0)
         }
     }
 
+    @discardableResult
     func removeArrangedSubViewProperlySafe(_ view: UIView) -> UIView {
         removeArrangedSubview(view)
         view.removeFromSuperview()
@@ -391,6 +389,7 @@ extension UIStackView {
 }
 
 extension UIImage {
+    @MainActor
     func tinted(color: UIColor) -> UIImage? {
         let image = withRenderingMode(.alwaysTemplate)
         let imageView = UIImageView(image: image)
@@ -499,6 +498,7 @@ extension UIEdgeInsets {
     }
 }
 
+@MainActor
 enum AppCompatHelper {
     static weak var keyWindow: UIWindow? {
         UIApplication.shared.connectedScenes

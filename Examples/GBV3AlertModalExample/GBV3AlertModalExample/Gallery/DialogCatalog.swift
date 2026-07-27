@@ -24,9 +24,10 @@ import GBV3AlertModal
 struct DialogEntry {
     let name: String
     let category: String
-    let make: () -> SampleAlertModal
+    let make: @MainActor () -> SampleAlertModal
 }
 
+@MainActor
 enum DialogCatalog {
     /// All 26 shapes from the catalog, in catalog order (cross-cutting first,
     /// then feature areas in the order they first appear in the spec).

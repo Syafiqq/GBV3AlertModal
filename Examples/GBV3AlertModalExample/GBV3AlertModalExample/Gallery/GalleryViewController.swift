@@ -14,6 +14,7 @@ import UIKit
 import SwiftUI
 import GBV3AlertModal
 
+@MainActor
 final class GalleryViewController: UITableViewController {
     private struct Section {
         let category: String
