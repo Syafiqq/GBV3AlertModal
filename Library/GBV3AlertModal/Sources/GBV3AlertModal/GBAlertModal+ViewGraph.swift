@@ -7,9 +7,9 @@ import SnapKit
 internal extension GBAlertModal {
     // MARK: Views
 
-    // Widened from `private` to `internal`: called from `updateDialog` in
+    // Internal (extension default): called from `updateDialog` in
     // GBAlertModal+Lifecycle.swift (different file, same module).
-    internal func unregisterDialogView() {
+    func unregisterDialogView() {
         svContentContainer?.removeAllArrangedSubviews()
 
         vwBanner?.removeFromSuperview()
@@ -40,7 +40,7 @@ internal extension GBAlertModal {
     // Thin orchestrator: build each component (init + own subview wiring), then assemble the
     // stack-view graph, then install constraints — in the exact same order as the original
     // monolith so the produced view tree + constraints are unchanged.
-    internal func registerDialogView() {
+    func registerDialogView() {
         let resolved = makeResolvedModal()
 
         // MARK: View Initialization

@@ -97,10 +97,10 @@ open class GBAlertModal: UIView {
 
 // MARK: - KEYBOARD
 
-private extension GBAlertModal {
-    // Widened from `private` to `internal`: called from `initEvents` in
+extension GBAlertModal {
+    // Internal (extension default): called from `initEvents` in
     // GBAlertModal+Model.swift (different file, same module).
-    internal func listenKeyboardEvents() {
+    func listenKeyboardEvents() {
         let notificationCenter = NotificationCenter.default
         notificationCenter.addObserver(
                 self,
@@ -133,7 +133,7 @@ private extension GBAlertModal {
     // in this file.
     // nonisolated: only calls thread-safe `NotificationCenter.removeObserver`, so it is safe to invoke
     // from `deinit` (a nonisolated context) without hopping to the main actor.
-    nonisolated internal func removeKeyboardEvents() {
+    nonisolated func removeKeyboardEvents() {
         let notificationCenter = NotificationCenter.default
         notificationCenter.removeObserver(self, name: UIResponder.keyboardWillShowNotification, object: nil)
         notificationCenter.removeObserver(self, name: UIResponder.keyboardWillHideNotification, object: nil)
