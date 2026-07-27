@@ -114,7 +114,8 @@ struct SwiftUIDemoScreen: View {
         let captured = generation
         isLoading = true
         lastResult = "generating…"
-        Task {
+        // @MainActor: this method is nonisolated, so pin the post-sleep @State mutations to the main actor.
+        Task { @MainActor in
             try? await Task.sleep(nanoseconds: 1_500_000_000)
             guard shouldApply(resultGeneration: captured, currentGeneration: generation) else { return }
             isLoading = false
