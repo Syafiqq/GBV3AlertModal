@@ -11,6 +11,7 @@
 //
 
 import UIKit
+import SwiftUI
 import GBV3AlertModal
 
 final class GalleryViewController: UITableViewController {
@@ -71,6 +72,17 @@ final class GalleryViewController: UITableViewController {
         super.viewDidLoad()
         title = "Dialog Gallery (\(Self.allEntries.count))"
         tableView.register(UITableViewCell.self, forCellReuseIdentifier: Self.cellReuseIdentifier)
+        navigationItem.rightBarButtonItem = UIBarButtonItem(
+            title: "SwiftUI",
+            style: .plain,
+            target: self,
+            action: #selector(openSwiftUIDemo)
+        )
+    }
+
+    @objc private func openSwiftUIDemo() {
+        let host = UIHostingController(rootView: SwiftUIDemoScreen())
+        navigationController?.pushViewController(host, animated: true)
     }
 
     // MARK: - Traversal (called by AppDelegate / FloatingTraversalControl)
