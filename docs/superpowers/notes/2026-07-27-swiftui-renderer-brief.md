@@ -1,4 +1,4 @@
-# Brief: SwiftUI renderer — `SwiftUIModalRenderer` (PARKED — do NOT build yet)
+# Brief: SwiftUI renderer — `SwiftUIModalRenderer` (renderer PARKED — UI-first next; see 2026-07-27 SESSION UPDATE below)
 
 **Status:** PARKED (YAGNI). **There is no SwiftUI screen and no SwiftUI dialog in this project** — the
 app and every dialog are UIKit. Building a SwiftUI renderer now is speculative; no caller exists.
@@ -14,6 +14,91 @@ by waiting. This brief exists so nobody re-investigates the seam or pre-builds a
 **Branch:** builds on `feat/modal-executor-capability` (coordinator PRs 1-2 + hardening, unmerged).
 **Related:** `2026-07-26-modal-coordinator-brief.md` (the executor/coordinator seam this would plug into).
 **Scale:** S — one renderer file + tests, WHEN the trigger fires.
+
+---
+
+## SESSION UPDATE 2026-07-27 — direction locked (council-vetted), UI-FIRST sequence chosen
+
+Owner brainstormed SwiftUI support this session (5-lens council: Torvalds / Rams / Taleb / Feynman / Ada).
+The renderer itself is STILL deferred — but the framing, delivery tiers, topology, testability, and the
+next step are now locked. **Owner will PLAN the SwiftUI UI in the next session; start there.** §1–§7 below
+remain valid as the Tier-1 renderer spec; this block supersedes the *sequencing*.
+
+### The reframe: "alongside" is already true, no renderer required for it
+The whole app is UIKit; a SwiftUI screen is a `UIHostingController` inside the SAME `UIWindow`. The existing
+`UIKitModalRenderer` paints onto the key window — so it ALREADY draws correctly over SwiftUI-hosted content.
+A SwiftUI VM calling `await executor.presentAndWait(AlertDialog…)` gets a correct modal with ZERO new code.
+"Run alongside UIKit" is one modal system serving both stacks through one window slot. (REASONED from the
+shipped architecture; NOT yet observed — see UNPROVEN below.)
+
+### Two-tier delivery
+- **Tier 0 — the paradigm, zero library code, available now.** Inject the existing `DefaultModalExecutor`
+  (UIKit renderer) into SwiftUI VMs. Modal renders UIKit, over the SwiftUI screen. This IS the centralized
+  presenter SwiftUI best-practice converges on anyway (next point).
+- **Tier 1 — native SwiftUI renderer** (§2–§5 of this brief). Only when the modal must be DRAWN/animated by
+  SwiftUI. Swap the injected renderer; everything above it unchanged. **Scale S = the SEAM only, NOT visual
+  parity** — animation/dimming/the 26 catalog shapes are separate and unestimated.
+
+### Why the executor beats pure per-view `.sheet` (the design argument)
+Per-view `.sheet(item:)` is right for a SCREEN-LOCAL modal. For CROSS-CUTTING dialogs (errors,
+session-expiry, paywall) it forces a flag + a modifier in every screen → sprawl. The mature SwiftUI answer
+is ONE injected presenter — exactly what `ModalExecutor` is. `catch { await executor.presentAndWait(.error) }`
+from any SwiftUI VM is the idiomatic centralized pattern, not a compromise. Choose by concern: screen-local
+→ native `.sheet`; cross-cutting → executor.
+
+### Topology LOCK (Taleb + Ada, unanimous): never two peer renderers
+If UIKit + SwiftUI ever render at once, use ONE composite renderer dispatching per-descriptor to a UIKit OR
+SwiftUI backend into the SAME single slot, under ONE coordinator (Ada's **T4** — provably preserves
+single-slot + resolve-on-every-exit). TWO peer renderers = two window slots = the coordinator's
+serial/dedup/priority invariant silently voids at a boundary that moves every sprint = Black Swan. Two
+coordinators (T3) is invalid outright. The seam already supports T4 — it's a switch inside one conformance.
+
+### API surface LOCK (Rams): library stays `token.result`
+No `.sheet`/`Binding`/Combine in the library — that lies about who drives the render loop. The idiomatic
+`.sheet(item:)` feel is a ~10-line APP-SIDE VM adapter (`@Published activeModal` driven from the async
+token). Promote to a shared helper only after 2–3 real usages, still app-side.
+
+### Testability (holds up; arguably better than pure SwiftUI)
+- **VM:** fully headless via a fake `ModalExecutor` (it's a protocol). `await presentAndWait` makes the whole
+  request→result→reaction one awaitable line — MORE testable than pure-SwiftUI flags (which can't easily
+  assert the post-tap reaction). Mirrors the repo's existing `SpyRenderer` pattern.
+- **View:** SwiftUI's weak spot, same for everyone — but the executor moves logic OUT of the view. Snapshot
+  (existing pointfree infra) for appearance; ONE hosting smoke test for tap→resolve.
+- **Parity for free:** run the existing `RootScreenModalCoordinatorTests` / `ModalExecutorCoordinatorTests`
+  against `SwiftUIModalRenderer` swapped in for the spy. Green = backend honors the baton contract.
+
+### Accepted risk (convention, not mechanism): z-order vs SwiftUI's own presentation
+Do NOT interleave an executor (window-subview) modal with a SwiftUI screen's OWN `.sheet` /
+`.fullScreenCover` — z-order between the two presentation mechanisms is not guaranteed. Fix by routing that
+screen's modal through the executor too (one mechanism per screen). Mediocristan; named, not guarded.
+
+### The one OPEN product fork (owner to decide — gates Tier 1)
+Do SwiftUI screens need modal CONTENT authored in SwiftUI (native look/animation/`@Observable`), or just to
+TRIGGER a modal? Trigger-only → Tier 0, build nothing. Native content (or a future pure-SwiftUI app with NO
+`UIWindow`) → build the Tier-1 renderer. Neither exists today.
+
+### CHOSEN NEXT STEP (owner, this session): UI-FIRST, empirical — the thing to PLAN next session
+Instead of proving the seam on paper, build a PURE-SwiftUI UI first, judge it, THEN decide executor/
+coordinator integration. Next-session plan target (all pure SwiftUI, local `@State`, **NO executor**):
+- `SwiftUIAlertModal` — native SwiftUI view mirroring `GBAlertModal` CONTENT (dimmed overlay + card:
+  optional banner, title, subtitle, primary, optional secondary, optional close) + an `onAction` callback.
+- `SwiftUIDemoScreen` — SwiftUI host driving it with LOCAL `@State` (idiomatic overlay/`ZStack`).
+- Wire into the example app via `UIHostingController`, reachable from the existing UIKit entry.
+- **Location: EXAMPLE APP, not the library** — zero library changes until the executor decision is made.
+- **Fidelity:** content-faithful to `GBAlertModal`; native SwiftUI idioms for layout/animation (not a
+  pixel-clone of the SnapKit version).
+- Then decide: keep pure-local `.sheet`, or route through executor (Tier 0) / build the renderer (Tier 1).
+
+### iOS floor bumped to 15 (DONE this session — verified 224/224 green)
+`Package.swift` `.v13→.v15` + example app 8 configs `13.0→15.0` + dead `#available(iOS 13)` guard removed
+(`AppCompatHelper.keyWindow`). So `@StateObject`, `.fullScreenCover(item:)`, `@Environment(\.dismiss)` are
+all available; `@Observable` still iOS 17. Consumers (distribution app) now require iOS 15+ — owner
+explicitly accepted ("nuke 13, all go with 15").
+
+### UNPROVEN (cheapest thing to validate, whichever path is chosen)
+The Tier-0 foundation — "executor modal paints correctly over a `UIHostingController` SwiftUI host" — is
+reasoned, not observed. A single hosting smoke test (host a SwiftUI view, `await presentAndWait`, assert it
+shows on top + a tap resolves) collapses that uncertainty for ~1hr. Worth doing before building on it.
 
 ---
 
@@ -88,13 +173,15 @@ driven from the async token) — app code, not library, not a seam change.
 
 `.sheet(item:)`/native-presentation adapter, all 26 catalog shapes in SwiftUI, SwiftUI-native animation/
 transition parity with the UIKit modal, a `@Observable` (iOS 17) variant of the slot if the min target rises
-from iOS 13. None block the core renderer.
+to iOS 17. None block the core renderer.
 
 ## 7. Gotchas
 
 - **Test run:** `xcodebuild test -scheme GBV3AlertModal -destination 'platform=iOS Simulator,name=iPhone 17'`
-  (iOS 13 target; `swift test` won't compile — iOS-only package). `-only-testing:` for tight loops.
-- **iOS 13 min target:** no `@Observable`, no `.fullScreenCover(item:)` before iOS 14 — use
-  `ObservableObject`/`@Published` + an overlay `ZStack`. Bump only if the package min target moves.
+  (iOS 15 target; `swift test` won't compile — iOS-only package). `-only-testing:` for tight loops.
+- **iOS 15 min target** (bumped from 13 on 2026-07-27, package + example app both at 15): `@StateObject`,
+  `.fullScreenCover(item:)`, and `@Environment(\.dismiss)` are all available — use them. Still NO
+  `@Observable` (iOS 17); use `ObservableObject`/`@Published` for the slot. Overlay `ZStack` remains the
+  host of choice (not `.fullScreenCover`) so the library keeps owning the single-slot dimmed geometry.
 - The coordinator already enforces single-slot dimmed-fullscreen geometry; the SwiftUI host should render ONE
   entry at a time under a coordinator. Only the direct (no-coordinator) path can stack — match UIKit behavior.
