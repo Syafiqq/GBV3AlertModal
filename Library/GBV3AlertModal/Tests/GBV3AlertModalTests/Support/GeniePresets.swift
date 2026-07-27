@@ -6,6 +6,11 @@ import UIKit
 /// was copied from). Structural values (widths, insets, spacing, flags) are copied verbatim.
 /// Fonts/colors are approximated with system equivalents since the exact Genie design tokens
 /// (FontHelper, UIColor.Custom, Colors) live in the consumer app, not this repo.
+// @MainActor: several builders here construct real UIKit views (`UIView`, `UITextView`,
+// `UIDatePicker`) and drive their layout directly (`renameWorksheet()`, `datePickerWorksheet()`),
+// which are @MainActor-isolated APIs under the Swift 6 UIKit annotations — so the whole enum is
+// pinned to the main actor rather than isolating just those two functions.
+@MainActor
 enum GeniePresets {
     // MARK: - Properties
 

@@ -47,6 +47,9 @@ import UIKit
 /// static caches that memoize localized strings at first access). Not present in this library
 /// (no static/memoized holder or properties exist here), so there is nothing to regression-test
 /// in this repo. Documented as an app-side follow-up in `task-5-report.md`.
+// @MainActor: `test_globalPropertiesOverride_isSilentlyIgnored_whenInstanceOmitsField` builds and
+// renders the @MainActor `GBAlertModal`, so this must run on the main actor under Swift 6.
+@MainActor
 final class BugRegressionTests: XCTestCase {
     // MARK: - Bug 1, Step 1: copy() must not drop an explicitly-set true
 
@@ -89,14 +92,20 @@ final class BugRegressionTests: XCTestCase {
 
     private var savedGlobalProperties: GBAlertModal.Properties!
 
-    override func setUpWithError() throws {
+    // `setUpWithError()`/`tearDownWithError()` are XCTestCase's synchronous, non-isolated
+    // lifecycle hooks — overriding them from this @MainActor class can't make the override
+    // MainActor-isolated (an override may not be more isolated than what it overrides), so
+    // touching the @MainActor-isolated `savedGlobalProperties` from their body warns under
+    // Swift 6. XCTest's `async` lifecycle hooks are isolated to the override's own actor, so
+    // switching to them (still real setup/teardown, not a workaround) resolves this honestly.
+    override func setUp() async throws {
         // `globalProperties` is a mutable, package-wide global — save/restore around any test
         // that touches it so this suite stays order-independent and doesn't leak state into
         // LayerA/LayerB/LayerC.
         savedGlobalProperties = globalProperties
     }
 
-    override func tearDownWithError() throws {
+    override func tearDown() async throws {
         globalProperties = savedGlobalProperties
     }
 

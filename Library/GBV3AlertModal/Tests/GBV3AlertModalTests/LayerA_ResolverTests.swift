@@ -7,6 +7,10 @@ import UIKit
 /// Task 3 seeded this suite with the banner-visibility decisions; Task 4 exhausts every
 /// remaining structural branch. No rendering happens here — every test constructs
 /// `Properties`/`DataHolder` directly and asserts the returned `ResolvedModal`.
+// @MainActor: several subtitle-precedence tests below build a bare `UIView()` to pass as
+// `subtitleCustomView` — `UIView`'s initializer is @MainActor-isolated under Swift 6, even
+// though `resolve(...)` itself is a nonisolated pure function.
+@MainActor
 final class LayerA_ResolverTests: XCTestCase {
     // MARK: - Banner (seeded by Task 3)
 

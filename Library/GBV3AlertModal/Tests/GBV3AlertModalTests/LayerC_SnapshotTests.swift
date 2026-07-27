@@ -7,6 +7,10 @@ import SnapshotTesting
 /// This locks down the CURRENT rendered output of `GBAlertModal` for the exact
 /// property/holder combinations Genie ships, so a later refactor (extracting a pure
 /// layout/config resolver) can be proven behavior-preserving against these baselines.
+// @MainActor: every test builds/renders the @MainActor `GBAlertModal` (via `renderForSnapshot`)
+// and some inspect its live UIKit view properties directly, so this must run on the main actor
+// under Swift 6.
+@MainActor
 final class LayerC_SnapshotTests: XCTestCase {
     let portrait = CGSize(width: 390, height: 844)
     let landscape = CGSize(width: 844, height: 390)

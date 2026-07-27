@@ -23,6 +23,10 @@ import SnapshotTesting
 /// size (verified below: `lbTitle`/`lbSubtitle`/`btPrimaryAction` all end up non-zero and inside
 /// `svContentContainer`'s bounds in every one of the 6 cases) and lets `scaleAspectFit` letterbox
 /// the (now smaller) banner instead.
+// @MainActor: builds/renders the @MainActor `GBAlertModal` and inspects its live UIKit view
+// properties (`lbTitle`, `svContentContainer`, etc.), so it must run on the main actor under
+// Swift 6.
+@MainActor
 final class BannerAspectStressTests: XCTestCase {
     let portrait = CGSize(width: 390, height: 844)
     let landscape = CGSize(width: 844, height: 390)

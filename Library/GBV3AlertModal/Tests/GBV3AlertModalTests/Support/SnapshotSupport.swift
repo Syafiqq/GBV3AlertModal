@@ -27,6 +27,10 @@ nonisolated(unsafe) private var previousSnapshotHostWindow: UIWindow?
 /// Detaches the retained host window from its scene and releases every strong path into it, so
 /// no UIKit object survives the test that created it. Idempotent and safe to call when nothing
 /// is retained. Runs on the main thread (XCTest teardown blocks and test bodies both do).
+// @MainActor: mutates `UIWindow` properties (`isHidden`, `rootViewController`, `subviews`,
+// `windowScene`), which are @MainActor-isolated under Swift 6 — matches the doc comment above
+// (already true at runtime; now also true at compile time).
+@MainActor
 func tearDownSnapshotHost() {
     guard let window = previousSnapshotHostWindow else { return }
     window.isHidden = true
@@ -44,6 +48,9 @@ extension XCTestCase {
     /// while computing its content width, so hosting inside a real, key `UIWindow` sized to
     /// `size` is what drives that branch deterministically — the modal is pinned to its parent's
     /// edges, so its bounds after layout match the host size passed in here.
+    // @MainActor: builds/renders a real `UIWindow` and the @MainActor `GBAlertModal`, so this
+    // helper must run on the main actor under Swift 6 — every caller is (or becomes) @MainActor.
+    @MainActor
     @discardableResult
     func renderForSnapshot(_ modal: GBAlertModal, size: CGSize) -> UIView {
         // Tear down any host still retained from an earlier render (e.g. an earlier render in
