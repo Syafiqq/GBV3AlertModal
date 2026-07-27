@@ -33,6 +33,7 @@ struct SwiftUIDemoScreen: View {
             Button("Minimal alert") { active = Self.demoMinimal }
             Button("Full alert") { active = Self.demoFull }
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .navigationTitle("SwiftUI Modal")
         .overlay {
             if let config = active {
