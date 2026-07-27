@@ -7,6 +7,10 @@ import UIKit
 /// One assert per public config field / method: does it actually reach the view property
 /// (or behavior) it's documented to control? No snapshots — either a direct view-property
 /// assert (after `renderForSnapshot`) or a behavioral assert (state change / callback firing).
+// @MainActor: this class builds and renders UIKit `GBAlertModal` instances (a @MainActor type)
+// and passes non-Sendable properties/holders/closures into its @MainActor APIs, so it must run
+// on the main actor under Swift 6.
+@MainActor
 final class LayerB_WiringTests: XCTestCase {
     let portrait = CGSize(width: 390, height: 844)
 
