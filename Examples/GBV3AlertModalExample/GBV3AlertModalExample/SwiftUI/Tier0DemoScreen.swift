@@ -3,9 +3,10 @@ import GBV3AlertModal
 
 /// Tier 0: a SwiftUI ViewModel drives the EXISTING executor. This screen has NO SwiftUI modal view —
 /// it `await`s `executor.presentAndWait(...)` and the real UIKit `GBAlertModal` paints OVER this
-/// screen (proven by `Tier0HostingSmokeTests`). The renderer is injected behind the executor, so this
-/// exact VM code runs unchanged under a future Tier-1 `SwiftUIModalRenderer` — Tier 0 → Tier 1 is a
-/// renderer swap, not a rewrite.
+/// screen. (The executor→UIKit-over-SwiftUI seam itself is proven by `Tier0HostingSmokeTests`; this
+/// screen is the VM-facing usage of it.) The renderer is injected behind the executor, so this exact
+/// VM code runs unchanged under a future Tier-1 `SwiftUIModalRenderer` — Tier 0 → Tier 1 is a renderer
+/// swap, not a rewrite.
 @MainActor
 final class Tier0DemoViewModel: ObservableObject {
     @Published var lastResult = "—"
@@ -20,6 +21,7 @@ final class Tier0DemoViewModel: ObservableObject {
                         primary: "Delete",
                         secondary: "Keep")
         )
+        guard !Task.isCancelled else { return }   // pop-while-shown cancels the await; don't record it
         lastResult = "\(result)"
     }
 
@@ -29,12 +31,17 @@ final class Tier0DemoViewModel: ObservableObject {
                         subtitle: "Your changes have been saved.",
                         primary: "Got it")
         )
+        guard !Task.isCancelled else { return }
         lastResult = "\(result)"
     }
 }
 
 struct Tier0DemoScreen: View {
     @StateObject private var vm: Tier0DemoViewModel
+    /// The in-flight present. Bound to view lifecycle so leaving the screen cancels the await —
+    /// which fires the token's `onDrop → dismiss`, tearing the UIKit modal down instead of orphaning
+    /// it on the key window. This is exactly the scope-based cleanup Tier 1 relies on.
+    @State private var pending: Task<Void, Never>?
 
     init(executor: ModalExecutor) {
         _vm = StateObject(wrappedValue: Tier0DemoViewModel(executor: executor))
@@ -52,10 +59,17 @@ struct Tier0DemoScreen: View {
                 .foregroundColor(.secondary)
                 .padding(.horizontal, 32)
 
-            Button("Confirm delete (await result)") { Task { await vm.confirmDelete() } }
-            Button("Show info") { Task { await vm.showInfo() } }
+            Button("Confirm delete (await result)") { present { await vm.confirmDelete() } }
+            Button("Show info") { present { await vm.showInfo() } }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .navigationTitle("Tier 0 · UIKit over SwiftUI")
+        .onDisappear { pending?.cancel() }
+    }
+
+    /// Runs one present at a time, tracked so `onDisappear` can cancel it.
+    private func present(_ op: @escaping () async -> Void) {
+        pending?.cancel()
+        pending = Task { await op() }
     }
 }

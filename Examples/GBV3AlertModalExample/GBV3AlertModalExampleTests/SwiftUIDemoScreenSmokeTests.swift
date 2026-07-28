@@ -65,6 +65,40 @@ final class SwiftUIDemoScreenSmokeTests: XCTestCase {
         XCTAssertTrue(hasBuiltViewGraph(host.view))
     }
 
+    /// Tier 0 end-to-end from the VM: `confirmDelete()` presents a UIKit modal through the executor,
+    /// and resolving that modal (user taps primary) flows the result back into `lastResult`.
+    func test_tier0_vm_presents_and_resolves_result() async {
+        let window = UIWindow(frame: CGRect(x: 0, y: 0, width: 390, height: 844))
+        window.makeKeyAndVisible()
+        defer { window.isHidden = true }
+        let renderer = UIKitModalRenderer(
+            alertProperties: GBAlertModal.Properties(primaryActionStyle: .capsule(.init(backgroundColor: .systemBlue))),
+            windowProvider: { window }
+        )
+        let vm = Tier0DemoViewModel(executor: DefaultModalExecutor(renderer: renderer))
+
+        let task = Task { await vm.confirmDelete() }
+        var modal: GBAlertModal?
+        for _ in 0..<200 {
+            modal = firstDescendant(GBAlertModal.self, in: window)
+            if modal != nil { break }
+            await Task.yield()
+        }
+        XCTAssertNotNil(modal, "VM.confirmDelete() should present a UIKit modal through the executor")
+
+        modal?.dismissAndEmit(event: .primary)   // user taps primary
+        await task.value
+        XCTAssertEqual(vm.lastResult, "primary")
+    }
+
+    private func firstDescendant<T: UIView>(_ type: T.Type, in view: UIView) -> T? {
+        for sub in view.subviews {
+            if let hit = sub as? T { return hit }
+            if let deep = firstDescendant(type, in: sub) { return deep }
+        }
+        return nil
+    }
+
     // MARK: new stateful demo cases
 
     /// The "loading button" (Gc2Gs) case: the demo screen's fixture, hosted through
