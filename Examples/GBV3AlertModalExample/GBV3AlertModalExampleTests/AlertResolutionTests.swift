@@ -54,6 +54,47 @@ final class AlertResolutionTests: XCTestCase {
         XCTAssertNil(resolve(.overlayTapped, cfg(closeOnTapOverlay: false)))
     }
 
+    // MARK: ResolvedAlert — AttributedString era (matches the descriptor's AttributedString? type)
+
+    func test_attributed_title_shows_when_present_hidden_when_empty() {
+        XCTAssertTrue(ResolvedAlert(alert(title: AttributedString("Hi"))).showsTitle)
+        XCTAssertFalse(ResolvedAlert(alert(title: AttributedString(""))).showsTitle)
+    }
+
+    func test_attributed_subtitle_shows_when_present_hidden_when_empty() {
+        XCTAssertTrue(ResolvedAlert(alert(subtitle: AttributedString("Body"))).showsSubtitle)
+        XCTAssertFalse(ResolvedAlert(alert(subtitle: AttributedString(""))).showsSubtitle)
+    }
+
+    /// `present` keys on `.characters.isEmpty`, so a single space is non-empty and DOES show —
+    /// same semantics as the UIKit `!(s ?? "").isEmpty`. Pin it so a "trim" refactor is a decision.
+    func test_whitespace_title_is_shown() {
+        XCTAssertTrue(ResolvedAlert(cfg(title: " ")).showsTitle)
+    }
+
+    // MARK: ResolvedAlert — combinations & independence
+
+    func test_all_slots_present_all_show() {
+        let r = ResolvedAlert(cfg(
+            image: ModalImage("x"), title: "T", subtitle: "S",
+            secondary: "Cancel", showCloseButton: true
+        ))
+        XCTAssertTrue(r.showsBanner && r.showsTitle && r.showsSubtitle && r.showsSecondary && r.showsClose)
+    }
+
+    func test_showClose_independent_of_overlay_flag() {
+        XCTAssertTrue(ResolvedAlert(cfg(closeOnTapOverlay: false, showCloseButton: true)).showsClose)
+        XCTAssertFalse(ResolvedAlert(cfg(closeOnTapOverlay: true, showCloseButton: false)).showsClose)
+    }
+
+    // MARK: resolve — button routing is unconditional (only overlay is flag-gated)
+
+    func test_close_and_secondary_routing_independent_of_show_flags() {
+        // resolve() maps the interaction regardless of visibility flags; the VIEW gates what's tappable.
+        XCTAssertEqual(resolve(.closeTapped, cfg(showCloseButton: false)), .dismissed)
+        XCTAssertEqual(resolve(.secondaryTapped, cfg(secondary: nil)), .secondary)
+    }
+
     // MARK: helper — one place to vary a single field
 
     private func cfg(
@@ -70,5 +111,13 @@ final class AlertResolutionTests: XCTestCase {
             primary: primary, secondary: secondary,
             closeOnTapOverlay: closeOnTapOverlay, showCloseButton: showCloseButton
         )
+    }
+
+    /// Same as `cfg` but exercises the AttributedString init (title/subtitle typed AttributedString?).
+    private func alert(
+        title: AttributedString? = nil,
+        subtitle: AttributedString? = nil
+    ) -> AlertDialog {
+        AlertDialog(title: title, subtitle: subtitle, primary: "OK")
     }
 }

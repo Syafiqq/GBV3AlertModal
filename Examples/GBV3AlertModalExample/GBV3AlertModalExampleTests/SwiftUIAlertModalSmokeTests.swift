@@ -89,4 +89,65 @@ final class SwiftUIAlertModalSmokeTests: XCTestCase {
         XCTAssertFalse(host.view.bounds.isEmpty, "disabled: host view was not laid out")
         XCTAssertTrue(hasBuiltViewGraph(host.view), "disabled: view graph is empty")
     }
+
+    // MARK: Layer-B wiring — hosting-observable (no ViewInspector)
+
+    /// The `isPrimaryLoading` branch must render a real spinner, not just the label. A hosted
+    /// SwiftUI `ProgressView` is backed by a `UIActivityIndicatorView`, so its presence/absence
+    /// is an observable per-field wiring assert without ViewInspector.
+    func test_loading_state_renders_activity_indicator() {
+        let cfg = AlertDialog(title: "Generate", subtitle: "Uses one credit.", primary: "Generate")
+        let (loadingWindow, loadingHost) = host(SwiftUIAlertModal(config: cfg, isPrimaryLoading: true) { _ in })
+        defer { teardown(loadingWindow) }
+        XCTAssertNotNil(firstDescendant(UIActivityIndicatorView.self, in: loadingHost.view),
+                        "loading primary should render a spinner")
+
+        let (idleWindow, idleHost) = host(SwiftUIAlertModal(config: cfg, isPrimaryLoading: false) { _ in })
+        defer { teardown(idleWindow) }
+        XCTAssertNil(firstDescendant(UIActivityIndicatorView.self, in: idleHost.view),
+                     "non-loading primary should show no spinner")
+    }
+
+    private func firstDescendant<T: UIView>(_ type: T.Type, in view: UIView) -> T? {
+        for sub in view.subviews {
+            if let hit = sub as? T { return hit }
+            if let deep = firstDescendant(type, in: sub) { return deep }
+        }
+        return nil
+    }
+
+    // MARK: Task-4 design tokens & styles (pure — no hosting)
+
+    /// Tokens are transcribed from the real `Presentation.UiKit.V3AlertModal` preset (spec D8).
+    /// Pin them so an accidental edit that drifts from the app design is a failing test, not a silent regression.
+    func test_modalTokens_match_real_V3AlertModal_preset() {
+        XCTAssertEqual(ModalTokens.cornerRadius, 16)
+        XCTAssertEqual(ModalTokens.gapBelowBanner, 16)
+        XCTAssertEqual(ModalTokens.gapBelowTitle, 16)
+        XCTAssertEqual(ModalTokens.gapBelowSubtitle, 24)
+        XCTAssertEqual(ModalTokens.interButton, 8)
+        XCTAssertEqual(ModalTokens.scrimOpacity, 0.6, accuracy: 0.001)
+        XCTAssertEqual(ModalTokens.bannerAspectRatio, 1)
+        XCTAssertTrue(ModalTokens.cardWidth == 256 || ModalTokens.cardWidth == 300,
+                      "card width must be the phone (256) or pad (300) preset value")
+    }
+
+    func test_hex_color_decodes_rgb_channels() {
+        var r: CGFloat = 0, g: CGFloat = 0, b: CGFloat = 0, a: CGFloat = 0
+        UIColor(Color(hex: 0x038CD5)).getRed(&r, green: &g, blue: &b, alpha: &a)
+        XCTAssertEqual(r, 0x03 / 255, accuracy: 0.01)
+        XCTAssertEqual(g, 0x8C / 255, accuracy: 0.01)
+        XCTAssertEqual(b, 0xD5 / 255, accuracy: 0.01)
+    }
+
+    /// The signature primary shape must actually cut the bottom-left corner while keeping the body.
+    func test_obliqueShape_cuts_bottom_left_corner_keeps_body() {
+        let rect = CGRect(x: 0, y: 0, width: 200, height: 48)
+        let path = ObliqueBottomLeftShape().path(in: rect)
+        XCTAssertTrue(path.contains(CGPoint(x: 100, y: 24)), "body center should be filled")
+        XCTAssertFalse(path.contains(CGPoint(x: 2, y: 46)), "bottom-left corner should be cut away")
+        XCTAssertTrue(path.boundingRect.width <= rect.width + 0.5
+                      && path.boundingRect.height <= rect.height + 0.5,
+                      "shape must stay within its rect")
+    }
 }
