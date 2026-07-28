@@ -4,9 +4,10 @@ import GBV3AlertModal
 /// Pure-SwiftUI mirror of `GBAlertModal`'s content: a full-screen scrim with a centered card.
 /// Holds NO branching logic — reads `ResolvedAlert` and routes taps through `resolve(_:_:)`.
 /// Never dismisses itself; the caller reacts to `onAction` (matches the executor teardown contract).
+/// Styling is fixed design (`ModalTokens` + `ButtonStyle`s), never per-call (spec D8).
 struct SwiftUIAlertModal: View {
     let config: AlertDialog
-    var scrim: Color = Color.black.opacity(0.6)
+    var scrim: Color = ModalTokens.Palette.scrim.opacity(ModalTokens.scrimOpacity)
     /// Presentation state — NOT part of `AlertDialog`. The caller (demo screen / real app)
     /// owns this; the view only reads it. Mirrors the real app's enabled/loading primary button.
     var primaryEnabled: Bool = true
@@ -23,7 +24,7 @@ struct SwiftUIAlertModal: View {
                 .onTapGesture { route(.overlayTapped) }
 
             card
-                .frame(maxWidth: 300)
+                .frame(maxWidth: ModalTokens.cardWidth)
                 .padding(24)
 
             if resolved.showsClose {
@@ -33,53 +34,47 @@ struct SwiftUIAlertModal: View {
     }
 
     private var card: some View {
-        VStack(spacing: 16) {
+        VStack(spacing: 0) {
             if resolved.showsBanner, let name = config.image?.assetName {
                 Image(name)
                     .resizable()
-                    .scaledToFit()
-                    .frame(maxHeight: 160)
+                    .aspectRatio(ModalTokens.bannerAspectRatio, contentMode: .fit)
+                    .frame(maxHeight: ModalTokens.bannerMaxHeight)
+                    .padding(.bottom, ModalTokens.gapBelowBanner)
             }
             if resolved.showsTitle, let title = config.title {
                 Text(title)
-                    .font(.title2.bold())
+                    .font(ModalTokens.titleFont)
+                    .foregroundColor(ModalTokens.Palette.titleText)
                     .multilineTextAlignment(.center)
+                    .padding(.bottom, ModalTokens.gapBelowTitle)
             }
             if resolved.showsSubtitle, let subtitle = config.subtitle {
                 Text(subtitle)
-                    .font(.body)
-                    .foregroundColor(.secondary)
+                    .font(ModalTokens.subtitleFont)
+                    .foregroundColor(ModalTokens.Palette.subtitleText)
                     .multilineTextAlignment(.center)
+                    .padding(.bottom, ModalTokens.gapBelowSubtitle)
             }
             Button { route(.primaryTapped) } label: {
-                Group {
-                    if isPrimaryLoading {
-                        ProgressView()
-                            .tint(.white)
-                    } else {
-                        Text(config.primary)
-                    }
+                if isPrimaryLoading {
+                    ProgressView().tint(ModalTokens.Palette.onAccent)
+                } else {
+                    Text(config.primary)
                 }
-                .font(.body.weight(.medium))
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 12)
-                .background(Color.accentColor)
-                .foregroundColor(.white)
-                .clipShape(Capsule())
             }
+            .buttonStyle(ObliquePrimaryStyle())
             .disabled(!primaryEnabled || isPrimaryLoading)
+
             if resolved.showsSecondary, let secondary = config.secondary {
-                Button { route(.secondaryTapped) } label: {
-                    Text(secondary)
-                        .font(.body.weight(.medium))
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 12)
-                }
+                Button { route(.secondaryTapped) } label: { Text(secondary) }
+                    .buttonStyle(PlainSecondaryStyle())
+                    .padding(.top, ModalTokens.interButton)
             }
         }
-        .padding(24)
-        .background(Color(.systemBackground))
-        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .padding(ModalTokens.contentPadding)
+        .background(ModalTokens.Palette.cardBackground)
+        .clipShape(RoundedRectangle(cornerRadius: ModalTokens.cornerRadius, style: .continuous))
     }
 
     private var closeButton: some View {
@@ -89,7 +84,7 @@ struct SwiftUIAlertModal: View {
                 Button { route(.closeTapped) } label: {
                     Image(systemName: "xmark.circle.fill")
                         .font(.title2)
-                        .foregroundColor(.secondary)
+                        .foregroundColor(ModalTokens.Palette.subtitleText)
                 }
             }
             Spacer()
