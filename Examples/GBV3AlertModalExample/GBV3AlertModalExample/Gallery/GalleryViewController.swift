@@ -87,22 +87,9 @@ final class GalleryViewController: UITableViewController {
     /// Tier 0: build the library executor over a UIKit renderer and inject it into a SwiftUI VM.
     /// The renderer paints the real UIKit modal on the key window, over the pushed SwiftUI screen.
     @objc private func openTier0Demo() {
-        let properties = GBAlertModal.Properties(
-            overlayColor: UIColor.black.withAlphaComponent(0.6),
-            titleColor: .label,
-            subtitleColor: .secondaryLabel,
-            primaryActionStyle: .capsule(.init(backgroundColor: .systemOrange, titleColor: .white)),
-            secondaryActionStyle: .plain(.init(titleColor: .systemOrange))
-        )
-        // Popup: same content shape, visibly different style (indigo) — proving it's a distinct descriptor.
-        let popupProperties = GBAlertModal.Properties(
-            overlayColor: UIColor.black.withAlphaComponent(0.6),
-            titleColor: .systemIndigo,
-            subtitleColor: .secondaryLabel,
-            primaryActionStyle: .capsule(.init(backgroundColor: .systemIndigo, titleColor: .white)),
-            secondaryActionStyle: .plain(.init(titleColor: .systemIndigo))
-        )
-        let renderer = UIKitModalRenderer(alertProperties: properties, popupProperties: popupProperties)
+        // Full styled Properties so the real UIKit modal renders as a proper card (see Tier0DemoStyle).
+        let properties = Tier0DemoStyle.alert()
+        let renderer = UIKitModalRenderer(alertProperties: properties, popupProperties: Tier0DemoStyle.popup())
         // Custom-content input descriptors — registered by the consumer with the library's holders.
         renderer.register(TextInputDialog.self) { descriptor, resolve in
             (properties, UIKitModalRenderer.TextInputHolder.make(for: descriptor, resolve: resolve))
