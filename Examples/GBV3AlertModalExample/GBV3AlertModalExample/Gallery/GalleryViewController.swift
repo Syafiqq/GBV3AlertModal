@@ -103,6 +103,13 @@ final class GalleryViewController: UITableViewController {
             secondaryActionStyle: .plain(.init(titleColor: .systemIndigo))
         )
         let renderer = UIKitModalRenderer(alertProperties: properties, popupProperties: popupProperties)
+        // Custom-content input descriptors — registered by the consumer with the library's holders.
+        renderer.register(TextInputDialog.self) { descriptor, resolve in
+            (properties, UIKitModalRenderer.TextInputHolder.make(for: descriptor, resolve: resolve))
+        }
+        renderer.register(DatePickerDialog.self) { descriptor, resolve in
+            (properties, UIKitModalRenderer.DatePickerHolder.make(for: descriptor, resolve: resolve))
+        }
         let executor = DefaultModalExecutor(renderer: renderer)
         let host = UIHostingController(rootView: Tier0DemoScreen(executor: executor))
         navigationController?.pushViewController(host, animated: true)

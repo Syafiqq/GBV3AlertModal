@@ -46,6 +46,34 @@ final class Tier0DemoViewModel: ObservableObject {
         guard !Task.isCancelled else { return }
         lastResult = "popup: \(result)"
     }
+
+    /// Custom content: a text field inside the modal; the result carries the entered text.
+    func showRename() async {
+        let result = await executor.presentAndWait(
+            TextInputDialog(title: "Rename worksheet",
+                            placeholder: "Worksheet name",
+                            initialText: "Untitled",
+                            primary: "Save",
+                            secondary: "Cancel")
+        )
+        guard !Task.isCancelled else { return }
+        switch result {
+        case .submitted(let name): lastResult = "renamed: \(name)"
+        case .dismissed:           lastResult = "rename: dismissed"
+        }
+    }
+
+    /// Custom content: a date picker inside the modal; the result carries the picked date.
+    func pickDate() async {
+        let result = await executor.presentAndWait(
+            DatePickerDialog(title: "Pick a date", initialDate: Date(), primary: "OK", secondary: "Cancel")
+        )
+        guard !Task.isCancelled else { return }
+        switch result {
+        case .submitted(let date): lastResult = "date: \(date.formatted(date: .abbreviated, time: .omitted))"
+        case .dismissed:           lastResult = "date: dismissed"
+        }
+    }
 }
 
 struct Tier0DemoScreen: View {
@@ -74,6 +102,8 @@ struct Tier0DemoScreen: View {
             Button("Confirm delete (await result)") { present { await vm.confirmDelete() } }
             Button("Show info") { present { await vm.showInfo() } }
             Button("Show popup (PopupDialog)") { present { await vm.showPopup() } }
+            Button("Rename (text input)") { present { await vm.showRename() } }
+            Button("Pick date (date picker)") { present { await vm.pickDate() } }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .navigationTitle("Tier 0 · UIKit over SwiftUI")
