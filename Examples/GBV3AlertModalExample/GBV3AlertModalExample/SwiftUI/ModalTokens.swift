@@ -1,10 +1,10 @@
 import SwiftUI
 
 /// Fixed design vocabulary for the SwiftUI alert modal (spec D8: `Properties` dissolves into
-/// tokens + `ButtonStyle`s, not per-call fields). Structural values are transcribed from the
-/// distribution app's real `Presentation.UiKit.V3AlertModal` preset; colours/fonts are best-effort
-/// approximations of the Geniebook design system (`UIColor.Genie.*` / `FontHelper.SHSans.*`), which
-/// the example app does not link — swap for the real tokens if these views graduate into the library.
+/// tokens + `ButtonStyle`s, not per-call fields). Structural values AND colours are transcribed
+/// from the distribution app's real `Presentation.UiKit.V3AlertModal` preset + `UIColor.Genie.*` /
+/// `Colors.*` (hex values inlined here since the example app doesn't link the design system). Fonts
+/// use SwiftUI system fonts at the preset's real sizes/weights (`FontHelper.SHSans` not linked).
 enum ModalTokens {
     // Card geometry — real preset (ContentProperty): cornerRadius 16, fixedWidth 300 pad / 256 phone.
     static let cornerRadius: CGFloat = 16
@@ -32,16 +32,19 @@ enum ModalTokens {
     static let buttonFont: Font = .system(size: 16, weight: .heavy)
 
     enum Palette {
-        // Genie blue family (real pressed = 0x038CD5; unpressed accentSecondaryDark approximated darker).
-        static let accent = Color(hex: 0x038CD5)
-        static let accentPressed = Color(hex: 0x0272AB)
-        static let disabled = Color(hex: 0xC9D2DD)          // ≈ borderLight
-        static let titleText = Color(hex: 0x14284B)         // ≈ Genie.primary navy
-        static let subtitleText = Color(hex: 0x5B6474)      // ≈ textPrimaryDark
+        // Real Geniebook values, transcribed from UIColor.Genie.* / Colors.* in the distribution app.
+        // NB: the primary button is ORANGE at rest and flips to BLUE when pressed — that hue-flip is
+        // the real V3AlertModal oblique theme (unPressedColor accentSecondaryDark / pressedColor 0x038CD5),
+        // not a prototype bug.
+        static let accent = Color(hex: 0xF7941E)            // accentSecondaryDark (oblique unpressed)
+        static let accentPressed = Color(hex: 0x038CD5)     // oblique pressedColor
+        static let disabled = Color(hex: 0xB4B4B4)          // borderLight
+        static let titleText = Color(hex: 0x262262)         // Genie.primary == GBPNavy
+        static let subtitleText = Color(hex: 0x333333)      // textPrimaryDark
         static let onAccent = Color.white
-        static let shadow = Color(hex: 0xF5A623)            // ≈ orangeMandarin
+        static let shadow = Color(hex: 0xE57B41)            // orangeMandarin
         static let cardBackground = Color.white
-        static let scrim = Color.black
+        static let scrim = Color(hex: 0x626262)             // Colors.text_primary (dimmed @ scrimOpacity)
     }
 }
 
