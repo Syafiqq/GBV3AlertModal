@@ -54,6 +54,9 @@ struct SatisfactionDemoView: View {
                 Text(option.label)
                     .font(.caption)
                     .multilineTextAlignment(.center)
+                    .lineLimit(2)
+                    .minimumScaleFactor(0.8)
+                    .fixedSize(horizontal: false, vertical: true) // wrap to 2 lines, don't truncate at 256pt
             }
             .frame(maxWidth: .infinity)
             .padding(.vertical, 10)
