@@ -27,4 +27,24 @@ import UIKit
     func test_alertDialogResult_dismissedResultIsDismissed() {
         XCTAssertEqual(AlertDialog.dismissedResult, .dismissed)
     }
+
+    func test_stringInit_liftsToAttributedString() {
+        let d = AlertDialog(title: "Hi", subtitle: "There", primary: "OK")
+        XCTAssertEqual(d.title.map { String($0.characters) }, "Hi")
+        XCTAssertEqual(d.subtitle.map { String($0.characters) }, "There")
+    }
+
+    func test_bothInits_equivalentForPlainText() {
+        let s = AlertDialog(title: "Hi", subtitle: "There", primary: "OK")
+        let a = AlertDialog(title: AttributedString("Hi"), subtitle: AttributedString("There"), primary: "OK")
+        XCTAssertEqual(s.title, a.title)
+        XCTAssertEqual(s.subtitle, a.subtitle)
+    }
+
+    func test_bareInit_isUnambiguous_resolvesToStringPath() {
+        // Compiles only because the AttributedString init does not default title/subtitle.
+        let d = AlertDialog(primary: "OK")
+        XCTAssertNil(d.title)
+        XCTAssertNil(d.subtitle)
+    }
 }
