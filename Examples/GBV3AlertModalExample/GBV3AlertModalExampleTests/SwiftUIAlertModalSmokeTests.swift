@@ -2,6 +2,7 @@
 import SwiftUI
 import UIKit
 import XCTest
+import ViewInspector
 import GBV3AlertModal
 @testable import GBV3AlertModalExample
 
@@ -149,5 +150,46 @@ final class SwiftUIAlertModalSmokeTests: XCTestCase {
         XCTAssertTrue(path.boundingRect.width <= rect.width + 0.5
                       && path.boundingRect.height <= rect.height + 0.5,
                       "shape must stay within its rect")
+    }
+
+    // MARK: Layer-B wiring — view introspection (ViewInspector)
+
+    private func modal(_ config: AlertDialog) -> SwiftUIAlertModal {
+        SwiftUIAlertModal(config: config) { _ in }
+    }
+
+    /// Each content field actually reaches a rendered `Text` (title/subtitle/primary/secondary label).
+    func test_layerB_content_text_reaches_the_view() throws {
+        let sut = modal(AlertDialog(title: "Title", subtitle: "Body", primary: "OK", secondary: "Cancel"))
+        XCTAssertNoThrow(try sut.inspect().find(text: "Title"))
+        XCTAssertNoThrow(try sut.inspect().find(text: "Body"))
+        XCTAssertNoThrow(try sut.inspect().find(text: "OK"))
+        XCTAssertNoThrow(try sut.inspect().find(text: "Cancel"))
+    }
+
+    /// Button count reflects secondary + close wiring: minimal=1 (primary), +secondary=2, +close=3.
+    func test_layerB_button_count_reflects_secondary_and_close() throws {
+        XCTAssertEqual(try modal(AlertDialog(title: "T", primary: "OK"))
+            .inspect().findAll(ViewType.Button.self).count, 1)
+        XCTAssertEqual(try modal(AlertDialog(title: "T", primary: "OK", secondary: "Cancel"))
+            .inspect().findAll(ViewType.Button.self).count, 2)
+        XCTAssertEqual(try modal(AlertDialog(title: "T", primary: "OK", secondary: "Cancel", showCloseButton: true))
+            .inspect().findAll(ViewType.Button.self).count, 3)
+    }
+
+    /// The banner `Image` renders only when an image is set (no banner, no close → no `Image` at all).
+    func test_layerB_banner_image_present_only_when_image_set() throws {
+        XCTAssertNoThrow(try modal(AlertDialog(image: ModalImage("img_illust_onboarding"), title: "T", primary: "OK"))
+            .inspect().find(ViewType.Image.self))
+        XCTAssertThrowsError(try modal(AlertDialog(title: "T", primary: "OK"))
+            .inspect().find(ViewType.Image.self))
+    }
+
+    /// The close glyph (an SF Symbol `Image`) appears iff `showCloseButton`.
+    func test_layerB_close_glyph_present_iff_flag() throws {
+        XCTAssertNoThrow(try modal(AlertDialog(title: "T", primary: "OK", showCloseButton: true))
+            .inspect().find(ViewType.Image.self))
+        XCTAssertThrowsError(try modal(AlertDialog(title: "T", primary: "OK", showCloseButton: false))
+            .inspect().find(ViewType.Image.self))
     }
 }
