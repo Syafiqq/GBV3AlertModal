@@ -3,6 +3,7 @@ import SwiftUI
 import UIKit
 import XCTest
 import ViewInspector
+import SnapshotTesting
 import GBV3AlertModal
 @testable import GBV3AlertModalExample
 
@@ -191,5 +192,59 @@ final class SwiftUIAlertModalSmokeTests: XCTestCase {
             .inspect().find(ViewType.Image.self))
         XCTAssertThrowsError(try modal(AlertDialog(title: "T", primary: "OK", showCloseButton: false))
             .inspect().find(ViewType.Image.self))
+    }
+}
+
+// MARK: - Layer C — snapshots of the shipped shapes (real Genie colours)
+
+/// Locks the rendered output of the SwiftUI modal for the shapes Geniebook actually ships, so a
+/// later refactor (or a Tier-1 library port) can be proven pixel-equivalent. Baselines are recorded
+/// on an iPhone 17 simulator; re-record intentionally if the design changes.
+@MainActor
+final class SwiftUIAlertModalSnapshotTests: XCTestCase {
+    private let canvas = CGSize(width: 390, height: 844)
+
+    private func render(_ view: SwiftUIAlertModal) -> UIView {
+        let host = UIHostingController(rootView: view)
+        let window = UIWindow(frame: CGRect(origin: .zero, size: canvas))
+        window.rootViewController = host
+        window.isHidden = false
+        window.makeKeyAndVisible()
+        host.view.frame = CGRect(origin: .zero, size: canvas)
+        window.setNeedsLayout()
+        window.layoutIfNeeded()
+        return host.view
+    }
+
+    private func alert(_ config: AlertDialog, isPrimaryLoading: Bool = false) -> SwiftUIAlertModal {
+        SwiftUIAlertModal(config: config, isPrimaryLoading: isPrimaryLoading) { _ in }
+    }
+
+    func test_snapshot_minimal() {
+        let v = render(alert(AlertDialog(title: "You're all set",
+                                         subtitle: "Your changes have been saved.",
+                                         primary: "Got it")))
+        assertSnapshot(of: v, as: .image(precision: 0.98), named: "minimal")
+    }
+
+    func test_snapshot_full() {
+        let v = render(alert(AlertDialog(
+            image: ModalImage("img_illust_onboarding"),
+            title: "Help us make your experience better",
+            subtitle: "Take our quick survey and gain bubbles!",
+            primary: "Proceed to feedback",
+            secondary: "Not now",
+            closeOnTapOverlay: true,
+            showCloseButton: true
+        )))
+        assertSnapshot(of: v, as: .image(precision: 0.98), named: "full")
+    }
+
+    func test_snapshot_primary_loading() {
+        let v = render(alert(AlertDialog(title: "Generate your worksheet",
+                                         subtitle: "This will use one credit.",
+                                         primary: "Generate", secondary: "Cancel"),
+                             isPrimaryLoading: true))
+        assertSnapshot(of: v, as: .image(precision: 0.98), named: "primary-loading")
     }
 }
