@@ -13,6 +13,7 @@ extension UIKitModalRenderer {
             field.text = descriptor.initialText
             field.placeholder = descriptor.placeholder
             field.borderStyle = .roundedRect
+            field.overrideUserInterfaceStyle = .light // legible dark text on the standard light card
             field.translatesAutoresizingMaskIntoConstraints = false
             field.heightAnchor.constraint(equalToConstant: 44).isActive = true
 
@@ -44,6 +45,7 @@ extension UIKitModalRenderer {
             let picker = UIDatePicker()
             picker.datePickerMode = .date
             picker.date = descriptor.initialDate
+            picker.overrideUserInterfaceStyle = .light // legible dark wheels on the standard light card
             picker.translatesAutoresizingMaskIntoConstraints = false
             if #available(iOS 14.0, *) { picker.preferredDatePickerStyle = .wheels }
 
