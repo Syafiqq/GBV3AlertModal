@@ -27,10 +27,22 @@ struct AlertModalScaffold<Content: View>: View {
                 .onTapGesture { onOverlayTap?() }
 
             card
-                .frame(maxWidth: ModalTokens.cardWidth)
-                .padding(24)
-
-            if showClose { closeButton }
+                .frame(maxWidth: ModalTokens.cardMaxWidth)   // fills to margin, capped (not fixed width)
+                .overlay(alignment: .topTrailing) {
+                    // Pinned to the CARD's top-right corner (real modal: top.trailing.equalToSuperview,
+                    // 48pt tap target), not the screen corner.
+                    if showClose {
+                        Button(action: onClose) {
+                            Image(systemName: "xmark")   // simple outline X (owner preference), no circle
+                                .font(.system(size: 17, weight: .semibold))
+                                .foregroundColor(ModalTokens.Palette.subtitleText)
+                        }
+                        .frame(width: 44, height: 44)
+                        .contentShape(Rectangle())
+                    }
+                }
+                .padding(.vertical, ModalTokens.cardMarginV)     // card→screen margin: 40 v / 20 h
+                .padding(.horizontal, ModalTokens.cardMarginH)
         }
     }
 
@@ -53,23 +65,9 @@ struct AlertModalScaffold<Content: View>: View {
                     .padding(.top, ModalTokens.interButton)
             }
         }
-        .padding(ModalTokens.contentPadding)
+        .padding(.vertical, ModalTokens.contentPaddingV)     // inner content inset: 24 v / 32 h
+        .padding(.horizontal, ModalTokens.contentPaddingH)
         .background(ModalTokens.Palette.cardBackground)
         .clipShape(RoundedRectangle(cornerRadius: ModalTokens.cornerRadius, style: .continuous))
-    }
-
-    private var closeButton: some View {
-        VStack {
-            HStack {
-                Spacer()
-                Button(action: onClose) {
-                    Image(systemName: "xmark.circle.fill")
-                        .font(.title2)
-                        .foregroundColor(ModalTokens.Palette.subtitleText)
-                }
-            }
-            Spacer()
-        }
-        .padding(32)
     }
 }

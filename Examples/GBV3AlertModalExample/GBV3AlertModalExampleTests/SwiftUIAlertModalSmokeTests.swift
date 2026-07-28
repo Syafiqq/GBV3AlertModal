@@ -124,14 +124,20 @@ final class SwiftUIAlertModalSmokeTests: XCTestCase {
     /// Pin them so an accidental edit that drifts from the app design is a failing test, not a silent regression.
     func test_modalTokens_match_real_V3AlertModal_preset() {
         XCTAssertEqual(ModalTokens.cornerRadius, 16)
-        XCTAssertEqual(ModalTokens.gapBelowBanner, 16)
-        XCTAssertEqual(ModalTokens.gapBelowTitle, 16)
-        XCTAssertEqual(ModalTokens.gapBelowSubtitle, 24)
+        // owner override: uniform 12 gaps (real preset was 8/8/16); interButton stays 8
+        XCTAssertEqual(ModalTokens.gapBelowBanner, 12)
+        XCTAssertEqual(ModalTokens.gapBelowTitle, 12)
+        XCTAssertEqual(ModalTokens.gapBelowSubtitle, 12)
         XCTAssertEqual(ModalTokens.interButton, 8)
+        // real margin 40v/20h; content padding 24v/32h (horizontal > vertical)
+        XCTAssertEqual(ModalTokens.cardMarginV, 40)
+        XCTAssertEqual(ModalTokens.cardMarginH, 20)
+        XCTAssertEqual(ModalTokens.contentPaddingV, 24)
+        XCTAssertEqual(ModalTokens.contentPaddingH, 32)
         XCTAssertEqual(ModalTokens.scrimOpacity, 0.6, accuracy: 0.001)
-        XCTAssertEqual(ModalTokens.bannerAspectRatio, 1)
-        XCTAssertTrue(ModalTokens.cardWidth == 256 || ModalTokens.cardWidth == 300,
-                      "card width must be the phone (256) or pad (300) preset value")
+        XCTAssertEqual(ModalTokens.buttonCornerRadius, 8)              // primary is a solid rounded-8 rect
+        // phone: no cap → card fills to the horizontal margin (maximize); pad: capped at 300
+        XCTAssertEqual(ModalTokens.cardMaxWidth, .infinity)
     }
 
     func test_hex_color_decodes_rgb_channels() {
@@ -142,15 +148,9 @@ final class SwiftUIAlertModalSmokeTests: XCTestCase {
         XCTAssertEqual(b, 0xD5 / 255, accuracy: 0.01)
     }
 
-    /// The signature primary shape must actually cut the bottom-left corner while keeping the body.
-    func test_obliqueShape_cuts_bottom_left_corner_keeps_body() {
-        let rect = CGRect(x: 0, y: 0, width: 200, height: 48)
-        let path = ObliqueBottomLeftShape().path(in: rect)
-        XCTAssertTrue(path.contains(CGPoint(x: 100, y: 24)), "body center should be filled")
-        XCTAssertFalse(path.contains(CGPoint(x: 2, y: 46)), "bottom-left corner should be cut away")
-        XCTAssertTrue(path.boundingRect.width <= rect.width + 0.5
-                      && path.boundingRect.height <= rect.height + 0.5,
-                      "shape must stay within its rect")
+    /// The primary is a solid rounded-8 rectangle (no shadow, no cut corner).
+    func test_primary_button_corner_radius() {
+        XCTAssertEqual(ModalTokens.buttonCornerRadius, 8)
     }
 
     // MARK: Layer-B wiring — view introspection (ViewInspector)

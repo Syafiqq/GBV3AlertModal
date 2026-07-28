@@ -1,34 +1,9 @@
 import SwiftUI
 
-/// The card's signature primary shape: a rounded rectangle whose bottom-left corner is cut at an
-/// oblique angle instead of rounded (mirrors the app's `ActionStyle.obliqueBottomLeft`).
-struct ObliqueBottomLeftShape: Shape {
-    var oblique: CGFloat = 14
-    var cornerRadius: CGFloat = 12
-
-    func path(in rect: CGRect) -> Path {
-        let r = min(cornerRadius, min(rect.width, rect.height) / 2)
-        let o = min(oblique, min(rect.width, rect.height) / 2)
-        var p = Path()
-        p.move(to: CGPoint(x: rect.minX + r, y: rect.minY))
-        p.addLine(to: CGPoint(x: rect.maxX - r, y: rect.minY))
-        p.addArc(center: CGPoint(x: rect.maxX - r, y: rect.minY + r), radius: r,
-                 startAngle: .degrees(-90), endAngle: .degrees(0), clockwise: false)
-        p.addLine(to: CGPoint(x: rect.maxX, y: rect.maxY - r))
-        p.addArc(center: CGPoint(x: rect.maxX - r, y: rect.maxY - r), radius: r,
-                 startAngle: .degrees(0), endAngle: .degrees(90), clockwise: false)
-        p.addLine(to: CGPoint(x: rect.minX + o, y: rect.maxY))   // bottom edge, stop short of the corner
-        p.addLine(to: CGPoint(x: rect.minX, y: rect.maxY - o))   // oblique diagonal up-left
-        p.addLine(to: CGPoint(x: rect.minX, y: rect.minY + r))
-        p.addArc(center: CGPoint(x: rect.minX + r, y: rect.minY + r), radius: r,
-                 startAngle: .degrees(180), endAngle: .degrees(270), clockwise: false)
-        p.closeSubpath()
-        return p
-    }
-}
-
-/// Primary action: filled oblique button, white heavy text, orange drop shadow. Design identity —
-/// fixed in the view, never a per-call field (spec D8).
+/// Primary action, the app's `ActionStyle.obliqueBottomLeft`: a `cornerRadius = 8` rounded rectangle,
+/// orange fill, white heavy text, 48pt tall, with a HARD solid-orange offset to the lower-left
+/// (blur 0) — the "oblique" look. On press it slides into that offset, the offset disappears, and
+/// the fill goes to the pressed colour. Design identity — fixed in the view, never per-call (spec D8).
 struct ObliquePrimaryStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         StyledLabel(configuration: configuration)
@@ -39,19 +14,25 @@ struct ObliquePrimaryStyle: ButtonStyle {
         @Environment(\.isEnabled) private var isEnabled
 
         var body: some View {
-            let shape = ObliqueBottomLeftShape()
+            let pressed = configuration.isPressed
             let fill: Color = !isEnabled ? ModalTokens.Palette.disabled
-                : configuration.isPressed ? ModalTokens.Palette.accentPressed
+                : pressed ? ModalTokens.Palette.accentPressed
                 : ModalTokens.Palette.accent
+            let showOblique = isEnabled && !pressed
             configuration.label
                 .font(ModalTokens.buttonFont)
                 .foregroundColor(ModalTokens.Palette.onAccent)
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 14)
-                .background(shape.fill(fill))
-                .clipShape(shape)
-                .shadow(color: isEnabled ? ModalTokens.Palette.shadow.opacity(0.35) : .clear,
-                        radius: 0, x: 0, y: 3)
+                .frame(maxWidth: .infinity, minHeight: ModalTokens.buttonHeight)
+                .background(
+                    // Shadow lives on the BACKGROUND SHAPE only — the text casts none.
+                    RoundedRectangle(cornerRadius: ModalTokens.buttonCornerRadius, style: .continuous)
+                        .fill(fill)
+                        .shadow(color: showOblique ? ModalTokens.Palette.shadow : .clear,
+                                radius: 0, x: ModalTokens.obliqueOffset.width, y: ModalTokens.obliqueOffset.height)
+                )
+                // On press, slide into the oblique offset.
+                .offset(x: pressed ? ModalTokens.obliqueOffset.width : 0,
+                        y: pressed ? ModalTokens.obliqueOffset.height : 0)
         }
     }
 }
@@ -70,8 +51,7 @@ struct PlainSecondaryStyle: ButtonStyle {
             configuration.label
                 .font(ModalTokens.buttonFont)
                 .foregroundColor(isEnabled ? ModalTokens.Palette.accent : ModalTokens.Palette.disabled)
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 12)
+                .frame(maxWidth: .infinity, minHeight: ModalTokens.buttonHeight)
                 .opacity(configuration.isPressed ? 0.5 : 1)
         }
     }

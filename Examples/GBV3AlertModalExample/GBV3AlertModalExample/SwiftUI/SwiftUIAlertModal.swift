@@ -29,7 +29,7 @@ struct SwiftUIAlertModal: View {
             if resolved.showsBanner, let name = config.image?.assetName {
                 Image(name)
                     .resizable()
-                    .aspectRatio(ModalTokens.bannerAspectRatio, contentMode: .fit)
+                    .scaledToFit()   // preserve the image's natural aspect ratio (no distortion)
                     .frame(maxHeight: ModalTokens.bannerMaxHeight)
                     .padding(.bottom, ModalTokens.gapBelowBanner)
             }
