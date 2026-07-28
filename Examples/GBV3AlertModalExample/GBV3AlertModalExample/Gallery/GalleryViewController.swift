@@ -73,16 +73,30 @@ final class GalleryViewController: UITableViewController {
         super.viewDidLoad()
         title = "Dialog Gallery (\(Self.allEntries.count))"
         tableView.register(UITableViewCell.self, forCellReuseIdentifier: Self.cellReuseIdentifier)
-        navigationItem.rightBarButtonItem = UIBarButtonItem(
-            title: "SwiftUI",
-            style: .plain,
-            target: self,
-            action: #selector(openSwiftUIDemo)
-        )
+        navigationItem.rightBarButtonItems = [
+            UIBarButtonItem(title: "SwiftUI", style: .plain, target: self, action: #selector(openSwiftUIDemo)),
+            UIBarButtonItem(title: "Tier 0", style: .plain, target: self, action: #selector(openTier0Demo)),
+        ]
     }
 
     @objc private func openSwiftUIDemo() {
         let host = UIHostingController(rootView: SwiftUIDemoScreen())
+        navigationController?.pushViewController(host, animated: true)
+    }
+
+    /// Tier 0: build the library executor over a UIKit renderer and inject it into a SwiftUI VM.
+    /// The renderer paints the real UIKit modal on the key window, over the pushed SwiftUI screen.
+    @objc private func openTier0Demo() {
+        let properties = GBAlertModal.Properties(
+            overlayColor: UIColor.black.withAlphaComponent(0.6),
+            titleColor: .label,
+            subtitleColor: .secondaryLabel,
+            primaryActionStyle: .capsule(.init(backgroundColor: .systemOrange, titleColor: .white)),
+            secondaryActionStyle: .plain(.init(titleColor: .systemOrange))
+        )
+        let renderer = UIKitModalRenderer(alertProperties: properties)
+        let executor = DefaultModalExecutor(renderer: renderer)
+        let host = UIHostingController(rootView: Tier0DemoScreen(executor: executor))
         navigationController?.pushViewController(host, animated: true)
     }
 

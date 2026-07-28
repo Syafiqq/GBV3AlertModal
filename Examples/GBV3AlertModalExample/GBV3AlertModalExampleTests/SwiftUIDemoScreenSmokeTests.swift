@@ -2,6 +2,7 @@
 import SwiftUI
 import UIKit
 import XCTest
+import GBV3AlertModal
 @testable import GBV3AlertModalExample
 
 @MainActor
@@ -40,6 +41,28 @@ final class SwiftUIDemoScreenSmokeTests: XCTestCase {
             gallery.navigationItem.rightBarButtonItem,
             "gallery should expose a nav-bar button to reach the SwiftUI demo"
         )
+    }
+
+    func test_gallery_exposes_tier0_entry_point() {
+        let gallery = GalleryViewController()
+        gallery.loadViewIfNeeded()
+        XCTAssertEqual(gallery.navigationItem.rightBarButtonItems?.count, 2,
+                       "gallery should expose both the SwiftUI and Tier 0 entry points")
+    }
+
+    /// Tier 0: the SwiftUI screen builds with a real executor injected (no SwiftUI modal of its own).
+    func test_tier0_demo_screen_builds() {
+        let executor = DefaultModalExecutor(renderer: UIKitModalRenderer(alertProperties: GBAlertModal.Properties()))
+        let host = UIHostingController(rootView: Tier0DemoScreen(executor: executor))
+        let window = UIWindow(frame: CGRect(x: 0, y: 0, width: 390, height: 844))
+        window.rootViewController = host
+        window.isHidden = false
+        window.makeKeyAndVisible()
+        layoutPass(window)
+        defer { window.isHidden = true; window.rootViewController = nil }
+
+        XCTAssertFalse(host.view.bounds.isEmpty)
+        XCTAssertTrue(hasBuiltViewGraph(host.view))
     }
 
     // MARK: new stateful demo cases
