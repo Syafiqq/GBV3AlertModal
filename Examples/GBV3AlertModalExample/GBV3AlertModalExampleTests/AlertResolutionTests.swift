@@ -35,11 +35,6 @@ final class AlertResolutionTests: XCTestCase {
         XCTAssertFalse(ResolvedAlert(cfg(showCloseButton: false)).showsClose)
     }
 
-    func test_dismissOnOverlayTap_mirrors_flag() {
-        XCTAssertTrue(ResolvedAlert(cfg(closeOnTapOverlay: true)).dismissOnOverlayTap)
-        XCTAssertFalse(ResolvedAlert(cfg(closeOnTapOverlay: false)).dismissOnOverlayTap)
-    }
-
     // MARK: resolve — interaction routing
 
     func test_primary_tap_resolves_primary() {

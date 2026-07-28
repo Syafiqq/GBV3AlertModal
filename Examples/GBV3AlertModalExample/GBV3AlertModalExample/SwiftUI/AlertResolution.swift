@@ -1,3 +1,4 @@
+import Foundation
 import GBV3AlertModal
 
 /// A discrete user interaction with the modal. Pure enum so routing is testable without a view.
@@ -13,16 +14,14 @@ struct ResolvedAlert {
     let showsSubtitle: Bool
     let showsSecondary: Bool
     let showsClose: Bool
-    let dismissOnOverlayTap: Bool
 
     init(_ config: AlertDialog) {
-        func present(_ s: String?) -> Bool { !(s ?? "").isEmpty }
+        func present(_ s: AttributedString?) -> Bool { !(s?.characters.isEmpty ?? true) }
         showsBanner = config.image != nil
         showsTitle = present(config.title)
         showsSubtitle = present(config.subtitle)
-        showsSecondary = present(config.secondary)
+        showsSecondary = !(config.secondary ?? "").isEmpty
         showsClose = config.showCloseButton
-        dismissOnOverlayTap = config.closeOnTapOverlay
     }
 }
 
