@@ -41,3 +41,12 @@ func resolve(_ interaction: AlertInteraction, _ config: AlertDialog) -> AlertDia
 func shouldApply(resultGeneration: Int, currentGeneration: Int) -> Bool {
     resultGeneration == currentGeneration
 }
+
+/// No-blink A→B swap (spec D4): given the currently-shown descriptor, the next one to show
+/// IN PLACE. The return is non-optional on purpose — the presentation slot must stay non-nil
+/// across the swap. Assigning this to the `@State` item WITHOUT nil-ing first (and with a stable
+/// view identity — no per-descriptor `.id`) keeps the card mounted so only its content diffs.
+/// Nil-then-set would be a real dismiss+present, i.e. a blink.
+func noBlinkSwap(current: AlertDialog, between a: AlertDialog, and b: AlertDialog) -> AlertDialog {
+    current.primary == a.primary ? b : a
+}

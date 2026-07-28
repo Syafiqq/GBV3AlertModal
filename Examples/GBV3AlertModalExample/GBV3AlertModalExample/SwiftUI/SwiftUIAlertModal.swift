@@ -1,15 +1,13 @@
 import SwiftUI
 import GBV3AlertModal
 
-/// Pure-SwiftUI mirror of `GBAlertModal`'s content: a full-screen scrim with a centered card.
-/// Holds NO branching logic — reads `ResolvedAlert` and routes taps through `resolve(_:_:)`.
-/// Never dismisses itself; the caller reacts to `onAction` (matches the executor teardown contract).
-/// Styling is fixed design (`ModalTokens` + `ButtonStyle`s), never per-call (spec D8).
+/// Pure-SwiftUI mirror of `GBAlertModal`'s content: `AlertModalScaffold` (shared chrome) with a
+/// built-in standard body (banner/title/subtitle). Holds NO branching logic beyond `ResolvedAlert`
+/// slot decisions; routes taps through `resolve(_:_:)`. Never dismisses itself; the caller reacts
+/// to `onAction` (matches the executor teardown contract). Styling is fixed design (`ModalTokens`).
 struct SwiftUIAlertModal: View {
     let config: AlertDialog
-    var scrim: Color = ModalTokens.Palette.scrim.opacity(ModalTokens.scrimOpacity)
-    /// Presentation state — NOT part of `AlertDialog`. The caller (demo screen / real app)
-    /// owns this; the view only reads it. Mirrors the real app's enabled/loading primary button.
+    /// Presentation state — NOT part of `AlertDialog`. The caller owns this; the view only reads it.
     var primaryEnabled: Bool = true
     var isPrimaryLoading: Bool = false
     let onAction: (AlertDialog.Result) -> Void
@@ -17,24 +15,17 @@ struct SwiftUIAlertModal: View {
     private var resolved: ResolvedAlert { ResolvedAlert(config) }
 
     var body: some View {
-        ZStack {
-            scrim
-                .ignoresSafeArea()
-                .contentShape(Rectangle())
-                .onTapGesture { route(.overlayTapped) }
-
-            card
-                .frame(maxWidth: ModalTokens.cardWidth)
-                .padding(24)
-
-            if resolved.showsClose {
-                closeButton
-            }
-        }
-    }
-
-    private var card: some View {
-        VStack(spacing: 0) {
+        AlertModalScaffold(
+            primaryTitle: config.primary,
+            isPrimaryLoading: isPrimaryLoading,
+            primaryEnabled: primaryEnabled,
+            onPrimary: { route(.primaryTapped) },
+            secondaryTitle: resolved.showsSecondary ? config.secondary : nil,
+            onSecondary: { route(.secondaryTapped) },
+            showClose: resolved.showsClose,
+            onClose: { route(.closeTapped) },
+            onOverlayTap: { route(.overlayTapped) }
+        ) {
             if resolved.showsBanner, let name = config.image?.assetName {
                 Image(name)
                     .resizable()
@@ -56,40 +47,7 @@ struct SwiftUIAlertModal: View {
                     .multilineTextAlignment(.center)
                     .padding(.bottom, ModalTokens.gapBelowSubtitle)
             }
-            Button { route(.primaryTapped) } label: {
-                if isPrimaryLoading {
-                    ProgressView().tint(ModalTokens.Palette.onAccent)
-                } else {
-                    Text(config.primary)
-                }
-            }
-            .buttonStyle(ObliquePrimaryStyle())
-            .disabled(!primaryEnabled || isPrimaryLoading)
-
-            if resolved.showsSecondary, let secondary = config.secondary {
-                Button { route(.secondaryTapped) } label: { Text(secondary) }
-                    .buttonStyle(PlainSecondaryStyle())
-                    .padding(.top, ModalTokens.interButton)
-            }
         }
-        .padding(ModalTokens.contentPadding)
-        .background(ModalTokens.Palette.cardBackground)
-        .clipShape(RoundedRectangle(cornerRadius: ModalTokens.cornerRadius, style: .continuous))
-    }
-
-    private var closeButton: some View {
-        VStack {
-            HStack {
-                Spacer()
-                Button { route(.closeTapped) } label: {
-                    Image(systemName: "xmark.circle.fill")
-                        .font(.title2)
-                        .foregroundColor(ModalTokens.Palette.subtitleText)
-                }
-            }
-            Spacer()
-        }
-        .padding(32)
     }
 
     /// The one place interaction becomes outcome. `nil` = no-op (e.g. overlay tap when disabled).

@@ -95,6 +95,15 @@ final class AlertResolutionTests: XCTestCase {
         XCTAssertEqual(resolve(.secondaryTapped, cfg(secondary: nil)), .secondary)
     }
 
+    // MARK: no-blink swap (D4) — returns a value to assign IN PLACE, never nil
+
+    func test_noBlinkSwap_toggles_between_a_and_b() {
+        let a = AlertDialog(title: "A", primary: "PrimA")
+        let b = AlertDialog(title: "B", primary: "PrimB")
+        XCTAssertEqual(noBlinkSwap(current: a, between: a, and: b).primary, "PrimB")
+        XCTAssertEqual(noBlinkSwap(current: b, between: a, and: b).primary, "PrimA")
+    }
+
     // MARK: helper — one place to vary a single field
 
     private func cfg(

@@ -52,6 +52,12 @@ struct SwiftUIDemoScreen: View {
                 .foregroundColor(.secondary)
             Button("Minimal alert") { active = Self.demoMinimal }
             Button("Full alert") { active = Self.demoFull }
+            // No-blink A↔B swap (D4): mutate the descriptor IN PLACE — never nil-then-set — so the
+            // card stays mounted and only its content diffs. If nothing is shown yet, present A.
+            Button("Swap A↔B (no blink)") {
+                active = active.map { noBlinkSwap(current: $0, between: Self.demoMinimal, and: Self.demoFull) }
+                    ?? Self.demoMinimal
+            }
             Button("Loading button") { presentLoadingCase() }
             Button("Validation gate") { showSatisfaction = true }
         }

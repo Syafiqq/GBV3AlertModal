@@ -1,17 +1,16 @@
 import SwiftUI
 
-/// A bespoke SwiftUI dialog mirroring the real app's `SatisfactionLevelDialogView`: it reuses
-/// the same scrim + centered white rounded-card chrome as `SwiftUIAlertModal`, but the content
-/// is custom composition (a 3-option picker), not a config-driven render. This is the
-/// validation-gate pattern: the primary button stays disabled until a selection is made.
-/// Like `SwiftUIAlertModal`, it never dismisses itself — the caller reacts to `onAction`.
+/// A bespoke SwiftUI dialog mirroring the real app's `SatisfactionLevelDialogView`, now built on the
+/// shared `AlertModalScaffold` (spec D1): the scrim + card + Submit-button chrome come from the
+/// scaffold; only the body (a 3-option picker) is custom composition. This is the validation-gate
+/// pattern — Submit stays disabled until a selection is made. Never dismisses itself; caller reacts
+/// to `onAction`. Demonstrates that the UIKit `subtitleCustomView` becomes a native content slot.
 struct SatisfactionDemoView: View {
     enum Result: Equatable {
         case submitted(index: Int)
         case dismissed
     }
 
-    var scrim: Color = Color.black.opacity(0.6)
     let options: [(symbol: String, label: String)] = [
         ("hand.thumbsdown", "Not helpful"),
         ("hand.thumbsup", "Quite helpful"),
@@ -22,48 +21,25 @@ struct SatisfactionDemoView: View {
     @State private var selectedIndex: Int?
 
     var body: some View {
-        ZStack {
-            scrim
-                .ignoresSafeArea()
-                .contentShape(Rectangle())
-                .onTapGesture { onAction(.dismissed) }
-
-            card
-                .frame(maxWidth: 300)
-                .padding(24)
-        }
-    }
-
-    private var card: some View {
-        VStack(spacing: 20) {
+        AlertModalScaffold(
+            primaryTitle: "Submit",
+            primaryEnabled: selectedIndex != nil,
+            onPrimary: { if let selectedIndex { onAction(.submitted(index: selectedIndex)) } },
+            onOverlayTap: { onAction(.dismissed) }
+        ) {
             Text("How helpful was this?")
-                .font(.title2.bold())
+                .font(ModalTokens.titleFont)
+                .foregroundColor(ModalTokens.Palette.titleText)
                 .multilineTextAlignment(.center)
+                .padding(.bottom, ModalTokens.gapBelowTitle)
 
             HStack(spacing: 12) {
                 ForEach(options.indices, id: \.self) { index in
                     optionButton(index)
                 }
             }
-
-            Button {
-                if let selectedIndex {
-                    onAction(.submitted(index: selectedIndex))
-                }
-            } label: {
-                Text("Submit")
-                    .font(.body.weight(.medium))
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 12)
-                    .background(Color.accentColor)
-                    .foregroundColor(.white)
-                    .clipShape(Capsule())
-            }
-            .disabled(selectedIndex == nil)
+            .padding(.bottom, ModalTokens.gapBelowSubtitle)
         }
-        .padding(24)
-        .background(Color(.systemBackground))
-        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
     }
 
     private func optionButton(_ index: Int) -> some View {
@@ -81,8 +57,8 @@ struct SatisfactionDemoView: View {
             }
             .frame(maxWidth: .infinity)
             .padding(.vertical, 10)
-            .background(isSelected ? Color.accentColor.opacity(0.15) : Color(.secondarySystemBackground))
-            .foregroundColor(isSelected ? .accentColor : .primary)
+            .background(isSelected ? ModalTokens.Palette.accent.opacity(0.15) : Color(.secondarySystemBackground))
+            .foregroundColor(isSelected ? ModalTokens.Palette.accent : ModalTokens.Palette.titleText)
             .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
         }
     }
