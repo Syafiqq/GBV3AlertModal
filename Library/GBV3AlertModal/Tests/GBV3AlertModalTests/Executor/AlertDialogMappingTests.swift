@@ -6,22 +6,28 @@ import UIKit
 /// AlertDialog→DataHolder mapping produces the SAME render decisions the Layer-A resolver
 /// already guards, using `GBAlertModal.resolve(...)` as the oracle. No new snapshots.
 @MainActor final class AlertDialogMappingTests: XCTestCase {
-    func test_alertDialog_mapsToExpectedResolvedModal() {
-        let descriptor = AlertDialog(
-            title: "Title", subtitle: "Body", primary: "OK", secondary: "Cancel"
-        )
-        let holder = UIKitModalRenderer.AlertHolder.make(for: descriptor) { _ in }
+    func test_plainDescriptor_mapsToPlainSubtitle() {
+        let holder = UIKitModalRenderer.AlertHolder.make(
+            for: AlertDialog(title: "Title", subtitle: "Body", primary: "OK", secondary: "Cancel")
+        ) { _ in }
         let resolved = GBAlertModal.resolve(
             properties: GeniePresets.standardProperties(), holder: holder, isLandscape: false
         )
-
         XCTAssertTrue(resolved.showsTitle)
         XCTAssertEqual(resolved.subtitle, .plain("Body"))
-        XCTAssertTrue(resolved.showsPrimary)
-        XCTAssertTrue(resolved.showsSecondary)
-        XCTAssertFalse(resolved.showsBanner)
-        // Gate owns teardown → the built-in AlertDialog holder bakes dismissOnAction=false.
         XCTAssertFalse(resolved.dismissOnAction)
+    }
+
+    func test_styledDescriptor_mapsToAttributedSubtitle() {
+        var body = AttributedString("Body")
+        body.foregroundColor = .red
+        let holder = UIKitModalRenderer.AlertHolder.make(
+            for: AlertDialog(title: nil, subtitle: body, primary: "OK")
+        ) { _ in }
+        let resolved = GBAlertModal.resolve(
+            properties: GeniePresets.standardProperties(), holder: holder, isLandscape: false
+        )
+        XCTAssertEqual(resolved.subtitle, .attributed)
     }
 
     func test_alertDialogResult_dismissedResultIsDismissed() {

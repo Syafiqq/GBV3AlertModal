@@ -24,8 +24,12 @@ final class SpyRenderer: ModalRenderer {
     }
 
     // MARK: assertion helper
-    var shownTitles: [String] { shown.compactMap { ($0.descriptor as? AlertDialog)?.title } }
-    var lastShownTitle: String? { (shown.last?.descriptor as? AlertDialog)?.title }
+    var shownTitles: [String] {
+        shown.compactMap { ($0.descriptor as? AlertDialog)?.title.map { String($0.characters) } }
+    }
+    var lastShownTitle: String? {
+        (shown.last?.descriptor as? AlertDialog)?.title.map { String($0.characters) }
+    }
 
     func update<D: ModalDescriptor>(_ id: ModalID, to descriptor: D) {}
 
