@@ -25,6 +25,7 @@ final class ModalTextTests: XCTestCase {
         let attrs = ns.attributes(at: 0, effectiveRange: nil)
         XCTAssertEqual(attrs[.foregroundColor] as? UIColor, .red)
         XCTAssertEqual((attrs[.font] as? UIFont)?.pointSize, 17)
+        XCTAssertTrue((attrs[.font] as? UIFont)?.fontDescriptor.symbolicTraits.contains(.traitBold) ?? false)
     }
 
     func test_link_bridgesToNSLinkAttribute() {
@@ -33,5 +34,12 @@ final class ModalTextTests: XCTestCase {
         let ns = try! XCTUnwrap(ModalText.split(s).attributed)
         XCTAssertEqual(ns.attribute(.link, at: 0, effectiveRange: nil) as? URL,
                        URL(string: "https://x.test"))
+    }
+
+    func test_markdownWithNoMarkup_mapsToPlain() {
+        let s = try! AttributedString(markdown: "Just plain text, no markup")
+        let (p, a) = ModalText.split(s)
+        XCTAssertEqual(p, "Just plain text, no markup")
+        XCTAssertNil(a)
     }
 }
