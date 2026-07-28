@@ -1,8 +1,10 @@
 import Foundation
 
-/// The general-purpose alert/confirm dialog: content only. Style is fixed by the renderer.
-public struct AlertDialog: ModalDescriptor, StandardAlertContent {
-    public enum Result: Sendable, Equatable { case primary, secondary, dismissed }
+/// Same content shape as `AlertDialog`; the distinct type IS the popup STYLE identity (spec D8 —
+/// the renderer registers it with the popup `Properties`: heavier fonts, navy title, wider padding).
+/// Reuses `AlertDialog.Result` so callers get one result vocabulary across the standard family.
+public struct PopupDialog: ModalDescriptor, StandardAlertContent {
+    public typealias Result = AlertDialog.Result
     public static var dismissedResult: Result { .dismissed }
 
     public var image: ModalImage?
@@ -13,7 +15,7 @@ public struct AlertDialog: ModalDescriptor, StandardAlertContent {
     public var closeOnTapOverlay: Bool
     public var showCloseButton: Bool
 
-    /// Plain path — unchanged ergonomics for the ~114 existing String call sites.
+    /// Plain path — String ergonomics (lifts to AttributedString).
     public init(
         image: ModalImage? = nil,
         title: String? = nil,
@@ -34,8 +36,7 @@ public struct AlertDialog: ModalDescriptor, StandardAlertContent {
         )
     }
 
-    /// Rich path — title/subtitle are NOT defaulted, so `AlertDialog(primary:)` can only
-    /// resolve to the String init above (kills the all-text-omitted overload ambiguity).
+    /// Rich path — title/subtitle NOT defaulted (the overload disambiguator, as in AlertDialog).
     public init(
         image: ModalImage? = nil,
         title: AttributedString?,

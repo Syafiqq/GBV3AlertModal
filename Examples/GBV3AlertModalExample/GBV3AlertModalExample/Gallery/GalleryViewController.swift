@@ -94,7 +94,15 @@ final class GalleryViewController: UITableViewController {
             primaryActionStyle: .capsule(.init(backgroundColor: .systemOrange, titleColor: .white)),
             secondaryActionStyle: .plain(.init(titleColor: .systemOrange))
         )
-        let renderer = UIKitModalRenderer(alertProperties: properties)
+        // Popup: same content shape, visibly different style (indigo) — proving it's a distinct descriptor.
+        let popupProperties = GBAlertModal.Properties(
+            overlayColor: UIColor.black.withAlphaComponent(0.6),
+            titleColor: .systemIndigo,
+            subtitleColor: .secondaryLabel,
+            primaryActionStyle: .capsule(.init(backgroundColor: .systemIndigo, titleColor: .white)),
+            secondaryActionStyle: .plain(.init(titleColor: .systemIndigo))
+        )
+        let renderer = UIKitModalRenderer(alertProperties: properties, popupProperties: popupProperties)
         let executor = DefaultModalExecutor(renderer: renderer)
         let host = UIHostingController(rootView: Tier0DemoScreen(executor: executor))
         navigationController?.pushViewController(host, animated: true)

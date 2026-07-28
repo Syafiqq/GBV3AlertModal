@@ -4,8 +4,10 @@ extension UIKitModalRenderer {
     /// Descriptor→`DataHolder` mapping for the built-in `AlertDialog`. Kept separate so the
     /// mapping is unit-testable without a window (Task 1) and reused by the factory (Task 3).
     @MainActor public enum AlertHolder {
+        /// One mapping for the whole standard family (`AlertDialog`, `PopupDialog`, …). Result is
+        /// always `AlertDialog.Result` — the shared vocabulary those descriptors resolve to.
         public static func make(
-            for descriptor: AlertDialog,
+            for descriptor: StandardAlertContent,
             resolve: @escaping (AlertDialog.Result) -> Void
         ) -> GBAlertModal.DataHolder {
             let (titlePlain, titleAttr) = ModalText.split(descriptor.title)

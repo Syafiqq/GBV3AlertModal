@@ -20,11 +20,19 @@ public final class UIKitModalRenderer: ModalRenderer {
 
     public init(
         alertProperties: GBAlertModal.Properties,
+        popupProperties: GBAlertModal.Properties? = nil,
         windowProvider: (() -> UIWindow?)? = nil
     ) {
         self.windowProvider = windowProvider
         register(AlertDialog.self) { descriptor, resolve in
             (alertProperties, AlertHolder.make(for: descriptor, resolve: resolve))
+        }
+        // PopupDialog shares AlertDialog's content + result; only the Properties (style) differ.
+        // Registered only when the consumer supplies popup styling.
+        if let popupProperties {
+            register(PopupDialog.self) { descriptor, resolve in
+                (popupProperties, AlertHolder.make(for: descriptor, resolve: resolve))
+            }
         }
     }
 

@@ -34,6 +34,18 @@ final class Tier0DemoViewModel: ObservableObject {
         guard !Task.isCancelled else { return }
         lastResult = "\(result)"
     }
+
+    /// PopupDialog: same content as AlertDialog, a distinct descriptor → the popup STYLE. Proves the
+    /// executor path isn't AlertDialog-only.
+    func showPopup() async {
+        let result = await executor.presentAndWait(
+            PopupDialog(title: "Popup style",
+                        subtitle: "Same content shape, different style descriptor.",
+                        primary: "Got it")
+        )
+        guard !Task.isCancelled else { return }
+        lastResult = "popup: \(result)"
+    }
 }
 
 struct Tier0DemoScreen: View {
@@ -61,6 +73,7 @@ struct Tier0DemoScreen: View {
 
             Button("Confirm delete (await result)") { present { await vm.confirmDelete() } }
             Button("Show info") { present { await vm.showInfo() } }
+            Button("Show popup (PopupDialog)") { present { await vm.showPopup() } }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .navigationTitle("Tier 0 · UIKit over SwiftUI")

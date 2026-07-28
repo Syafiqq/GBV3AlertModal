@@ -18,6 +18,52 @@ import UIKit
         XCTAssertFalse(resolved.dismissOnAction)
     }
 
+    /// PopupDialog is content-identical to AlertDialog; it routes through the SAME shared holder and
+    /// resolves the SAME way under the popup properties — only the style (Properties) differs.
+    func test_popupDialog_mapsThroughSharedHolder() {
+        let holder = UIKitModalRenderer.AlertHolder.make(
+            for: PopupDialog(title: "Popup", subtitle: "Body", primary: "OK", secondary: "Cancel")
+        ) { _ in }
+        let resolved = GBAlertModal.resolve(
+            properties: GeniePresets.popupProperties(), holder: holder, isLandscape: false
+        )
+        XCTAssertTrue(resolved.showsTitle)
+        XCTAssertEqual(resolved.subtitle, .plain("Body"))
+        XCTAssertTrue(resolved.showsSecondary)
+    }
+
+    func test_popupDialog_dismissedResult() {
+        XCTAssertEqual(PopupDialog.dismissedResult, .dismissed)
+    }
+
+    /// End-to-end: a renderer given popupProperties registers PopupDialog, so presenting one installs
+    /// a UIKit modal and resolving it (primary tap) flows the result back.
+    func test_popupDialog_presents_and_resolves_through_renderer() {
+        let window = UIWindow(frame: CGRect(x: 0, y: 0, width: 390, height: 844))
+        window.makeKeyAndVisible()
+        defer { window.isHidden = true }
+        let renderer = UIKitModalRenderer(
+            alertProperties: GeniePresets.standardProperties(),
+            popupProperties: GeniePresets.popupProperties(),
+            windowProvider: { window }
+        )
+        var result: AlertDialog.Result?
+        renderer.present(PopupDialog(title: "P", primary: "OK"), id: ModalID()) { result = $0 }
+
+        let modal = firstDescendant(GBAlertModal.self, in: window)
+        XCTAssertNotNil(modal, "PopupDialog should present once popupProperties registered it")
+        modal?.dismissAndEmit(event: .primary)
+        XCTAssertEqual(result, .primary)
+    }
+
+    private func firstDescendant<T: UIView>(_ type: T.Type, in view: UIView) -> T? {
+        for sub in view.subviews {
+            if let hit = sub as? T { return hit }
+            if let deep = firstDescendant(type, in: sub) { return deep }
+        }
+        return nil
+    }
+
     func test_styledDescriptor_mapsToAttributedSubtitle() {
         var body = AttributedString("Body")
         body.foregroundColor = .red
