@@ -193,6 +193,16 @@ final class SwiftUIAlertModalSmokeTests: XCTestCase {
         XCTAssertThrowsError(try modal(AlertDialog(title: "T", primary: "OK", showCloseButton: false))
             .inspect().find(ViewType.Image.self))
     }
+
+    /// The bespoke satisfaction case (built on AlertModalScaffold) wires 3 option buttons + Submit,
+    /// and its custom body text reaches the view.
+    func test_layerB_satisfaction_renders_options_and_submit() throws {
+        let sut = SatisfactionDemoView { _ in }
+        XCTAssertEqual(try sut.inspect().findAll(ViewType.Button.self).count, 4)
+        XCTAssertNoThrow(try sut.inspect().find(text: "How helpful was this?"))
+        XCTAssertNoThrow(try sut.inspect().find(text: "Submit"))
+        XCTAssertNoThrow(try sut.inspect().find(text: "Not helpful"))
+    }
 }
 
 // MARK: - Layer C — snapshots of the shipped shapes (real Genie colours)
@@ -202,15 +212,16 @@ final class SwiftUIAlertModalSmokeTests: XCTestCase {
 /// on an iPhone 17 simulator; re-record intentionally if the design changes.
 @MainActor
 final class SwiftUIAlertModalSnapshotTests: XCTestCase {
-    private let canvas = CGSize(width: 390, height: 844)
+    private let portrait = CGSize(width: 390, height: 844)
+    private let landscape = CGSize(width: 844, height: 390)
 
-    private func render(_ view: SwiftUIAlertModal) -> UIView {
+    private func render(_ view: some View, size: CGSize) -> UIView {
         let host = UIHostingController(rootView: view)
-        let window = UIWindow(frame: CGRect(origin: .zero, size: canvas))
+        let window = UIWindow(frame: CGRect(origin: .zero, size: size))
         window.rootViewController = host
         window.isHidden = false
         window.makeKeyAndVisible()
-        host.view.frame = CGRect(origin: .zero, size: canvas)
+        host.view.frame = CGRect(origin: .zero, size: size)
         window.setNeedsLayout()
         window.layoutIfNeeded()
         return host.view
@@ -220,31 +231,58 @@ final class SwiftUIAlertModalSnapshotTests: XCTestCase {
         SwiftUIAlertModal(config: config, isPrimaryLoading: isPrimaryLoading) { _ in }
     }
 
+    private static let full = AlertDialog(
+        image: ModalImage("img_illust_onboarding"),
+        title: "Help us make your experience better",
+        subtitle: "Take our quick survey and gain bubbles!",
+        primary: "Proceed to feedback",
+        secondary: "Not now",
+        closeOnTapOverlay: true,
+        showCloseButton: true
+    )
+
     func test_snapshot_minimal() {
         let v = render(alert(AlertDialog(title: "You're all set",
                                          subtitle: "Your changes have been saved.",
-                                         primary: "Got it")))
+                                         primary: "Got it")), size: portrait)
         assertSnapshot(of: v, as: .image(precision: 0.98), named: "minimal")
     }
 
     func test_snapshot_full() {
-        let v = render(alert(AlertDialog(
-            image: ModalImage("img_illust_onboarding"),
-            title: "Help us make your experience better",
-            subtitle: "Take our quick survey and gain bubbles!",
-            primary: "Proceed to feedback",
-            secondary: "Not now",
-            closeOnTapOverlay: true,
-            showCloseButton: true
-        )))
-        assertSnapshot(of: v, as: .image(precision: 0.98), named: "full")
+        assertSnapshot(of: render(alert(Self.full), size: portrait), as: .image(precision: 0.98), named: "full")
+    }
+
+    func test_snapshot_full_landscape() {
+        assertSnapshot(of: render(alert(Self.full), size: landscape), as: .image(precision: 0.98), named: "full-landscape")
     }
 
     func test_snapshot_primary_loading() {
         let v = render(alert(AlertDialog(title: "Generate your worksheet",
                                          subtitle: "This will use one credit.",
                                          primary: "Generate", secondary: "Cancel"),
-                             isPrimaryLoading: true))
+                             isPrimaryLoading: true), size: portrait)
         assertSnapshot(of: v, as: .image(precision: 0.98), named: "primary-loading")
+    }
+
+    // Wrapping / overflow extremes (mirror UIKit LayerC longTitle / longSubtitle).
+    func test_snapshot_longTitle() {
+        let v = render(alert(AlertDialog(
+            title: "This is a deliberately very long title that must wrap across several lines inside the fixed-width card without truncating",
+            subtitle: "Short body.", primary: "OK")), size: portrait)
+        assertSnapshot(of: v, as: .image(precision: 0.98), named: "long-title")
+    }
+
+    func test_snapshot_longSubtitle() {
+        let v = render(alert(AlertDialog(
+            title: "Heads up",
+            subtitle: "This is a deliberately very long subtitle used to exercise multi-line wrapping and vertical growth of the card. It keeps going well past a couple of lines so the layout under overflow is locked by a baseline.",
+            primary: "Got it")), size: portrait)
+        assertSnapshot(of: v, as: .image(precision: 0.98), named: "long-subtitle")
+    }
+
+    // Bespoke content case (D1) — the satisfaction picker, on the shared scaffold.
+    func test_snapshot_satisfaction() {
+        let v = render(SatisfactionDemoView { _ in }, size: portrait)
+        assertSnapshot(of: v, as: .image(precision: 0.98), named: "satisfaction")
     }
 }
