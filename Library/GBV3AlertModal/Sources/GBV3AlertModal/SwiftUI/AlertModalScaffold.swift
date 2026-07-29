@@ -5,7 +5,8 @@ import SwiftUI
 /// Never dismisses itself. `SwiftUIAlertModal` is this with a built-in standard body; bespoke dialogs
 /// (satisfaction picker, badge grid, worksheet) supply their own content instead of a `subtitleCustomView`.
 public struct AlertModalScaffold<Content: View>: View {
-    public var scrim: Color = ModalTokens.Palette.scrim.opacity(ModalTokens.scrimOpacity)
+    public let tokens: ModalTokens
+    public var scrim: Color
     public let primaryTitle: String
     public var isPrimaryLoading: Bool = false
     public var primaryEnabled: Bool = true
@@ -19,7 +20,8 @@ public struct AlertModalScaffold<Content: View>: View {
     @ViewBuilder public let content: () -> Content
 
     public init(
-        scrim: Color = ModalTokens.Palette.scrim.opacity(ModalTokens.scrimOpacity),
+        tokens: ModalTokens = .standard,
+        scrim: Color? = nil,
         primaryTitle: String,
         isPrimaryLoading: Bool = false,
         primaryEnabled: Bool = true,
@@ -31,7 +33,10 @@ public struct AlertModalScaffold<Content: View>: View {
         onOverlayTap: (() -> Void)? = nil,
         @ViewBuilder content: @escaping () -> Content
     ) {
-        self.scrim = scrim
+        self.tokens = tokens
+        // `scrim`'s default depends on `tokens`, which a default *argument* expression can't
+        // reference (Swift default args can't read other parameters) — resolved here instead.
+        self.scrim = scrim ?? tokens.palette.scrim
         self.primaryTitle = primaryTitle
         self.isPrimaryLoading = isPrimaryLoading
         self.primaryEnabled = primaryEnabled
@@ -52,7 +57,7 @@ public struct AlertModalScaffold<Content: View>: View {
                 .onTapGesture { onOverlayTap?() }
 
             card
-                .frame(maxWidth: ModalTokens.cardMaxWidth)   // fills to margin, capped (not fixed width)
+                .frame(maxWidth: tokens.cardMaxWidth)   // fills to margin, capped (not fixed width)
                 .overlay(alignment: .topTrailing) {
                     // Pinned to the CARD's top-right corner (real modal: top.trailing.equalToSuperview,
                     // 48pt tap target), not the screen corner.
@@ -60,14 +65,14 @@ public struct AlertModalScaffold<Content: View>: View {
                         Button(action: onClose) {
                             Image(systemName: "xmark")   // simple outline X (owner preference), no circle
                                 .font(.system(size: 17, weight: .semibold))
-                                .foregroundColor(ModalTokens.Palette.subtitleText)
+                                .foregroundColor(tokens.palette.subtitleText)
                         }
                         .frame(width: 44, height: 44)
                         .contentShape(Rectangle())
                     }
                 }
-                .padding(.vertical, ModalTokens.cardMarginV)     // card→screen margin: 40 v / 20 h
-                .padding(.horizontal, ModalTokens.cardMarginH)
+                .padding(.vertical, tokens.cardMarginV)     // card→screen margin: 40 v / 20 h
+                .padding(.horizontal, tokens.cardMarginH)
         }
     }
 
@@ -82,23 +87,23 @@ public struct AlertModalScaffold<Content: View>: View {
             content()
             Button(action: onPrimary) {
                 if isPrimaryLoading {
-                    ProgressView().tint(ModalTokens.Palette.onAccent)
+                    ProgressView().tint(tokens.palette.onAccent)
                 } else {
                     Text(primaryTitle)
                 }
             }
-            .buttonStyle(ObliquePrimaryStyle())
+            .buttonStyle(ObliquePrimaryStyle(tokens: tokens))
             .disabled(!primaryEnabled || isPrimaryLoading)
 
             if let secondaryTitle {
                 Button(action: onSecondary) { Text(secondaryTitle) }
-                    .buttonStyle(PlainSecondaryStyle())
-                    .padding(.top, ModalTokens.interButton)
+                    .buttonStyle(PlainSecondaryStyle(tokens: tokens))
+                    .padding(.top, tokens.interButton)
             }
         }
-        .padding(.vertical, ModalTokens.contentPaddingV)     // inner content inset: 24 v / 32 h
-        .padding(.horizontal, ModalTokens.contentPaddingH)
-        .background(ModalTokens.Palette.cardBackground)
-        .clipShape(RoundedRectangle(cornerRadius: ModalTokens.cornerRadius, style: .continuous))
+        .padding(.vertical, tokens.contentPaddingV)     // inner content inset: 24 v / 32 h
+        .padding(.horizontal, tokens.contentPaddingH)
+        .background(tokens.palette.cardBackground)
+        .clipShape(RoundedRectangle(cornerRadius: tokens.cornerRadius, style: .continuous))
     }
 }

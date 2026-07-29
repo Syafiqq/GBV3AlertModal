@@ -29,17 +29,17 @@ struct SatisfactionDemoView: View {
             onOverlayTap: { onAction(.dismissed) }
         ) {
             Text("How helpful was this?")
-                .font(ModalTokens.titleFont)
-                .foregroundColor(ModalTokens.Palette.titleText)
+                .font(ModalTokens.standard.titleFont)
+                .foregroundColor(ModalTokens.standard.palette.titleText)
                 .multilineTextAlignment(.center)
-                .padding(.bottom, ModalTokens.gapBelowTitle)
+                .padding(.bottom, ModalTokens.standard.gapBelowTitle)
 
             HStack(spacing: 12) {
                 ForEach(options.indices, id: \.self) { index in
                     optionButton(index)
                 }
             }
-            .padding(.bottom, ModalTokens.gapBelowSubtitle)
+            .padding(.bottom, ModalTokens.standard.gapBelowSubtitle)
         }
     }
 
@@ -61,8 +61,8 @@ struct SatisfactionDemoView: View {
             }
             .frame(maxWidth: .infinity)
             .padding(.vertical, 10)
-            .background(isSelected ? ModalTokens.Palette.accent.opacity(0.15) : Color(.secondarySystemBackground))
-            .foregroundColor(isSelected ? ModalTokens.Palette.accent : ModalTokens.Palette.titleText)
+            .background(isSelected ? ModalTokens.standard.palette.accent.opacity(0.15) : Color(.secondarySystemBackground))
+            .foregroundColor(isSelected ? ModalTokens.standard.palette.accent : ModalTokens.standard.palette.titleText)
             .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
         }
     }

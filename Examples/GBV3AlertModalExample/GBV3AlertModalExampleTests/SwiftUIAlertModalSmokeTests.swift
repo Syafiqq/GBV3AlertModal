@@ -120,24 +120,26 @@ final class SwiftUIAlertModalSmokeTests: XCTestCase {
 
     // MARK: Task-4 design tokens & styles (pure — no hosting)
 
-    /// Tokens are transcribed from the real `Presentation.UiKit.V3AlertModal` preset (spec D8).
+    /// Tokens are transcribed from the real `Presentation.UiKit.V3AlertModal` preset (spec D8),
+    /// now via `ModalTokens.standard` (instance data, spec C-0 — see `ModalTokensProvenanceTests`
+    /// in the library test target for the DERIVED-from-`Properties` coverage).
     /// Pin them so an accidental edit that drifts from the app design is a failing test, not a silent regression.
     func test_modalTokens_match_real_V3AlertModal_preset() {
-        XCTAssertEqual(ModalTokens.cornerRadius, 16)
+        let tokens = ModalTokens.standard
+        XCTAssertEqual(tokens.cornerRadius, 16)
         // owner override: uniform 12 gaps (real preset was 8/8/16); interButton stays 8
-        XCTAssertEqual(ModalTokens.gapBelowBanner, 12)
-        XCTAssertEqual(ModalTokens.gapBelowTitle, 12)
-        XCTAssertEqual(ModalTokens.gapBelowSubtitle, 12)
-        XCTAssertEqual(ModalTokens.interButton, 8)
+        XCTAssertEqual(tokens.gapBelowBanner, 12)
+        XCTAssertEqual(tokens.gapBelowTitle, 12)
+        XCTAssertEqual(tokens.gapBelowSubtitle, 12)
+        XCTAssertEqual(tokens.interButton, 8)
         // real margin 40v/20h; content padding 24v/32h (horizontal > vertical)
-        XCTAssertEqual(ModalTokens.cardMarginV, 40)
-        XCTAssertEqual(ModalTokens.cardMarginH, 20)
-        XCTAssertEqual(ModalTokens.contentPaddingV, 24)
-        XCTAssertEqual(ModalTokens.contentPaddingH, 32)
-        XCTAssertEqual(ModalTokens.scrimOpacity, 0.6, accuracy: 0.001)
-        XCTAssertEqual(ModalTokens.buttonCornerRadius, 8)              // primary is a solid rounded-8 rect
+        XCTAssertEqual(tokens.cardMarginV, 40)
+        XCTAssertEqual(tokens.cardMarginH, 20)
+        XCTAssertEqual(tokens.contentPaddingV, 24)
+        XCTAssertEqual(tokens.contentPaddingH, 32)
+        XCTAssertEqual(tokens.buttonCornerRadius, 8)              // primary is a solid rounded-8 rect
         // phone: no cap → card fills to the horizontal margin (maximize); pad: capped at 300
-        XCTAssertEqual(ModalTokens.cardMaxWidth, .infinity)
+        XCTAssertEqual(tokens.cardMaxWidth, .infinity)
     }
 
     // `test_hex_color_decodes_rgb_channels` moved to the library test target
@@ -149,7 +151,7 @@ final class SwiftUIAlertModalSmokeTests: XCTestCase {
 
     /// The primary is a solid rounded-8 rectangle (no shadow, no cut corner).
     func test_primary_button_corner_radius() {
-        XCTAssertEqual(ModalTokens.buttonCornerRadius, 8)
+        XCTAssertEqual(ModalTokens.standard.buttonCornerRadius, 8)
     }
 
     // MARK: Layer-B wiring — view introspection (ViewInspector)

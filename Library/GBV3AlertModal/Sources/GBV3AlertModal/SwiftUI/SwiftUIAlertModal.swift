@@ -22,17 +22,20 @@ public struct SwiftUIAlertModal: View {
     /// Presentation state — NOT part of `AlertDialog`. The caller owns this; the view only reads it.
     public var primaryEnabled: Bool = true
     public var isPrimaryLoading: Bool = false
+    public let tokens: ModalTokens
     public let onAction: (AlertDialog.Result) -> Void
 
     public init(
         config: AlertDialog,
         primaryEnabled: Bool = true,
         isPrimaryLoading: Bool = false,
+        tokens: ModalTokens = .standard,
         onAction: @escaping (AlertDialog.Result) -> Void
     ) {
         self.config = config
         self.primaryEnabled = primaryEnabled
         self.isPrimaryLoading = isPrimaryLoading
+        self.tokens = tokens
         self.onAction = onAction
     }
 
@@ -73,6 +76,7 @@ public struct SwiftUIAlertModal: View {
         let holder = self.holder
         let resolved = self.resolved(from: holder)
         return AlertModalScaffold(
+            tokens: tokens,
             primaryTitle: config.primary,
             isPrimaryLoading: isPrimaryLoading,
             primaryEnabled: primaryEnabled,
@@ -89,15 +93,15 @@ public struct SwiftUIAlertModal: View {
                 Image(name)
                     .resizable()
                     .scaledToFit()   // preserve the image's natural aspect ratio (no distortion)
-                    .frame(maxHeight: ModalTokens.bannerMaxHeight)
-                    .padding(.bottom, ModalTokens.gapBelowBanner)
+                    .frame(maxHeight: tokens.bannerMaxHeight)
+                    .padding(.bottom, tokens.gapBelowBanner)
             }
             if resolved.showsTitle, let title = config.title {
                 Text(title)
-                    .font(ModalTokens.titleFont)
-                    .foregroundColor(ModalTokens.Palette.titleText)
+                    .font(tokens.titleFont)
+                    .foregroundColor(tokens.palette.titleText)
                     .multilineTextAlignment(.center)
-                    .padding(.bottom, ModalTokens.gapBelowTitle)
+                    .padding(.bottom, tokens.gapBelowTitle)
             }
             subtitleView(resolved: resolved, holder: holder)
         }
@@ -115,16 +119,16 @@ public struct SwiftUIAlertModal: View {
             EmptyView()
         case let .plain(subtitle):
             Text(subtitle)
-                .font(ModalTokens.subtitleFont)
-                .foregroundColor(ModalTokens.Palette.subtitleText)
+                .font(tokens.subtitleFont)
+                .foregroundColor(tokens.palette.subtitleText)
                 .multilineTextAlignment(.center)
-                .padding(.bottom, ModalTokens.gapBelowSubtitle)
+                .padding(.bottom, tokens.gapBelowSubtitle)
         case let .attributed(attributed):
             // The UIKit path stores an NSAttributedString on the holder. SwiftUI renders the
             // bridged value; styling is limited to the whitelisted bold/color/link subgrammar.
             Text(AttributedString(attributed))
                 .multilineTextAlignment(.center)
-                .padding(.bottom, ModalTokens.gapBelowSubtitle)
+                .padding(.bottom, tokens.gapBelowSubtitle)
         case .custom:
             // A plain `AlertDialog` never populates `subtitleCustomView` (that field doesn't exist
             // on this descriptor), so this case is unreachable from `SwiftUIAlertModal` in practice.
