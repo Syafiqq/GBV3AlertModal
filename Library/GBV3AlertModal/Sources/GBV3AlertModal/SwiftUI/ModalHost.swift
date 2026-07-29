@@ -21,19 +21,38 @@ public struct ModalHost<Content: View>: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .overlay(
                 ZStack {
+                    // IDENTITY: `ForEach` keys on `Presentation.id` (`ModalID`, stable for the whole
+                    // life of a presentation), so a `presentations` diff — a second modal appearing,
+                    // a `setHidden` toggle, an `update(_:to:)` rebuild — UPDATES each element in
+                    // place instead of recreating it. That is what lets a registered custom view own
+                    // `@State`: the typed text survives every diff except teardown.
                     ForEach(renderer.presentations) { presentation in
                         modal(for: presentation)
+                            // `isHidden` is a VISIBILITY modifier, deliberately not an `if`.
+                            // Removing the subtree would destroy that `@State` — and it would also
+                            // diverge from UIKit, where `modal.isHidden` keeps the live
+                            // `UITextField` and its text. These two modifiers are `UIView.isHidden`
+                            // semantics: not drawn, not hit-testable, still alive.
+                            .opacity(presentation.isHidden ? 0 : 1)
+                            .allowsHitTesting(!presentation.isHidden)
                     }
                 }
             )
     }
 
-    /// Draws one presentation. `presentation.content` is `nil` for descriptors registered through
-    /// `register(_:factory:)` (no `StandardAlertContent`, so no built-in SwiftUI body) — those are
-    /// skipped rather than guessed at; a consumer hosts them itself.
+    /// Draws one presentation, preferring the consumer's registered view over the standard body.
+    ///
+    /// * `customContent` — a `register(_:view:)` body with the resolve gate already bound. It is the
+    ///   WHOLE modal (its own `AlertModalScaffold`), because its buttons must read the `@State` it
+    ///   owns; `ModalHost` cannot supply buttons that know about a value it cannot see.
+    /// * `content` — the standard family's `AlertDialog` projection, rendered by `SwiftUIAlertModal`.
+    /// * neither — a descriptor registered through `register(_:factory:)`/`register(_:route:factory:)`
+    ///   with no view: routable, but with no body to draw. Skipped rather than guessed at.
     @ViewBuilder
     private func modal(for presentation: SwiftUIModalRenderer.Presentation) -> some View {
-        if !presentation.isHidden, let config = presentation.content {
+        if let customContent = presentation.customContent {
+            customContent
+        } else if let config = presentation.content {
             SwiftUIAlertModal(
                 config: config,
                 // The real, caller-supplied `Properties` this presentation was resolved with —

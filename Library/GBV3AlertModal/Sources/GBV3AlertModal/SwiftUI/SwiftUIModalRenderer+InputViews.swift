@@ -1,0 +1,196 @@
+import Foundation // `Date` / `AttributedString` — the descriptors' own vocabulary.
+import SwiftUI
+
+// The SwiftUI mirror of `UIKitModalRenderer+InputHolders.swift`, one-for-one:
+//
+//   UIKit                                   SwiftUI
+//   ----------------------------------      ------------------------------------------
+//   TextInputHolder.make(for:resolve:)      TextInputContent.make(for:tokens:resolve:)
+//   DatePickerHolder.make(for:resolve:)     DatePickerContent.make(for:tokens:resolve:)
+//   UITextField in subtitleCustomView       TextField in AlertModalScaffold's body slot
+//   UIDatePicker in subtitleCustomView      DatePicker in AlertModalScaffold's body slot
+//   read `field.text` in holder.completion  read `@State text` in the scaffold's onPrimary
+//
+// Both sides read the live value AT TAP TIME and hand it to the renderer's resolve gate, which is
+// the only way `.submitted(<value>)` can be produced at all. The descriptors themselves are
+// untouched, pure `Sendable` value types in `Core/` (decision D1) — every view lives out here.
+
+extension SwiftUIModalRenderer {
+    /// SwiftUI content for `TextInputDialog` — the counterpart of
+    /// `UIKitModalRenderer.TextInputHolder`, shaped for `register(_:view:)`:
+    ///
+    /// ```swift
+    /// renderer.register(TextInputDialog.self, view: { descriptor, resolve in
+    ///     SwiftUIModalRenderer.TextInputContent.make(
+    ///         for: descriptor, tokens: ModalTokens(from: properties), resolve: resolve
+    ///     )
+    /// })
+    /// ```
+    ///
+    /// `tokens` is passed in (rather than read off the presentation) for the same reason the UIKit
+    /// registration closure captures its `Properties`: the builder signature carries the descriptor
+    /// and the gate, nothing else. Callers with real `Properties` should pass
+    /// `ModalTokens(from: properties)` so the card matches every other modal.
+    @MainActor public enum TextInputContent {
+        public static func make(
+            for descriptor: TextInputDialog,
+            tokens: ModalTokens = .standard,
+            resolve: @escaping (TextInputDialog.Result) -> Void
+        ) -> AnyView {
+            AnyView(TextInputModalView(descriptor: descriptor, tokens: tokens, resolve: resolve))
+        }
+    }
+
+    /// SwiftUI content for `DatePickerDialog` — the counterpart of
+    /// `UIKitModalRenderer.DatePickerHolder`. See `TextInputContent` for the registration shape.
+    @MainActor public enum DatePickerContent {
+        public static func make(
+            for descriptor: DatePickerDialog,
+            tokens: ModalTokens = .standard,
+            resolve: @escaping (DatePickerDialog.Result) -> Void
+        ) -> AnyView {
+            AnyView(DatePickerModalView(descriptor: descriptor, tokens: tokens, resolve: resolve))
+        }
+    }
+}
+
+/// `TextInputDialog` rendered in SwiftUI: a `TextField` inside the SHARED modal chrome
+/// (`AlertModalScaffold` — scrim, card, primary/secondary buttons, close), never a rebuilt card.
+///
+/// The scaffold is inside this view, not around it, precisely because the primary button has to
+/// read `text`. That is the whole shape of the seam: `ModalHost` hands over the entire modal, and
+/// this view resolves the gate with a value only it can see.
+@MainActor
+public struct TextInputModalView: View {
+    public let descriptor: TextInputDialog
+    public let tokens: ModalTokens
+    /// The renderer's resolve gate. Calling it resolves the modal's token exactly once and tears
+    /// the presentation down (the gate is resolve-once; later calls are inert).
+    public let resolve: (TextInputDialog.Result) -> Void
+
+    /// The live field value. Seeded ONCE from `descriptor.initialText` — `State(initialValue:)` is
+    /// applied on first appearance only, so a later `update(_:to:)` rebuild will not stomp text the
+    /// user has already typed (see `ModalHost` for why the view identity survives those rebuilds).
+    @State private var text: String
+
+    public init(
+        descriptor: TextInputDialog,
+        tokens: ModalTokens = .standard,
+        resolve: @escaping (TextInputDialog.Result) -> Void
+    ) {
+        self.descriptor = descriptor
+        self.tokens = tokens
+        self.resolve = resolve
+        _text = State(initialValue: descriptor.initialText)
+    }
+
+    public var body: some View {
+        AlertModalScaffold(
+            tokens: tokens,
+            primaryTitle: descriptor.primary,
+            onPrimary: { resolve(Self.result(for: .primary, text: text)) },
+            secondaryTitle: descriptor.secondary,
+            onSecondary: { resolve(Self.result(for: .secondary, text: text)) },
+            onClose: { resolve(Self.result(for: .close, text: text)) }
+        ) {
+            titleView
+            // `RoundedBorderTextFieldStyle()` spelled out rather than `.roundedBorder`: the concrete
+            // style type is iOS 13+, which is unambiguously inside the iOS 15 floor.
+            TextField(descriptor.placeholder, text: $text)
+                .textFieldStyle(RoundedBorderTextFieldStyle())
+                .frame(height: 44)               // same 44pt the UIKit holder constrains the field to
+                .padding(.bottom, tokens.gapBelowSubtitle)
+        }
+    }
+
+    @ViewBuilder
+    private var titleView: some View {
+        if let title = descriptor.title {
+            Text(title)
+                .font(tokens.titleFont)
+                .foregroundColor(tokens.palette.titleText)
+                .multilineTextAlignment(.center)
+                .padding(.bottom, tokens.gapBelowTitle)
+        }
+    }
+
+    /// `ActionType` + the live field value → the descriptor's own result. Byte-for-byte the switch
+    /// `UIKitModalRenderer.TextInputHolder` performs inside `holder.completion`; kept out of the
+    /// view body (the same split `SwiftUIAlertModal.subtitlePayload` uses) so it is a plain function
+    /// a test can call without hosting a view hierarchy. The two must stay identical.
+    ///
+    /// `nonisolated`: it is pure, so it has no business borrowing the view's main-actor isolation.
+    nonisolated static func result(
+        for action: GBAlertModal.ActionType, text: String
+    ) -> TextInputDialog.Result {
+        switch action {
+        case .primary: return .submitted(text)
+        case .secondary, .close: return .dismissed
+        }
+    }
+}
+
+/// `DatePickerDialog` rendered in SwiftUI: a `DatePicker` inside the shared `AlertModalScaffold`
+/// chrome. Same shape as `TextInputModalView` — see it for why the scaffold lives in here.
+@MainActor
+public struct DatePickerModalView: View {
+    public let descriptor: DatePickerDialog
+    public let tokens: ModalTokens
+    public let resolve: (DatePickerDialog.Result) -> Void
+
+    /// The live picker value; seeded once from `descriptor.initialDate`.
+    @State private var date: Date
+
+    public init(
+        descriptor: DatePickerDialog,
+        tokens: ModalTokens = .standard,
+        resolve: @escaping (DatePickerDialog.Result) -> Void
+    ) {
+        self.descriptor = descriptor
+        self.tokens = tokens
+        self.resolve = resolve
+        _date = State(initialValue: descriptor.initialDate)
+    }
+
+    public var body: some View {
+        AlertModalScaffold(
+            tokens: tokens,
+            primaryTitle: descriptor.primary,
+            onPrimary: { resolve(Self.result(for: .primary, date: date)) },
+            secondaryTitle: descriptor.secondary,
+            onSecondary: { resolve(Self.result(for: .secondary, date: date)) },
+            onClose: { resolve(Self.result(for: .close, date: date)) }
+        ) {
+            titleView
+            // `.date` only + wheels — the same two choices `DatePickerHolder` makes
+            // (`datePickerMode = .date`, `preferredDatePickerStyle = .wheels`).
+            // `WheelDatePickerStyle` is iOS 13+, safely inside the iOS 15 floor.
+            DatePicker("", selection: $date, displayedComponents: [.date])
+                .datePickerStyle(WheelDatePickerStyle())
+                .labelsHidden()
+                .padding(.bottom, tokens.gapBelowSubtitle)
+        }
+    }
+
+    @ViewBuilder
+    private var titleView: some View {
+        if let title = descriptor.title {
+            Text(title)
+                .font(tokens.titleFont)
+                .foregroundColor(tokens.palette.titleText)
+                .multilineTextAlignment(.center)
+                .padding(.bottom, tokens.gapBelowTitle)
+        }
+    }
+
+    /// `ActionType` + the live picker value → the descriptor's own result. The switch
+    /// `UIKitModalRenderer.DatePickerHolder` performs, verbatim. See `TextInputModalView.result`.
+    nonisolated static func result(
+        for action: GBAlertModal.ActionType, date: Date
+    ) -> DatePickerDialog.Result {
+        switch action {
+        case .primary: return .submitted(date)
+        case .secondary, .close: return .dismissed
+        }
+    }
+}

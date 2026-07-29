@@ -15,6 +15,14 @@ import UIKit // `Properties`/`DataHolder`/`ResolvedModal` are UIKit-region types
 /// INSTANCE, a UIKit view this renderer never builds. So `AlertHolder.make` is used for CONTENT
 /// MAPPING ONLY and view interactions are routed through this renderer's own resolve-once gate
 /// (see `Registration.route`).
+///
+/// **Two ways a descriptor gets a body.** The standard family (`AlertDialog`, `PopupDialog`)
+/// projects to `AlertDialog` and is drawn by `SwiftUIAlertModal`. Everything else registers its own
+/// SwiftUI body with `register(_:view:)`, which hands that body the resolve GATE rather than an
+/// `ActionType` router — so a view that owns `@State` can resolve with the value it is holding
+/// (`.submitted(text)`), which a pre-registered `(ActionType) -> Result` route structurally cannot
+/// express. The `ViewBuilder` lives on the RENDERER, never on the descriptor: descriptors stay pure
+/// `Sendable` value types in `Core/` and the executor stays concurrency-safe (decision D1).
 @MainActor
 public final class SwiftUIModalRenderer: ObservableObject, ModalRenderer {
 
@@ -23,6 +31,23 @@ public final class SwiftUIModalRenderer: ObservableObject, ModalRenderer {
     /// between the two renderers verbatim.
     public typealias Factory<D: ModalDescriptor> =
         (D, @escaping (D.Result) -> Void) -> (GBAlertModal.Properties?, GBAlertModal.DataHolder)
+
+    /// Builds the SwiftUI body for a descriptor. Same argument list as `Factory` — descriptor in,
+    /// the renderer's resolve gate in — and for the same reason: the view is handed the gate so it
+    /// can resolve with a value IT holds (`@State` text, a picked date, a chosen badge), read at
+    /// interaction time. This is the SwiftUI equivalent of `UIKitModalRenderer.TextInputHolder`
+    /// reading `field.text` inside `holder.completion`.
+    ///
+    /// `AnyView` is the erasure point for a heterogeneous registry — the registry is keyed by
+    /// `ObjectIdentifier(D.self)` and holds many unrelated body types, so there is no other way to
+    /// store them side by side. Keep it here, at the boundary: the views themselves are ordinary
+    /// concrete `View`s (see `SwiftUIModalRenderer+InputViews.swift`).
+    ///
+    /// Deliberately NOT `@Sendable` and NOT explicitly `@MainActor`, exactly like `Factory`: a
+    /// non-`Sendable` closure literal inherits the isolation of the context it is written in, and
+    /// every registration site is already `@MainActor`.
+    public typealias ContentBuilder<D: ModalDescriptor> =
+        (D, @escaping (D.Result) -> Void) -> AnyView
 
     // MARK: - Presentation
 
@@ -42,9 +67,18 @@ public final class SwiftUIModalRenderer: ObservableObject, ModalRenderer {
         public let tokens: ModalTokens
         /// Standard-family content projected into `AlertDialog` (the shape `SwiftUIAlertModal`
         /// renders). `nil` for descriptors registered through `register(_:factory:)`, which carry
-        /// no `StandardAlertContent` and therefore no built-in SwiftUI body — `ModalHost` draws
-        /// nothing for those; a consumer hosts them itself off `holder`/`resolved`.
+        /// no `StandardAlertContent` and therefore no built-in SwiftUI body — for those,
+        /// `customContent` below is what `ModalHost` draws.
         public let content: AlertDialog?
+        /// The consumer's own SwiftUI body for this presentation, built ONCE per present/refresh by
+        /// the `register(_:view:)` builder with the gate already bound. `ModalHost` draws this in
+        /// PREFERENCE to `content` when both exist — a registered view is a deliberate override of
+        /// the standard body, the same way re-registering a factory overrides the standard mapping.
+        ///
+        /// Because the builder is handed the gate (not an `ActionType` router), a view that owns
+        /// `@State` can resolve with the value it is holding — which is the whole reason this field
+        /// exists: `TextInputDialog.Result.submitted(String)` is unreachable through `route`.
+        public let customContent: AnyView?
         public var isHidden: Bool
         /// The view's ONLY way to resolve this presentation. Speaks `GBAlertModal.ActionType`, the
         /// same vocabulary `DataHolder.completion` uses, and is a no-op once the modal is torn down.
@@ -65,8 +99,11 @@ public final class SwiftUIModalRenderer: ObservableObject, ModalRenderer {
         /// at compile time), or by the consumer via `register(_:route:factory:)`.
         let route: ((GBAlertModal.ActionType) -> D.Result)?
         /// `D -> AlertDialog`. Non-nil only for the standard family (`D: StandardAlertContent`);
-        /// custom descriptors have no SwiftUI body — see `register(_:route:factory:)`.
+        /// custom descriptors project no `AlertDialog` — they supply a `view` instead.
         let content: ((D) -> AlertDialog)?
+        /// The consumer's SwiftUI body builder, from `register(_:view:)`. Non-nil is what makes a
+        /// custom descriptor RENDERABLE (and not merely routable) on this backend.
+        let view: ContentBuilder<D>?
     }
 
     /// Per-presentation teardown/rebuild/route handles. Mirrors `UIKitModalRenderer.Live`; the one
@@ -107,14 +144,18 @@ public final class SwiftUIModalRenderer: ObservableObject, ModalRenderer {
     /// for anything a user can act on; this overload is for descriptors that only ever end via
     /// `dismiss(_:)`.
     ///
-    /// **Re-registering an already-registered kind PRESERVES its routing and content projection.**
-    /// Overriding the built-in `AlertDialog`/`PopupDialog` factory is a documented extension point
-    /// on the UIKit renderer, and wiping the router here would silently produce a modal that
-    /// renders nothing and can never be resolved.
+    /// **Re-registering an already-registered kind PRESERVES its routing, content projection and
+    /// registered view.** Overriding the built-in `AlertDialog`/`PopupDialog` factory is a
+    /// documented extension point on the UIKit renderer, and wiping the router here would silently
+    /// produce a modal that renders nothing and can never be resolved. The four handles
+    /// (`factory`/`route`/`content`/`view`) are independent: setting one never clears the others.
     public func register<D: ModalDescriptor>(_ type: D.Type, factory: @escaping Factory<D>) {
         let previous = registrations[ObjectIdentifier(type)] as? Registration<D>
         registrations[ObjectIdentifier(type)] = Registration<D>(
-            factory: factory, route: previous?.route, content: previous?.content
+            factory: factory,
+            route: previous?.route,
+            content: previous?.content,
+            view: previous?.view
         )
     }
 
@@ -128,11 +169,12 @@ public final class SwiftUIModalRenderer: ObservableObject, ModalRenderer {
     /// renderer-agnostic executor suite cover the extension point rather than silently narrowing
     /// to the standard family.
     ///
-    /// KNOWN GAP, stated plainly: this routes such a descriptor, it does not RENDER it.
-    /// `Presentation.content` stays `nil` (there is no `StandardAlertContent` to project from), so
-    /// `ModalHost` draws nothing for it — a consumer hosts its own SwiftUI body off
-    /// `Presentation.holder`/`.resolved`/`.onAction`. Custom-content rendering is genuinely not
-    /// implemented on the SwiftUI path.
+    /// SCOPE, stated plainly: this ROUTES such a descriptor, it does not RENDER it, and a route is
+    /// `(ActionType) -> D.Result` — registered before presentation, so it structurally cannot carry
+    /// a value read at interaction time. Use it for descriptors whose result is decided purely by
+    /// WHICH button was pressed. For anything with a body of its own, or a result carrying a value
+    /// (`TextInputDialog.Result.submitted(String)`), register a view with `register(_:view:)`; a
+    /// registered view supersedes `route` because it resolves the gate directly.
     public func register<D: ModalDescriptor>(
         _ type: D.Type,
         route: @escaping (GBAlertModal.ActionType) -> D.Result,
@@ -140,7 +182,50 @@ public final class SwiftUIModalRenderer: ObservableObject, ModalRenderer {
     ) {
         let previous = registrations[ObjectIdentifier(type)] as? Registration<D>
         registrations[ObjectIdentifier(type)] = Registration<D>(
-            factory: factory, route: route, content: previous?.content
+            factory: factory,
+            route: route,
+            content: previous?.content,
+            view: previous?.view
+        )
+    }
+
+    /// Register the SwiftUI body for a descriptor kind — the seam that makes CUSTOM CONTENT
+    /// renderable on this backend, and the reason `.submitted(<value>)` is reachable at all.
+    ///
+    /// The builder is called once per present (and once per `update(_:to:)` rebuild) with the
+    /// descriptor and the renderer's resolve gate. The view it returns owns its own `@State`,
+    /// renders whatever it needs (a `TextField`, a `DatePicker`, a badge grid) and calls `resolve`
+    /// DIRECTLY with the value it is holding at that moment. Nothing about `route`'s
+    /// `(ActionType) -> D.Result` shape has to change, and nothing about the descriptor has to
+    /// change either: the `ViewBuilder` lives HERE, on the renderer, so descriptors stay pure
+    /// `Sendable` value types and the executor stays concurrency-safe (decision D1). This mirrors
+    /// `UIKitModalRenderer`'s holder factories exactly — `descriptor + resolve -> content`, with
+    /// the value read at tap time (`UIKitModalRenderer+InputHolders.swift`).
+    ///
+    /// The returned view is the WHOLE modal, chrome included. Wrap `AlertModalScaffold` (scrim +
+    /// card + buttons + close) around your body rather than rebuilding it — the scaffold is the
+    /// `@ViewBuilder` slot this seam exists to fill, and it is what puts the primary button (which
+    /// must read your `@State`) in your view rather than in `ModalHost`.
+    ///
+    /// Registering a view does NOT require a factory. When no factory has been registered for the
+    /// kind, a neutral one (`(nil, DataHolder())`) is installed so the presentation still exists
+    /// and is still tearable-down; `Presentation.properties`/`.resolved`/`.tokens` then fall back
+    /// to `GBAlertModal.Properties()` / `ModalTokens.standard`. Register a factory as well if you
+    /// want those derived from your real `Properties` — the two registrations are independent and
+    /// neither clears the other (see `register(_:factory:)`).
+    public func register<D: ModalDescriptor>(
+        _ type: D.Type,
+        view: @escaping (D, @escaping (D.Result) -> Void) -> AnyView
+    ) {
+        let previous = registrations[ObjectIdentifier(type)] as? Registration<D>
+        // Spelled as a typed local, not inline after `??`: the tuple's `nil` has no contextual type
+        // inside a `??` operand, and this keeps the inference trivially local.
+        let neutralFactory: Factory<D> = { _, _ in (nil, GBAlertModal.DataHolder()) }
+        registrations[ObjectIdentifier(type)] = Registration<D>(
+            factory: previous?.factory ?? neutralFactory,
+            route: previous?.route,
+            content: previous?.content,
+            view: view
         )
     }
 
@@ -177,8 +262,11 @@ public final class SwiftUIModalRenderer: ObservableObject, ModalRenderer {
                 showCloseButton: descriptor.showCloseButton
             )
         }
+        // `view: nil` — the standard family HAS a built-in SwiftUI body (`SwiftUIAlertModal`, drawn
+        // from `content`). This runs from `init` only, before any consumer registration, so there
+        // is no prior handle to preserve; a consumer may still add one with `register(_:view:)`.
         registrations[ObjectIdentifier(type)] = Registration<D>(
-            factory: factory, route: route, content: content
+            factory: factory, route: route, content: content, view: nil
         )
     }
 
@@ -220,7 +308,15 @@ public final class SwiftUIModalRenderer: ObservableObject, ModalRenderer {
                     id,
                     properties: nextProperties,
                     holder: nextHolder,
-                    content: registration.content?(next)
+                    content: registration.content?(next),
+                    // Rebuilt from the NEW descriptor, symmetrically with `content`, so an
+                    // `update(_:to:)` really does re-render. This does NOT reset the view's
+                    // `@State`: the rebuilt value has the same concrete body type at the same
+                    // `ForEach` identity (`ModalID`), so SwiftUI updates it in place and any
+                    // `State(initialValue:)` seeded from the new descriptor is ignored — typed
+                    // text survives an update, which the UIKit path (a brand-new `UITextField`
+                    // per `updateDialog`) does not do. Divergence recorded, not accidental.
+                    customContent: registration.view?(next, gate)
                 )
             },
             route: router
@@ -232,6 +328,9 @@ public final class SwiftUIModalRenderer: ObservableObject, ModalRenderer {
                 properties: properties,
                 holder: holder,
                 content: registration.content?(descriptor),
+                // The gate — not a router — is what the view gets, so the value it resolves with
+                // is read at INTERACTION time from state the view owns. That is gap E1 closed.
+                customContent: registration.view?(descriptor, gate),
                 isHidden: false,
                 // Resolved through `live` at call time, so a torn-down presentation held by a stale
                 // SwiftUI view can no longer resolve anything.
@@ -270,6 +369,7 @@ public final class SwiftUIModalRenderer: ObservableObject, ModalRenderer {
         properties: GBAlertModal.Properties?,
         holder: GBAlertModal.DataHolder,
         content: AlertDialog?,
+        customContent: AnyView?,
         isHidden: Bool,
         onAction: @escaping (GBAlertModal.ActionType) -> Void
     ) -> Presentation {
@@ -283,6 +383,7 @@ public final class SwiftUIModalRenderer: ObservableObject, ModalRenderer {
             properties: effective,
             tokens: ModalTokens(from: effective),
             content: content,
+            customContent: customContent,
             isHidden: isHidden,
             onAction: onAction
         )
@@ -295,7 +396,8 @@ public final class SwiftUIModalRenderer: ObservableObject, ModalRenderer {
         _ id: ModalID,
         properties: GBAlertModal.Properties?,
         holder: GBAlertModal.DataHolder,
-        content: AlertDialog?
+        content: AlertDialog?,
+        customContent: AnyView?
     ) {
         guard let index = presentations.firstIndex(where: { $0.id == id }) else { return }
         let previous = presentations[index]
@@ -304,6 +406,7 @@ public final class SwiftUIModalRenderer: ObservableObject, ModalRenderer {
             properties: properties,
             holder: holder,
             content: content,
+            customContent: customContent,
             isHidden: previous.isHidden,
             onAction: previous.onAction
         )

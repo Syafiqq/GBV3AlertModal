@@ -181,9 +181,12 @@ final class RendererHarness {
     ///   builds, so the route is handed to `register(_:route:factory:)` instead.
     ///
     /// `route` is intentionally a PURE `(ActionType) -> D.Result` function: that is the whole of
-    /// what both backends can express. See the EXCLUSIONS section of the task report for the
-    /// consequence — a result whose payload is read from a live input view at resolve time
-    /// (`TextInputDialog.submitted(String)`) is expressible on UIKit only.
+    /// what THIS harness needs, and it keeps the parity assertions identical on both sides.
+    ///
+    /// It is NOT the limit of either backend any more. A result whose payload is read from a live
+    /// input view at resolve time (`TextInputDialog.submitted(String)`) is expressible on UIKit via
+    /// `holder.completion` and on SwiftUI via `SwiftUIModalRenderer.register(_:view:)`, whose view
+    /// is handed the resolve gate directly — see `SwiftUICustomContentTests`.
     func registerCustom<D: ModalDescriptor>(
         _ type: D.Type,
         properties: GBAlertModal.Properties,
