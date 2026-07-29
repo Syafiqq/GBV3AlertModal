@@ -4,8 +4,10 @@ import SwiftUI
 /// orange fill, white heavy text, 48pt tall, with a HARD solid-orange offset to the lower-left
 /// (blur 0) — the "oblique" look. On press it slides into that offset, the offset disappears, and
 /// the fill goes to the pressed colour. Design identity — fixed in the view, never per-call (spec D8).
-struct ObliquePrimaryStyle: ButtonStyle {
-    func makeBody(configuration: Configuration) -> some View {
+public struct ObliquePrimaryStyle: ButtonStyle {
+    public init() {}
+
+    public func makeBody(configuration: Configuration) -> some View {
         StyledLabel(configuration: configuration)
     }
 
@@ -38,8 +40,10 @@ struct ObliquePrimaryStyle: ButtonStyle {
 }
 
 /// Secondary action: text-only, accent-coloured heavy label, dims on press (spec D8).
-struct PlainSecondaryStyle: ButtonStyle {
-    func makeBody(configuration: Configuration) -> some View {
+public struct PlainSecondaryStyle: ButtonStyle {
+    public init() {}
+
+    public func makeBody(configuration: Configuration) -> some View {
         StyledLabel(configuration: configuration)
     }
 

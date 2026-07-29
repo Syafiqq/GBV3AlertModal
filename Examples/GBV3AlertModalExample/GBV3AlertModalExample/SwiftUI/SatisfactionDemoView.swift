@@ -1,4 +1,5 @@
 import SwiftUI
+import GBV3AlertModal
 
 /// A bespoke SwiftUI dialog mirroring the real app's `SatisfactionLevelDialogView`, now built on the
 /// shared `AlertModalScaffold` (spec D1): the scrim + card + Submit-button chrome come from the

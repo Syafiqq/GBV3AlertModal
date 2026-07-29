@@ -1,25 +1,50 @@
 import SwiftUI
-import GBV3AlertModal
 
 /// The shared modal chrome (spec D1's bespoke-content surface): full-screen scrim + centered card +
 /// primary/secondary buttons + optional close, wrapped around a caller-supplied `@ViewBuilder` body.
 /// Never dismisses itself. `SwiftUIAlertModal` is this with a built-in standard body; bespoke dialogs
 /// (satisfaction picker, badge grid, worksheet) supply their own content instead of a `subtitleCustomView`.
-struct AlertModalScaffold<Content: View>: View {
-    var scrim: Color = ModalTokens.Palette.scrim.opacity(ModalTokens.scrimOpacity)
-    let primaryTitle: String
-    var isPrimaryLoading: Bool = false
-    var primaryEnabled: Bool = true
-    let onPrimary: () -> Void
-    var secondaryTitle: String? = nil
-    var onSecondary: () -> Void = {}
-    var showClose: Bool = false
-    var onClose: () -> Void = {}
+public struct AlertModalScaffold<Content: View>: View {
+    public var scrim: Color = ModalTokens.Palette.scrim.opacity(ModalTokens.scrimOpacity)
+    public let primaryTitle: String
+    public var isPrimaryLoading: Bool = false
+    public var primaryEnabled: Bool = true
+    public let onPrimary: () -> Void
+    public var secondaryTitle: String? = nil
+    public var onSecondary: () -> Void = {}
+    public var showClose: Bool = false
+    public var onClose: () -> Void = {}
     /// Fires on scrim tap; `nil` = scrim not interactive. The caller decides what a tap means.
-    var onOverlayTap: (() -> Void)? = nil
-    @ViewBuilder let content: () -> Content
+    public var onOverlayTap: (() -> Void)? = nil
+    @ViewBuilder public let content: () -> Content
 
-    var body: some View {
+    public init(
+        scrim: Color = ModalTokens.Palette.scrim.opacity(ModalTokens.scrimOpacity),
+        primaryTitle: String,
+        isPrimaryLoading: Bool = false,
+        primaryEnabled: Bool = true,
+        onPrimary: @escaping () -> Void,
+        secondaryTitle: String? = nil,
+        onSecondary: @escaping () -> Void = {},
+        showClose: Bool = false,
+        onClose: @escaping () -> Void = {},
+        onOverlayTap: (() -> Void)? = nil,
+        @ViewBuilder content: @escaping () -> Content
+    ) {
+        self.scrim = scrim
+        self.primaryTitle = primaryTitle
+        self.isPrimaryLoading = isPrimaryLoading
+        self.primaryEnabled = primaryEnabled
+        self.onPrimary = onPrimary
+        self.secondaryTitle = secondaryTitle
+        self.onSecondary = onSecondary
+        self.showClose = showClose
+        self.onClose = onClose
+        self.onOverlayTap = onOverlayTap
+        self.content = content
+    }
+
+    public var body: some View {
         ZStack {
             scrim
                 .ignoresSafeArea()
