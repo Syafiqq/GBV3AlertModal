@@ -72,6 +72,12 @@ public struct AlertModalScaffold<Content: View>: View {
     }
 
     private var card: some View {
+        // ponytail: primary/secondary always stack vertically here — `ResolvedModal.buttonAxis`
+        // (spec C-1) isn't threaded through yet. Harmless today: `SwiftUIAlertModal` feeds the
+        // resolver a sentinel `Properties` with no `buttonActionOrientation`, so `buttonAxis`
+        // always resolves to `.vertical` anyway. Becomes load-bearing once a SwiftUI renderer
+        // threads real `Properties` in (planned Task 6) — that's when this VStack needs an
+        // HStack/VStack switch on `buttonAxis`, not before.
         VStack(spacing: 0) {
             content()
             Button(action: onPrimary) {

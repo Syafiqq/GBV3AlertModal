@@ -43,7 +43,7 @@ final class AlertResolutionTests: XCTestCase {
         XCTAssertEqual(resolved(cfg(subtitle: "")).subtitle, .none)
     }
 
-    func test_secondary_shows_iff_nonEmpty() {
+    func test_secondary_shows_iff_nonNil() {
         XCTAssertTrue(resolved(cfg(secondary: "Cancel")).showsSecondary)
         XCTAssertFalse(resolved(cfg(secondary: nil)).showsSecondary)
         // Behavior correction picked up from the shared resolver: unlike this app's old hand-rolled

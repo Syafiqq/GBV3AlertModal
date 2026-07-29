@@ -2,11 +2,20 @@ import Foundation
 import SwiftUI
 
 /// Pure-SwiftUI mirror of `GBAlertModal`'s content: `AlertModalScaffold` (shared chrome) with a
-/// built-in standard body (banner/title/subtitle). Holds NO branching logic beyond `ResolvedModal`
-/// slot decisions — the SAME resolver `GBAlertModal` (UIKit) itself runs, so structural equivalence
-/// between the two renderers is true by construction (spec C-1), not something a comparison harness
-/// has to detect. Never dismisses itself; the caller reacts to `onAction` (matches the executor
-/// teardown contract). Styling is fixed design (`ModalTokens`).
+/// built-in standard body (banner/title/subtitle). Holds NO hand-rolled slot logic — it runs the
+/// SAME `GBAlertModal.resolve` resolver `GBAlertModal` (UIKit) itself runs, over the SAME
+/// `AlertHolder.make` mapping (spec C-1). Never dismisses itself; the caller reacts to `onAction`
+/// (matches the executor teardown contract). Styling is fixed design (`ModalTokens`).
+///
+/// **Equivalence scope**: this view feeds `resolve` a fixed sentinel `Properties` (see `resolved`
+/// below) and `isLandscape: false`, whereas the UIKit renderer feeds real caller-supplied
+/// `alertProperties` and live orientation. So equivalence with UIKit is guaranteed by construction
+/// only for the fields derived purely from `holder` — `showsBanner`, `showsTitle`, `subtitle`,
+/// `showsCloseButton`, `closeOnTapOverlay`, `dismissOnAction`. Fields derived from `properties`/
+/// orientation — `showsPrimary`, `showsSecondary`, `buttonAxis`, `buttonsMatchParent`,
+/// `contentWidth` — run through the same code path but on different inputs, so they CAN diverge
+/// from a real UIKit render today. Real `Properties` get threaded through once a SwiftUI renderer
+/// supplies them (planned for Task 6), which closes this gap.
 @MainActor
 public struct SwiftUIAlertModal: View {
     public let config: AlertDialog
@@ -30,19 +39,24 @@ public struct SwiftUIAlertModal: View {
     // MARK: - Slot resolution (shared with UIKit — spec C-1)
     //
     // `holder` is the same descriptor→`DataHolder` mapping the executor's UIKit renderer uses
-    // (`UIKitModalRenderer.AlertHolder.make`); `resolved` is the library's own 11-field
+    // (`UIKitModalRenderer.AlertHolder.make`); `resolved(from:)` is the library's own 11-field
     // `GBAlertModal.resolve`, run over that holder. Neither is duplicated here.
     //
     // The `Properties` passed to `resolve` exist only to satisfy its presence checks for
     // primary/secondary (both require a non-nil UIKit `ActionStyle`, not just the action
     // string — see `GBAlertModal+ResolvedModal.swift`). This view never renders an `ActionStyle`
     // (buttons are styled by `ModalButtonStyles`), so only the styles' NON-NILNESS matters here;
-    // their payload is thrown away.
+    // their payload is thrown away. See the type doc comment above for what this sentinel means
+    // for equivalence scope.
     private var holder: GBAlertModal.DataHolder {
         UIKitModalRenderer.AlertHolder.make(for: config, resolve: { _ in })
     }
 
-    private var resolved: GBAlertModal.ResolvedModal {
+    /// Takes `holder` as a parameter (rather than reaching for `self.holder` again) so `body`
+    /// can compute it exactly once per render and hand it to both this and `subtitleView` — the
+    /// resolver call itself is cheap, but `self.holder` re-runs `UIImage(named:)` and
+    /// `ModalText.split`, which isn't free to repeat.
+    private func resolved(from holder: GBAlertModal.DataHolder) -> GBAlertModal.ResolvedModal {
         GBAlertModal.resolve(
             properties: GBAlertModal.Properties(
                 primaryActionStyle: .plain(.init()),
@@ -54,11 +68,10 @@ public struct SwiftUIAlertModal: View {
     }
 
     public var body: some View {
-        // Computed once per render (not per property access): `holder` re-runs `UIImage(named:)`
-        // + `ModalText.split` and `resolved` re-runs the resolver, so re-fetching either via the
-        // computed properties above on every use below would repeat that work several times over.
+        // Computed exactly once per render: both `holder` and `resolved` are otherwise re-derived
+        // (re-running `UIImage(named:)` / `ModalText.split` / the resolver) on every access.
         let holder = self.holder
-        let resolved = self.resolved
+        let resolved = self.resolved(from: holder)
         return AlertModalScaffold(
             primaryTitle: config.primary,
             isPrimaryLoading: isPrimaryLoading,
@@ -92,9 +105,17 @@ public struct SwiftUIAlertModal: View {
 
     /// Switches on the resolver's four-case `SubtitleKind` (richer than the old single
     /// `showsSubtitle` bool this view used to derive on its own — spec C-1 picks this up for
-    /// free). `.attributed` needs `holder`, not just `resolved`: the resolver only records THAT
-    /// the subtitle is attributed, not the `NSAttributedString` payload itself — that lives on
-    /// the `DataHolder`, exactly where the UIKit view reads it from (`holder.subtitleAttributed`).
+    /// free), but `resolved.subtitle` decides ONLY none/plain/attributed/custom — never supplies
+    /// the rendered payload. That split matters: `resolved.subtitle`'s `.plain` case carries the
+    /// STRIPPED `String` `ModalText.split` produced for the UIKit holder (plain-vs-styled is a
+    /// UIKit-scoped classification — see `ModalText.swift`), which would silently drop SwiftUI-
+    /// scoped styling (e.g. `subtitle.foregroundColor = .red`) a caller applied the natural way.
+    /// So `.plain` renders `config.subtitle` — the descriptor's own `AttributedString` — directly,
+    /// exactly like `showsTitle`/`title` above. `.attributed` is the one case that DOES read the
+    /// payload off `holder`: the resolver only records THAT the subtitle is attributed, the
+    /// `NSAttributedString` itself lives on `holder.subtitleAttributed`, and UIKit renders that
+    /// bridged value as-is — so mirroring it here (rather than the descriptor's `AttributedString`)
+    /// is the correct equivalence, not a shortcut.
     @ViewBuilder
     private func subtitleView(
         resolved: GBAlertModal.ResolvedModal,
@@ -103,12 +124,14 @@ public struct SwiftUIAlertModal: View {
         switch resolved.subtitle {
         case .none:
             EmptyView()
-        case let .plain(text):
-            Text(text)
-                .font(ModalTokens.subtitleFont)
-                .foregroundColor(ModalTokens.Palette.subtitleText)
-                .multilineTextAlignment(.center)
-                .padding(.bottom, ModalTokens.gapBelowSubtitle)
+        case .plain:
+            if let subtitle = config.subtitle {
+                Text(subtitle)
+                    .font(ModalTokens.subtitleFont)
+                    .foregroundColor(ModalTokens.Palette.subtitleText)
+                    .multilineTextAlignment(.center)
+                    .padding(.bottom, ModalTokens.gapBelowSubtitle)
+            }
         case .attributed:
             // The UIKit path stores an NSAttributedString on the holder. SwiftUI renders the
             // bridged value; styling is limited to the whitelisted bold/color/link subgrammar.

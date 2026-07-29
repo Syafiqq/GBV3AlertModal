@@ -19,8 +19,15 @@ public enum ModalText {
         // (ambient `.foregroundColor =`/`.font =` bind to this same SwiftUI scope, even in files
         // with no SwiftUI import). Treating such a run as "styled" would yield an attributed
         // string UILabel renders with NO styling at all, which the resolver renders as-is —
-        // worse than plain, which at least receives the resolver's default styling. The SwiftUI
-        // renderer never calls `split`; it consumes the descriptor's `AttributedString` directly.
+        // worse than plain, which at least receives the resolver's default styling.
+        //
+        // `SwiftUIAlertModal` DOES call `split` now (via `AlertHolder.make`), so it makes the
+        // SAME none/plain/attributed/custom decision UIKit does. But it deliberately does NOT
+        // render this function's plain `String` payload for the `.plain` case — that would
+        // silently strip exactly the SwiftUI-scoped styling described above. It renders the
+        // descriptor's `AttributedString` directly instead, and only reads this function's
+        // `NSAttributedString` output for the `.attributed` case, where "render as-is" is the
+        // UIKit behaviour actually being mirrored. See `SwiftUIAlertModal.subtitleView`.
         let isPlain = text.runs.allSatisfy { run in
             run[AttributeScopes.UIKitAttributes.ForegroundColorAttribute.self] == nil
                 && run[AttributeScopes.UIKitAttributes.FontAttribute.self] == nil
