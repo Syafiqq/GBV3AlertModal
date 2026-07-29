@@ -63,9 +63,14 @@ public enum ModalTokens {
 
 extension Color {
     /// 0xRRGGBB literal → Color. Prototype convenience for transcribing the app's hex tokens.
-    /// Public: exercised directly by the example test target (`SwiftUIAlertModalSmokeTests`),
-    /// which lives in a different module and imports `GBV3AlertModal` without `@testable`.
-    public init(hex: UInt32) {
+    /// Internal on purpose: this is an extension on a type this library does NOT own
+    /// (`SwiftUI.Color`). Making it public would inject `Color(hex:)` into the namespace of
+    /// every app that links this library — a private `Color(hex:)` helper is an extremely common
+    /// pattern, so that would cause "ambiguous use of 'init(hex:)'" at unrelated call sites in
+    /// consuming apps, caused purely by linking this library. Never widen this for test
+    /// convenience; see `ModalTokensTests.test_hex_color_decodes_rgb_channels` (library test
+    /// target, `@testable import`) for the coverage this needs.
+    init(hex: UInt32) {
         self.init(
             red: Double((hex >> 16) & 0xFF) / 255,
             green: Double((hex >> 8) & 0xFF) / 255,

@@ -140,13 +140,12 @@ final class SwiftUIAlertModalSmokeTests: XCTestCase {
         XCTAssertEqual(ModalTokens.cardMaxWidth, .infinity)
     }
 
-    func test_hex_color_decodes_rgb_channels() {
-        var r: CGFloat = 0, g: CGFloat = 0, b: CGFloat = 0, a: CGFloat = 0
-        UIColor(Color(hex: 0x038CD5)).getRed(&r, green: &g, blue: &b, alpha: &a)
-        XCTAssertEqual(r, 0x03 / 255, accuracy: 0.01)
-        XCTAssertEqual(g, 0x8C / 255, accuracy: 0.01)
-        XCTAssertEqual(b, 0xD5 / 255, accuracy: 0.01)
-    }
+    // `test_hex_color_decodes_rgb_channels` moved to the library test target
+    // (GBV3AlertModalTests/SwiftUI/ModalTokensTests.swift): `Color(hex:)` is an internal
+    // extension on a type the library doesn't own (`SwiftUI.Color`), never public, so this
+    // module can no longer reach it without `@testable import GBV3AlertModal` — and the
+    // assertion tests a library internal, not example-app behaviour, so the library's own
+    // `@testable`-importing test target is the better home anyway.
 
     /// The primary is a solid rounded-8 rectangle (no shadow, no cut corner).
     func test_primary_button_corner_radius() {
