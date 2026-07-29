@@ -19,6 +19,22 @@ private struct ParityUnregisteredDialog: ModalDescriptor {
     static var dismissedResult: Result { .gracefullyDismissed }
 }
 
+/// Consumer-defined style presets, declared the way a consuming app declares its own.
+private extension ModalStyle {
+    static let parityBadge = ModalStyle("parity.badge")
+    /// Never registered on either backend — the fallback probe.
+    static let parityGhost = ModalStyle("parity.ghost")
+}
+
+/// The renderer's STYLING DECISION for one presentation, reduced to fields that (a) both backends
+/// genuinely produce and (b) `GeniePresets.badgeProperties()` sets EXPLICITLY — so UIKit's
+/// `globalProperties` merge cannot make two identical decisions read differently.
+private struct StylingDecision: Equatable {
+    let cornerRadius: CGFloat
+    let cardMaxWidth: CGFloat
+    let titleColor: UIColor?
+}
+
 /// **C-2 PARITY GATE.** Executor- and coordinator-level semantics run against BOTH `ModalRenderer`
 /// backends, with ONE set of assertions.
 ///
@@ -350,6 +366,117 @@ final class RendererParityTests: XCTestCase {
             let result = await token.result
             XCTAssertEqual(result, .primary, "renderer \(kind.rawValue) diverged")
         }
+    }
+
+    // MARK: - ModalStyle — the style token must mean the same thing on both backends
+
+    /// **THE style parity gate.** One descriptor, one `register(style:properties:)` call (source-
+    /// identical on both backends), and the SAME styling decision must come out of both renderers.
+    ///
+    /// A style token honoured by one backend only would be exactly the divergence this suite exists
+    /// to prevent — a SwiftUI-only preset would silently render as `.standard` on the shipping UIKit
+    /// path, or vice versa, with nothing to catch it.
+    ///
+    /// Discrimination: the decision is compared BOTH across the two renderers AND against the
+    /// expected badge values. Cross-renderer equality alone would pass if both backends ignored
+    /// `style` identically; the absolute values alone would not prove parity. Both together do.
+    func test_styledDescriptor_producesTheSameStylingDecision_onBothRenderers() async throws {
+        var decisions: [RendererKind: StylingDecision] = [:]
+
+        for kind in RendererKind.allCases {
+            let harness = RendererHarness(kind)
+            harness.register(style: .parityBadge, properties: GeniePresets.badgeProperties())
+            let executor = DefaultModalExecutor(renderer: harness.renderer)
+
+            let token = executor.present(
+                AlertDialog(title: "T", subtitle: "S", primary: "OK", style: .parityBadge)
+            )
+            XCTAssertTrue(harness.isLive(token.id), "renderer \(kind.rawValue) never presented")
+
+            let properties = try XCTUnwrap(
+                harness.effectiveProperties(token.id),
+                "renderer \(kind.rawValue) exposed no effective Properties"
+            )
+            let tokens = ModalTokens(from: properties)
+            decisions[kind] = StylingDecision(
+                cornerRadius: tokens.cornerRadius,
+                cardMaxWidth: tokens.cardMaxWidth,
+                titleColor: properties.titleColor
+            )
+
+            harness.emit(.primary, on: token.id)
+            let result = await token.result
+            XCTAssertEqual(
+                result, .primary,
+                "renderer \(kind.rawValue) diverged: a styled modal must still resolve normally"
+            )
+        }
+
+        let expected = StylingDecision(cornerRadius: 28, cardMaxWidth: 300, titleColor: .magenta)
+        XCTAssertEqual(
+            decisions[.uiKit], expected,
+            "uiKit did not apply the registered style"
+        )
+        XCTAssertEqual(
+            decisions[.swiftUI], expected,
+            "swiftUI did not apply the registered style"
+        )
+        XCTAssertEqual(
+            decisions[.uiKit], decisions[.swiftUI],
+            "the backends diverged on the SAME style token — a style must not be backend-specific"
+        )
+    }
+
+    /// The fallback half of the gate: an UNREGISTERED style degrades to `.standard` identically on
+    /// both backends, and crashes neither. `.parityBadge` IS registered here, so falling back to
+    /// `.standard` is provably distinct from picking whatever else happens to be in the map.
+    func test_unregisteredStyle_fallsBackIdentically_onBothRenderers() async throws {
+        let standard = StylingDecision(
+            cornerRadius: ModalTokens(from: GeniePresets.standardProperties()).cornerRadius,
+            cardMaxWidth: ModalTokens(from: GeniePresets.standardProperties()).cardMaxWidth,
+            titleColor: GeniePresets.standardProperties().titleColor
+        )
+        var decisions: [RendererKind: StylingDecision] = [:]
+
+        for kind in RendererKind.allCases {
+            let harness = RendererHarness(kind)
+            harness.register(style: .parityBadge, properties: GeniePresets.badgeProperties())
+            XCTAssertFalse(
+                harness.isRegistered(style: .parityGhost),
+                "renderer \(kind.rawValue): premise — the probe style must be unregistered"
+            )
+            let executor = DefaultModalExecutor(renderer: harness.renderer)
+
+            let token = executor.present(
+                AlertDialog(title: "T", primary: "OK", style: .parityGhost)
+            )
+            XCTAssertTrue(
+                harness.isLive(token.id),
+                "renderer \(kind.rawValue): an unregistered style must still present, never crash"
+            )
+            let properties = try XCTUnwrap(harness.effectiveProperties(token.id))
+            let tokens = ModalTokens(from: properties)
+            decisions[kind] = StylingDecision(
+                cornerRadius: tokens.cornerRadius,
+                cardMaxWidth: tokens.cardMaxWidth,
+                titleColor: properties.titleColor
+            )
+
+            harness.emit(.primary, on: token.id)
+            let result = await token.result
+            XCTAssertEqual(result, .primary, "renderer \(kind.rawValue) diverged")
+        }
+
+        XCTAssertEqual(decisions[.uiKit], standard, "uiKit did not fall back to .standard")
+        XCTAssertEqual(decisions[.swiftUI], standard, "swiftUI did not fall back to .standard")
+        XCTAssertNotEqual(
+            decisions[.uiKit]?.cornerRadius, 28,
+            "the fallback must not pick another registered style"
+        )
+        XCTAssertEqual(
+            decisions[.uiKit], decisions[.swiftUI],
+            "the backends diverged on the FALLBACK for an unregistered style"
+        )
     }
 
     // MARK: - Overriding a built-in factory

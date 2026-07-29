@@ -89,6 +89,31 @@ enum GeniePresets {
         )
     }
 
+    /// A THIRD preset, standing in for the app's real `badgeProperties`/`streakModalProperties`/
+    /// `permissionAlertProperties` — the presets that have no descriptor type and are the whole
+    /// reason `ModalStyle` exists.
+    ///
+    /// Deliberately differs from `standardProperties()` in fields that survive the WHOLE styling
+    /// pipeline and are observable on both backends: `cornerRadius` 28 (vs 16) and the card widths
+    /// 300 (vs 256) both reach `ModalTokens`/`ResolvedModal`, and `titleColor` `.magenta` (vs
+    /// `.label`) reaches `ModalTokens.Palette.titleText`. Every one of them is set EXPLICITLY, so
+    /// `GBAlertModal.updateProperties`' merge against `globalProperties` is a no-op for them and the
+    /// UIKit and SwiftUI readings are comparable field-for-field.
+    static func badgeProperties() -> GBAlertModal.Properties {
+        standardProperties().copy(
+            contentProperty: GBAlertModal.Properties.ContentProperty(
+                backgroundColor: .white,
+                cornerRadius: 28,
+                fixedWidthPortrait: 300,
+                maxWidthPortrait: 300,
+                fixedWidthLandscape: 300,
+                maxWidthLandscape: 300,
+                childShouldMatchParent: true
+            ),
+            titleColor: .magenta
+        )
+    }
+
     private static var contentProperty: GBAlertModal.Properties.ContentProperty {
         GBAlertModal.Properties.ContentProperty(
             backgroundColor: .white,

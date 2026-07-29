@@ -149,6 +149,24 @@ final class RendererHarness {
         }
     }
 
+    /// The `Properties` the LIVE presentation for `id` was actually built with — i.e. the renderer's
+    /// STYLING DECISION, which is what a `ModalStyle` parity test needs to compare.
+    ///
+    /// CAVEAT, so assertions stay honest: UIKit returns `GBAlertModal.properties`, which
+    /// `updateProperties` has already MERGED field-by-field against `globalProperties`; SwiftUI
+    /// returns the un-merged `Presentation.properties`. `globalProperties` is an all-`nil`
+    /// `Properties()` unless a consumer sets it, so the merge is a no-op — but only assert on fields
+    /// the fixture sets EXPLICITLY (`GeniePresets.badgeProperties()` is built for exactly this), or
+    /// a `nil` field could read differently on the two sides for reasons that are not the renderer.
+    func effectiveProperties(_ id: ModalID) -> GBAlertModal.Properties? {
+        switch box {
+        case .uiKit(let backend):
+            return backend.live[id]?.modal.properties
+        case .swiftUI(let backend):
+            return backend.presentations.first(where: { $0.id == id })?.properties
+        }
+    }
+
     /// The subtitle RENDER DECISION for `id`, read through the SAME pure resolver
     /// (`GBAlertModal.resolve`) on both backends — UIKit via the live view's `makeResolvedModal()`,
     /// SwiftUI via the `Presentation.resolved` it computed at present/refresh time.
@@ -205,6 +223,28 @@ final class RendererHarness {
             backend.register(type, route: route) { descriptor, _ in
                 (properties, holder(descriptor))
             }
+        }
+    }
+
+    /// Register a `ModalStyle` preset on whichever backend this harness wraps.
+    ///
+    /// Both branch bodies are LITERALLY THE SAME EXPRESSION —
+    /// `register(style:properties:)` is source-identical across the backends, by design. The
+    /// `switch` exists only because Swift needs a concrete receiver to pick the overload; there is
+    /// no semantic branch here, and that is precisely the claim the style parity test verifies.
+    func register(style: ModalStyle, properties: GBAlertModal.Properties) {
+        switch box {
+        case .uiKit(let backend): backend.register(style: style, properties: properties)
+        case .swiftUI(let backend): backend.register(style: style, properties: properties)
+        }
+    }
+
+    /// Whether `style` has a preset of its own on this backend — what makes a FALLBACK to
+    /// `.standard` distinguishable from a deliberate `.standard`.
+    func isRegistered(style: ModalStyle) -> Bool {
+        switch box {
+        case .uiKit(let backend): return backend.isRegistered(style: style)
+        case .swiftUI(let backend): return backend.isRegistered(style: style)
         }
     }
 

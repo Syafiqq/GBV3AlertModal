@@ -16,6 +16,11 @@ public final class UIKitModalRenderer: ModalRenderer {
 
     var live: [ModalID: Live] = [:]           // internal for @testable assertions
     private var factories: [ObjectIdentifier: Any] = [:]
+    /// style→`Properties`: the design-system presets this renderer can draw. Lives HERE and not on
+    /// the descriptor because `Core/` may not reference UIKit, so a `ModalStyle` can only ever carry
+    /// a NAME — the mapping to real `Properties` is necessarily renderer-side.
+    /// `SwiftUIModalRenderer` holds the identical map, seeded and read the identical way.
+    private var styleProperties: [ModalStyle: GBAlertModal.Properties] = [:]
     private let windowProvider: (() -> UIWindow?)?
 
     public init(
@@ -24,21 +29,69 @@ public final class UIKitModalRenderer: ModalRenderer {
         windowProvider: (() -> UIWindow?)? = nil
     ) {
         self.windowProvider = windowProvider
-        register(AlertDialog.self) { descriptor, resolve in
-            (alertProperties, AlertHolder.make(for: descriptor, resolve: resolve))
-        }
-        // PopupDialog shares AlertDialog's content + result; only the Properties (style) differ.
-        // Registered only when the consumer supplies popup styling.
+        // The existing init SEEDS the style map — the signature is unchanged, so this is not a
+        // breaking change and every existing consumer gets `.standard`/`.popup` for free.
+        styleProperties[.standard] = alertProperties
         if let popupProperties {
-            register(PopupDialog.self) { descriptor, resolve in
-                (popupProperties, AlertHolder.make(for: descriptor, resolve: resolve))
-            }
+            styleProperties[.popup] = popupProperties
+        }
+
+        registerStandard(AlertDialog.self)
+        // PopupDialog shares AlertDialog's content + result; only the Properties (style) differ.
+        // Registered only when the consumer supplies popup styling — unchanged behaviour.
+        if popupProperties != nil {
+            registerStandard(PopupDialog.self)
         }
     }
 
     /// Register a factory for a descriptor kind. Consumers add their own descriptors this way.
     public func register<D: ModalDescriptor>(_ type: D.Type, factory: @escaping Factory<D>) {
         factories[ObjectIdentifier(type)] = factory
+    }
+
+    /// Register a design-system preset under a `ModalStyle` token. Any `AlertDialog` carrying that
+    /// style is then rendered with these `Properties` — the extensible replacement for adding a new
+    /// descriptor TYPE per style. Source-identical on `SwiftUIModalRenderer`.
+    ///
+    /// Re-registering a style replaces its `Properties`. Registering `.standard` replaces the
+    /// preset seeded from `init(alertProperties:)`, which is also the fallback every unregistered
+    /// style resolves to.
+    public func register(style: ModalStyle, properties: GBAlertModal.Properties) {
+        styleProperties[style] = properties
+    }
+
+    /// The `Properties` a descriptor carrying `style` will actually be rendered with.
+    ///
+    /// **Fallback, stated plainly:** an UNREGISTERED style resolves to the `.standard` entry. It
+    /// never traps and never renders un-styled — the same graceful-degradation stance
+    /// `present(_:id:resolve:)` takes for an unregistered descriptor. Pair it with
+    /// `isRegistered(style:)` to tell "styled as standard on purpose" apart from "fell back",
+    /// which is what makes the fallback observable rather than silent.
+    public func properties(for style: ModalStyle) -> GBAlertModal.Properties? {
+        styleProperties[style] ?? styleProperties[.standard]
+    }
+
+    /// Whether `style` has a preset of its own. `false` means a descriptor carrying it will be
+    /// drawn with `.standard`.
+    public func isRegistered(style: ModalStyle) -> Bool {
+        styleProperties[style] != nil
+    }
+
+    /// Wire up one member of the standard family. The style lookup happens INSIDE the factory, i.e.
+    /// at `present`/`update` time and per descriptor — that is what lets two `AlertDialog`s with
+    /// different `style` tokens render differently through ONE registration. A consumer who
+    /// overrides this registration via `register(_:factory:)` supplies their own `Properties` and
+    /// opts out of the map, exactly as before.
+    private func registerStandard<D>(_ type: D.Type)
+    where D: ModalDescriptor & StandardAlertContent, D.Result == AlertDialog.Result {
+        // `[weak self]`: the closure is stored in `self.factories`, so a strong capture would be a
+        // retain cycle. It can only ever run from `present`/`rebuild`, i.e. while `self` is alive.
+        register(type) { [weak self] descriptor, resolve in
+            (
+                self?.properties(for: descriptor.style),
+                AlertHolder.make(for: descriptor, resolve: resolve)
+            )
+        }
     }
 
     public func present<D: ModalDescriptor>(

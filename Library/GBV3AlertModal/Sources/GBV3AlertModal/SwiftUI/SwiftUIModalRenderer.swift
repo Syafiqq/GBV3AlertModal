@@ -118,6 +118,12 @@ public final class SwiftUIModalRenderer: ObservableObject, ModalRenderer {
     @Published public private(set) var presentations: [Presentation] = []
 
     private var registrations: [ObjectIdentifier: Any] = [:]
+    /// style→`Properties`: the design-system presets this renderer can draw. The map lives on the
+    /// RENDERER, never on the descriptor — `Core/` may not reference UIKit or SwiftUI, so a
+    /// `ModalStyle` can only carry a NAME. Byte-for-byte the same seam `UIKitModalRenderer` has,
+    /// seeded and read the same way, because a style token that worked on one backend only would be
+    /// exactly the divergence the parity gate exists to prevent.
+    private var styleProperties: [ModalStyle: GBAlertModal.Properties] = [:]
     var live: [ModalID: Live] = [:]   // internal for @testable assertions, as in UIKitModalRenderer
 
     // MARK: - Init
@@ -126,12 +132,45 @@ public final class SwiftUIModalRenderer: ObservableObject, ModalRenderer {
         alertProperties: GBAlertModal.Properties,
         popupProperties: GBAlertModal.Properties? = nil
     ) {
-        registerStandard(AlertDialog.self, properties: alertProperties)
+        // The existing init SEEDS the style map — signature unchanged, so no breaking change.
+        styleProperties[.standard] = alertProperties
+        if let popupProperties {
+            styleProperties[.popup] = popupProperties
+        }
+
+        registerStandard(AlertDialog.self)
         // PopupDialog shares AlertDialog's content + result; only the Properties (style) differ.
         // Registered only when the consumer supplies popup styling — same rule as UIKit.
-        if let popupProperties {
-            registerStandard(PopupDialog.self, properties: popupProperties)
+        if popupProperties != nil {
+            registerStandard(PopupDialog.self)
         }
+    }
+
+    /// Register a design-system preset under a `ModalStyle` token. Any `AlertDialog` carrying that
+    /// style is then rendered with these `Properties`. SOURCE-IDENTICAL to
+    /// `UIKitModalRenderer.register(style:properties:)`, so a consumer's preset table is portable
+    /// between the backends verbatim.
+    ///
+    /// Re-registering a style replaces its `Properties`. Registering `.standard` replaces the
+    /// preset seeded from `init(alertProperties:)`, which is also the fallback entry.
+    public func register(style: ModalStyle, properties: GBAlertModal.Properties) {
+        styleProperties[style] = properties
+    }
+
+    /// The `Properties` a descriptor carrying `style` will actually be resolved and tokenised with
+    /// (`Presentation.properties`/`.resolved`/`.tokens`).
+    ///
+    /// **Fallback:** an UNREGISTERED style resolves to the `.standard` entry — it never traps and
+    /// never renders un-styled, matching `UIKitModalRenderer` exactly. `isRegistered(style:)`
+    /// distinguishes "asked for standard" from "fell back to standard".
+    public func properties(for style: ModalStyle) -> GBAlertModal.Properties? {
+        styleProperties[style] ?? styleProperties[.standard]
+    }
+
+    /// Whether `style` has a preset of its own. `false` means a descriptor carrying it will be
+    /// drawn with `.standard`.
+    public func isRegistered(style: ModalStyle) -> Bool {
+        styleProperties[style] != nil
     }
 
     /// Register a factory for a descriptor kind — the signature that is source-identical to
@@ -237,11 +276,22 @@ public final class SwiftUIModalRenderer: ObservableObject, ModalRenderer {
     ///
     /// The three-case mapping is the same switch `AlertHolder.make` performs on the UIKit path;
     /// they must stay identical.
+    ///
+    /// STYLE LOOKUP happens inside the factory, i.e. at `present`/`rebuild` time and per descriptor
+    /// — identical to `UIKitModalRenderer.registerStandard`. That is what lets two `AlertDialog`s
+    /// with different `style` tokens render with different `Properties` through ONE registration,
+    /// and why `update(_:to:)` can restyle in place. A consumer who overrides the registration via
+    /// `register(_:factory:)` supplies their own `Properties` and opts out of the map, as before.
     private func registerStandard<D>(
-        _ type: D.Type, properties: GBAlertModal.Properties
+        _ type: D.Type
     ) where D: ModalDescriptor & StandardAlertContent, D.Result == AlertDialog.Result {
-        let factory: Factory<D> = { descriptor, resolve in
-            (properties, UIKitModalRenderer.AlertHolder.make(for: descriptor, resolve: resolve))
+        // `[weak self]`: the closure is stored in `self.registrations`, so a strong capture would
+        // be a retain cycle. It only ever runs from `present`/`rebuild`, i.e. while `self` is alive.
+        let factory: Factory<D> = { [weak self] descriptor, resolve in
+            (
+                self?.properties(for: descriptor.style),
+                UIKitModalRenderer.AlertHolder.make(for: descriptor, resolve: resolve)
+            )
         }
         let route: (GBAlertModal.ActionType) -> AlertDialog.Result = { action in
             switch action {
@@ -259,7 +309,8 @@ public final class SwiftUIModalRenderer: ObservableObject, ModalRenderer {
                 primary: descriptor.primary,
                 secondary: descriptor.secondary,
                 closeOnTapOverlay: descriptor.closeOnTapOverlay,
-                showCloseButton: descriptor.showCloseButton
+                showCloseButton: descriptor.showCloseButton,
+                style: descriptor.style
             )
         }
         // `view: nil` — the standard family HAS a built-in SwiftUI body (`SwiftUIAlertModal`, drawn
