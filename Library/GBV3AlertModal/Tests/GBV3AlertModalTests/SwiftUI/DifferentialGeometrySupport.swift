@@ -304,18 +304,32 @@ enum DifferentialGeometry {
     ///
     /// `test_discriminationGuard_theHuggedLabelExclusionIsNarrow` pins all of that. If a future change
     /// makes SwiftUI's hug width genuinely wrong, this predicate reports it.
+    ///
+    /// **The first version of this had a hole, and that guard is how we know.** It began with
+    /// `if agrees(uiKit, swiftUI) { return true }` as a shortcut for "identical measurements need no
+    /// exclusion" — which quietly re-admitted the general 0.5pt tolerance on the WIDTH, so a UIKit
+    /// width 0.3pt NARROWER than SwiftUI's (impossible for a ceiling, and therefore a signal that
+    /// something other than rounding is happening) was accepted. The width is now compared ONLY by the
+    /// two relationships the mechanism permits: exactly equal, or an integral ceiling. In the
+    /// narrowing direction this predicate is deliberately STRICTER than `agrees` — which can only ever
+    /// report more disagreements, never fewer.
     static func agreesOnAHuggedLabel(uiKit: CGRect, swiftUI: CGRect) -> Bool {
-        // Identical measurements need no exclusion at all — take the strict path first, so a shape
-        // that DOES agree exactly is recorded as a plain agreement.
-        if agrees(uiKit, swiftUI) { return true }
-
+        // Non-width geometry, at the normal tolerance, on the CENTRE rather than the leading edge (a
+        // hug's `minX` is `centre − width/2`, so comparing it too would double-count the width fact).
         guard abs(uiKit.midX - swiftUI.midX) <= tolerance,
               abs(uiKit.minY - swiftUI.minY) <= tolerance,
               abs(uiKit.height - swiftUI.height) <= tolerance else { return false }
 
         let widthDelta = uiKit.width - swiftUI.width
-        let uiKitWidthIsIntegral = abs(uiKit.width - uiKit.width.rounded()) <= 0.01
-        return uiKitWidthIsIntegral && widthDelta > 0 && widthDelta < 1
+        // (1) Identical widths: no exclusion is in play at all. This path must stay open — a
+        //     SwiftUI-vs-SwiftUI self comparison takes it, and `agrees` cannot be used to express it
+        //     because its 0.5pt slack is exactly what leaked. `epsilon` is float noise, not tolerance.
+        let epsilon: CGFloat = 0.01
+        if abs(widthDelta) <= epsilon { return true }
+        // (2) Otherwise UIKit's width must BE the whole-point ceiling of SwiftUI's: integral, strictly
+        //     wider (a ceiling is never narrower than its input), and by less than a point.
+        let uiKitWidthIsIntegral = abs(uiKit.width - uiKit.width.rounded()) <= epsilon
+        return uiKitWidthIsIntegral && widthDelta > epsilon && widthDelta < 1
     }
 
     static func compare(

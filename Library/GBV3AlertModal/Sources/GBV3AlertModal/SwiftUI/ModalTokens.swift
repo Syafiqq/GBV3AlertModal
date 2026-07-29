@@ -77,8 +77,10 @@ public struct ModalTokens: Sendable {
     /// agreed to 0.1pt, which is what isolates the cause to the shrink-vs-wrap decision rather than to
     /// the font bridge or the preset.
     ///
-    /// SwiftUI's counterpart is `.lineLimit(1).minimumScaleFactor(_:)` — see the title row in
-    /// `SwiftUIAlertModal.body`, including the ONE regime where the two still diverge.
+    /// SwiftUI's counterpart is `SwiftUIAlertModal`'s `ShrinkToFitSingleLine`, which also has to keep
+    /// the NOMINAL line box that `UILabel` keeps while shrinking (SwiftUI's `minimumScaleFactor` alone
+    /// shrinks the reported height too — measured 27.0 against UIKit's 28.7). That modifier's doc
+    /// states both halves of the mechanism and the ONE regime where the two still diverge.
     ///
     /// No `Properties` counterpart: UIKit hardcodes the 0.75 in the label factory.
     public var titleMinimumScaleFactor: CGFloat = 0.75

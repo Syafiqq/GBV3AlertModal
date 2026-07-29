@@ -149,29 +149,12 @@ public struct SwiftUIAlertModal: View {
                     .font(tokens.titleFont)
                     .foregroundColor(tokens.palette.titleText)
                     .multilineTextAlignment(.center)
-                    // **SHRINK TO FIT ONE LINE — do not wrap.** `lbTitle` is built with
-                    // `numberOfLines = 2`, `adjustsFontSizeToFitWidth = true` and
-                    // `minimumScaleFactor = 0.75` (`generateLabelForTitleDesign`), and the MEASURED
-                    // behaviour of that combination is a single shrunk line, not two full-size ones:
-                    // the gate caught UIKit drawing two real titles (≈273pt and ≈284pt of text) as one
-                    // 28.7pt line in a 256pt label while this `Text` wrapped them and made the card
-                    // 28.7pt taller — cascading into the subtitle's and both buttons' y (task 17,
-                    // Class B). `.lineLimit(2)` does NOT reproduce it: with unbounded height SwiftUI
-                    // has room for two full-size lines, so it never engages the scale factor.
-                    //
-                    // ONE REGIME STILL DIVERGES, stated rather than hidden: for a title too wide even
-                    // at 0.75 (i.e. wider than ~133% of the content width) UIKit spends its second
-                    // line, while this truncates with an ellipsis. No shape in the differential suite
-                    // or the 26-shape catalog is in that regime — the widest real title measured is
-                    // ~107% — and closing it needs the shrink-vs-wrap DECISION, which means measuring
-                    // the string against the row width (a `UIFont` in `ModalTokens` and a text
-                    // measurement in the view). That is a redesign, not a modifier, and it would buy
-                    // fidelity in a regime no shipped dialog occupies.
-                    .lineLimit(1)
-                    .minimumScaleFactor(tokens.titleMinimumScaleFactor)
-                    // BEFORE the probe, so the probe measures the row the way UIKit's `lbTitle` is
-                    // measured — filled to the content width, with the text centred inside it.
+                    // The row's WIDTH first (UIKit's `lbTitle` fills the content width and centres its
+                    // text inside it), because the shrink-to-fit below measures itself against
+                    // whatever width this row ends up with.
                     .modifier(ContentRowWidth(fillsWidth: tokens.contentChildrenFillWidth))
+                    // Then the single shrunk line — see `ShrinkToFitSingleLine`.
+                    .modifier(ShrinkToFitSingleLine(minimumScaleFactor: tokens.titleMinimumScaleFactor))
                     .modalGeometryProbe(.title)
                     .padding(.bottom, tokens.gapBelowTitle)
             }
@@ -233,6 +216,61 @@ private struct ContentRowWidth: ViewModifier {
 
     func body(content: Content) -> some View {
         content.frame(maxWidth: fillsWidth ? CGFloat.infinity : nil)
+    }
+}
+
+/// **`UILabel` with `adjustsFontSizeToFitWidth`, reproduced in full: one line, glyphs shrunk to fit,
+/// and the NOMINAL line box kept.**
+///
+/// `generateLabelForTitleDesign` builds `lbTitle` with `numberOfLines = 2`,
+/// `adjustsFontSizeToFitWidth = true` and `minimumScaleFactor = 0.75`. The measured behaviour of that
+/// combination is a SINGLE shrunk line, not two full-size ones — `numberOfLines = 2` is the ceiling for
+/// when scaling runs out, not the preference. Two facts had to be reproduced, and the gate caught them
+/// one at a time (task 17, Class B):
+///
+/// 1. **It shrinks rather than wraps.** UIKit drew a ~272pt title as one 28.7pt line inside a 256pt
+///    label while a plain `Text` wrapped it to two and made the card 28.7pt taller, cascading into the
+///    subtitle's and both buttons' `y`. Hence `lineLimit(1)` + `minimumScaleFactor`. `.lineLimit(2)`
+///    does NOT reproduce it: with unbounded height SwiftUI has room for two full-size lines, so it
+///    never engages the scale factor at all.
+/// 2. **Shrinking does not shrink the LINE BOX.** `UILabel.intrinsicContentSize` keeps the nominal
+///    font's line height and scales only the glyphs inside it (28.7 measured); SwiftUI's
+///    `minimumScaleFactor` shrinks the reported height too (27.0 measured on
+///    `database-error-banner` — a 1.7pt row that cascaded into the whole card).
+///
+/// So the row is sized by a RULER — the same text, same font, `lineLimit(1)`, no scale factor, drawn
+/// nowhere (`hidden()`) — and the real, shrinkable text is drawn as an OVERLAY on top of it. An
+/// overlay is proposed exactly the size the base resolved to and never changes it, so:
+///
+/// * the row's height is ALWAYS the nominal single-line height, whatever the scale factor does. That is
+///   what UIKit reports, and it makes the height independent of a SwiftUI behaviour the numbers say we
+///   cannot predict (streak's scaled title reports the nominal height; this one's did not);
+/// * the row's width is the width it was given, so the overlay shrinks against the SAME width UIKit
+///   shrinks against — which is why `ContentRowWidth` is applied BEFORE this modifier. Applying it
+///   after would let a short title's ruler hug, and the overlay would then be squeezed into that hug.
+///
+/// A truncated ruler is harmless: truncation never changes a line's height, and the ruler is never
+/// drawn. It is hidden from accessibility so VoiceOver reads the drawn text once, not twice.
+///
+/// ONE REGIME STILL DIVERGES, stated rather than hidden: for a title too wide even at 0.75 (wider than
+/// ~133% of the row) UIKit spends its second line while this truncates with an ellipsis. No shape in
+/// the differential suite or the 26-shape catalog is in that regime — the widest real title measures
+/// ~107% — and closing it needs the shrink-vs-wrap DECISION, i.e. measuring the string against the row
+/// width, which means a `UIFont` in `ModalTokens` and a text measurement inside the view: a redesign,
+/// for a regime no shipped dialog occupies.
+private struct ShrinkToFitSingleLine: ViewModifier {
+    let minimumScaleFactor: CGFloat
+
+    func body(content: Content) -> some View {
+        content
+            .lineLimit(1)
+            .accessibilityHidden(true)
+            .hidden()
+            .overlay {
+                content
+                    .lineLimit(1)
+                    .minimumScaleFactor(minimumScaleFactor)
+            }
     }
 }
 
