@@ -25,10 +25,10 @@ public struct ModalTokens: Sendable {
     public var cornerRadius: CGFloat
     public var cardMaxWidth: CGFloat
 
-    // Oblique primary button geometry — no `Properties` counterpart: `ActionStyle.obliqueBottomLeft`'s
-    // theme (below) carries only COLOURS (unPressedColor/pressedColor/disabledColor/shadowColor/
-    // titleColor), never corner radius, fixed height, or the drop-offset. This button's SHAPE is
-    // fixed SwiftUI design identity (spec D8), so there is nothing in `Properties` to derive it from.
+    // Oblique primary button GEOMETRY — no `Properties` counterpart: no `ActionStyle` theme carries
+    // corner radius, fixed height, or a drop-offset (only colours + a font — see `primaryButtonFont`
+    // below). This button's SHAPE is fixed SwiftUI design identity (spec D8), so there is nothing in
+    // `Properties` to derive these three from.
     public var buttonCornerRadius: CGFloat = 8
     public var buttonHeight: CGFloat = 48
     public var obliqueOffset = CGSize(width: -3, height: 3)
@@ -60,9 +60,19 @@ public struct ModalTokens: Sendable {
     // SHSans.heavy 16. `titleFont`/`subtitleFont` derive losslessly from `Properties`' `UIFont`s.
     public var titleFont: Font
     public var subtitleFont: Font
-    // `buttonFont` — no `Properties` counterpart: this fixed SwiftUI button style's label font is
-    // design identity (`ModalButtonStyles`, spec D8), not read from an `ActionStyle` theme.
-    public var buttonFont: Font = .system(size: 16, weight: .heavy)
+    // Button label fonts DO have a `Properties` counterpart — `ActionStyle` themes all carry a
+    // `titleFont: UIFont?` (`ObliqueBottomLeftTheme.titleFont` for the primary style,
+    // `PlainTheme.titleFont` for the secondary style) and the UIKit renderer applies it
+    // (`GBAlertModal+ButtonStyling.swift`). One SwiftUI `ModalTokens` can't hold a single
+    // `buttonFont` for both: `ObliquePrimaryStyle` and `PlainSecondaryStyle` are fixed to two
+    // DIFFERENT `Properties` fields (`primaryActionStyle` / `secondaryActionStyle`), which can
+    // legitimately carry different fonts. So this is split per-role rather than shared — see
+    // `init(from:)` for the derivation, gated the same way the colours are: primary only reads
+    // `.obliqueBottomLeft`'s theme (`ObliquePrimaryStyle`'s real counterpart); secondary only reads
+    // `.plain`'s theme (`PlainSecondaryStyle`'s real counterpart, and the exact case
+    // `SwiftUIAlertModal`'s sentinel `Properties` already uses for `secondaryActionStyle`).
+    public var primaryButtonFont: Font = .system(size: 16, weight: .heavy)
+    public var secondaryButtonFont: Font = .system(size: 16, weight: .heavy)
 
     public var palette: Palette
 
@@ -165,6 +175,15 @@ public struct ModalTokens: Sendable {
             // `.frame(maxWidth:)` cap is naturally inert once the available width is already
             // narrower than it, so applying it regardless of idiom is both concurrency-safe and
             // behaviourally equivalent to gating it on `.pad`.
+            //
+            // KNOWN LIMITATION: only reads `maxWidthPortrait`. The library's own resolver
+            // (`GBAlertModal+ResolvedModal.swift`, `contentWidth`) does full fixed-vs-max +
+            // portrait/landscape fallback (`fixedWidthPortrait`/`fixedWidthLandscape`/
+            // `maxWidthLandscape`, and a FIXED width wins over a max at all). This derivation
+            // bypasses that shared resolution entirely and only ever reads one of the four
+            // fields. Harmless for today's real preset (portrait and landscape both resolve to
+            // the same 256/300 numbers), but it is a real gap versus the UIKit path, not a
+            // considered equivalence — flagged rather than silently narrowed.
             if let maxWidthPortrait = contentProperty.maxWidthPortrait {
                 cardMaxWidth = maxWidthPortrait
             }
@@ -229,6 +248,17 @@ public struct ModalTokens: Sendable {
             if let titleColor = theme.titleColor {
                 palette.onAccent = Color(uiColor: titleColor)
             }
+            if let titleFont = theme.titleFont {
+                primaryButtonFont = Font(titleFont)
+            }
+        }
+
+        // `PlainSecondaryStyle`'s real counterpart is `ActionStyle.plain` (a borderless text
+        // button) — the same case `SwiftUIAlertModal`'s sentinel `Properties` already uses for
+        // `secondaryActionStyle`. Any other case (or no style at all) keeps `standard`'s literal.
+        if case let .plain(theme)? = properties.secondaryActionStyle,
+           let titleFont = theme.titleFont {
+            secondaryButtonFont = Font(titleFont)
         }
     }
 }

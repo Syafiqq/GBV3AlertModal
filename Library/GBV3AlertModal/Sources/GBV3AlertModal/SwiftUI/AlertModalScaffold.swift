@@ -62,6 +62,12 @@ public struct AlertModalScaffold<Content: View>: View {
                     // Pinned to the CARD's top-right corner (real modal: top.trailing.equalToSuperview,
                     // 48pt tap target), not the screen corner.
                     if showClose {
+                        // TOKEN-SET GAP (spec C-0): the UIKit renderer tints the close glyph from
+                        // `Properties.closeButtonTint` (`GBAlertModal+Style.swift`:
+                        // `btCloseAction?.tintColor = properties?.closeButtonTint`) — `ModalTokens`
+                        // has no field for it at all, so this reuses `palette.subtitleText` as a
+                        // stand-in rather than deriving the real value. Not fixed here; flagged as
+                        // a genuine gap in the token set, not a considered equivalence.
                         Button(action: onClose) {
                             Image(systemName: "xmark")   // simple outline X (owner preference), no circle
                                 .font(.system(size: 17, weight: .semibold))

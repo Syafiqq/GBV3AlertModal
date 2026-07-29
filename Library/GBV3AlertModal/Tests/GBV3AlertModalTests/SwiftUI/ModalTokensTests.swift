@@ -16,6 +16,16 @@ final class ModalTokensTests: XCTestCase {
         XCTAssertEqual(g, 0x8C / 255, accuracy: 0.01)
         XCTAssertEqual(b, 0xD5 / 255, accuracy: 0.01)
     }
+
+    /// Re-pins the scrim's 0.6 dim now that `ModalTokens.scrimOpacity` no longer exists as a
+    /// separate token (folded into `palette.scrim` itself — see `ModalTokens.swift`): without this,
+    /// nothing in either test target asserts `standard`'s scrim alpha at all, so the literal at
+    /// `ModalTokens.swift`'s `standard` declaration could drift silently.
+    func test_standard_scrim_alpha_is_0_6() {
+        var r: CGFloat = 0, g: CGFloat = 0, b: CGFloat = 0, a: CGFloat = 0
+        UIColor(ModalTokens.standard.palette.scrim).getRed(&r, green: &g, blue: &b, alpha: &a)
+        XCTAssertEqual(a, 0.6, accuracy: 0.01)
+    }
 }
 
 /// C-0: `ModalTokens` is DERIVED from `GBAlertModal.Properties`, never transcribed. A
@@ -54,10 +64,27 @@ final class ModalTokensProvenanceTests: XCTestCase {
         XCTAssertEqual(ModalTokens(from: properties).palette.titleText, Color(uiColor: .magenta))
     }
 
-    func test_subtitleFontSize_comesFromProperties() {
+    /// NOTE on scope: this asserts the derivation reads `properties.subtitleFont` at all — that the
+    /// `UIFont` genuinely flows from `Properties` into the token (provenance) — via the exact same
+    /// internal `Font(UIFont)` bridge used on both sides of the comparison. It does NOT independently
+    /// verify the bridge itself preserves size/weight (a bug in the bridge would pass here since
+    /// both sides call it); that bridge was instead verified directly against the SwiftUI/CoreText
+    /// SDK during implementation (see the task report), not by this XCTest.
+    func test_subtitleFont_comesFromProperties_viaFontBridge() {
         let font = UIFont.systemFont(ofSize: 31, weight: .light)
         let properties = GBAlertModal.Properties(subtitleFont: font)
         XCTAssertEqual(ModalTokens(from: properties).subtitleFont, Font(font))
+    }
+
+    func test_subtitleColor_comesFromProperties() {
+        let properties = GBAlertModal.Properties(subtitleColor: .systemOrange)
+        XCTAssertEqual(ModalTokens(from: properties).palette.subtitleText, Color(uiColor: .systemOrange))
+    }
+
+    func test_cardMaxWidth_comesFromProperties_maxWidthPortrait() {
+        let content = GBAlertModal.Properties.ContentProperty(maxWidthPortrait: 271)
+        let properties = GBAlertModal.Properties(contentProperty: content)
+        XCTAssertEqual(ModalTokens(from: properties).cardMaxWidth, 271)
     }
 
     func test_scrim_comesFromProperties_overlayColor() {
@@ -95,11 +122,15 @@ final class ModalTokensProvenanceTests: XCTestCase {
 
     /// The fixed SwiftUI primary button only has real colours for `ActionStyle.obliqueBottomLeft`
     /// (spec D8) — its theme is where `accent`/`accentPressed`/`disabled`/`shadow`/`onAccent` derive.
+    /// `shadowColor` is the only `CGColor` bridge in the whole derivation (everything else is
+    /// `UIColor`), so it's asserted here alongside the other four rather than left uncovered.
     func test_accentColors_comeFromProperties_obliqueBottomLeftTheme() {
+        let shadowColor = UIColor.systemIndigo.cgColor
         let theme = GBAlertModal.ActionStyle.ObliqueBottomLeftTheme(
             unPressedColor: .systemYellow,
             pressedColor: .systemTeal,
             disabledColor: .systemGray,
+            shadowColor: shadowColor,
             titleColor: .systemPink
         )
         let properties = GBAlertModal.Properties(primaryActionStyle: .obliqueBottomLeft(theme))
@@ -107,7 +138,27 @@ final class ModalTokensProvenanceTests: XCTestCase {
         XCTAssertEqual(tokens.palette.accent, Color(uiColor: .systemYellow))
         XCTAssertEqual(tokens.palette.accentPressed, Color(uiColor: .systemTeal))
         XCTAssertEqual(tokens.palette.disabled, Color(uiColor: .systemGray))
+        XCTAssertEqual(tokens.palette.shadow, Color(cgColor: shadowColor))
         XCTAssertEqual(tokens.palette.onAccent, Color(uiColor: .systemPink))
+    }
+
+    /// `ObliquePrimaryStyle`'s label font is split from `PlainSecondaryStyle`'s (`primaryButtonFont`
+    /// / `secondaryButtonFont`) because their real counterparts are two different `Properties`
+    /// fields (`primaryActionStyle` / `secondaryActionStyle`), which can legitimately differ.
+    func test_primaryButtonFont_comesFromProperties_obliqueBottomLeftTheme() {
+        let font = UIFont.systemFont(ofSize: 21, weight: .black)
+        let theme = GBAlertModal.ActionStyle.ObliqueBottomLeftTheme(titleFont: font)
+        let properties = GBAlertModal.Properties(primaryActionStyle: .obliqueBottomLeft(theme))
+        XCTAssertEqual(ModalTokens(from: properties).primaryButtonFont, Font(font))
+    }
+
+    /// `PlainSecondaryStyle`'s real counterpart is `ActionStyle.plain` — the same case
+    /// `SwiftUIAlertModal`'s sentinel `Properties` already uses for `secondaryActionStyle`.
+    func test_secondaryButtonFont_comesFromProperties_plainTheme() {
+        let font = UIFont.systemFont(ofSize: 13, weight: .thin)
+        let theme = GBAlertModal.ActionStyle.PlainTheme(titleFont: font)
+        let properties = GBAlertModal.Properties(secondaryActionStyle: .plain(theme))
+        XCTAssertEqual(ModalTokens(from: properties).secondaryButtonFont, Font(font))
     }
 
     /// A `primaryActionStyle` that ISN'T `.obliqueBottomLeft` has no colours this fixed SwiftUI

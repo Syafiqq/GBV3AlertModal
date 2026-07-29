@@ -27,7 +27,7 @@ public struct ObliquePrimaryStyle: ButtonStyle {
                 : tokens.palette.accent
             let showOblique = isEnabled && !pressed
             configuration.label
-                .font(tokens.buttonFont)
+                .font(tokens.primaryButtonFont)
                 .foregroundColor(tokens.palette.onAccent)
                 .frame(maxWidth: .infinity, minHeight: tokens.buttonHeight)
                 .background(
@@ -63,7 +63,7 @@ public struct PlainSecondaryStyle: ButtonStyle {
 
         var body: some View {
             configuration.label
-                .font(tokens.buttonFont)
+                .font(tokens.secondaryButtonFont)
                 .foregroundColor(isEnabled ? tokens.palette.accent : tokens.palette.disabled)
                 .frame(maxWidth: .infinity, minHeight: tokens.buttonHeight)
                 .opacity(configuration.isPressed ? 0.5 : 1)
