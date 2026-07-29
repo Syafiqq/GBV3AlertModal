@@ -57,6 +57,19 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
             }
         }
 
+        // The SwiftUI twin of the hook above:
+        // `SIMCTL_CHILD_GB_SWIFTUI_ENTRY=<entry-name> xcrun simctl launch ...`
+        // pushes the SwiftUI catalog and presents that shape through
+        // `SwiftUIModalRenderer` + `ModalHost`, so the same named shape can be
+        // screenshotted on BOTH backends from a script, without UI automation.
+        // Names are the `SwiftUICatalog.entries` names, which are the same
+        // strings as `DialogCatalog`'s (e.g. `badge-unlock-multi`).
+        if let entryName = ProcessInfo.processInfo.environment["GB_SWIFTUI_ENTRY"] {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [weak gallery] in
+                gallery?.openSwiftUICatalog(entryNamed: entryName)
+            }
+        }
+
         return true
     }
 

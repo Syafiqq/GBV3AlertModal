@@ -76,7 +76,21 @@ final class GalleryViewController: UITableViewController {
         navigationItem.rightBarButtonItems = [
             UIBarButtonItem(title: "SwiftUI", style: .plain, target: self, action: #selector(openSwiftUIDemo)),
             UIBarButtonItem(title: "Tier 0", style: .plain, target: self, action: #selector(openTier0Demo)),
+            UIBarButtonItem(
+                title: "SwiftUI Catalog",
+                style: .plain,
+                target: self,
+                action: #selector(openSwiftUICatalogTapped)
+            ),
         ]
+    }
+
+    /// The floating pill is hidden while the SwiftUI catalog is on screen (it
+    /// drives THIS gallery, and it would sit on top of that screen's own pill),
+    /// so restore it whenever the gallery comes back.
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        floatingControl?.isHidden = false
     }
 
     @objc private func openSwiftUIDemo() {
@@ -104,6 +118,24 @@ final class GalleryViewController: UITableViewController {
         let executor = DefaultModalExecutor(renderer: renderer)
         let host = UIHostingController(rootView: Tier0DemoScreen(executor: executor))
         navigationController?.pushViewController(host, animated: true)
+    }
+
+    @objc private func openSwiftUICatalogTapped() {
+        openSwiftUICatalog(entryNamed: nil)
+    }
+
+    /// Tier 1: the SAME 26 shapes as this gallery's `DialogCatalog` rows, rendered
+    /// by `SwiftUIModalRenderer` + `ModalHost` instead of `GBAlertModal`. Pass
+    /// `entryNamed:` to present one specific shape on appear — that is the
+    /// `GB_SWIFTUI_ENTRY` launch-environment hook's path (see `AppDelegate`).
+    func openSwiftUICatalog(entryNamed name: String?) {
+        // The window-level pill drives THIS gallery's UIKit modals; leaving it up
+        // over the SwiftUI catalog would present UIKit dialogs on top of it and
+        // collide with that screen's own traversal pill.
+        floatingControl?.pauseAutoPlay()
+        floatingControl?.isHidden = true
+        let host = UIHostingController(rootView: SwiftUICatalogScreen(initialEntryName: name))
+        navigationController?.pushViewController(host, animated: name == nil)
     }
 
     // MARK: - Traversal (called by AppDelegate / FloatingTraversalControl)

@@ -46,8 +46,37 @@ final class SwiftUIDemoScreenSmokeTests: XCTestCase {
     func test_gallery_exposes_tier0_entry_point() {
         let gallery = GalleryViewController()
         gallery.loadViewIfNeeded()
-        XCTAssertEqual(gallery.navigationItem.rightBarButtonItems?.count, 2,
-                       "gallery should expose both the SwiftUI and Tier 0 entry points")
+        XCTAssertEqual(gallery.navigationItem.rightBarButtonItems?.count, 3,
+                       "gallery should expose the SwiftUI, Tier 0 and SwiftUI Catalog entry points")
+    }
+
+    /// **The under-delivery gate for the SwiftUI gallery.** It must list the SAME
+    /// shapes as the UIKit `DialogCatalog`, by name and in the same order, so the
+    /// two galleries are comparable entry-for-entry — and every entry must either
+    /// be presentable or carry a visible "not yet renderable" reason. A gallery
+    /// that quietly lists 23 of 26 is worse than one that shows 26 with 3 marked
+    /// broken, so both halves are asserted here.
+    func test_swiftui_catalog_mirrors_the_dialog_catalog_entry_for_entry() {
+        XCTAssertEqual(SwiftUICatalog.entries.count, 26, "the catalog defines exactly 26 dialog shapes")
+        XCTAssertEqual(
+            SwiftUICatalog.entries.map(\.name),
+            DialogCatalog.entries.map(\.name),
+            "the SwiftUI gallery must mirror the UIKit gallery name-for-name, in catalog order"
+        )
+
+        for entry in SwiftUICatalog.entries {
+            XCTAssertEqual(
+                entry.present == nil,
+                entry.notRenderableReason != nil,
+                "\(entry.name): an entry with no present closure MUST show a reason, and vice versa"
+            )
+        }
+
+        XCTAssertEqual(
+            SwiftUICatalog.entries.filter { $0.present != nil }.count, 26,
+            "all 26 shapes present on the SwiftUI backend today — if that ever drops, the gallery must SHOW "
+                + "the gap (notRenderableReason), never omit the row"
+        )
     }
 
     /// Tier 0: the SwiftUI screen builds with a real executor injected (no SwiftUI modal of its own).
