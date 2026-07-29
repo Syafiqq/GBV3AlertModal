@@ -145,33 +145,145 @@ enum GenieShapeCatalog {
 
     // MARK: - Measuring the body
 
-    /// A body smaller than this in either dimension is not a modal — the shared scaffold alone is a
-    /// 48pt primary button plus card padding. Used as the "non-empty body" threshold.
-    static let minimumRenderedExtent: CGFloat = 44
-
-    /// A phone-sized layout proposal. Nothing here is orientation-sensitive
-    /// (`SwiftUIModalRenderer` pins `isLandscape: false`), so one proposal is enough.
+    /// A phone-sized host. Nothing here is orientation-sensitive (`SwiftUIModalRenderer` pins
+    /// `isLandscape: false`), so one size is enough.
     static let layoutProposal = CGSize(width: 390, height: 844)
 
-    /// Measures the body `ModalHost` draws for `presentation`, by running SwiftUI's REAL layout over
-    /// it in a `UIHostingController`.
+    /// **Evidence that SwiftUI actually produced something for a body — read off UIKit, after the
+    /// fact.**
     ///
-    /// This is a LAYOUT measurement, deliberately not a snapshot: it proves the body exists, is
-    /// constructible, and lays out to a real size. It proves nothing about appearance — there is no
-    /// baseline image anywhere in this suite for the SwiftUI backend.
+    /// ### Why this is not a size measurement any more
     ///
-    /// `test_measure_discriminatesAnEmptyBody` is the control that keeps this honest: the same
-    /// helper over an `EmptyView` must measure `.zero`, otherwise a green measurement here would be
-    /// meaningless.
-    static func measuredBodySize(of presentation: SwiftUIModalRenderer.Presentation) -> CGSize {
-        measuredSize(of: ModalPresentationBody.view(for: presentation))
+    /// The first version of this helper asked `UIHostingController.sizeThatFits(in:)` for the body's
+    /// size and required it to be at least 44pt. That was VACUOUS: the hosting controller reports the
+    /// size of the HOST, which fills its proposal whatever the content is — an `EmptyView` measured
+    /// the full 390×844, exactly like a real modal. `test_measure_discriminatesAnEmptyBody` (the
+    /// control that exists precisely to catch this) failed and said so. The structural half of the
+    /// shape assertions was never affected; only this half was worthless.
+    ///
+    /// ### What is measured now
+    ///
+    /// Two independent signals, both taken from the REAL UIKit objects SwiftUI lowered the body to,
+    /// after hosting it in a key `UIWindow` and forcing a layout + layer commit:
+    ///
+    /// * `drawnPixels` — the body is rendered into a transparent RGBA bitmap via `layer.render(in:)`
+    ///   and the non-transparent pixels are counted. A body that draws nothing leaves every pixel at
+    ///   alpha 0. This is "did anything get drawn", which is unambiguous in a way SwiftUI's layout
+    ///   APIs are not.
+    /// * `descendantViews` — the size of the hosted view tree. A body that lowers to nothing has no
+    ///   descendants.
+    ///
+    /// ### Why the two are OR-ed, not AND-ed
+    ///
+    /// Either one alone is enough to prove the body is non-empty, and they fail independently: if
+    /// `layer.render` ever stops capturing SwiftUI content, the view-tree signal still discriminates,
+    /// and vice versa. AND-ing them would make an unrelated platform quirk in one signal report every
+    /// shape as broken. The OR cannot manufacture a false green, because
+    /// `test_measure_discriminatesAnEmptyBody` runs an EMPTY body through this SAME predicate and
+    /// requires it to come out false — if the predicate ever stops discriminating, that control goes
+    /// red rather than this quietly passing.
+    ///
+    /// ### What it still does NOT prove
+    ///
+    /// That the body looks right, or that any particular SLOT inside it drew. A modal's scrim alone
+    /// covers the screen, so these numbers say "this presentation drew a modal", not "the badge grid
+    /// has three badges in it". There is no snapshot baseline here and this is not a snapshot
+    /// comparison.
+    struct BodyEvidence: CustomStringConvertible {
+        let drawnPixels: Int
+        let descendantViews: Int
+
+        /// A real modal draws its scrim across the whole host (~329k pixels here), so this floor is
+        /// three orders of magnitude below anything genuine while still being immune to a stray
+        /// antialiased pixel.
+        static let minimumDrawnPixels = 1_000
+
+        var isNonEmpty: Bool { drawnPixels >= Self.minimumDrawnPixels || descendantViews >= 1 }
+
+        var description: String {
+            "drawnPixels=\(drawnPixels) (floor \(Self.minimumDrawnPixels)), descendantViews=\(descendantViews)"
+        }
     }
 
-    static func measuredSize(of view: some View) -> CGSize {
+    static func bodyEvidence(of presentation: SwiftUIModalRenderer.Presentation) -> BodyEvidence {
+        bodyEvidence(of: ModalPresentationBody.view(for: presentation))
+    }
+
+    static func bodyEvidence(of view: some View) -> BodyEvidence {
         let host = UIHostingController(rootView: view)
+        host.view.backgroundColor = .clear   // so an undrawn body really is transparent
         host.view.frame = CGRect(origin: .zero, size: layoutProposal)
-        host.view.layoutIfNeeded()
-        return host.sizeThatFits(in: layoutProposal)
+
+        // Hosting in a real key window, and tearing it down again in the same call, is the pattern
+        // `SnapshotSupport.renderForSnapshot` establishes — including WHY the teardown is not
+        // optional: a `UIWindow` created against a scene is retained by that scene, so leaving one
+        // behind leaks it into later tests (it caused a use-after-free crash on this target once).
+        let window: UIWindow
+        if let scene = UIApplication.shared.connectedScenes
+            .first(where: { $0.activationState == .foregroundActive }) as? UIWindowScene {
+            window = UIWindow(windowScene: scene)
+        } else {
+            window = UIWindow(frame: .zero)
+        }
+        window.frame = CGRect(origin: .zero, size: layoutProposal)
+        window.rootViewController = host
+        window.isHidden = false
+        window.makeKeyAndVisible()
+        window.setNeedsLayout()
+        window.layoutIfNeeded()
+        // Commits the layer tree SwiftUI just built. Without it `layer.render(in:)` can run before
+        // the content SwiftUI laid out is committed, and capture nothing.
+        CATransaction.flush()
+
+        let evidence = BodyEvidence(
+            drawnPixels: nonTransparentPixelCount(of: host.view),
+            descendantViews: descendantViewCount(of: host.view)
+        )
+
+        window.isHidden = true
+        window.rootViewController = nil
+        window.windowScene = nil
+        return evidence
+    }
+
+    /// Renders `view`'s layer into a zero-filled (i.e. fully transparent) RGBA bitmap and counts the
+    /// pixels with a non-zero alpha.
+    ///
+    /// A hand-rolled `CGContext` rather than `UIGraphicsImageRenderer`: this pins the pixel layout to
+    /// `premultipliedLast` (RGBA), so alpha is byte 3 of every 4. Reading the alpha channel out of
+    /// whatever layout the renderer happened to choose is how a pixel-counting helper silently
+    /// starts counting the wrong byte. The bitmap is drawn unflipped — the image comes out
+    /// vertically mirrored, which is irrelevant to a count.
+    static func nonTransparentPixelCount(of view: UIView) -> Int {
+        let width = Int(layoutProposal.width)
+        let height = Int(layoutProposal.height)
+        guard width > 0, height > 0,
+              let context = CGContext(
+                  data: nil,
+                  width: width,
+                  height: height,
+                  bitsPerComponent: 8,
+                  bytesPerRow: width * 4,
+                  space: CGColorSpaceCreateDeviceRGB(),
+                  bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
+              )
+        else { return 0 }
+
+        view.layer.render(in: context)
+
+        guard let data = context.data else { return 0 }
+        let byteCount = width * height * 4
+        let buffer = data.bindMemory(to: UInt8.self, capacity: byteCount)
+        var count = 0
+        for index in stride(from: 3, to: byteCount, by: 4) where buffer[index] != 0 {
+            count += 1
+        }
+        return count
+    }
+
+    /// Total descendants, not just immediate subviews — SwiftUI nests what it lowers.
+    static func descendantViewCount(of view: UIView) -> Int {
+        view.subviews.reduce(view.subviews.count) { $0 + descendantViewCount(of: $1) }
     }
 
     // MARK: - Renderer setup

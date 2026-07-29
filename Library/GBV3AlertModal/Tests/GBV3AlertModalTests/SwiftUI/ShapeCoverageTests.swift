@@ -18,8 +18,16 @@ import XCTest
 /// 1. **Structure.** Presenting the shape through `SwiftUIModalRenderer` produces the expected
 ///    `GBAlertModal.ResolvedModal` slots — the SAME pure resolver the UIKit renderer runs, over the
 ///    shape's real `Properties`. This is the "the descriptor resolves correctly" claim.
-/// 2. **A body.** `ModalHost` has something to draw for it, and that body lays out to a real size
-///    under SwiftUI's actual layout engine (`GenieShapeCatalog.measuredBodySize`).
+/// 2. **A body that actually draws.** `ModalHost` has something to draw for it, and hosting that
+///    body in a real key window produces real output — non-transparent pixels off
+///    `layer.render(in:)`, and/or a non-empty lowered `UIView` tree
+///    (`GenieShapeCatalog.BodyEvidence`). It proves the modal DREW, not that any particular slot
+///    inside it did: a scrim alone covers the screen.
+///
+///    This half was VACUOUS in the first version of this file, which measured
+///    `UIHostingController.sizeThatFits(in:)` — the size of the HOST, which fills its proposal
+///    whatever the content is. `test_measure_discriminatesAnEmptyBody` caught it. The structural
+///    half was never affected.
 ///
 /// It does **NOT** prove visual fidelity. There is no snapshot baseline for the SwiftUI backend in
 /// this repo, and this codebase has a documented history of snapshot-green-but-visually-wrong
@@ -84,14 +92,11 @@ final class ShapeCoverageTests: XCTestCase {
         XCTAssertTrue(presented.hasBody, "\(name): ModalHost must have a body to draw",
                       file: file, line: line)
 
-        let size = GenieShapeCatalog.measuredBodySize(of: presented.presentation)
-        XCTAssertGreaterThanOrEqual(
-            size.width, GenieShapeCatalog.minimumRenderedExtent,
-            "\(name): body measured \(size) — an empty body measures .zero", file: file, line: line
-        )
-        XCTAssertGreaterThanOrEqual(
-            size.height, GenieShapeCatalog.minimumRenderedExtent,
-            "\(name): body measured \(size) — an empty body measures .zero", file: file, line: line
+        let evidence = GenieShapeCatalog.bodyEvidence(of: presented.presentation)
+        XCTAssertTrue(
+            evidence.isNonEmpty,
+            "\(name): the body drew nothing and lowered to nothing — \(evidence)",
+            file: file, line: line
         )
         return presented
     }
@@ -130,23 +135,29 @@ final class ShapeCoverageTests: XCTestCase {
     /// The control that keeps every "non-empty body" assertion above honest: the SAME measurement
     /// helper, over a body that genuinely renders nothing, must measure `.zero`. Without this, a
     /// measurement that always returned a non-zero size would make all 26 tests vacuously green.
+    /// **The guard on the guard — and it has already earned its keep.**
+    ///
+    /// The first version of the body check asked `UIHostingController.sizeThatFits(in:)` for a size.
+    /// That measures the HOST, which fills its proposal no matter what is inside it: an `EmptyView`
+    /// measured the full 390×844, identically to a real modal. This test failed, which is the only
+    /// reason the vacuity was caught instead of shipped as 26 green assertions that proved nothing.
+    ///
+    /// So it stays, and it stays strict: an EMPTY body must FAIL the exact predicate the 26 populated
+    /// shapes PASS. If `BodyEvidence.isNonEmpty` ever stops discriminating, this goes red first.
     func test_measure_discriminatesAnEmptyBody() {
-        let empty = GenieShapeCatalog.measuredSize(of: EmptyView())
-        // Stated as "must FAIL the shape threshold" rather than "== .zero": the claim that matters
-        // is that the measurement DISCRIMINATES, and pinning an exact size for `EmptyView` would be
-        // asserting a SwiftUI implementation detail this suite has no stake in.
-        XCTAssertTrue(
-            empty.width < GenieShapeCatalog.minimumRenderedExtent
-                || empty.height < GenieShapeCatalog.minimumRenderedExtent,
-            "an empty body measured \(empty) — it must fail the same threshold the 26 shape tests "
-                + "pass, otherwise those body assertions prove nothing"
+        let empty = GenieShapeCatalog.bodyEvidence(of: EmptyView())
+        XCTAssertFalse(
+            empty.isNonEmpty,
+            "an empty body produced \(empty) — it must FAIL the same predicate the 26 shape tests "
+                + "pass, otherwise every one of those body assertions is vacuous"
         )
 
-        let real = GenieShapeCatalog.measuredSize(
+        // The positive half: a populated scaffold must pass the same predicate, so the control
+        // cannot be satisfied by a predicate that simply says "no" to everything.
+        let populated = GenieShapeCatalog.bodyEvidence(
             of: AlertModalScaffold(primaryTitle: "Okay", onPrimary: {}) { Text("Body") }
         )
-        XCTAssertGreaterThanOrEqual(real.width, GenieShapeCatalog.minimumRenderedExtent)
-        XCTAssertGreaterThanOrEqual(real.height, GenieShapeCatalog.minimumRenderedExtent)
+        XCTAssertTrue(populated.isNonEmpty, "a populated scaffold produced \(populated)")
     }
 
     // MARK: - Cross-cutting shapes
@@ -515,10 +526,8 @@ final class ShapeCoverageTests: XCTestCase {
 
         let presentation = try XCTUnwrap(renderer.presentations.first(where: { $0.id == id }))
         XCTAssertNotNil(presentation.customContent, "the satisfaction row is bespoke content")
-        XCTAssertGreaterThanOrEqual(
-            GenieShapeCatalog.measuredBodySize(of: presentation).height,
-            GenieShapeCatalog.minimumRenderedExtent
-        )
+        let evidence = GenieShapeCatalog.bodyEvidence(of: presentation)
+        XCTAssertTrue(evidence.isNonEmpty, "the satisfaction row drew nothing — \(evidence)")
 
         // The validation gate, as a pure function: nothing selected → a primary tap cannot fabricate
         // an index (the button is disabled in the UI, and the mapping refuses to invent one).
@@ -575,10 +584,10 @@ final class ShapeCoverageTests: XCTestCase {
         XCTAssertEqual(renderer.presentations.count, 1, "update must not add a presentation")
         XCTAssertNotNil(presentation.customContent, "the busy body must still be there")
         XCTAssertEqual(resolvedCount, 0, "update must never resolve the token")
-        XCTAssertGreaterThanOrEqual(
-            GenieShapeCatalog.measuredBodySize(of: presentation).height,
-            GenieShapeCatalog.minimumRenderedExtent,
-            "the loading body (spinner in place of the label) must still lay out"
+        let evidence = GenieShapeCatalog.bodyEvidence(of: presentation)
+        XCTAssertTrue(
+            evidence.isNonEmpty,
+            "the loading body (spinner in place of the label) must still draw — \(evidence)"
         )
     }
 
