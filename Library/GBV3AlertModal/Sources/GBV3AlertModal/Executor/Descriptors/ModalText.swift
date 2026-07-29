@@ -14,11 +14,13 @@ public enum ModalText {
         // `AttributedString(markdown:)` parsing unmarked text) are out of the whitelisted
         // subgrammar and don't bridge reliably to UIKit, so intent-only runs stay plain.
         //
-        // SwiftUI-scoped color/font keys are deliberately NOT checked: they do not bridge to
-        // NSAttributedString at all, so treating them as "styled" would yield an attributed
-        // string stripped of styling, which the resolver renders as-is — worse than plain,
-        // which at least receives the resolver's default styling. The SwiftUI renderer never
-        // calls `split`; it consumes the descriptor's `AttributedString` directly.
+        // SwiftUI-scoped color/font keys are deliberately NOT checked: they DO bridge onto the
+        // resulting NSAttributedString, but under `SwiftUI.*` keys that UIKit does not render
+        // (ambient `.foregroundColor =`/`.font =` bind to this same SwiftUI scope, even in files
+        // with no SwiftUI import). Treating such a run as "styled" would yield an attributed
+        // string UILabel renders with NO styling at all, which the resolver renders as-is —
+        // worse than plain, which at least receives the resolver's default styling. The SwiftUI
+        // renderer never calls `split`; it consumes the descriptor's `AttributedString` directly.
         let isPlain = text.runs.allSatisfy { run in
             run[AttributeScopes.UIKitAttributes.ForegroundColorAttribute.self] == nil
                 && run[AttributeScopes.UIKitAttributes.FontAttribute.self] == nil

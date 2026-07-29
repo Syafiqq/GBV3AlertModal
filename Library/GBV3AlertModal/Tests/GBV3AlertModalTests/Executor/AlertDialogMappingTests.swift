@@ -66,7 +66,9 @@ import UIKit
 
     func test_styledDescriptor_mapsToAttributedSubtitle() {
         var body = AttributedString("Body")
-        body.foregroundColor = .red
+        // Explicit `.uiKit` scope required: ambient `foregroundColor` binds to SwiftUI's scope,
+        // which UIKit does not render, so it would not exercise the attributed path at all.
+        body.uiKit.foregroundColor = .red
         let holder = UIKitModalRenderer.AlertHolder.make(
             for: AlertDialog(title: nil, subtitle: body, primary: "OK")
         ) { _ in }
@@ -74,6 +76,21 @@ import UIKit
             properties: GeniePresets.standardProperties(), holder: holder, isLandscape: false
         )
         XCTAssertEqual(resolved.subtitle, .attributed)
+    }
+
+    /// Pins the fact that ambient `foregroundColor =` binds to SwiftUI's scope, not UIKit's —
+    /// even in a file with no `import SwiftUI` and no SwiftUI reference. That key is not rendered
+    /// by UILabel, so `ModalText.split` correctly treats it as plain rather than attributed.
+    func test_ambientForegroundColor_bindsSwiftUIScope_andStaysPlain() {
+        var body = AttributedString("Body")
+        body.foregroundColor = .red   // ambient -> SwiftUI scope, NOT UIKit
+        let holder = UIKitModalRenderer.AlertHolder.make(
+            for: AlertDialog(title: nil, subtitle: body, primary: "OK")
+        ) { _ in }
+        let resolved = GBAlertModal.resolve(
+            properties: GeniePresets.standardProperties(), holder: holder, isLandscape: false
+        )
+        XCTAssertEqual(resolved.subtitle, .plain("Body"))
     }
 
     func test_alertDialogResult_dismissedResultIsDismissed() {
