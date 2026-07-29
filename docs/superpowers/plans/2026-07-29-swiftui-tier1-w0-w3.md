@@ -838,20 +838,12 @@ public final class SwiftUIModalRenderer: ObservableObject, ModalRenderer {
                 tokens: ModalTokens(from: effective),
                 isHidden: false,
                 onAction: { [weak self] action in
-                    guard let self, self.presentations.contains(where: { $0.id == id })
-                    else { return }
-                    self.route(action, for: id)
+                    guard let self, let router = self.actionRouters[id] else { return }
+                    router(action)
                 }
             )
         )
         resolveDismissed[id] = { gate(D.dismissedResult) }
-        actionRouters[id] = { action in
-            switch action {
-            case .primary:   gate(D.dismissedResult) // replaced below; see routing note
-            case .secondary: gate(D.dismissedResult)
-            case .close:     gate(D.dismissedResult)
-            }
-        }
     }
 
     public func dismiss(_ id: ModalID) {
@@ -866,14 +858,48 @@ public final class SwiftUIModalRenderer: ObservableObject, ModalRenderer {
 }
 ```
 
-> **Routing note — resolve this while implementing.** `gate` is typed `(D.Result) -> Void`, but
-> `onAction` delivers a `GBAlertModal.ActionType`. For the standard family, `D.Result` is
-> `AlertDialog.Result` and the mapping is `.primary → .primary`, `.secondary → .secondary`,
-> `.close → .dismissed` — the same switch `AlertHolder.make` performs. The clean implementation
-> is to store a per-id `(GBAlertModal.ActionType) -> Void` closure captured inside `present`,
-> where `D` is still known, rather than the placeholder above. Write it that way; the sketch
-> shows the shape, not the final code. `testInteractionResolvesOnceOnly` is what proves you got
-> it right.
+**Routing — implement to this spec.** `gate` is `(D.Result) -> Void`, but the view's `onAction`
+delivers a `GBAlertModal.ActionType`. You must store a per-`ModalID` router:
+
+```swift
+    private var actionRouters: [ModalID: (GBAlertModal.ActionType) -> Void] = [:]
+```
+
+Build it where `D` is **statically known**, constrained so the mapping type-checks:
+
+```swift
+    /// The standard family (`AlertDialog`, `PopupDialog`) all resolve to `AlertDialog.Result`
+    /// — verified: `PopupDialog.typealias Result = AlertDialog.Result`. Constraining on that
+    /// makes the ActionType mapping statically type-safe.
+    private func registerStandard<D>(
+        _ type: D.Type, properties: GBAlertModal.Properties
+    ) where D: ModalDescriptor & StandardAlertContent, D.Result == AlertDialog.Result {
+        register(type) { descriptor, resolve in
+            (properties, UIKitModalRenderer.AlertHolder.make(for: descriptor, resolve: resolve))
+        }
+        standardRouterBuilders[ObjectIdentifier(type)] = { gate in
+            guard let gate = gate as? (AlertDialog.Result) -> Void else { return nil }
+            return { action in
+                switch action {
+                case .primary:   gate(.primary)
+                case .secondary: gate(.secondary)
+                case .close:     gate(.dismissed)
+                }
+            }
+        }
+    }
+```
+
+> **Do NOT route by casting closures at runtime** (`gate as? (AlertDialog.Result) -> Void` as the
+> primary mechanism). Function-type conditional casts are unreliable in Swift and will fail
+> silently in release. Solve it with the generic constraint, capturing the concretely-typed gate
+> inside `present` where `D` is known — restructure the sketch above however you need to achieve
+> that. The three-case mapping (`.primary → .primary`, `.secondary → .secondary`,
+> `.close → .dismissed`) is the same switch `AlertHolder.make` performs; keep them identical.
+>
+> `testInteractionResolvesOnceOnly` and `testPresentThenPrimaryResolvesPrimary` (Task 8) are the
+> gates that prove the routing is right. If you cannot make it type-check without a force-cast,
+> report BLOCKED rather than shipping `as!`.
 
 - [ ] **Step 4: Implement `ModalHost`**
 
@@ -1109,9 +1135,10 @@ final class RendererParityTests: XCTestCase {
 
     func testPresentThenPrimaryResolvesPrimary() async {
         for kind in RendererKind.allCases {
-            let executor = DefaultModalExecutor(renderer: makeRenderer(kind))
+            let renderer = makeRenderer(kind)
+            let executor = DefaultModalExecutor(renderer: renderer)
             let token = executor.present(AlertDialog(title: "T", subtitle: "S", primary: "OK"))
-            resolveFirstPresentation(on: executor, with: .primary, kind: kind)
+            emitPrimary(on: renderer, kind: kind)
             let result = await token.result
             XCTAssertEqual(result, .primary, "renderer \(kind.rawValue) diverged")
         }
@@ -1119,9 +1146,10 @@ final class RendererParityTests: XCTestCase {
 
     func testDismissResolvesDismissed() async {
         for kind in RendererKind.allCases {
-            let executor = DefaultModalExecutor(renderer: makeRenderer(kind))
+            let renderer = makeRenderer(kind)
+            let executor = DefaultModalExecutor(renderer: renderer)
             let token = executor.present(AlertDialog(title: "T", subtitle: "S", primary: "OK"))
-            token.dismiss()
+            executor.dismiss(token)
             let result = await token.result
             XCTAssertEqual(result, .dismissed, "renderer \(kind.rawValue) diverged")
         }
@@ -1134,7 +1162,7 @@ final class RendererParityTests: XCTestCase {
             let token = executor.present(AlertDialog(title: "T", subtitle: "S", primary: "OK"))
             renderer.setHidden(token.id, true)
             renderer.setHidden(token.id, false)
-            token.dismiss()
+            executor.dismiss(token)
             let result = await token.result
             XCTAssertEqual(result, .dismissed, "renderer \(kind.rawValue) resolved on hide")
         }
@@ -1142,16 +1170,21 @@ final class RendererParityTests: XCTestCase {
 }
 ```
 
-> `resolveFirstPresentation(on:with:kind:)` is a helper you must write in
-> `RendererFixtures.swift`: for `.swiftUI` it calls the renderer's
-> `presentations.first?.onAction(action)`; for `.uiKit` it calls
-> `live.values.first?.modal.dismissAndEmit(event: action)` — the same mechanism
-> `Tier0DemoScreenSmokeTests` already uses. Verify the exact UIKit method name in
-> `GBAlertModal+Events.swift` before writing it.
->
-> Verify `DefaultModalExecutor.present`'s real signature and `ModalToken`'s API
-> (`.result`, `.dismiss()`, `.id`) in `Core/ModalExecutor.swift` and `Core/ModalToken.swift` —
-> adapt these tests to the actual names rather than assuming.
+**Verified API — use exactly these forms (checked against source, do not re-derive):**
+
+- `DefaultModalExecutor(renderer:)`
+- `executor.present(descriptor) -> ModalToken<D.Result>`
+- **`executor.dismiss(token)`** — `ModalToken` has **no** `dismiss()` method. It exposes only
+  `.id` and `await .result`.
+- `executor.presentAndWait(descriptor) async -> D.Result` exists as a convenience.
+- `AlertDialog(title:primary:)` is a valid short form (see `RootScreenModalCoordinatorTests`).
+
+> `emitPrimary(on:kind:)` is a helper you must write in `RendererFixtures.swift`. Signature:
+> `func emitPrimary(on renderer: ModalRenderer, kind: RendererKind)`. For `.swiftUI`, downcast
+> and call `presentations.first?.onAction(.primary)`. For `.uiKit`, downcast and drive the real
+> `GBAlertModal` — find the emit method in `GBAlertModal+Events.swift`; the existing
+> `Tier0DemoScreenSmokeTests` in the example target already drives a modal this way, so copy its
+> mechanism rather than inventing one.
 
 - [ ] **Step 3: Run the parity tests**
 
@@ -1188,41 +1221,184 @@ two-renderer approach costs more than the design assumed."
 
 ---
 
-## Task 9: Coordinator parity (W3)
+## Task 9: Coordinator–renderer integration (W3)
 
 **Files:**
-- Modify: `Library/GBV3AlertModal/Tests/GBV3AlertModalTests/SwiftUI/RendererParityTests.swift`
+- Create: `Library/GBV3AlertModal/Tests/GBV3AlertModalTests/SwiftUI/CoordinatorIntegrationTests.swift`
+- Modify: `Library/GBV3AlertModal/Tests/GBV3AlertModalTests/Support/RendererFixtures.swift` (add `emitSecondary`, `liveCount`)
 
 **Interfaces:**
-- Consumes: `RootScreenModalCoordinator`, `RendererKind`, `makeRenderer`
-- Produces: no production API
+- Consumes: `RootScreenModalCoordinator`, `RendererKind`, `makeRenderer`, `emitPrimary`
+- Produces: `emitSecondary(on:kind:)`, `liveCount(_:kind:)` in the shared fixtures
 
-- [ ] **Step 1: Read the existing coordinator tests**
+> **Read this before writing code — the task's premise was corrected.**
+>
+> `RootScreenModalCoordinatorTests`' 24 tests run against a **`SpyRenderer`**, a fake that records
+> presentations and lets the test drive resolution. They test *coordinator policy*, and the
+> coordinator is already renderer-agnostic by construction (`private let renderer: ModalRenderer`).
+> Re-running them against a different renderer would not test the coordinator — the spy already
+> covers that, and 18 of the 24 are pure queue arithmetic a renderer cannot influence.
+>
+> What is genuinely unproven is the **integration**: does `SwiftUIModalRenderer` honour the parts
+> of the `ModalRenderer` contract the coordinator depends on — resolve exactly once, resolve on
+> `dismiss(id)`, and never resolve on `setHidden`? Six of the 24 scenarios are renderer-sensitive.
+> Those are what this task covers, against the REAL renderers.
+>
+> Run both kinds, not just SwiftUI. If a scenario fails for BOTH, the harness is wrong, not the
+> renderer — UIKit is the control.
 
-Run: `grep -n "func test" Library/GBV3AlertModal/Tests/GBV3AlertModalTests/Executor/RootScreenModalCoordinatorTests.swift`
-Expected: 24 test names covering serial / dedup / priority / interrupt / drain.
+- [ ] **Step 1: Read the source tests you are mirroring**
 
-- [ ] **Step 2: Write the parity tests for the coordinator's five behaviours**
+Run: `sed -n '50,120p' Library/GBV3AlertModal/Tests/GBV3AlertModalTests/Executor/RootScreenModalCoordinatorTests.swift`
 
-Append to `RendererParityTests`, one test per behaviour, each looping `RendererKind.allCases`.
-Port the assertions from `RootScreenModalCoordinatorTests` — do not invent new semantics.
+Read these six, which are the renderer-sensitive ones:
+`test_serial_secondRequestNotShownUntilFirstResolves`,
+`test_userResolution_forwardsChosenValueToToken`,
+`test_dedup_droppedDuplicate_resolvesDismissed`,
+`test_teardownDrain_resolvesCurrentAndQueuedDismissed`,
+`test_hide_doesNotResolveCurrentToken`,
+`test_interrupt_preemptedModalResolvesDismissed`.
+
+- [ ] **Step 2: Write the integration tests**
+
+Create `Library/GBV3AlertModal/Tests/GBV3AlertModalTests/SwiftUI/CoordinatorIntegrationTests.swift`:
 
 ```swift
-    func testSerialPresentationAcrossRenderers() async {
+import XCTest
+@testable import GBV3AlertModal
+
+/// W3: the coordinator's policy is already covered against SpyRenderer. What is unproven is that a
+/// REAL renderer honours the contract that policy rests on — resolve exactly once, resolve on
+/// dismiss, never resolve on hide. Both kinds run: UIKit is the control, so a both-kinds failure
+/// indicts the harness rather than the SwiftUI renderer.
+@MainActor
+final class CoordinatorIntegrationTests: XCTestCase {
+
+    private func alert(_ t: String) -> AlertDialog { AlertDialog(title: t, primary: "OK") }
+
+    /// Serial: a second request must not reach the renderer until the first resolves.
+    func testSerialHoldsWithRealRenderer() {
         for kind in RendererKind.allCases {
-            let coordinator = RootScreenModalCoordinator(renderer: makeRenderer(kind))
-            // Port the body of RootScreenModalCoordinatorTests' serial-presentation test here,
-            // substituting `coordinator`. Assert the same ordering invariant, with
-            // "renderer \(kind.rawValue)" in every failure message.
-            _ = coordinator
+            let renderer = makeRenderer(kind)
+            let coordinator = RootScreenModalCoordinator(renderer: renderer)
+
+            _ = coordinator.present(alert("A"))
+            _ = coordinator.present(alert("B"))
+            XCTAssertEqual(liveCount(renderer, kind), 1, "\(kind.rawValue): serial violated")
+
+            emitPrimary(on: renderer, kind: kind)
+            XCTAssertEqual(liveCount(renderer, kind), 1, "\(kind.rawValue): B should now be shown alone")
         }
     }
+
+    /// The chosen value must survive the renderer round-trip, not just the spy's.
+    func testUserResolutionForwardsValue() async {
+        for kind in RendererKind.allCases {
+            let renderer = makeRenderer(kind)
+            let coordinator = RootScreenModalCoordinator(renderer: renderer)
+            let token = coordinator.present(alert("A"))
+
+            emitSecondary(on: renderer, kind: kind)
+
+            let result = await token.result
+            XCTAssertEqual(result, .secondary, "\(kind.rawValue): wrong value forwarded")
+        }
+    }
+
+    /// Invariant: EVERY entered request resolves exactly once, including a deduped drop.
+    func testDroppedDuplicateStillResolves() {
+        for kind in RendererKind.allCases {
+            let renderer = makeRenderer(kind)
+            let coordinator = RootScreenModalCoordinator(renderer: renderer)
+
+            _ = coordinator.present(alert("A"), dedupKey: "k")
+            let dup = coordinator.present(alert("A-dup"), dedupKey: "k")
+
+            // Bounded wait — a dropped token that never resolves would hang the suite.
+            let resolved = expectation(description: "dropped duplicate resolves (\(kind.rawValue))")
+            var result: AlertDialog.Result?
+            Task { result = await dup.result; resolved.fulfill() }
+            wait(for: [resolved], timeout: 1.0)
+
+            XCTAssertEqual(result, .dismissed, "\(kind.rawValue): dropped duplicate did not resolve")
+        }
+    }
+
+    /// Drain must resolve the shown request AND everything queued behind it.
+    func testDrainResolvesShownAndQueued() {
+        for kind in RendererKind.allCases {
+            let renderer = makeRenderer(kind)
+            let coordinator = RootScreenModalCoordinator(renderer: renderer)
+
+            let shown = coordinator.present(alert("A"))
+            let queued = coordinator.present(alert("B"))
+
+            coordinator.drain()
+
+            let both = expectation(description: "drain resolves both (\(kind.rawValue))")
+            both.expectedFulfillmentCount = 2
+            var results: [AlertDialog.Result] = []
+            Task { results.append(await shown.result); both.fulfill() }
+            Task { results.append(await queued.result); both.fulfill() }
+            wait(for: [both], timeout: 1.0)
+
+            XCTAssertEqual(results, [.dismissed, .dismissed], "\(kind.rawValue): drain stranded a token")
+        }
+    }
+
+    /// Hiding is a visibility toggle, never a resolution — this is what screen-cover/restore rests on.
+    func testHideDoesNotResolve() {
+        for kind in RendererKind.allCases {
+            let renderer = makeRenderer(kind)
+            let coordinator = RootScreenModalCoordinator(renderer: renderer)
+            let token = coordinator.present(alert("A"))
+
+            coordinator.setHidden(true)
+
+            var resolvedEarly = false
+            let probe = expectation(description: "no early resolution (\(kind.rawValue))")
+            probe.isInverted = true
+            Task { _ = await token.result; resolvedEarly = true; probe.fulfill() }
+            wait(for: [probe], timeout: 0.3)
+
+            XCTAssertFalse(resolvedEarly, "\(kind.rawValue): hiding resolved the token")
+        }
+    }
+
+    /// A preempted modal must resolve dismissed — never silently vanish.
+    func testInterruptPreemptedModalResolvesDismissed() {
+        for kind in RendererKind.allCases {
+            let renderer = makeRenderer(kind)
+            let coordinator = RootScreenModalCoordinator(renderer: renderer)
+
+            let preempted = coordinator.present(alert("A"))
+            _ = coordinator.present(alert("URGENT"), interrupt: true)
+
+            let resolved = expectation(description: "preempted resolves (\(kind.rawValue))")
+            var result: AlertDialog.Result?
+            Task { result = await preempted.result; resolved.fulfill() }
+            wait(for: [resolved], timeout: 1.0)
+
+            XCTAssertEqual(result, .dismissed, "\(kind.rawValue): preempted modal did not resolve")
+        }
+    }
+}
 ```
 
-> Repeat for dedup, priority, interrupt and drain. Read each source test and port its body
-> verbatim — the point of this task is that the SwiftUI backend satisfies the *existing*
-> contract, so inventing new assertions would defeat it. Check
-> `RootScreenModalCoordinator`'s real initializer signature in `Core/RootScreenModalCoordinator.swift`.
+> **Helpers you must add to `RendererFixtures.swift`:** `emitSecondary(on:kind:)` (mirror of
+> `emitPrimary`) and `liveCount(_:kind:)` returning the number of currently-shown modals —
+> `presentations.count` for SwiftUI, `live.count` for UIKit (that property is `internal`, so
+> `@testable import` reaches it).
+>
+> **Verify before running:** `RootScreenModalCoordinator.present` is declared `func` (internal,
+> not public) — reachable via `@testable import`. Confirm the real names of `drain()` and the
+> hide/show API in `Core/RootScreenModalCoordinator.swift`; the test names
+> `test_teardownDrain_*` and `test_hide_*` imply `drain()` and a hide entry point, but read the
+> source and use the actual signatures. Also confirm `present`'s `dedupKey:`/`interrupt:` labels.
+>
+> **UIKit renderer needs a window.** `makeRenderer(.uiKit)` supplies a `windowProvider`; if a
+> UIKit scenario cannot run headless in the library test target, report that rather than deleting
+> the case — a SwiftUI-only run loses the control and must be flagged in your report.
 
 - [ ] **Step 3: Run them**
 
@@ -1238,10 +1414,14 @@ Expected: ≥263 passing, 0 failures.
 git add -A Library/
 git commit -m "test(swiftui): coordinator parity across both renderers (W3)
 
-Ports RootScreenModalCoordinatorTests' serial/dedup/priority/interrupt/drain
-assertions to run against both backends. Assertions are ported verbatim rather
-than rewritten: the claim under test is that the SwiftUI backend satisfies the
-existing contract."
+The existing 24 coordinator tests run against SpyRenderer and cover queue
+policy; the coordinator is renderer-agnostic by construction, so re-running
+them against another renderer proves nothing new. What was unproven is the
+integration: that a REAL renderer honours the contract the policy rests on --
+resolve exactly once, resolve on dismiss, never resolve on hide.
+
+Covers the six renderer-sensitive scenarios against both real renderers. UIKit
+is the control: a failure in both kinds indicts the harness, not SwiftUI."
 ```
 
 ---
