@@ -11,6 +11,10 @@ import Foundation
 /// equivalent of this type and reaches every OTHER preset the same way. Nothing here is deprecated
 /// or removed — every existing `PopupDialog` call site keeps working unchanged, and its `style` is
 /// pinned to `.popup`, so both spellings resolve through the SAME style→`Properties` map.
+///
+/// **Registration is TYPE-keyed.** Both renderers key their registry on `ObjectIdentifier(D.self)`,
+/// so overriding `AlertDialog`'s factory (or its SwiftUI `view`) does NOT affect `PopupDialog` — an
+/// override has to be applied to BOTH types to cover both spellings.
 public struct PopupDialog: ModalDescriptor, StandardAlertContent {
     public typealias Result = AlertDialog.Result
     public static var dismissedResult: Result { .dismissed }

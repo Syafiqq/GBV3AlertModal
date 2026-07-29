@@ -42,6 +42,20 @@ public final class RootScreenModalCoordinator {
         }
         if let key = dedupKey { activeKeys.insert(key) }
 
+        // A dismiss-mode await (`presentAndWait`) that gets CANCELLED resolves the token itself and
+        // then calls `onDrop`. Without this hook that drop is a no-op, so the renderer's gate never
+        // fires, `finish()` never runs, and `current` stays populated FOREVER — every later
+        // `present` on this screen queues behind an orphaned modal, unrecoverably, because the
+        // caller of `presentAndWait` discarded the token and has nothing left to `dismiss`. This
+        // mirrors the direct path in `DefaultModalExecutor.present`.
+        //
+        // `[weak self]` for the same reason that path uses it: `onDrop` lives ON the token, and this
+        // coordinator owns pending tokens STRONGLY through `Pending`'s closures, so a strong `self`
+        // here would be a retain cycle. No weak-token dance is needed to reach `dismiss(_:)`: the id
+        // is captured BY VALUE (`ModalID` is a struct), so the closure retains nothing.
+        let id = token.id
+        token.onDrop = { [weak self] in self?.dismiss(id) }
+
         let pending = Pending(
             id: token.id,
             key: dedupKey,

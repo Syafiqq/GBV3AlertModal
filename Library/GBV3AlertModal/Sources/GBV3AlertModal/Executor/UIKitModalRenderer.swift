@@ -23,6 +23,17 @@ public final class UIKitModalRenderer: ModalRenderer {
     private var styleProperties: [ModalStyle: GBAlertModal.Properties] = [:]
     private let windowProvider: (() -> UIWindow?)?
 
+    /// Called when `present(_:id:resolve:)` is handed a descriptor kind with NO registered factory —
+    /// the one silent failure this renderer has (nothing is shown, the token resolves
+    /// `dismissedResult` immediately, and that is indistinguishable from an instant user dismissal).
+    ///
+    /// Defaults to a `#if DEBUG` log; assign your own to route it into a logger, or `nil` to silence
+    /// it. `SwiftUIModalRenderer` carries the IDENTICAL hook with the identical default, so the
+    /// diagnostic is symmetric across the backends and neither one traps in a test build.
+    public var onUnregisteredDescriptor: ((Any.Type) -> Void)? = { type in
+        ModalDiagnostics.logUnregisteredDescriptor(type, renderer: "UIKitModalRenderer")
+    }
+
     public init(
         alertProperties: GBAlertModal.Properties,
         popupProperties: GBAlertModal.Properties? = nil,
@@ -47,6 +58,50 @@ public final class UIKitModalRenderer: ModalRenderer {
     /// Register a factory for a descriptor kind. Consumers add their own descriptors this way.
     public func register<D: ModalDescriptor>(_ type: D.Type, factory: @escaping Factory<D>) {
         factories[ObjectIdentifier(type)] = factory
+    }
+
+    /// OPT-IN registration of the five descriptors this library ships beyond the standard family:
+    /// `TextInputDialog`, `DatePickerDialog`, `BadgeDialog`, `LoadingDialog`, `SatisfactionDialog`.
+    /// Without this call those types exist but are UNREGISTERED, so presenting one shows nothing and
+    /// resolves `dismissedResult` (see `onUnregisteredDescriptor`).
+    ///
+    /// Deliberately NOT called from `init`: doing so would change every existing consumer's
+    /// behaviour silently and could clobber a registration they made themselves. Call it once right
+    /// after init; any later `register(_:factory:)` for the same kind overrides the built-in, since
+    /// registration is last-write-wins per descriptor TYPE.
+    ///
+    /// Styling comes from the style map (`properties(for:)`) and is read PER PRESENT, so
+    /// `register(style:properties:)` restyles these without re-registering.
+    /// `TextInputDialog`/`DatePickerDialog` carry no `style` field and use `.standard`.
+    ///
+    /// UIKIT COVERAGE, stated plainly — `SwiftUIModalRenderer.registerBuiltInDescriptors()` is the
+    /// richer half: `BadgeDialog`'s badge GRID has no UIKit content view in this library (SwiftUI
+    /// draws it with `BadgeModalView`), and `LoadingDialog.isLoading` has no UIKit expression at all
+    /// (`GBAlertModal` has no busy-button state). Both still register their text + buttons and route
+    /// their results faithfully. Register your own factory if you need the missing visuals.
+    public func registerBuiltInDescriptors() {
+        // `[weak self]` in every closure: they are stored in `self.factories`, exactly as in
+        // `registerStandard`, so a strong capture would be a retain cycle.
+        register(TextInputDialog.self) { [weak self] descriptor, resolve in
+            (self?.properties(for: .standard),
+             TextInputHolder.make(for: descriptor, resolve: resolve))
+        }
+        register(DatePickerDialog.self) { [weak self] descriptor, resolve in
+            (self?.properties(for: .standard),
+             DatePickerHolder.make(for: descriptor, resolve: resolve))
+        }
+        register(BadgeDialog.self) { [weak self] descriptor, resolve in
+            (self?.properties(for: descriptor.style),
+             BadgeHolder.make(for: descriptor, resolve: resolve))
+        }
+        register(LoadingDialog.self) { [weak self] descriptor, resolve in
+            (self?.properties(for: descriptor.style),
+             LoadingHolder.make(for: descriptor, resolve: resolve))
+        }
+        register(SatisfactionDialog.self) { [weak self] descriptor, resolve in
+            (self?.properties(for: descriptor.style),
+             SatisfactionHolder.make(for: descriptor, resolve: resolve))
+        }
     }
 
     /// Register a design-system preset under a `ModalStyle` token. Any `AlertDialog` carrying that
@@ -102,6 +157,8 @@ public final class UIKitModalRenderer: ModalRenderer {
             // unregistered descriptor, and trapping would turn a handled, documented outcome into a
             // crash in consumers' debug builds. `SwiftUIModalRenderer` behaves identically, so the
             // path is one shared, tested behaviour rather than a per-renderer divergence.
+            // The hook is the only ADDITION: same resolve, but no longer traceless.
+            onUnregisteredDescriptor?(D.self)
             resolve(D.dismissedResult)
             return
         }
@@ -151,7 +208,10 @@ public final class UIKitModalRenderer: ModalRenderer {
         live[id] = nil
     }
 
-    public static var keyWindow: UIWindow? {
+    /// INTERNAL: the fallback this renderer uses when no `windowProvider` was supplied. Not public —
+    /// it is this renderer's own plumbing, nothing outside it referenced it, and an app that needs a
+    /// key-window lookup has its own (the example app included).
+    static var keyWindow: UIWindow? {
         UIApplication.shared.connectedScenes
             .compactMap { $0 as? UIWindowScene }
             .flatMap { $0.windows }

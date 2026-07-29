@@ -42,9 +42,9 @@ public final class DefaultModalExecutor: ModalExecutor {
     @discardableResult
     public func present<D: ModalDescriptor>(_ descriptor: D, dedupKey: AnyHashable? = nil, priority: Int = 0, interrupt: Bool = false) -> ModalToken<D.Result> {
         if let coordinator {
-            // ponytail: presentAndWait through a coordinator, if its await is cancelled, resolves the
-            // token (no hang) but leaves the modal visible + the queue's `current` stuck — the
-            // coordinator doesn't wire token.onDrop. Mediocristan; close with deferred scope/cancel.
+            // The coordinator wires `token.onDrop` itself (see `RootScreenModalCoordinator.present`),
+            // so a cancelled `presentAndWait` tears the shown modal down and ADVANCES the queue on
+            // this path too — the same guarantee the direct path below gives.
             return coordinator.present(descriptor, dedupKey: dedupKey, priority: priority, interrupt: interrupt)
         }
         // Direct path (no coordinator): today's unbounded behavior. `dedupKey` is inert here — there

@@ -27,8 +27,15 @@ import UIKit // `Properties`/`DataHolder`/`ResolvedModal` are UIKit-region types
 public final class SwiftUIModalRenderer: ObservableObject, ModalRenderer {
 
     /// Builds `(Properties?, DataHolder)` for a descriptor. `resolve` closes over the token gate.
-    /// Identical to `UIKitModalRenderer.Factory` so a consumer's custom registration is portable
-    /// between the two renderers verbatim.
+    ///
+    /// **The TYPE is identical to `UIKitModalRenderer.Factory`; the BEHAVIOUR is not portable.** A
+    /// factory written for the UIKit renderer compiles verbatim against this one, but a descriptor
+    /// registered through `register(_:factory:)` ALONE has no `ActionType -> Result` mapping and no
+    /// SwiftUI body here, and `holder.completion` — the channel the UIKit renderer routes taps
+    /// through — is unusable on this backend (it demands a `GBAlertModal` instance). Such a modal
+    /// therefore draws nothing and is unresolvable by user action; only `dismiss(_:)` ends it.
+    /// Port the factory, then add `register(_:route:factory:)` (results decided by WHICH button was
+    /// pressed) or `register(_:view:)` (a body owning its own state). See both for the full rules.
     public typealias Factory<D: ModalDescriptor> =
         (D, @escaping (D.Result) -> Void) -> (GBAlertModal.Properties?, GBAlertModal.DataHolder)
 
@@ -59,8 +66,14 @@ public final class SwiftUIModalRenderer: ObservableObject, ModalRenderer {
     /// without hosting a view.
     public struct Presentation: Identifiable {
         public let id: ModalID
-        public let resolved: GBAlertModal.ResolvedModal
-        public let holder: GBAlertModal.DataHolder
+        /// INTERNAL: the renderer's own bookkeeping and the parity gate's read-point, not part of the
+        /// host contract — a custom host draws from `properties`/`tokens`/`content`/`customContent`.
+        /// (`ResolvedModal` is a verbatim mirror of the UIKit view's inline render decisions; its
+        /// shape is an implementation detail.)
+        let resolved: GBAlertModal.ResolvedModal
+        /// INTERNAL, for the same reason as `resolved`: the descriptor→`DataHolder` mapping is what
+        /// the resolver consumed, not something a host renders from.
+        let holder: GBAlertModal.DataHolder
         /// The EFFECTIVE `Properties` this presentation was resolved and tokenised with — the ones
         /// the factory returned, i.e. the caller's real `alertProperties`/`popupProperties`.
         public let properties: GBAlertModal.Properties
@@ -125,6 +138,17 @@ public final class SwiftUIModalRenderer: ObservableObject, ModalRenderer {
     /// exactly the divergence the parity gate exists to prevent.
     private var styleProperties: [ModalStyle: GBAlertModal.Properties] = [:]
     var live: [ModalID: Live] = [:]   // internal for @testable assertions, as in UIKitModalRenderer
+
+    /// Called when `present(_:id:resolve:)` is handed a descriptor kind with NO registration — the
+    /// one silent failure this renderer has (nothing is drawn, the token resolves `dismissedResult`
+    /// immediately, and that is indistinguishable from an instant user dismissal).
+    ///
+    /// Defaults to a `#if DEBUG` log; assign your own to route it into a logger, or `nil` to silence
+    /// it. `UIKitModalRenderer` carries the IDENTICAL hook with the identical default — the
+    /// diagnostic is symmetric across the backends, and neither traps, so the parity gate still holds.
+    public var onUnregisteredDescriptor: ((Any.Type) -> Void)? = { type in
+        ModalDiagnostics.logUnregisteredDescriptor(type, renderer: "SwiftUIModalRenderer")
+    }
 
     // MARK: - Init
 
@@ -268,6 +292,93 @@ public final class SwiftUIModalRenderer: ObservableObject, ModalRenderer {
         )
     }
 
+    /// OPT-IN registration of the five descriptors this library ships beyond the standard family:
+    /// `TextInputDialog`, `DatePickerDialog`, `BadgeDialog`, `LoadingDialog`, `SatisfactionDialog`.
+    /// Without this call those types exist but are UNREGISTERED, so presenting one draws nothing and
+    /// resolves `dismissedResult` (see `onUnregisteredDescriptor`).
+    ///
+    /// Each kind gets BOTH halves, which is what makes it renderable here: a factory (the shipped
+    /// `UIKitModalRenderer` holder, so `Presentation.properties`/`.resolved`/`.tokens` are derived
+    /// from real `Properties` rather than the neutral fallback) AND a `register(_:view:)` body (the
+    /// shipped `…Content.make`, so `ModalHost` has a modal to draw and `.submitted(<value>)` is
+    /// reachable). The two registrations are independent and neither clears the other.
+    ///
+    /// Deliberately NOT called from `init`: doing so would change every existing consumer's
+    /// behaviour silently and could clobber a registration they made themselves. Call it once right
+    /// after init; a later `register(_:factory:)`/`register(_:view:)` for the same kind overrides that
+    /// half of the built-in and leaves the other intact.
+    ///
+    /// Styling is read PER PRESENT from the style map, so `register(style:properties:)` restyles
+    /// these without re-registering. `TextInputDialog`/`DatePickerDialog` carry no `style` field and
+    /// use `.standard`. `UIKitModalRenderer.registerBuiltInDescriptors()` is the same call on the
+    /// other backend — see it for the two content gaps UIKit has (no badge grid, no busy button).
+    public func registerBuiltInDescriptors() {
+        // `[weak self]` in every closure: they are stored in `self.registrations`, exactly as in
+        // `registerStandard`, so a strong capture would be a retain cycle.
+        register(TextInputDialog.self) { [weak self] descriptor, resolve in
+            (self?.properties(for: .standard),
+             UIKitModalRenderer.TextInputHolder.make(for: descriptor, resolve: resolve))
+        }
+        register(TextInputDialog.self, view: { [weak self] descriptor, resolve in
+            TextInputContent.make(
+                for: descriptor, tokens: self?.tokens(for: .standard) ?? .standard, resolve: resolve
+            )
+        })
+
+        register(DatePickerDialog.self) { [weak self] descriptor, resolve in
+            (self?.properties(for: .standard),
+             UIKitModalRenderer.DatePickerHolder.make(for: descriptor, resolve: resolve))
+        }
+        register(DatePickerDialog.self, view: { [weak self] descriptor, resolve in
+            DatePickerContent.make(
+                for: descriptor, tokens: self?.tokens(for: .standard) ?? .standard, resolve: resolve
+            )
+        })
+
+        register(BadgeDialog.self) { [weak self] descriptor, resolve in
+            (self?.properties(for: descriptor.style),
+             UIKitModalRenderer.BadgeHolder.make(for: descriptor, resolve: resolve))
+        }
+        register(BadgeDialog.self, view: { [weak self] descriptor, resolve in
+            BadgeContent.make(
+                for: descriptor,
+                tokens: self?.tokens(for: descriptor.style) ?? .standard,
+                resolve: resolve
+            )
+        })
+
+        register(LoadingDialog.self) { [weak self] descriptor, resolve in
+            (self?.properties(for: descriptor.style),
+             UIKitModalRenderer.LoadingHolder.make(for: descriptor, resolve: resolve))
+        }
+        register(LoadingDialog.self, view: { [weak self] descriptor, resolve in
+            LoadingContent.make(
+                for: descriptor,
+                tokens: self?.tokens(for: descriptor.style) ?? .standard,
+                resolve: resolve
+            )
+        })
+
+        register(SatisfactionDialog.self) { [weak self] descriptor, resolve in
+            (self?.properties(for: descriptor.style),
+             UIKitModalRenderer.SatisfactionHolder.make(for: descriptor, resolve: resolve))
+        }
+        register(SatisfactionDialog.self, view: { [weak self] descriptor, resolve in
+            SatisfactionContent.make(
+                for: descriptor,
+                tokens: self?.tokens(for: descriptor.style) ?? .standard,
+                resolve: resolve
+            )
+        })
+    }
+
+    /// `ModalTokens` for a style, off the same style map `properties(for:)` reads — the styling input
+    /// the registered views take, since a `ContentBuilder` is handed only the descriptor and the gate.
+    private func tokens(for style: ModalStyle) -> ModalTokens {
+        guard let properties = properties(for: style) else { return .standard }
+        return ModalTokens(from: properties)
+    }
+
     /// The standard family (`AlertDialog`, `PopupDialog`, …) all resolve to `AlertDialog.Result`
     /// — verified: `PopupDialog` declares `typealias Result = AlertDialog.Result`. Constraining on
     /// that same-type requirement is what makes the `ActionType -> Result` mapping STATICALLY
@@ -327,7 +438,9 @@ public final class SwiftUIModalRenderer: ObservableObject, ModalRenderer {
         _ descriptor: D, id: ModalID, resolve: @escaping (D.Result) -> Void
     ) {
         guard let registration = registrations[ObjectIdentifier(D.self)] as? Registration<D> else {
-            // Same graceful resolve `UIKitModalRenderer` performs — one shared, tested behaviour.
+            // Same graceful resolve `UIKitModalRenderer` performs — one shared, tested behaviour —
+            // and the same diagnostic hook, so the outcome is traceable on both backends.
+            onUnregisteredDescriptor?(D.self)
             resolve(D.dismissedResult)
             return
         }

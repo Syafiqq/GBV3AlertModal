@@ -74,10 +74,6 @@ struct SwiftUIDivergence: Hashable {
             caption: "No animation. SwiftUI presents and tears down instantly; the UIKit gallery animates."
         ),
         SwiftUIDivergence(
-            caption: "Buttons ALWAYS fill the card. `buttonActionShouldMatchParent` is resolved but not obeyed — "
-                + "both SwiftUI button styles hardcode .frame(maxWidth: .infinity)."
-        ),
-        SwiftUIDivergence(
             caption: "Banner artwork + geometry. SwiftUI resolves the asset by NAME (Image(_:)) and sizes the slot "
                 + "with ModalBannerGeometry; UIKit passes a real UIImage and lets constraint priorities decide. "
                 + "Same inputs, different layout engines — compare every banner shape side by side."
