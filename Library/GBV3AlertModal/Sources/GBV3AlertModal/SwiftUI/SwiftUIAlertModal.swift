@@ -149,6 +149,26 @@ public struct SwiftUIAlertModal: View {
                     .font(tokens.titleFont)
                     .foregroundColor(tokens.palette.titleText)
                     .multilineTextAlignment(.center)
+                    // **SHRINK TO FIT ONE LINE — do not wrap.** `lbTitle` is built with
+                    // `numberOfLines = 2`, `adjustsFontSizeToFitWidth = true` and
+                    // `minimumScaleFactor = 0.75` (`generateLabelForTitleDesign`), and the MEASURED
+                    // behaviour of that combination is a single shrunk line, not two full-size ones:
+                    // the gate caught UIKit drawing two real titles (≈273pt and ≈284pt of text) as one
+                    // 28.7pt line in a 256pt label while this `Text` wrapped them and made the card
+                    // 28.7pt taller — cascading into the subtitle's and both buttons' y (task 17,
+                    // Class B). `.lineLimit(2)` does NOT reproduce it: with unbounded height SwiftUI
+                    // has room for two full-size lines, so it never engages the scale factor.
+                    //
+                    // ONE REGIME STILL DIVERGES, stated rather than hidden: for a title too wide even
+                    // at 0.75 (i.e. wider than ~133% of the content width) UIKit spends its second
+                    // line, while this truncates with an ellipsis. No shape in the differential suite
+                    // or the 26-shape catalog is in that regime — the widest real title measured is
+                    // ~107% — and closing it needs the shrink-vs-wrap DECISION, which means measuring
+                    // the string against the row width (a `UIFont` in `ModalTokens` and a text
+                    // measurement in the view). That is a redesign, not a modifier, and it would buy
+                    // fidelity in a regime no shipped dialog occupies.
+                    .lineLimit(1)
+                    .minimumScaleFactor(tokens.titleMinimumScaleFactor)
                     // BEFORE the probe, so the probe measures the row the way UIKit's `lbTitle` is
                     // measured — filled to the content width, with the text centred inside it.
                     .modifier(ContentRowWidth(fillsWidth: tokens.contentChildrenFillWidth))

@@ -65,6 +65,24 @@ public struct ModalTokens: Sendable {
     /// label whatever its slot does. No `Properties` counterpart — UIKit hardcodes it too.
     public var buttonLabelPaddingH: CGFloat = 16
 
+    /// **How far the TITLE may shrink to stay on one line — UIKit's `minimumScaleFactor = 0.75`.**
+    ///
+    /// `generateLabelForTitleDesign` sets three properties on `lbTitle`: `numberOfLines = 2`,
+    /// `adjustsFontSizeToFitWidth = true` and `minimumScaleFactor = 0.75`. The combination does not
+    /// mean "wrap to two lines"; it means **fit on one line by shrinking, and only then wrap** — and
+    /// that is measurable, not a reading of the docs: the differential gate found UIKit rendering
+    /// `"You missed your streak!"` (≈273pt at bold 24) and `"Something went wrong :("` (≈284pt) as a
+    /// SINGLE 28.7pt line inside a 256pt-wide label, while SwiftUI's unmodified `Text` wrapped both to
+    /// two lines and grew the card 28.7pt taller (task 17 Class B). Every title that fits at full size
+    /// agreed to 0.1pt, which is what isolates the cause to the shrink-vs-wrap decision rather than to
+    /// the font bridge or the preset.
+    ///
+    /// SwiftUI's counterpart is `.lineLimit(1).minimumScaleFactor(_:)` — see the title row in
+    /// `SwiftUIAlertModal.body`, including the ONE regime where the two still diverge.
+    ///
+    /// No `Properties` counterpart: UIKit hardcodes the 0.75 in the label factory.
+    public var titleMinimumScaleFactor: CGFloat = 0.75
+
     /// The close button's tap target, 48×48. UIKit pins `btCloseAction` to `vwContainer`'s
     /// top-trailing with `size == 48` (`GBAlertModal+ViewGraph.swift`'s `installConstraints`); the
     /// SwiftUI scaffold used 44 (the HIG minimum) and therefore drew the glyph 2pt further from both
@@ -399,7 +417,8 @@ public struct ModalTokens: Sendable {
     /// ## Fields of `ModalTokens` with NO `Properties` counterpart
     ///
     /// `buttonCornerRadius`, `buttonHeight`, `obliqueOffset`, `buttonLabelPaddingH`,
-    /// `closeButtonSize` — no `ActionStyle` theme carries button geometry, and neither the close
+    /// `closeButtonSize`, `titleMinimumScaleFactor` (UIKit's `minimumScaleFactor = 0.75` on
+    /// `lbTitle`) — no `ActionStyle` theme carries button geometry, and neither the close
     /// button's 48pt box nor the buttons' 16pt label inset comes from `Properties` at all: UIKit
     /// hardcodes every one of them (`GBAlertModal+ButtonStyling.swift`'s 8pt radius, 48pt slot
     /// height, ±3 offset and `contentEdgeInsets`; `GBAlertModal+ViewGraph.swift`'s `size == 48` on

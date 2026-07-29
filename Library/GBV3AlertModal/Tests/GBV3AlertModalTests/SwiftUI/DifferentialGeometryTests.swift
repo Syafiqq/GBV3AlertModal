@@ -26,6 +26,11 @@ import UIKit
 ///   `DIFFER` unconditionally would satisfy the perturbation guards.
 /// * `test_discriminationGuard_toleranceIsSubPixelOnly` pins the tolerance itself: 0.4pt is
 ///   absorbed, 1.0pt is not. A tolerance widened to make a shape pass makes this RED.
+/// * `test_discriminationGuard_theHuggedLabelExclusionIsNarrow` pins the harness's ONE measurement
+///   exclusion — UIKit's whole-point rounding of a hugging label's intrinsic width — to exactly the
+///   shape of that rounding: a whole point, a fractional UIKit width, a UIKit width NARROWER than
+///   SwiftUI's, a drifted centre, a moved y and a changed height are all still reported, and the
+///   exclusion applies to one element. If it ever degrades into "1pt is fine here", this goes RED.
 /// * `test_harness_measuresEveryElementBothBackendsDraw` requires a real, non-degenerate rectangle
 ///   for every element the shared resolver says is drawn. If the probes stopped publishing, or
 ///   published `.zero`, this goes RED rather than the shapes going green on empty dictionaries.
@@ -227,6 +232,80 @@ final class DifferentialGeometryHarnessTests: XCTestCase {
             DifferentialGeometry.agrees(base, CGRect(x: 10, y: 20, width: 100, height: 49)),
             "a whole point of height must NOT be absorbed"
         )
+    }
+
+    /// **The guard on the one exclusion.**
+    ///
+    /// `DifferentialGeometry.agreesOnAHuggedLabel` absorbs UIKit's whole-point rounding of a hugging
+    /// label's intrinsic width — and nothing else. This pins "nothing else", because an exclusion that
+    /// quietly became a 1pt tolerance would let a real design difference through on the two shapes that
+    /// use it, and no other test would see it.
+    ///
+    /// The 0.5pt tolerance stays in force for every other element:
+    /// `test_discriminationGuard_toleranceIsSubPixelOnly` tests `agrees`, which is what every
+    /// non-hug element is still compared with, and this test's own first assertion shows the strict
+    /// predicate rejects the very case the exclusion accepts.
+    func test_discriminationGuard_theHuggedLabelExclusionIsNarrow() {
+        // The real measurement it exists for: UIKit 54.0 (an integral ceiling) against SwiftUI 53.3,
+        // both centred on the same point (so the leading edges differ by half the width delta).
+        let uiKit = CGRect(x: 133.0, y: 112, width: 54.0, height: 48)
+        let swiftUI = CGRect(x: 133.3, y: 112, width: 53.3, height: 48)
+        XCTAssertFalse(
+            DifferentialGeometry.agrees(uiKit, swiftUI),
+            "premise: the STRICT predicate must reject this, or the exclusion is not doing anything "
+                + "and this test proves nothing"
+        )
+        XCTAssertTrue(
+            DifferentialGeometry.agreesOnAHuggedLabel(uiKit: uiKit, swiftUI: swiftUI),
+            "the rounding this exclusion is argued for was not accepted"
+        )
+
+        // A WHOLE POINT wider is a design difference, not a rounding: rejected.
+        XCTAssertFalse(
+            DifferentialGeometry.agreesOnAHuggedLabel(
+                uiKit: CGRect(x: 132.5, y: 112, width: 55.0, height: 48), swiftUI: swiftUI
+            ),
+            "1.0pt of hug width was absorbed — that is a tolerance, not a rounding rule"
+        )
+        // A NON-INTEGRAL UIKit width cannot be a ceiling, so the mechanism does not apply: rejected.
+        XCTAssertFalse(
+            DifferentialGeometry.agreesOnAHuggedLabel(
+                uiKit: CGRect(x: 133.0, y: 112, width: 54.5, height: 48),
+                swiftUI: CGRect(x: 133.3, y: 112, width: 53.8, height: 48)
+            ),
+            "a fractional UIKit width was accepted as a rounded-up one"
+        )
+        // UIKit NARROWER than SwiftUI is not a ceiling either: rejected.
+        XCTAssertFalse(
+            DifferentialGeometry.agreesOnAHuggedLabel(
+                uiKit: CGRect(x: 133.6, y: 112, width: 53.0, height: 48), swiftUI: swiftUI
+            ),
+            "a UIKit width NARROWER than SwiftUI's was accepted as a rounding of it"
+        )
+        // The rounding excuse must not buy anything on the other three edges: a drifted CENTRE, a
+        // different y and a different height are all still reported.
+        XCTAssertFalse(
+            DifferentialGeometry.agreesOnAHuggedLabel(
+                uiKit: CGRect(x: 140.0, y: 112, width: 54.0, height: 48), swiftUI: swiftUI
+            ),
+            "a hug that drifted sideways was absorbed"
+        )
+        XCTAssertFalse(
+            DifferentialGeometry.agreesOnAHuggedLabel(
+                uiKit: CGRect(x: 133.0, y: 113, width: 54.0, height: 48), swiftUI: swiftUI
+            ),
+            "a 1pt y difference was absorbed"
+        )
+        XCTAssertFalse(
+            DifferentialGeometry.agreesOnAHuggedLabel(
+                uiKit: CGRect(x: 133.0, y: 112, width: 54.0, height: 49), swiftUI: swiftUI
+            ),
+            "a 1pt height difference was absorbed"
+        )
+
+        // And it is scoped: exactly one element is compared this way, and it is the one whose width
+        // UIKit takes from a label rather than from a container.
+        XCTAssertEqual(DifferentialGeometry.hugWidthElements, [.secondaryButton])
     }
 
     func test_discriminationGuard_aPerturbedLayerVisualIsReported() throws {

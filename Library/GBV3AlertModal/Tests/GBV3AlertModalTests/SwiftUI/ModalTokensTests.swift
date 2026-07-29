@@ -402,6 +402,7 @@ final class ModalTokensProvenanceTests: XCTestCase {
         XCTAssertEqual(tokens.obliqueOffset.height, ModalTokens.standard.obliqueOffset.height)
         XCTAssertEqual(tokens.closeButtonSize, ModalTokens.standard.closeButtonSize)
         XCTAssertEqual(tokens.buttonLabelPaddingH, ModalTokens.standard.buttonLabelPaddingH)
+        XCTAssertEqual(tokens.titleMinimumScaleFactor, ModalTokens.standard.titleMinimumScaleFactor)
 
         // UIKit's own literals: `size == 48` on `btCloseAction` (`installConstraints`) and
         // `contentEdgeInsets = (6, 16, 6, 16)` on both button factories
@@ -410,5 +411,9 @@ final class ModalTokensProvenanceTests: XCTestCase {
         XCTAssertEqual(tokens.closeButtonSize, 48)
         XCTAssertEqual(tokens.buttonLabelPaddingH, 16)
         XCTAssertEqual(tokens.buttonHeight, 48)
+        // `generateLabelForTitleDesign`'s `minimumScaleFactor = 0.75`. The title SHRINKS onto one line
+        // rather than wrapping (measured — see the token's doc), so this number decides a line count
+        // and, through it, the card's height: 28.7pt of it on two of the nine differential shapes.
+        XCTAssertEqual(tokens.titleMinimumScaleFactor, 0.75)
     }
 }

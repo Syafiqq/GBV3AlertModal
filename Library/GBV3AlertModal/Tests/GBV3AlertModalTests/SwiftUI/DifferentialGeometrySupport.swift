@@ -34,8 +34,20 @@ import UIKit
 /// information; the card's SIZE — the number that shipped wrong — is compared in full, and so is
 /// every element's position INSIDE the card.
 ///
-/// Nothing else is normalised, and no tolerance is widened to absorb a disagreement: `tolerance` is
-/// half a point, which is sub-pixel rounding at 2x/3x and nothing more.
+/// Nothing else is normalised, and the 0.5pt `tolerance` — sub-pixel rounding at 2x/3x and nothing
+/// more — is never widened to absorb a disagreement.
+///
+/// ## The one MEASUREMENT exclusion, by name
+///
+/// **A hugging label's width is compared against UIKit's whole-point ROUNDING of it, not against the
+/// raw number** (`hugWidthElements` + `agreesOnAHuggedLabel`, both below, where the mechanism and its
+/// bounds are stated in full). It applies to the secondary button only — the one element whose width
+/// UIKit takes from a text label rather than from a container — because
+/// `UILabel.intrinsicContentSize` rounds a text width up to a whole point while SwiftUI's `Text` does
+/// not: 54.0 against 53.3 for the same string in the same font. It is a NARROWER predicate, not a
+/// wider tolerance (integral, non-negative, sub-point, with y/height/centre still at 0.5pt), and
+/// `test_discriminationGuard_theHuggedLabelExclusionIsNarrow` proves a whole point cannot get through
+/// it. Rows accepted this way print as `agree (label rounding)`, never as `agree`.
 ///
 /// ## The one STRUCTURAL gap, excluded by name rather than absorbed
 ///
@@ -211,6 +223,11 @@ enum DifferentialGeometry {
 
     enum Verdict: String {
         case agree
+        /// A HUG-WIDTH element whose only difference is UIKit's whole-point rounding of a label's
+        /// intrinsic width — the one measurement exclusion in this harness, printed as its own verdict
+        /// so a reader of the table can never mistake it for an unqualified `agree`. See
+        /// `agreesOnAHuggedLabel`, which states the mechanism and bounds it.
+        case agreeWithinLabelRounding = "agree (label rounding)"
         case differ = "DIFFER"
         /// Neither backend drew this element. For `banner` this is the documented exclusion (see
         /// `bannerIsUnresolvableInTheLibraryBundle`); for the others it means the shape genuinely
@@ -222,7 +239,7 @@ enum DifferentialGeometry {
         /// Anything a reviewer must act on. `absentOnBoth` is agreement about an absence, not a gap.
         var isDisagreement: Bool {
             switch self {
-            case .agree, .absentOnBoth: return false
+            case .agree, .agreeWithinLabelRounding, .absentOnBoth: return false
             case .differ, .onlyUIKit, .onlySwiftUI: return true
             }
         }
@@ -236,11 +253,69 @@ enum DifferentialGeometry {
     }
 
     /// True when two rects agree on origin AND size to within `tolerance` on every edge.
+    ///
+    /// **This is the predicate for every element except the hug-width ones, and it is not negotiable:**
+    /// `test_discriminationGuard_toleranceIsSubPixelOnly` proves 1.0pt of x, of width and of height are
+    /// each rejected here, and the nine per-shape tests are gated on it.
     static func agrees(_ lhs: CGRect, _ rhs: CGRect) -> Bool {
         abs(lhs.minX - rhs.minX) <= tolerance
             && abs(lhs.minY - rhs.minY) <= tolerance
             && abs(lhs.width - rhs.width) <= tolerance
             && abs(lhs.height - rhs.height) <= tolerance
+    }
+
+    /// **The elements whose WIDTH is a text label's intrinsic width rather than a slot's.**
+    ///
+    /// Only the secondary button: `configureButtonActionConstraint`'s `.plain` branch constrains it
+    /// `leading >= superview.leading` + `center == superview.center`, so it is as wide as its label
+    /// plus `contentEdgeInsets` and centred in its slot. Everything else in the vocabulary takes its
+    /// width from a container — the card and the content rows from the preset's width, the primary
+    /// button from its slot, the close button from a hardcoded 48 — and every one of those is compared
+    /// with `agrees` at the full 0.5pt tolerance.
+    ///
+    /// The primary button is deliberately NOT here even though it hugs when
+    /// `buttonActionShouldMatchParent` is false: no preset in the app sets that, so adding it would
+    /// widen the exclusion for a case nothing measures. If a preset ever does, this set is where it
+    /// belongs — with the same mechanism argument, which applies unchanged.
+    static let hugWidthElements: Set<ModalGeometryElement> = [.secondaryButton]
+
+    /// **THE ONE MEASUREMENT EXCLUSION IN THIS HARNESS, and the mechanism that bounds it.**
+    ///
+    /// `UILabel.intrinsicContentSize` rounds a text width UP to a whole point; SwiftUI's `Text`
+    /// reports it at display-scale resolution. So a button that hugs the SAME string in the SAME font
+    /// measures **54.0** on UIKit and **53.3** on SwiftUI (measured, `standard-two-button` and
+    /// `oblique-red-leave-confirm`), and because the button is CENTRED in its slot, half of that 0.7pt
+    /// lands on `minX` as well. Neither number is wrong and neither backend can be made to produce the
+    /// other's without overriding a platform text metric — which would be a worse defect than the one
+    /// it hides.
+    ///
+    /// So this is not a wider tolerance; it is a DIFFERENT, NARROWER predicate that only accepts the
+    /// shape of that specific rounding:
+    ///
+    /// * `y` and `height` must agree at the normal 0.5pt tolerance — unchanged;
+    /// * the CENTRE must agree at the normal 0.5pt tolerance, because both backends centre the button
+    ///   in the same slot. A hug that drifted sideways is still reported; only the arithmetic
+    ///   consequence of the width is absorbed, and the leading edge is not compared separately because
+    ///   it is `centre − width/2` and would double-count the same fact;
+    /// * UIKit's width must be **integral** (it is a ceiling), must be **>= SwiftUI's** (a ceiling is
+    ///   never smaller) and must be **< 1pt wider**. A one-point design difference fails all three
+    ///   tests it can fail: 55.0 against 53.3 is a whole point too wide, 54.5 against 53.8 is not
+    ///   integral, and 53.0 against 53.3 is narrower than the value it is supposed to round up.
+    ///
+    /// `test_discriminationGuard_theHuggedLabelExclusionIsNarrow` pins all of that. If a future change
+    /// makes SwiftUI's hug width genuinely wrong, this predicate reports it.
+    static func agreesOnAHuggedLabel(uiKit: CGRect, swiftUI: CGRect) -> Bool {
+        // Identical measurements need no exclusion at all — take the strict path first, so a shape
+        // that DOES agree exactly is recorded as a plain agreement.
+        if agrees(uiKit, swiftUI) { return true }
+
+        guard abs(uiKit.midX - swiftUI.midX) <= tolerance,
+              abs(uiKit.minY - swiftUI.minY) <= tolerance,
+              abs(uiKit.height - swiftUI.height) <= tolerance else { return false }
+
+        let widthDelta = uiKit.width - swiftUI.width
+        let uiKitWidthIsIntegral = abs(uiKit.width - uiKit.width.rounded()) <= 0.01
+        return uiKitWidthIsIntegral && widthDelta > 0 && widthDelta < 1
     }
 
     static func compare(
@@ -256,10 +331,19 @@ enum DifferentialGeometry {
             case let (nil, rhs?):
                 return Row(element: element, uiKit: nil, swiftUI: rhs, verdict: .onlySwiftUI)
             case let (lhs?, rhs?):
-                return Row(
-                    element: element, uiKit: lhs, swiftUI: rhs,
-                    verdict: agrees(lhs, rhs) ? .agree : .differ
-                )
+                if agrees(lhs, rhs) {
+                    return Row(element: element, uiKit: lhs, swiftUI: rhs, verdict: .agree)
+                }
+                // The ONE exclusion, applied to the ONE element class it is argued for. Everything
+                // else falls straight through to DIFFER at the 0.5pt tolerance.
+                if hugWidthElements.contains(element),
+                   agreesOnAHuggedLabel(uiKit: lhs, swiftUI: rhs) {
+                    return Row(
+                        element: element, uiKit: lhs, swiftUI: rhs,
+                        verdict: .agreeWithinLabelRounding
+                    )
+                }
+                return Row(element: element, uiKit: lhs, swiftUI: rhs, verdict: .differ)
             }
         }
     }
