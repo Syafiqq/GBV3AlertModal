@@ -431,6 +431,51 @@ public struct ModalTokens: Sendable {
 }
 
 extension ModalTokens {
+    /// The three LAYER-LEVEL visual properties of a rendered surface — the ones a FRAME comparison
+    /// structurally cannot express (spec C-3b).
+    ///
+    /// This exists because of the exact defect that shipped: the "oblique" primary button was
+    /// implemented as a diagonal corner CUT instead of the hard offset SHADOW the UIKit button
+    /// draws. Both readings produce byte-identical frames — the shadow is outside the button's
+    /// bounds and a corner cut is inside them — so a frame-only gate is green through the whole
+    /// defect. `CALayer.cornerRadius` / `.shadowOffset` / `.shadowRadius` are where the difference
+    /// actually lives, and the UIKit renderer sets all three on real layers
+    /// (`GBAlertModal+ButtonStyling.swift` → `CALayer.applySketchShadow`).
+    ///
+    /// The SwiftUI side has no CALayer to read: `clipShape(RoundedRectangle)` is a mask and
+    /// `.shadow(color:radius:x:y:)` is a filter, neither of which lowers to a settable layer
+    /// property. So this type is the SwiftUI side's DECLARED value — and the point of putting it
+    /// here, rather than transcribing the same numbers into a test, is that `ObliquePrimaryStyle`
+    /// and `AlertModalScaffold.card` RENDER FROM THESE FIELDS. A test comparing UIKit's measured
+    /// layer against `primaryButtonVisual` is therefore comparing against the value that actually
+    /// drew, not against a copy of it that can rot.
+    ///
+    /// UNIT CAVEAT, stated rather than glossed: `shadowRadius` here is fed straight to
+    /// `SwiftUI.View.shadow(radius:)`, while UIKit's `applySketchShadow(blur:)` stores
+    /// `blur / 2` in `CALayer.shadowRadius`. The two scales coincide exactly at 0 — which is the
+    /// shipped value on both sides (a HARD offset, no blur) — and any drift on either side breaks
+    /// the comparison rather than silently rescaling it. If a blurred variant is ever introduced,
+    /// the comparison must convert instead of equate.
+    struct LayerVisual: Equatable {
+        var cornerRadius: CGFloat
+        /// Signed, in points, same convention as `CALayer.shadowOffset` (negative x = to the left).
+        var shadowOffset: CGSize
+        /// BLUR radius. Zero = a hard-edged offset copy of the shape, which is what "oblique" is.
+        var shadowRadius: CGFloat
+    }
+
+    /// The oblique primary button's layer identity. `ObliquePrimaryStyle` renders from this.
+    var primaryButtonVisual: LayerVisual {
+        LayerVisual(cornerRadius: buttonCornerRadius, shadowOffset: obliqueOffset, shadowRadius: 0)
+    }
+
+    /// The card's layer identity. `AlertModalScaffold.card` renders from this. The card carries NO
+    /// shadow on either backend (`vwContainer`'s layer is never given one), so a non-zero offset
+    /// appearing on either side is a real divergence and not an unmodelled field.
+    var cardVisual: LayerVisual {
+        LayerVisual(cornerRadius: cornerRadius, shadowOffset: .zero, shadowRadius: 0)
+    }
+
     /// The banner SLOT geometry the SwiftUI banner applies, resolved from the three `Properties`
     /// banner fields.
     ///

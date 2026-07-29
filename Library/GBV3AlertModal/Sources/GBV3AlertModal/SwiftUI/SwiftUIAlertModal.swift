@@ -116,6 +116,9 @@ public struct SwiftUIAlertModal: View {
                     // The slot geometry `Properties` asks for: ratio, fixed height and cap, with
                     // the UIKit constraint precedence — see `ModalTokens.bannerLayout`.
                     .modifier(ModalBannerGeometry(layout: tokens.bannerLayout))
+                    // Probed AFTER the slot geometry and BEFORE the gap, so it measures the banner
+                    // SLOT — the counterpart of UIKit's `vwBanner`, not of `vwBannerAndBelowDivider`.
+                    .modalGeometryProbe(.banner)
                     .padding(.bottom, tokens.gapBelowBanner)
             }
             if resolved.showsTitle, let title = config.title {
@@ -123,6 +126,7 @@ public struct SwiftUIAlertModal: View {
                     .font(tokens.titleFont)
                     .foregroundColor(tokens.palette.titleText)
                     .multilineTextAlignment(.center)
+                    .modalGeometryProbe(.title)
                     .padding(.bottom, tokens.gapBelowTitle)
             }
             subtitleView(resolved: resolved, holder: holder)
@@ -144,12 +148,14 @@ public struct SwiftUIAlertModal: View {
                 .font(tokens.subtitleFont)
                 .foregroundColor(tokens.palette.subtitleText)
                 .multilineTextAlignment(.center)
+                .modalGeometryProbe(.subtitle)
                 .padding(.bottom, tokens.gapBelowSubtitle)
         case let .attributed(attributed):
             // The UIKit path stores an NSAttributedString on the holder. SwiftUI renders the
             // bridged value; styling is limited to the whitelisted bold/color/link subgrammar.
             Text(AttributedString(attributed))
                 .multilineTextAlignment(.center)
+                .modalGeometryProbe(.subtitle)
                 .padding(.bottom, tokens.gapBelowSubtitle)
         case .custom:
             // A plain `AlertDialog` never populates `subtitleCustomView` (that field doesn't exist

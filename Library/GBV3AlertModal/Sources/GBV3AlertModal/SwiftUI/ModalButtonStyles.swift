@@ -34,20 +34,26 @@ public struct ObliquePrimaryStyle: ButtonStyle {
                 : pressed ? tokens.palette.accentPressed
                 : tokens.palette.accent
             let showOblique = isEnabled && !pressed
+            // Read ONCE from `ModalTokens.primaryButtonVisual` — the same value the differential
+            // layer-visual test compares UIKit's measured `CALayer` against (spec C-3b). Spelling
+            // the radius/offset inline here again would re-create the transcription channel that
+            // let the oblique look drift from the UIKit button in the first place.
+            let visual = tokens.primaryButtonVisual
             configuration.label
                 .font(tokens.primaryButtonFont)
                 .foregroundColor(ObliquePrimaryStyle.labelColor(tokens: tokens, isEnabled: isEnabled))
                 .frame(maxWidth: .infinity, minHeight: tokens.buttonHeight)
                 .background(
                     // Shadow lives on the BACKGROUND SHAPE only — the text casts none.
-                    RoundedRectangle(cornerRadius: tokens.buttonCornerRadius, style: .continuous)
+                    RoundedRectangle(cornerRadius: visual.cornerRadius, style: .continuous)
                         .fill(fill)
                         .shadow(color: showOblique ? tokens.palette.shadow : .clear,
-                                radius: 0, x: tokens.obliqueOffset.width, y: tokens.obliqueOffset.height)
+                                radius: visual.shadowRadius,
+                                x: visual.shadowOffset.width, y: visual.shadowOffset.height)
                 )
                 // On press, slide into the oblique offset.
-                .offset(x: pressed ? tokens.obliqueOffset.width : 0,
-                        y: pressed ? tokens.obliqueOffset.height : 0)
+                .offset(x: pressed ? visual.shadowOffset.width : 0,
+                        y: pressed ? visual.shadowOffset.height : 0)
         }
     }
 }

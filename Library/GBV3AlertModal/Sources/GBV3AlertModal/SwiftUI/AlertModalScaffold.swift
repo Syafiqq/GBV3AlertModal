@@ -86,6 +86,7 @@ public struct AlertModalScaffold<Content: View>: View {
                         }
                         .frame(width: 44, height: 44)
                         .contentShape(Rectangle())
+                        .modalGeometryProbe(.closeButton)
                     }
                 }
                 .padding(.vertical, tokens.cardMarginV)     // card→screen margin: 40 v / 20 h
@@ -120,7 +121,10 @@ public struct AlertModalScaffold<Content: View>: View {
         .padding(.vertical, tokens.contentPaddingV)     // inner content inset: 24 v / 32 h
         .padding(.horizontal, tokens.contentPaddingH)
         .background(tokens.palette.cardBackground)
-        .clipShape(RoundedRectangle(cornerRadius: tokens.cornerRadius, style: .continuous))
+        // Radius read off `tokens.cardVisual` — the value the C-3b layer-visual test compares
+        // `vwContainer.layer.cornerRadius` against, so the test cannot drift from what draws.
+        .clipShape(RoundedRectangle(cornerRadius: tokens.cardVisual.cornerRadius, style: .continuous))
+        .modalGeometryProbe(.card)
     }
 
     private var primaryButton: some View {
@@ -133,10 +137,15 @@ public struct AlertModalScaffold<Content: View>: View {
         }
         .buttonStyle(ObliquePrimaryStyle(tokens: tokens))
         .disabled(!primaryEnabled || isPrimaryLoading)
+        .modalGeometryProbe(.primaryButton)
     }
 
     private func secondaryButton(_ title: String) -> some View {
         Button(action: onSecondary) { Text(title) }
             .buttonStyle(PlainSecondaryStyle(tokens: tokens))
+            // INSIDE the caller's `.padding(.top, tokens.interButton)`, so this measures the button
+            // and not the inter-button gap (UIKit's counterpart, `btSecondaryAction`, likewise
+            // excludes the main-action stack's spacing).
+            .modalGeometryProbe(.secondaryButton)
     }
 }
