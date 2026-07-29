@@ -91,7 +91,13 @@ public struct TextInputModalView: View {
             onPrimary: { resolve(Self.result(for: .primary, text: text)) },
             secondaryTitle: descriptor.secondary,
             onSecondary: { resolve(Self.result(for: .secondary, text: text)) },
-            onClose: { resolve(Self.result(for: .close, text: text)) }
+            onClose: { resolve(Self.result(for: .close, text: text)) },
+            // Same guard-inside-the-closure spelling `SwiftUIAlertModal` uses. The UIKit path gets
+            // this from `holder.closeOnTapOverlay` (`TextInputHolder`); both now read the same
+            // descriptor field, so a scrim tap means the same thing on both backends.
+            onOverlayTap: {
+                if descriptor.closeOnTapOverlay { resolve(Self.result(for: .close, text: text)) }
+            }
         ) {
             titleView
             // `RoundedBorderTextFieldStyle()` spelled out rather than `.roundedBorder`: the concrete
@@ -159,7 +165,10 @@ public struct DatePickerModalView: View {
             onPrimary: { resolve(Self.result(for: .primary, date: date)) },
             secondaryTitle: descriptor.secondary,
             onSecondary: { resolve(Self.result(for: .secondary, date: date)) },
-            onClose: { resolve(Self.result(for: .close, date: date)) }
+            onClose: { resolve(Self.result(for: .close, date: date)) },
+            onOverlayTap: {
+                if descriptor.closeOnTapOverlay { resolve(Self.result(for: .close, date: date)) }
+            }
         ) {
             titleView
             // `.date` only + wheels — the same two choices `DatePickerHolder` makes

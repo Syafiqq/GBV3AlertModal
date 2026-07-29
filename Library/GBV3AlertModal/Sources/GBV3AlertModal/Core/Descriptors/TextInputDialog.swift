@@ -16,18 +16,24 @@ public struct TextInputDialog: ModalDescriptor {
     public var initialText: String
     public var primary: String
     public var secondary: String?
+    /// Tapping the scrim dismisses. The app's `rename-worksheet` shape sets this (its holder is
+    /// built with `closeOnTapOverlay: true`), and without it here the descriptor could not express
+    /// that shape. Appended LAST and defaulted, so every existing call site is unchanged.
+    public var closeOnTapOverlay: Bool
 
     public init(
         title: String? = nil,
         placeholder: String = "",
         initialText: String = "",
         primary: String,
-        secondary: String? = nil
+        secondary: String? = nil,
+        closeOnTapOverlay: Bool = false
     ) {
         self.title = title.map(AttributedString.init)
         self.placeholder = placeholder
         self.initialText = initialText
         self.primary = primary
         self.secondary = secondary
+        self.closeOnTapOverlay = closeOnTapOverlay
     }
 }

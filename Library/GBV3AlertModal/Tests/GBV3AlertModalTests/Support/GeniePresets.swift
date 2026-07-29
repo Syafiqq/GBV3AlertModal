@@ -294,3 +294,222 @@ enum GeniePresets {
         )
     }
 }
+
+// MARK: - Catalog presets
+//
+// The remaining presets the 26 REAL dialog shapes need, transcribed from
+// `Examples/.../Gallery/GalleryPresets.swift` — which is itself confirmed against the distribution
+// app's `V3AlertModal+GBV3AlertModal.swift`, `BadgesPopUpView.swift`, `StreakPopUpView.swift` and
+// `GACameraCell.swift`. STRUCTURAL values (padding, banner geometry, component spacing, button
+// orientation) are copied verbatim, because those are what `ResolvedModal`/`ModalTokens` actually
+// read.
+//
+// FIDELITY LIMIT, stated once here rather than per-preset: FONTS AND COLOURS ARE SYSTEM
+// APPROXIMATIONS. The real presets use `SHSans`/`DMSans` and the `UIColor.Genie.*` palette, neither
+// of which exists in this package (the app owns them). `ModalTokens.init(from:)` bridges whatever
+// `UIFont`/`UIColor` a `Properties` carries, so the real app's typography would flow through
+// unchanged — but nothing in this test target PROVES that, and no test here should be read as
+// evidence about the app's actual type or colour.
+extension GeniePresets {
+
+    /// `GACameraCell.swift`'s inline permission-alert override: asymmetric 20/30 padding, tighter
+    /// component spacing. Used by `permission-denied-settings`.
+    static func permissionAlertProperties() -> GBAlertModal.Properties {
+        standardProperties().copy(
+            padding: UIMinMaxEdgeInsets(
+                top: (20, 20),
+                left: (30, 30),
+                bottom: (12, 12),
+                right: (30, 30)
+            ),
+            space: GBAlertModal.Properties.ComponentSpace(
+                banner: 8, title: 12, subtitle: 20, interButton: 8
+            )
+        )
+    }
+
+    /// `V1OnlineLessonViewController.showLeavePopUp()`'s red oblique theme. Note `titleFont` is
+    /// deliberately absent at the real call site, so `ModalTokens` keeps its `standard` button font
+    /// — copied verbatim rather than filled in.
+    static func obliqueRedProperties() -> GBAlertModal.Properties {
+        standardProperties().copy(
+            primaryActionStyle: .obliqueBottomLeft(
+                GBAlertModal.ActionStyle.ObliqueBottomLeftTheme(
+                    unPressedColor: .systemRed,
+                    pressedColor: .systemRed,
+                    disabledColor: .gray,
+                    shadowColor: UIColor.systemRed.cgColor,
+                    titleColor: .white,
+                    titleDisableColor: .white
+                )
+            )
+        )
+    }
+
+    /// The popup preset plus banner geometry — the shape of every banner popup in the catalog.
+    /// Spelled once because seven catalog entries differ ONLY in these three numbers.
+    static func popupBannerProperties(
+        ratio: CGFloat,
+        maxHeight: CGFloat,
+        fixedHeight: CGFloat
+    ) -> GBAlertModal.Properties {
+        popupProperties().copy(
+            bannerRatio: ratio,
+            bannerMaxHeight: maxHeight,
+            bannerFixedHeight: fixedHeight
+        )
+    }
+
+    /// `database-error-banner` (`UiKitErrorHandlerHelper+Common.swift`).
+    static func errorBannerProperties() -> GBAlertModal.Properties {
+        popupBannerProperties(ratio: 295.0 / 256.0, maxHeight: 320, fixedHeight: 256)
+    }
+
+    /// `force-update-banner` (`APIClient.swift`). Same height budget as the error banner, square ratio.
+    static func forceUpdateBannerProperties() -> GBAlertModal.Properties {
+        popupBannerProperties(ratio: 320.0 / 320.0, maxHeight: 320, fixedHeight: 256)
+    }
+
+    /// `worksheet-abused-cap-banner` (`V2CustomisedWorksheetGeneratorViewController.swift`).
+    static func capBannerProperties() -> GBAlertModal.Properties {
+        popupBannerProperties(ratio: 320.0 / 197.0, maxHeight: 216, fixedHeight: 184)
+    }
+
+    /// `quiz-info-banner` / `quiz-begin-banner` (`V2RecordedPreviewViewController.swift`), and
+    /// `onboarding-trial-banner` (`V1MainTabViewController+PopupCampaign.swift`) — the catalog gives
+    /// all three the SAME 320:229 / 216 / 184 geometry. One builder, three style tokens, so a future
+    /// divergence in any one of them is a one-line change rather than a shared-preset hazard.
+    static func quizBannerProperties() -> GBAlertModal.Properties {
+        popupBannerProperties(ratio: 320.0 / 229.0, maxHeight: 216, fixedHeight: 184)
+    }
+
+    /// `ai-notes-ready-banner` (`V3GenieClassDashboardViewController+AiNotes.swift`).
+    static func aiNotesBannerProperties() -> GBAlertModal.Properties {
+        popupBannerProperties(ratio: 960.0 / 681.0, maxHeight: 320, fixedHeight: 256)
+    }
+
+    /// `credit-deduction-popup` — the popup preset with a heavier title, no banner.
+    static func creditDeductionProperties() -> GBAlertModal.Properties {
+        popupProperties().copy(titleFont: .systemFont(ofSize: 24, weight: .heavy))
+    }
+
+    /// `StreakPopUpView.swift`'s `streakModalProperties`, used by `streak-popup-banner`.
+    static func streakProperties() -> GBAlertModal.Properties {
+        standardProperties().copy(
+            padding: UIMinMaxEdgeInsets(
+                top: (20, 40),
+                left: (20, 48),
+                bottom: (20, 32),
+                right: (20, 48)
+            ),
+            bannerRatio: 200.0 / 168.0,
+            bannerMaxHeight: 168,
+            bannerFixedHeight: 168,
+            space: GBAlertModal.Properties.ComponentSpace(
+                banner: 16, title: 12, subtitle: 24, interButton: 8
+            )
+        )
+    }
+
+    /// The shared preset behind `worksheet-ready-timer-banner` / `worksheet-timeup-timer-banner`
+    /// (`V1WorkingSpaceViewController.swift`): uniform 32pt padding, 193:170 banner.
+    static func timerBannerProperties() -> GBAlertModal.Properties {
+        standardProperties().copy(
+            padding: UIMinMaxEdgeInsets(
+                top: (32, 32),
+                left: (32, 32),
+                bottom: (32, 32),
+                right: (32, 32)
+            ),
+            bannerRatio: 193.0 / 170.0,
+            bannerMaxHeight: 170,
+            bannerFixedHeight: 170
+        )
+    }
+
+    /// `exit-worksheet-confirm-banner` (`V1WorkingSpaceViewController.swift`).
+    static func exitWorksheetBannerProperties() -> GBAlertModal.Properties {
+        standardProperties().copy(
+            bannerRatio: 365.0 / 206.0,
+            bannerMaxHeight: 144,
+            bannerFixedHeight: 144
+        )
+    }
+
+    /// `rename-worksheet`'s preset (`V1WorksheetViewController.swift`'s `renameWorksheet:` init):
+    /// heavier title, tighter top/bottom padding, wider title/subtitle spacing.
+    static func renameInputProperties() -> GBAlertModal.Properties {
+        standardProperties().copy(
+            padding: UIMinMaxEdgeInsets(
+                top: (20, 32),
+                left: (16, 32),
+                bottom: (16, 16),
+                right: (16, 32)
+            ),
+            titleFont: .systemFont(ofSize: 24, weight: .heavy),
+            space: GBAlertModal.Properties.ComponentSpace(
+                banner: 8, title: 16, subtitle: 32, interButton: 8
+            )
+        )
+    }
+
+    /// `date-picker-worksheet`'s preset: narrower horizontal padding (the wheel needs the width)
+    /// and near-zero title/subtitle spacing.
+    static func datePickerInputProperties() -> GBAlertModal.Properties {
+        standardProperties().copy(
+            padding: UIMinMaxEdgeInsets(
+                top: (20, 32),
+                left: (12, 40),
+                bottom: (16, 16),
+                right: (12, 40)
+            ),
+            titleFont: .systemFont(ofSize: 24, weight: .heavy),
+            space: GBAlertModal.Properties.ComponentSpace(
+                banner: 8, title: 0, subtitle: 8, interButton: 8
+            )
+        )
+    }
+
+    /// `BadgesPopUpView.swift`'s `badgeProperties` — the REAL app preset for `badge-unlock-single`.
+    ///
+    /// Deliberately NOT named `badgeProperties()`: that name is already taken by the synthetic
+    /// third preset above, which `RendererParityTests` asserts on field-by-field. Renaming it would
+    /// churn the parity gate for no reason.
+    static func badgeUnlockProperties() -> GBAlertModal.Properties {
+        standardProperties().copy(
+            padding: UIMinMaxEdgeInsets(
+                top: (20, 40),
+                left: (20, 48),
+                bottom: (20, 32),
+                right: (20, 48)
+            ),
+            bannerRatio: 1,
+            bannerMaxHeight: 144,
+            bannerFixedHeight: 144,
+            space: GBAlertModal.Properties.ComponentSpace(
+                banner: 16, title: 12, subtitle: 24, interButton: 8
+            )
+        )
+    }
+
+    /// `badge-unlock-multi` — the unlock preset with the taller static banner.
+    static func badgeMultiProperties() -> GBAlertModal.Properties {
+        badgeUnlockProperties().copy(bannerMaxHeight: 216, bannerFixedHeight: 216)
+    }
+
+    /// `badge-detail-popup` (`VBadgeListViewController.swift`): wide padding and a `ComponentSpace`
+    /// that zeroes everything except the gap below the custom content.
+    static func badgeDetailProperties() -> GBAlertModal.Properties {
+        standardProperties().copy(
+            padding: UIMinMaxEdgeInsets(
+                top: (20, 36),
+                left: (20, 48),
+                bottom: (20, 36),
+                right: (20, 48)
+            ),
+            space: GBAlertModal.Properties.ComponentSpace(
+                banner: 0, title: 0, subtitle: 24, interButton: 0
+            )
+        )
+    }
+}

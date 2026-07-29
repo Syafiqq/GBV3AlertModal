@@ -19,6 +19,7 @@ extension UIKitModalRenderer {
 
             let (titlePlain, titleAttr) = ModalText.split(descriptor.title)
             return GBAlertModal.DataHolder(
+                closeOnTapOverlay: descriptor.closeOnTapOverlay,
                 title: titlePlain,
                 titleAttributed: titleAttr,
                 subtitleCustomView: field,
@@ -51,6 +52,7 @@ extension UIKitModalRenderer {
 
             let (titlePlain, titleAttr) = ModalText.split(descriptor.title)
             return GBAlertModal.DataHolder(
+                closeOnTapOverlay: descriptor.closeOnTapOverlay,
                 title: titlePlain,
                 titleAttributed: titleAttr,
                 subtitleCustomView: picker,

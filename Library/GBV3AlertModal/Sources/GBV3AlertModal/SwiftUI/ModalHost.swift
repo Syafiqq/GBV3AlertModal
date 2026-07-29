@@ -40,7 +40,21 @@ public struct ModalHost<Content: View>: View {
             )
     }
 
-    /// Draws one presentation, preferring the consumer's registered view over the standard body.
+    private func modal(for presentation: SwiftUIModalRenderer.Presentation) -> some View {
+        ModalPresentationBody.view(for: presentation)
+    }
+}
+
+/// The body `ModalHost` draws for ONE presentation.
+///
+/// Extracted from `ModalHost` (which is generic over its background `Content`, so it is awkward to
+/// name from outside) into a plain namespace, for one reason: the shape-coverage tests must assert
+/// on the SAME view the host actually renders. If they built their own `SwiftUIAlertModal` instead,
+/// a divergence between the host's branch selection and the test's would be invisible — the test
+/// would be green about a view nobody draws.
+@MainActor
+enum ModalPresentationBody {
+    /// Prefers the consumer's registered view over the standard body.
     ///
     /// * `customContent` — a `register(_:view:)` body with the resolve gate already bound. It is the
     ///   WHOLE modal (its own `AlertModalScaffold`), because its buttons must read the `@State` it
@@ -49,7 +63,7 @@ public struct ModalHost<Content: View>: View {
     /// * neither — a descriptor registered through `register(_:factory:)`/`register(_:route:factory:)`
     ///   with no view: routable, but with no body to draw. Skipped rather than guessed at.
     @ViewBuilder
-    private func modal(for presentation: SwiftUIModalRenderer.Presentation) -> some View {
+    static func view(for presentation: SwiftUIModalRenderer.Presentation) -> some View {
         if let customContent = presentation.customContent {
             customContent
         } else if let config = presentation.content {
@@ -60,15 +74,25 @@ public struct ModalHost<Content: View>: View {
                 // `presentation.resolved` (same pure function, same inputs).
                 properties: presentation.properties,
                 tokens: presentation.tokens,
-                onAction: { result in presentation.onAction(Self.actionType(for: result)) }
+                onAction: { result in presentation.onAction(actionType(for: result)) }
             )
         }
+    }
+
+    /// Whether this presentation has ANY body to draw — i.e. whether `view(for:)` above produces
+    /// something rather than falling through both branches. The structural half of "this shape
+    /// renders on the SwiftUI backend".
+    /// `nonisolated`: it only reads two fields of a value type, so it has no business borrowing the
+    /// main actor — that would force every caller (including a plain `struct`'s computed property)
+    /// to be isolated for no reason.
+    nonisolated static func hasBody(_ presentation: SwiftUIModalRenderer.Presentation) -> Bool {
+        presentation.customContent != nil || presentation.content != nil
     }
 
     /// `AlertDialog.Result` (what the view emits) → `GBAlertModal.ActionType` (what the renderer's
     /// router consumes). The exact inverse of the router's mapping in `registerStandard`, so a tap
     /// round-trips to the identical `Result` the UIKit path would have produced.
-    private static func actionType(for result: AlertDialog.Result) -> GBAlertModal.ActionType {
+    nonisolated static func actionType(for result: AlertDialog.Result) -> GBAlertModal.ActionType {
         switch result {
         case .primary: return .primary
         case .secondary: return .secondary
