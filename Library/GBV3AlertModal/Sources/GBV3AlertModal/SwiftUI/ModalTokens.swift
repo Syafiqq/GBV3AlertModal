@@ -13,11 +13,15 @@ import UIKit
 /// apart the way the hand-transcription once did. `standard` freezes TODAY'S transcribed literal
 /// values for call sites with no `Properties` to hand (SwiftUI-only demos, tests, and any field
 /// with no `Properties` counterpart) — nothing about `standard`'s numbers changes in this commit.
-public struct ModalTokens {
+public struct ModalTokens: Sendable {
     // Card geometry. Width MAXIMIZES to fill (screen − 2·horizontal margin), capped at
-    // cardMaxWidth. Phone: no cap → fills to the margin (real app maximizes) — a SwiftUI-only UI
-    // decision, not a `Properties` value, so it stays fixed regardless of `Properties`. Pad: capped
-    // at `contentProperty.maxWidthPortrait` when the derivation supplies one, else the historic 300.
+    // cardMaxWidth. `standard` has no `Properties` to derive a cap from, so it ships `.infinity`
+    // (no cap — deliberately NOT a `UIDevice.current.userInterfaceIdiom` runtime check: (1) baking
+    // a device query into a token is exactly the hardcoding spec C-0 exists to remove, and (2) it
+    // is main-actor-isolated, which a nonisolated `static let`/`init` can't touch. `init(from:)`
+    // applies `contentProperty.maxWidthPortrait` as the cap whenever `Properties` supplies one,
+    // unconditionally: `.frame(maxWidth:)` is a CAP, not a fixed width, so on a phone-width screen
+    // (already narrower than any realistic cap) it is naturally a no-op — no idiom branch needed.
     public var cornerRadius: CGFloat
     public var cardMaxWidth: CGFloat
 
@@ -62,7 +66,7 @@ public struct ModalTokens {
 
     public var palette: Palette
 
-    public struct Palette {
+    public struct Palette: Sendable {
         // Real Geniebook values, transcribed from `UIColor.Genie.*` / `Colors.*` in the distribution
         // app for `standard`; derived from the primary `ActionStyle`'s `obliqueBottomLeft` theme
         // (the only `ActionStyle` case this fixed SwiftUI style has colours for) when `Properties`
@@ -86,7 +90,7 @@ public struct ModalTokens {
 
     public static let standard = ModalTokens(
         cornerRadius: 16,
-        cardMaxWidth: UIDevice.current.userInterfaceIdiom == .pad ? 300 : .infinity,
+        cardMaxWidth: .infinity,   // no `Properties` to derive a cap from — see the doc comment above
         cardMarginV: 40,
         cardMarginH: 20,
         contentPaddingV: 24,
@@ -157,8 +161,11 @@ public struct ModalTokens {
 
         if let contentProperty = properties.contentProperty {
             cornerRadius = contentProperty.cornerRadius
-            if UIDevice.current.userInterfaceIdiom == .pad,
-               let maxWidthPortrait = contentProperty.maxWidthPortrait {
+            // Unconditional — no `UIDevice` idiom check (see the type's doc comment above): a
+            // `.frame(maxWidth:)` cap is naturally inert once the available width is already
+            // narrower than it, so applying it regardless of idiom is both concurrency-safe and
+            // behaviourally equivalent to gating it on `.pad`.
+            if let maxWidthPortrait = contentProperty.maxWidthPortrait {
                 cardMaxWidth = maxWidthPortrait
             }
             if let backgroundColor = contentProperty.backgroundColor {

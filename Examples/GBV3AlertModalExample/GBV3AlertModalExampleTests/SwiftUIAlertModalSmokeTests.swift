@@ -138,7 +138,9 @@ final class SwiftUIAlertModalSmokeTests: XCTestCase {
         XCTAssertEqual(tokens.contentPaddingV, 24)
         XCTAssertEqual(tokens.contentPaddingH, 32)
         XCTAssertEqual(tokens.buttonCornerRadius, 8)              // primary is a solid rounded-8 rect
-        // phone: no cap → card fills to the horizontal margin (maximize); pad: capped at 300
+        // `standard` has no `Properties` to derive a width cap from, so it's uncapped on every
+        // idiom (card fills to the horizontal margin) — a real per-device cap only exists once
+        // `init(from:)` is fed a real `Properties.contentProperty.maxWidthPortrait` (Task 6).
         XCTAssertEqual(tokens.cardMaxWidth, .infinity)
     }
 
