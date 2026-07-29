@@ -6,25 +6,6 @@ enum AlertInteraction {
     case primaryTapped, secondaryTapped, closeTapped, overlayTapped
 }
 
-/// Which slots the modal renders, derived purely from the config.
-/// Mirrors the library's `ResolvedModal` resolver (the "Layer A" pattern).
-struct ResolvedAlert {
-    let showsBanner: Bool
-    let showsTitle: Bool
-    let showsSubtitle: Bool
-    let showsSecondary: Bool
-    let showsClose: Bool
-
-    init(_ config: AlertDialog) {
-        func present(_ s: AttributedString?) -> Bool { !(s?.characters.isEmpty ?? true) }
-        showsBanner = config.image != nil
-        showsTitle = present(config.title)
-        showsSubtitle = present(config.subtitle)
-        showsSecondary = !(config.secondary ?? "").isEmpty
-        showsClose = config.showCloseButton
-    }
-}
-
 /// The outcome an interaction produces, or `nil` for a no-op (overlay tap when disabled).
 func resolve(_ interaction: AlertInteraction, _ config: AlertDialog) -> AlertDialog.Result? {
     switch interaction {

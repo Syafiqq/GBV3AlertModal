@@ -3,36 +3,60 @@ import XCTest
 import GBV3AlertModal
 @testable import GBV3AlertModalExample
 
+// @MainActor: `UIKitModalRenderer.AlertHolder.make` (used by `resolved(_:)`) is main-actor gated.
+@MainActor
 final class AlertResolutionTests: XCTestCase {
 
-    // MARK: ResolvedAlert — slot visibility
+    // MARK: ResolvedModal (shared resolver, spec C-1) — slot visibility
+    //
+    // These used to construct this app's own hand-rolled 5-bool slot struct (now deleted). They
+    // now run the SAME chain `SwiftUIAlertModal` and the UIKit renderer both use: `AlertHolder.make` (the
+    // descriptor→`DataHolder` mapping) into `GBAlertModal.resolve` (the library's 11-field
+    // resolver). See `SharedResolverTests` in the library test target for the pinning tests on
+    // that chain itself; these exercise it against this app's own `cfg`/`alert` fixtures.
+    private func resolved(_ config: AlertDialog) -> GBAlertModal.ResolvedModal {
+        let holder = UIKitModalRenderer.AlertHolder.make(for: config, resolve: { _ in })
+        return GBAlertModal.resolve(
+            properties: GBAlertModal.Properties(
+                primaryActionStyle: .plain(.init()),
+                secondaryActionStyle: .plain(.init())
+            ),
+            holder: holder,
+            isLandscape: false
+        )
+    }
 
     func test_banner_shows_iff_image_present() {
-        XCTAssertTrue(ResolvedAlert(cfg(image: ModalImage("x"))).showsBanner)
-        XCTAssertFalse(ResolvedAlert(cfg(image: nil)).showsBanner)
+        XCTAssertTrue(resolved(cfg(image: ModalImage("img_illust_onboarding"))).showsBanner)
+        XCTAssertFalse(resolved(cfg(image: nil)).showsBanner)
     }
 
     func test_title_shows_iff_nonEmpty() {
-        XCTAssertTrue(ResolvedAlert(cfg(title: "Hi")).showsTitle)
-        XCTAssertFalse(ResolvedAlert(cfg(title: nil)).showsTitle)
-        XCTAssertFalse(ResolvedAlert(cfg(title: "")).showsTitle)
+        XCTAssertTrue(resolved(cfg(title: "Hi")).showsTitle)
+        XCTAssertFalse(resolved(cfg(title: nil)).showsTitle)
+        XCTAssertFalse(resolved(cfg(title: "")).showsTitle)
     }
 
     func test_subtitle_shows_iff_nonEmpty() {
-        XCTAssertTrue(ResolvedAlert(cfg(subtitle: "Body")).showsSubtitle)
-        XCTAssertFalse(ResolvedAlert(cfg(subtitle: nil)).showsSubtitle)
-        XCTAssertFalse(ResolvedAlert(cfg(subtitle: "")).showsSubtitle)
+        XCTAssertNotEqual(resolved(cfg(subtitle: "Body")).subtitle, .none)
+        XCTAssertEqual(resolved(cfg(subtitle: nil)).subtitle, .none)
+        XCTAssertEqual(resolved(cfg(subtitle: "")).subtitle, .none)
     }
 
     func test_secondary_shows_iff_nonEmpty() {
-        XCTAssertTrue(ResolvedAlert(cfg(secondary: "Cancel")).showsSecondary)
-        XCTAssertFalse(ResolvedAlert(cfg(secondary: nil)).showsSecondary)
-        XCTAssertFalse(ResolvedAlert(cfg(secondary: "")).showsSecondary)
+        XCTAssertTrue(resolved(cfg(secondary: "Cancel")).showsSecondary)
+        XCTAssertFalse(resolved(cfg(secondary: nil)).showsSecondary)
+        // Behavior correction picked up from the shared resolver: unlike this app's old hand-rolled
+        // slot struct (which isEmpty-checked `secondary`), `ResolvedModal.showsSecondary` mirrors
+        // the real UIKit `registerDialogView` exactly — it nil-checks `secondaryAction` only. An
+        // explicit non-nil empty string is a configured (if blank-titled) secondary action, so it
+        // now shows, matching production instead of the example's own approximation.
+        XCTAssertTrue(resolved(cfg(secondary: "")).showsSecondary)
     }
 
     func test_close_shows_iff_flag_set() {
-        XCTAssertTrue(ResolvedAlert(cfg(showCloseButton: true)).showsClose)
-        XCTAssertFalse(ResolvedAlert(cfg(showCloseButton: false)).showsClose)
+        XCTAssertTrue(resolved(cfg(showCloseButton: true)).showsCloseButton)
+        XCTAssertFalse(resolved(cfg(showCloseButton: false)).showsCloseButton)
     }
 
     // MARK: resolve — interaction routing
@@ -54,37 +78,38 @@ final class AlertResolutionTests: XCTestCase {
         XCTAssertNil(resolve(.overlayTapped, cfg(closeOnTapOverlay: false)))
     }
 
-    // MARK: ResolvedAlert — AttributedString era (matches the descriptor's AttributedString? type)
+    // MARK: ResolvedModal — AttributedString era (matches the descriptor's AttributedString? type)
 
     func test_attributed_title_shows_when_present_hidden_when_empty() {
-        XCTAssertTrue(ResolvedAlert(alert(title: AttributedString("Hi"))).showsTitle)
-        XCTAssertFalse(ResolvedAlert(alert(title: AttributedString(""))).showsTitle)
+        XCTAssertTrue(resolved(alert(title: AttributedString("Hi"))).showsTitle)
+        XCTAssertFalse(resolved(alert(title: AttributedString(""))).showsTitle)
     }
 
     func test_attributed_subtitle_shows_when_present_hidden_when_empty() {
-        XCTAssertTrue(ResolvedAlert(alert(subtitle: AttributedString("Body"))).showsSubtitle)
-        XCTAssertFalse(ResolvedAlert(alert(subtitle: AttributedString(""))).showsSubtitle)
+        XCTAssertNotEqual(resolved(alert(subtitle: AttributedString("Body"))).subtitle, .none)
+        XCTAssertEqual(resolved(alert(subtitle: AttributedString(""))).subtitle, .none)
     }
 
-    /// `present` keys on `.characters.isEmpty`, so a single space is non-empty and DOES show —
-    /// same semantics as the UIKit `!(s ?? "").isEmpty`. Pin it so a "trim" refactor is a decision.
+    /// The resolver's title/subtitle presence checks key on `String.isEmpty`, so a single space is
+    /// non-empty and DOES show — same semantics this app's old hand-rolled slot struct pinned via
+    /// its `present` helper. Pin it so a "trim" refactor is a decision.
     func test_whitespace_title_is_shown() {
-        XCTAssertTrue(ResolvedAlert(cfg(title: " ")).showsTitle)
+        XCTAssertTrue(resolved(cfg(title: " ")).showsTitle)
     }
 
-    // MARK: ResolvedAlert — combinations & independence
+    // MARK: ResolvedModal — combinations & independence
 
     func test_all_slots_present_all_show() {
-        let r = ResolvedAlert(cfg(
-            image: ModalImage("x"), title: "T", subtitle: "S",
+        let r = resolved(cfg(
+            image: ModalImage("img_illust_onboarding"), title: "T", subtitle: "S",
             secondary: "Cancel", showCloseButton: true
         ))
-        XCTAssertTrue(r.showsBanner && r.showsTitle && r.showsSubtitle && r.showsSecondary && r.showsClose)
+        XCTAssertTrue(r.showsBanner && r.showsTitle && r.subtitle != .none && r.showsSecondary && r.showsCloseButton)
     }
 
     func test_showClose_independent_of_overlay_flag() {
-        XCTAssertTrue(ResolvedAlert(cfg(closeOnTapOverlay: false, showCloseButton: true)).showsClose)
-        XCTAssertFalse(ResolvedAlert(cfg(closeOnTapOverlay: true, showCloseButton: false)).showsClose)
+        XCTAssertTrue(resolved(cfg(closeOnTapOverlay: false, showCloseButton: true)).showsCloseButton)
+        XCTAssertFalse(resolved(cfg(closeOnTapOverlay: true, showCloseButton: false)).showsCloseButton)
     }
 
     // MARK: resolve — button routing is unconditional (only overlay is flag-gated)
