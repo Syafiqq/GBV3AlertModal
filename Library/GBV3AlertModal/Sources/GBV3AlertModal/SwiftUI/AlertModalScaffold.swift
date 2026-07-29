@@ -21,6 +21,11 @@ public struct AlertModalScaffold<Content: View>: View {
     /// How primary/secondary stack — `GBAlertModal.ResolvedModal.buttonAxis` verbatim, so the
     /// SwiftUI card obeys the SAME resolver decision the UIKit main-action stack does. Defaults to
     /// `.vertical`, which is also what `resolve` returns when `Properties` sets no orientation.
+    ///
+    /// Yes, this puts a UIKit type (`NSLayoutConstraint.Axis`) in a SwiftUI public API. Deliberate:
+    /// it is the exact type `ResolvedModal.buttonAxis` and `Properties.buttonActionOrientation`
+    /// speak, and translating it to a SwiftUI-native enum here would add a second vocabulary to
+    /// keep in sync for no behavioural gain.
     public var buttonAxis: NSLayoutConstraint.Axis = .vertical
     @ViewBuilder public let content: () -> Content
 
@@ -97,6 +102,11 @@ public struct AlertModalScaffold<Content: View>: View {
         VStack(spacing: 0) {
             content()
             if buttonAxis == .horizontal {
+                // FALLBACK-POLICY NOTE (pre-existing, deliberately unchanged): `tokens.interButton`
+                // falls back to `standard`'s literal 8 when `Properties.space` is nil, whereas the
+                // UIKit main-action stack uses `properties?.space?.interButton ?? .zero`. Inert for
+                // the real preset (which supplies `space`), but `buttonAxis` is load-bearing now,
+                // so the difference is recorded here rather than silently inherited.
                 HStack(spacing: tokens.interButton) {
                     primaryButton
                     if let secondaryTitle { secondaryButton(secondaryTitle) }

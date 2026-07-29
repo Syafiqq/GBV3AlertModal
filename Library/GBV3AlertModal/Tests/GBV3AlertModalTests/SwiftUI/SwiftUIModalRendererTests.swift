@@ -2,6 +2,15 @@ import UIKit
 import XCTest
 @testable import GBV3AlertModal
 
+/// A consumer-defined descriptor registered from outside the library, with a `Result` vocabulary the
+/// renderer cannot know — the shape `ExecutorStatefulTests.StepDialog` and the input dialogs share,
+/// and the reason `register(_:route:factory:)` exists.
+private struct SwiftUIStepDialog: ModalDescriptor {
+    enum Result: Sendable, Equatable { case done, dismissed }
+    static var dismissedResult: Result { .dismissed }
+    var title: String
+}
+
 /// W2a: `SwiftUIModalRenderer` is the second backend behind `ModalRenderer`. These tests pin the
 /// renderer's own contract — present/dismiss/update/setHidden, resolve-once action routing, and the
 /// threading of REAL `Properties` into the shared resolver. Task 8 then runs the renderer-agnostic
@@ -177,6 +186,52 @@ final class SwiftUIModalRendererTests: XCTestCase {
         XCTAssertEqual(result, .primary)
     }
 
+    // MARK: - consumer-defined descriptors (the executor suite's extension point)
+
+    /// The gate Task 8 depends on: a descriptor registered from OUTSIDE the library, whose `Result`
+    /// vocabulary the renderer cannot know, is still resolvable by a user action on this backend —
+    /// the SwiftUI counterpart of the `holder.completion` closure the UIKit consumer writes.
+    func test_customDescriptor_registeredWithRoute_resolvesThroughOnAction() throws {
+        let renderer = makeRenderer()
+        renderer.register(
+            SwiftUIStepDialog.self,
+            route: { action in action == .primary ? .done : .dismissed }
+        ) { descriptor, _ in
+            (
+                GeniePresets.standardProperties(),
+                GBAlertModal.DataHolder(title: descriptor.title, primaryAction: "Next")
+            )
+        }
+        var result: SwiftUIStepDialog.Result?
+
+        renderer.present(SwiftUIStepDialog(title: "Step 1"), id: ModalID(), resolve: { result = $0 })
+        try XCTUnwrap(renderer.presentations.first).onAction(.primary)
+
+        XCTAssertEqual(result, .done)
+        XCTAssertTrue(renderer.presentations.isEmpty, "resolving must tear the presentation down")
+    }
+
+    /// Overriding a BUILT-IN descriptor's factory is a documented extension point on the UIKit
+    /// renderer. Re-registering must not silently wipe the standard family's router and content
+    /// projection — that would render nothing and be unresolvable, with no compile or runtime signal.
+    func test_reRegisteringStandardDescriptor_preservesRoutingAndContent() throws {
+        let renderer = makeRenderer()
+        renderer.register(AlertDialog.self) { descriptor, resolve in
+            (
+                GeniePresets.popupProperties(),
+                UIKitModalRenderer.AlertHolder.make(for: descriptor, resolve: resolve)
+            )
+        }
+        var result: AlertDialog.Result?
+
+        renderer.present(alert(secondary: "No"), id: ModalID(), resolve: { result = $0 })
+        let presentation = try XCTUnwrap(renderer.presentations.first)
+        XCTAssertNotNil(presentation.content, "content projection must survive re-registration")
+        presentation.onAction(.primary)
+
+        XCTAssertEqual(result, .primary, "routing must survive re-registration")
+    }
+
     // MARK: - unregistered descriptors
 
     func test_unregisteredDescriptor_resolvesDismissed() {
@@ -216,8 +271,9 @@ final class SwiftUIModalRendererTests: XCTestCase {
     func test_update_rebuildsInPlace_preservingIdentityAndHiddenState() throws {
         let renderer = makeRenderer()
         let id = ModalID()
+        var resolvedCount = 0
 
-        renderer.present(alert(), id: id, resolve: { _ in })
+        renderer.present(alert(), id: id, resolve: { _ in resolvedCount += 1 })
         renderer.setHidden(id, true)
         renderer.update(id, to: AlertDialog(title: "T2", subtitle: "S2", primary: "Go", secondary: "No"))
 
@@ -228,5 +284,7 @@ final class SwiftUIModalRendererTests: XCTestCase {
         XCTAssertEqual(presentation.resolved.subtitle, .plain("S2"))
         XCTAssertTrue(presentation.resolved.showsSecondary)
         XCTAssertEqual(presentation.content?.primary, "Go")
+        // Executor invariant Task 8 leans on: re-rendering is not a resolution.
+        XCTAssertEqual(resolvedCount, 0, "update must never resolve the token")
     }
 }

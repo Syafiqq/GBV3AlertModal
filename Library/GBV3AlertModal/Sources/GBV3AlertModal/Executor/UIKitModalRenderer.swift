@@ -45,7 +45,10 @@ public final class UIKitModalRenderer: ModalRenderer {
         _ descriptor: D, id: ModalID, resolve: @escaping (D.Result) -> Void
     ) {
         guard let factory = factories[ObjectIdentifier(D.self)] as? Factory<D> else {
-            assertionFailure("No factory registered for \(D.self)")
+            // Graceful resolve, no `assertionFailure`: this IS the specified contract for an
+            // unregistered descriptor, and trapping would turn a handled, documented outcome into a
+            // crash in consumers' debug builds. `SwiftUIModalRenderer` behaves identically, so the
+            // path is one shared, tested behaviour rather than a per-renderer divergence.
             resolve(D.dismissedResult)
             return
         }

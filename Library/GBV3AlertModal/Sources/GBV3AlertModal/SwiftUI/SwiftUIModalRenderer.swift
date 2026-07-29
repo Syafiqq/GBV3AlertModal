@@ -60,10 +60,12 @@ public final class SwiftUIModalRenderer: ObservableObject, ModalRenderer {
     /// and fails silently in release builds.
     private struct Registration<D: ModalDescriptor> {
         let factory: Factory<D>
-        /// `ActionType -> D.Result`. Non-nil only for the standard family, where the same-type
-        /// constraint `D.Result == AlertDialog.Result` makes the mapping type-check at compile time.
+        /// `ActionType -> D.Result`. Supplied by `registerStandard` for the standard family (where
+        /// the same-type constraint `D.Result == AlertDialog.Result` makes the mapping type-check
+        /// at compile time), or by the consumer via `register(_:route:factory:)`.
         let route: ((GBAlertModal.ActionType) -> D.Result)?
-        /// `D -> AlertDialog`. Non-nil only for the standard family (`D: StandardAlertContent`).
+        /// `D -> AlertDialog`. Non-nil only for the standard family (`D: StandardAlertContent`);
+        /// custom descriptors have no SwiftUI body — see `register(_:route:factory:)`.
         let content: ((D) -> AlertDialog)?
     }
 
@@ -95,12 +97,50 @@ public final class SwiftUIModalRenderer: ObservableObject, ModalRenderer {
         }
     }
 
-    /// Register a factory for a descriptor kind. Consumers add their own descriptors this way.
-    /// Descriptors registered here get no action router (their `Result` vocabulary is unknown to
-    /// this renderer), so their `Presentation.onAction` is inert and they resolve via `dismiss(_:)`.
+    /// Register a factory for a descriptor kind — the signature that is source-identical to
+    /// `UIKitModalRenderer.register(_:factory:)`.
+    ///
+    /// A descriptor registered through THIS overload has no `ActionType -> Result` mapping, because
+    /// only the consumer knows its result vocabulary. `holder.completion` (which is how the UIKit
+    /// renderer routes such a descriptor) is unusable here — it demands a `GBAlertModal` instance —
+    /// so the modal would be unresolvable by user action. Use `register(_:route:factory:)` instead
+    /// for anything a user can act on; this overload is for descriptors that only ever end via
+    /// `dismiss(_:)`.
+    ///
+    /// **Re-registering an already-registered kind PRESERVES its routing and content projection.**
+    /// Overriding the built-in `AlertDialog`/`PopupDialog` factory is a documented extension point
+    /// on the UIKit renderer, and wiping the router here would silently produce a modal that
+    /// renders nothing and can never be resolved.
     public func register<D: ModalDescriptor>(_ type: D.Type, factory: @escaping Factory<D>) {
+        let previous = registrations[ObjectIdentifier(type)] as? Registration<D>
         registrations[ObjectIdentifier(type)] = Registration<D>(
-            factory: factory, route: nil, content: nil
+            factory: factory, route: previous?.route, content: previous?.content
+        )
+    }
+
+    /// Register a factory together with the `ActionType -> Result` mapping the view needs to
+    /// resolve it — the SwiftUI counterpart of the `holder.completion` closure a consumer writes
+    /// for `UIKitModalRenderer`. The consumer supplies the mapping where `D` is concrete, so it
+    /// stays fully static: nothing is cast, here or in `present`.
+    ///
+    /// This is what makes consumer-defined descriptors (`StepDialog`, `TextInputDialog`,
+    /// `DatePickerDialog`, …) resolvable on BOTH backends, and therefore what lets the
+    /// renderer-agnostic executor suite cover the extension point rather than silently narrowing
+    /// to the standard family.
+    ///
+    /// KNOWN GAP, stated plainly: this routes such a descriptor, it does not RENDER it.
+    /// `Presentation.content` stays `nil` (there is no `StandardAlertContent` to project from), so
+    /// `ModalHost` draws nothing for it — a consumer hosts its own SwiftUI body off
+    /// `Presentation.holder`/`.resolved`/`.onAction`. Custom-content rendering is genuinely not
+    /// implemented on the SwiftUI path.
+    public func register<D: ModalDescriptor>(
+        _ type: D.Type,
+        route: @escaping (GBAlertModal.ActionType) -> D.Result,
+        factory: @escaping Factory<D>
+    ) {
+        let previous = registrations[ObjectIdentifier(type)] as? Registration<D>
+        registrations[ObjectIdentifier(type)] = Registration<D>(
+            factory: factory, route: route, content: previous?.content
         )
     }
 
@@ -148,9 +188,7 @@ public final class SwiftUIModalRenderer: ObservableObject, ModalRenderer {
         _ descriptor: D, id: ModalID, resolve: @escaping (D.Result) -> Void
     ) {
         guard let registration = registrations[ObjectIdentifier(D.self)] as? Registration<D> else {
-            // No `assertionFailure` here (unlike `UIKitModalRenderer`): resolving `.dismissedResult`
-            // for an unregistered descriptor is a TESTED behaviour of this renderer, and a debug
-            // trap would crash that test instead of passing it.
+            // Same graceful resolve `UIKitModalRenderer` performs — one shared, tested behaviour.
             resolve(D.dismissedResult)
             return
         }

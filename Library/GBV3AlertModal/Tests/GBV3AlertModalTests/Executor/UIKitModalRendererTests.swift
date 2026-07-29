@@ -56,6 +56,27 @@ final class UIKitModalRendererTests: XCTestCase {
         XCTAssertNil(renderer.live[id])
     }
 
+    /// An unregistered descriptor resolves gracefully rather than trapping — the specified contract,
+    /// and identical to `SwiftUIModalRendererTests.test_unregisteredDescriptor_resolvesDismissed`,
+    /// so Task 8 can promote it to a shared parity test. (This path used to `assertionFailure`,
+    /// which turned a handled, documented outcome into a crash in consumers' debug builds.)
+    func test_present_unregisteredDescriptor_resolvesDismissed() {
+        struct Unknown: ModalDescriptor {
+            typealias Result = AlertDialog.Result
+            static var dismissedResult: Result { .dismissed }
+        }
+        let window = makeWindow()
+        let renderer = makeRenderer(window: window)
+        let id = ModalID()
+        var received: AlertDialog.Result?
+
+        renderer.present(Unknown(), id: id) { received = $0 }
+
+        XCTAssertEqual(received, .dismissed)
+        XCTAssertNil(renderer.live[id])
+        XCTAssertFalse(window.subviews.contains { $0 is GBAlertModal })
+    }
+
     func test_present_noWindowAvailable_resolvesDismissed() {
         let renderer = UIKitModalRenderer(alertProperties: GeniePresets.standardProperties(),
                                            windowProvider: { nil })
