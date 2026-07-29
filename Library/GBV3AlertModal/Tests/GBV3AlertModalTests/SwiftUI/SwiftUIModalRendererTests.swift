@@ -101,7 +101,7 @@ final class SwiftUIModalRendererTests: XCTestCase {
     }
 
     /// `ModalTokens` are derived per presentation from the SAME real `Properties`, not from
-    /// `.standard` — `cardMaxWidth` comes from `contentProperty.maxWidthPortrait` (256 in the
+    /// `.standard` — `contentMaxWidth` comes from `contentProperty.maxWidthPortrait` (256 in the
     /// preset), whereas `.standard` ships `.infinity`.
     func test_present_derivesTokensFromRealProperties() throws {
         let renderer = makeRenderer()
@@ -109,8 +109,8 @@ final class SwiftUIModalRendererTests: XCTestCase {
         renderer.present(alert(), id: ModalID(), resolve: { _ in })
 
         let tokens = try XCTUnwrap(renderer.presentations.first).tokens
-        XCTAssertEqual(tokens.cardMaxWidth, 256)
-        XCTAssertNotEqual(ModalTokens.standard.cardMaxWidth, 256) // guards the test's premise
+        XCTAssertEqual(tokens.contentMaxWidth, 256)
+        XCTAssertNotEqual(ModalTokens.standard.contentMaxWidth, 256) // guards the test's premise
     }
 
     // MARK: - dismiss / teardown

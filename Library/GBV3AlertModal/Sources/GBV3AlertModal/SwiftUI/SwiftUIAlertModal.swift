@@ -16,12 +16,14 @@ import SwiftUI
 ///
 /// Two caveats remain, both narrow and deliberate:
 /// * `isLandscape` is still fixed to `false` here, so `contentWidth` (the one orientation-sensitive
-///   field) can still differ from a UIKit render in landscape. The SwiftUI card is width-adaptive
-///   (`ModalTokens.cardMaxWidth` is a CAP, not a fixed width), so nothing reads `contentWidth` yet.
+///   field) can still differ from a UIKit render in landscape. The card is width-adaptive
+///   (`ModalTokens.cardMaxWidth` is a CAP, not a fixed width) — but the PORTRAIT reading of
+///   `contentWidth` now does reach the layout, as `ModalTokens.contentMaxWidth` on the content
+///   container (see `AlertModalScaffold.card`).
 /// * `showsPrimary` is RESOLVED correctly but not yet OBEYED: `AlertModalScaffold` requires a
 ///   primary button, so a `Properties` with a nil `primaryActionStyle` hides the primary on the
-///   UIKit path while SwiftUI still draws it. `showsSecondary`/`buttonAxis` are both resolved AND
-///   obeyed (see `body` and `AlertModalScaffold.card`).
+///   UIKit path while SwiftUI still draws it. `showsSecondary`, `buttonAxis` and
+///   `buttonsMatchParent` are all resolved AND obeyed (see `body` and `AlertModalScaffold.card`).
 ///
 /// A caller that omits `properties` (SwiftUI-only demos, previews, tests) still gets the fixed
 /// sentinel described on `resolved(from:)` — for those there is no `Properties` in play at all,
@@ -70,8 +72,17 @@ public struct SwiftUIAlertModal: View {
     /// styled by `ModalButtonStyles` — so only the styles' NON-NILNESS matters; their payload is
     /// thrown away. Computed (not a `static let`) so it needs no `Sendable` conformance from
     /// `Properties`, which is a UIKit-backed type.
+    ///
+    /// `buttonActionShouldMatchParent: true` is stated EXPLICITLY, and it is not cosmetic:
+    /// `Properties.init` defaults that field to `false`, so a sentinel that omitted it would resolve
+    /// `buttonsMatchParent == false` and — now that `AlertModalScaffold` actually obeys the flag —
+    /// make the primary button HUG its label in every preview, demo and property-less test, which no
+    /// real Genie preset does (they all set it `true`). The sentinel's job is to stand in for the real
+    /// preset's SHAPE, so it has to state the real preset's value here rather than inherit an
+    /// unrelated init default.
     private static var sentinelProperties: GBAlertModal.Properties {
         GBAlertModal.Properties(
+            buttonActionShouldMatchParent: true,
             primaryActionStyle: .plain(.init()),
             secondaryActionStyle: .plain(.init())
         )
@@ -107,7 +118,11 @@ public struct SwiftUIAlertModal: View {
             // `resolved.closeOnTapOverlay` mirrors `holder.closeOnTapOverlay` / `config.closeOnTapOverlay`
             // — reading it off the resolver keeps this decision flowing through the shared chain too.
             onOverlayTap: { if resolved.closeOnTapOverlay { onAction(.dismissed) } },
-            buttonAxis: resolved.buttonAxis
+            buttonAxis: resolved.buttonAxis,
+            // `Properties.buttonActionShouldMatchParent`, via the shared resolver — the same field
+            // UIKit turns into `svMainActionContainer.alignment`. Resolved AND obeyed now; it used to
+            // be resolved and dropped (task 17, finding D-4).
+            buttonsMatchParent: resolved.buttonsMatchParent
         ) {
             if resolved.showsBanner, let name = config.image?.assetName {
                 Image(name)
@@ -118,6 +133,14 @@ public struct SwiftUIAlertModal: View {
                     .modifier(ModalBannerGeometry(layout: tokens.bannerLayout))
                     // Probed AFTER the slot geometry and BEFORE the gap, so it measures the banner
                     // SLOT — the counterpart of UIKit's `vwBanner`, not of `vwBannerAndBelowDivider`.
+                    //
+                    // Deliberately NOT given `ContentRowWidth`, unlike the title and subtitle rows:
+                    // this row's width is driven by `bannerRatio`/`bannerFixedHeight`
+                    // (`ModalBannerGeometry`), and the banner is the ONE element the differential
+                    // gate cannot compare from the library test bundle (the assets live in the app —
+                    // see `DifferentialGeometry.bannerIsUnresolvableInTheLibraryBundle`). Widening it
+                    // to the content width here would be an unmeasured change to the one row nothing
+                    // can check.
                     .modalGeometryProbe(.banner)
                     .padding(.bottom, tokens.gapBelowBanner)
             }
@@ -126,6 +149,9 @@ public struct SwiftUIAlertModal: View {
                     .font(tokens.titleFont)
                     .foregroundColor(tokens.palette.titleText)
                     .multilineTextAlignment(.center)
+                    // BEFORE the probe, so the probe measures the row the way UIKit's `lbTitle` is
+                    // measured — filled to the content width, with the text centred inside it.
+                    .modifier(ContentRowWidth(fillsWidth: tokens.contentChildrenFillWidth))
                     .modalGeometryProbe(.title)
                     .padding(.bottom, tokens.gapBelowTitle)
             }
@@ -148,6 +174,7 @@ public struct SwiftUIAlertModal: View {
                 .font(tokens.subtitleFont)
                 .foregroundColor(tokens.palette.subtitleText)
                 .multilineTextAlignment(.center)
+                .modifier(ContentRowWidth(fillsWidth: tokens.contentChildrenFillWidth))
                 .modalGeometryProbe(.subtitle)
                 .padding(.bottom, tokens.gapBelowSubtitle)
         case let .attributed(attributed):
@@ -155,6 +182,7 @@ public struct SwiftUIAlertModal: View {
             // bridged value; styling is limited to the whitelisted bold/color/link subgrammar.
             Text(AttributedString(attributed))
                 .multilineTextAlignment(.center)
+                .modifier(ContentRowWidth(fillsWidth: tokens.contentChildrenFillWidth))
                 .modalGeometryProbe(.subtitle)
                 .padding(.bottom, tokens.gapBelowSubtitle)
         case .custom:
@@ -163,6 +191,28 @@ public struct SwiftUIAlertModal: View {
             // Bespoke content is served by `AlertModalScaffold`'s `ViewBuilder` slot instead.
             EmptyView()
         }
+    }
+}
+
+/// `ContentProperty.childShouldMatchParent`, expressed on ONE content row.
+///
+/// UIKit says it once, on the stack (`svContentContainer.alignment = .fill` vs `.center`); SwiftUI has
+/// no stack-wide "children fill" switch, so each row states it. `.fill` makes `lbTitle` and
+/// `svSubtitleContainer` span the content width — 256 on the real preset — with their own
+/// `textAlignment = .center` centring the text inside that; `.center` makes each row hug.
+///
+/// Both look identical for centred text, which is exactly why this went unnoticed until the frames
+/// were compared (task 17, finding D-6). It stops being invisible the moment anything puts a
+/// background, a border or a tap target on a row — and the row's WIDTH is also what decides where the
+/// text wraps when the row is narrower than the content area.
+///
+/// A `ViewModifier` rather than an `if` in the body: the two branches must stay ONE view identity, or
+/// toggling the flag would tear down and rebuild the row.
+private struct ContentRowWidth: ViewModifier {
+    let fillsWidth: Bool
+
+    func body(content: Content) -> some View {
+        content.frame(maxWidth: fillsWidth ? CGFloat.infinity : nil)
     }
 }
 

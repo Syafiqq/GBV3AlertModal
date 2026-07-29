@@ -36,6 +36,28 @@ import UIKit
 ///
 /// Nothing else is normalised, and no tolerance is widened to absorb a disagreement: `tolerance` is
 /// half a point, which is sub-pixel rounding at 2x/3x and nothing more.
+///
+/// ## The one STRUCTURAL gap, excluded by name rather than absorbed
+///
+/// **The subtitle SLOT has no SwiftUI counterpart** (task 17, finding D-7). UIKit's subtitle lives in
+/// a `UIScrollView` (`svSubtitleContainer`) whose visible height is tied to its content height at
+/// `.low` (250), so an over-long subtitle SHRINKS AND SCROLLS and the card stays inside its margins.
+/// `SwiftUIAlertModal` renders a bare `Text`: an over-long subtitle grows the card past `cardMarginV`
+/// and off-screen instead. Two consequences, both stated rather than papered over:
+///
+/// * None of the nine shapes below is long enough to engage the scroll, so this is NOT one of the
+///   disagreements the gate measures — it is a gap in what the gate can see, and the nine shapes'
+///   subtitle rows compare the `UIScrollView`'s frame against the `Text`'s frame legitimately,
+///   because at these lengths the scroll slot IS the label's height.
+/// * It is also why `AlertModalScaffold.card` applies the VERTICAL content padding at its max with no
+///   compression toward `topMin`/`bottomMin`, even though the horizontal padding does compress:
+///   vertical compression only engages in the very case SwiftUI cannot express, and modelling it
+///   alone would trade one wrong answer for another. Closing this needs a scrolling subtitle slot in
+///   `SwiftUIAlertModal` (a `ScrollView` whose height is tied to its content with a ceiling — SwiftUI
+///   has no `.low`-priority equality, so it needs a real layout redesign, not a modifier), plus a
+///   long-subtitle shape here to gate it.
+///
+/// Do NOT "close" this by adding a shape that engages the scroll and widening the tolerance to fit.
 // @MainActor: builds `GBAlertModal`, `UIWindow` and `UIHostingController`, all main-actor-isolated
 // under Swift 6.
 @MainActor
@@ -70,7 +92,9 @@ enum DifferentialGeometry {
     /// Covered: the standard 1-button and 2-button shapes; a nil-title shape; a close-button shape;
     /// the oblique-RED shape (a different `ObliqueBottomLeftTheme`); the permission-alert preset and
     /// the streak preset (both with ASYMMETRIC vertical padding, which is the interesting case for
-    /// `ModalTokens.contentPaddingV`); the popup preset (32pt uniform padding, different
+    /// `ModalTokens.contentPadding` — and the streak preset is additionally the one that engages
+    /// UIKit's horizontal padding COMPRESSION, asking for 352pt of card in 350pt of room); the popup
+    /// preset (32pt uniform padding, different
     /// `ComponentSpace`); and the error-banner preset (popup + banner ratio/cap/fixed height).
     ///
     /// NOT covered, and why: the three bespoke descriptors (`BadgeDialog`, `LoadingDialog`,

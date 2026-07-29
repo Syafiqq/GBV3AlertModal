@@ -111,7 +111,14 @@ final class DifferentialGeometryHarnessTests: XCTestCase {
         let shape = try XCTUnwrap(DifferentialGeometry.shape(named: "standard-two-button"))
 
         var perturbed = ModalTokens(from: shape.properties)
-        perturbed.cardMaxWidth += 40   // 256 -> 296, still well inside the 350pt available width
+        // +20 on the CONTENT cap, which moves the card by the same 20 (the card is content + 32 + 32).
+        //
+        // It was +40 while `cardMaxWidth` was a stored field applied to the card; now that the card's
+        // cap is DERIVED (`contentMaxWidth + leftMax + rightMax`, i.e. 256 + 64 = 320) the headroom
+        // before the 350pt available width clamps the card is 30pt, and a 40pt perturbation would be
+        // reported as 30 — a guard failing for a reason that has nothing to do with discrimination.
+        // 20pt is still FORTY times the 0.5pt tolerance, so what this proves is unchanged.
+        perturbed.contentMaxWidth += 20   // card 320 -> 340, inside the 350pt available width
 
         // Both sides of this one comparison are SwiftUI readings (baseline on the left, perturbed on
         // the right) — the guard is about whether `compare` SEES a change, so it holds the renderer
@@ -123,17 +130,17 @@ final class DifferentialGeometryHarnessTests: XCTestCase {
 
         XCTAssertEqual(
             card.verdict, .differ,
-            "a 40pt card-width perturbation on the SwiftUI side was NOT reported. The comparison "
+            "a 20pt card-width perturbation on the SwiftUI side was NOT reported. The comparison "
                 + "cannot detect a difference introduced on purpose, so it cannot detect a real one.\n"
                 + DifferentialGeometry.table(
-                    name: "SwiftUI baseline (left column) vs SwiftUI +40pt cardMaxWidth (right column)",
+                    name: "SwiftUI baseline (left column) vs SwiftUI +20pt contentMaxWidth (right column)",
                     rows: rows
                 )
         )
         let baselineCard = try XCTUnwrap(card.uiKit)
         let movedCard = try XCTUnwrap(card.swiftUI)
         XCTAssertEqual(
-            abs(movedCard.width - baselineCard.width), 40, accuracy: DifferentialGeometry.tolerance,
+            abs(movedCard.width - baselineCard.width), 20, accuracy: DifferentialGeometry.tolerance,
             "the perturbation was reported, but not with the size it was made — the SwiftUI reader "
                 + "is not measuring the card it was handed"
         )
@@ -393,33 +400,42 @@ final class DifferentialLayerVisualTests: XCTestCase {
 
 // MARK: - Root cause
 
-/// The differential gate reports a disagreement; this isolates WHY, so the report names a cause
-/// rather than a symptom.
+/// The differential gate reports a WIDTH; this isolates the one decision it comes from, so a
+/// regression names a cause rather than a symptom.
 ///
-/// Hypothesis: `ModalTokens.init(from:)` maps `ContentProperty.maxWidthPortrait` onto
-/// `cardMaxWidth`, but those are not the same measurement. In UIKit that number constrains
-/// `svContentContainer` — the stack INSIDE the card — and the card (`vwContainer`) is wider by the
-/// horizontal content padding on each side. In SwiftUI `cardMaxWidth` caps the CARD, whose padding
-/// is subtracted from it. So one preset value produces a card of `width + 2 * padding` on UIKit and
-/// `width` on SwiftUI, and a content area of `width` versus `width - 2 * padding`.
+/// The cause, now fixed in production: `ModalTokens.init(from:)` used to map
+/// `ContentProperty.maxWidthPortrait` onto a field called `cardMaxWidth` which
+/// `AlertModalScaffold` applied to the CARD. Those are not the same measurement. In UIKit that number
+/// constrains `svContentContainer` — the stack INSIDE the card — and the card (`vwContainer`) ends up
+/// wider by the horizontal content padding on each side. So one preset value produced a card of
+/// `width + 2 * padding` on UIKit and `width` on SwiftUI, and a content area of `width` versus
+/// `width − 2 * padding`: 320/256 against 256/192 on the real preset.
 ///
-/// If the hypothesis holds, adding the horizontal padding back makes the two card widths — and the
-/// primary button's width, which fills the content area on both backends — agree EXACTLY. That is
-/// the assertion below. It also doubles as a second, independent discrimination signal: it produces
-/// an AGREEMENT through the full measurement pipeline on both sides, which a harness that can only
-/// ever report `DIFFER` could not.
+/// This class asserts BOTH DIRECTIONS, and the second one is why it still earns its place now that
+/// the per-shape gate is green:
+///
+/// 1. **The width agrees through the full pipeline**, on the card and on the primary button (which
+///    fills the content area on both backends). This is also a second, independent discrimination
+///    signal — an AGREEMENT produced through both complete measurement paths, which a harness that
+///    could only ever report `DIFFER` would fail.
+/// 2. **Re-introducing the conflation is still reported.** Subtracting `2 × leftMax` from
+///    `contentMaxWidth` reproduces the shipped defect EXACTLY (card 256, content 192) and must come
+///    back as a 64pt card disagreement. Without this, a future change that quietly re-conflated the
+///    two levels would only be caught by the nine per-shape tests — and this file exists because
+///    "the suite went green" is not, on its own, evidence about the layout.
 @MainActor
 final class DifferentialGeometryRootCauseTests: XCTestCase {
 
     func test_cardWidthAgrees_onceTheContentWidthIsNotTreatedAsTheCardWidth() throws {
         let shape = try XCTUnwrap(DifferentialGeometry.shape(named: "standard-two-button"))
-        var corrected = ModalTokens(from: shape.properties)
-        corrected.cardMaxWidth += 2 * corrected.contentPaddingH
+        let tokens = ModalTokens(from: shape.properties)
+        XCTAssertEqual(tokens.contentMaxWidth, 256, "premise: the preset states a 256pt CONTENT width")
+        XCTAssertEqual(tokens.cardMaxWidth, 320, "premise: the CARD is that plus 32 + 32 of padding")
 
         let uiKit = DifferentialGeometry.uiKitFrames(shape)
-        let swiftUI = DifferentialGeometry.swiftUIFrames(shape, tokens: corrected)
+        let swiftUI = DifferentialGeometry.swiftUIFrames(shape)
         let rows = DifferentialGeometry.compare(uiKit: uiKit, swiftUI: swiftUI)
-        let table = DifferentialGeometry.table(name: "\(shape.name) [corrected cardMaxWidth]", rows: rows)
+        let table = DifferentialGeometry.table(name: shape.name, rows: rows)
 
         let card = try XCTUnwrap(rows.first { $0.element == .card })
         let uiKitCard = try XCTUnwrap(card.uiKit)
@@ -427,8 +443,8 @@ final class DifferentialGeometryRootCauseTests: XCTestCase {
         XCTAssertEqual(
             uiKitCard.width, swiftUICard.width,
             accuracy: DifferentialGeometry.tolerance,
-            "card WIDTH still disagrees after adding the horizontal content padding back, so the "
-                + "conflation is not the whole story.\n" + table
+            "card WIDTH disagrees. The preset's width must be applied to the CONTENT container on "
+                + "both backends, with the card coming out as content + leftMax + rightMax.\n" + table
         )
 
         let primary = try XCTUnwrap(rows.first { $0.element == .primaryButton })
@@ -437,8 +453,38 @@ final class DifferentialGeometryRootCauseTests: XCTestCase {
         XCTAssertEqual(
             uiKitPrimary.width, swiftUIPrimary.width,
             accuracy: DifferentialGeometry.tolerance,
-            "the primary button fills the content area on both backends, so its width should follow "
-                + "the corrected card width.\n" + table
+            "the primary button fills the content area on both backends, so its width follows the "
+                + "content width.\n" + table
+        )
+    }
+
+    /// The other direction: the defect that shipped is still VISIBLE to this harness.
+    func test_reConflatingTheContentWidthWithTheCardWidth_isStillReported() throws {
+        let shape = try XCTUnwrap(DifferentialGeometry.shape(named: "standard-two-button"))
+        var conflated = ModalTokens(from: shape.properties)
+        // Exactly the shipped defect: the card is capped at the number the preset states for the
+        // CONTENT (256), and the padding is then subtracted from it (content 192).
+        conflated.contentMaxWidth -= 2 * conflated.contentPadding.leftMax
+
+        let uiKit = DifferentialGeometry.uiKitFrames(shape)
+        let swiftUI = DifferentialGeometry.swiftUIFrames(shape, tokens: conflated)
+        let rows = DifferentialGeometry.compare(uiKit: uiKit, swiftUI: swiftUI)
+        let table = DifferentialGeometry.table(name: "\(shape.name) [re-conflated]", rows: rows)
+
+        let card = try XCTUnwrap(rows.first { $0.element == .card })
+        XCTAssertEqual(
+            card.verdict, .differ,
+            "re-introducing the content-width/card-width conflation was NOT reported. That is the "
+                + "defect this whole suite exists to catch, and it is 64pt wide.\n" + table
+        )
+        let uiKitCard = try XCTUnwrap(card.uiKit)
+        let swiftUICard = try XCTUnwrap(card.swiftUI)
+        XCTAssertEqual(
+            uiKitCard.width - swiftUICard.width,
+            2 * conflated.contentPadding.leftMax,
+            accuracy: DifferentialGeometry.tolerance,
+            "reported, but not with the size of the defect — the SwiftUI card should be exactly the "
+                + "horizontal padding narrower on both sides.\n" + table
         )
     }
 }

@@ -95,8 +95,8 @@ final class ModalStyleTests: XCTestCase {
                 tokens.cornerRadius, standardTokens.cornerRadius,
                 "renderer \(kind.rawValue): premise — the badge preset must differ from standard"
             )
-            XCTAssertEqual(tokens.cardMaxWidth, 300, "renderer \(kind.rawValue) ignored .badge")
-            XCTAssertNotEqual(tokens.cardMaxWidth, standardTokens.cardMaxWidth)
+            XCTAssertEqual(tokens.contentMaxWidth, 300, "renderer \(kind.rawValue) ignored .badge")
+            XCTAssertNotEqual(tokens.contentMaxWidth, standardTokens.contentMaxWidth)
             XCTAssertEqual(
                 properties.titleColor, UIColor.magenta,
                 "renderer \(kind.rawValue): the style's titleColor must reach the render input"

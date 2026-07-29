@@ -21,15 +21,32 @@ import UIKit
 /// as the preset happens to make the ignored value equal the hardcoded one.
 public struct ModalTokens: Sendable {
     // Card geometry. Width MAXIMIZES to fill (screen − 2·horizontal margin), capped at
-    // cardMaxWidth. `standard` has no `Properties` to derive a cap from, so it ships `.infinity`
-    // (no cap — deliberately NOT a `UIDevice.current.userInterfaceIdiom` runtime check: (1) baking
-    // a device query into a token is exactly the hardcoding spec C-0 exists to remove, and (2) it
-    // is main-actor-isolated, which a nonisolated `static let`/`init` can't touch. `init(from:)`
-    // applies `ContentProperty`'s width cap whenever `Properties` supplies one, unconditionally:
-    // `.frame(maxWidth:)` is a CAP, not a fixed width, so on a phone-width screen (already
-    // narrower than any realistic cap) it is naturally a no-op — no idiom branch needed.
+    // `cardMaxWidth` — which is DERIVED from `contentMaxWidth`, never given directly. `standard`
+    // has no `Properties` to derive a cap from, so it ships `.infinity` (no cap — deliberately NOT
+    // a `UIDevice.current.userInterfaceIdiom` runtime check: (1) baking a device query into a token
+    // is exactly the hardcoding spec C-0 exists to remove, and (2) it is main-actor-isolated, which
+    // a nonisolated `static let`/`init` can't touch. `init(from:)` applies `ContentProperty`'s
+    // width cap whenever `Properties` supplies one, unconditionally: `.frame(maxWidth:)` is a CAP,
+    // not a fixed width, so on a phone-width screen (already narrower than any realistic cap) it is
+    // naturally a no-op — no idiom branch needed.
     public var cornerRadius: CGFloat
-    public var cardMaxWidth: CGFloat
+
+    /// **The width `ContentProperty` states — of the CONTENT CONTAINER, not of the card.**
+    ///
+    /// This field used to be called `cardMaxWidth` and was applied to the CARD. That was wrong, and
+    /// it was measured wrong by the differential-geometry gate (task 17, finding D-1): in UIKit
+    /// `ContentProperty.maxWidthPortrait`/`fixedWidthPortrait` constrain `svContentContainer` — the
+    /// stack INSIDE the card (`GBAlertModal+Layout.swift`, `adjustSvContentContainerConstraint`) —
+    /// and `vwContainer` ends up wider by the horizontal content padding on each side. Applying the
+    /// same number to the card made the SwiftUI card 64pt narrower than the shipping one on the real
+    /// preset (256 vs 320) and its content 64pt narrower again (192 vs 256), which changed every
+    /// text wrap and therefore every height in the card. It is the same defect class that already
+    /// shipped once here ("feels small/narrow"), and the ONLY reason it was caught is that the gate
+    /// compares against UIKit's measured numbers instead of a recorded snapshot.
+    ///
+    /// The card's cap is now `cardMaxWidth` below, computed from this plus the horizontal padding —
+    /// i.e. the SwiftUI side applies the preset's width at the SAME LEVEL UIKit does.
+    public var contentMaxWidth: CGFloat
 
     // Oblique primary button GEOMETRY — no `Properties` counterpart: no `ActionStyle` theme carries
     // corner radius, fixed height, or a drop-offset (only colours + a font — see `primaryButtonFont`
@@ -39,16 +56,65 @@ public struct ModalTokens: Sendable {
     public var buttonHeight: CGFloat = 48
     public var obliqueOffset = CGSize(width: -3, height: 3)
 
+    /// Horizontal inset between a button's edge and its label — UIKit's
+    /// `contentEdgeInsets = (6, 16, 6, 16)`, set identically on the plain and the oblique button
+    /// (`GBAlertModal+ButtonStyling.swift`'s `generateButtonForPlainThemedDesign` /
+    /// `generateButtonForObliqueThemedDesign`). It is load-bearing only on the HUGGING path, where
+    /// the button's width IS `label + 2 × this`: UIKit's `.plain` branch constrains the secondary
+    /// button `leading >= superview.leading` + `center == superview.center`, so that button hugs its
+    /// label whatever its slot does. No `Properties` counterpart — UIKit hardcodes it too.
+    public var buttonLabelPaddingH: CGFloat = 16
+
+    /// The close button's tap target, 48×48. UIKit pins `btCloseAction` to `vwContainer`'s
+    /// top-trailing with `size == 48` (`GBAlertModal+ViewGraph.swift`'s `installConstraints`); the
+    /// SwiftUI scaffold used 44 (the HIG minimum) and therefore drew the glyph 2pt further from both
+    /// card edges with a tap target 16% smaller in area — measured as task 17's finding D-5. No
+    /// `Properties` counterpart: the 48 is hardcoded on the UIKit side too.
+    public var closeButtonSize: CGFloat = 48
+
     // Card→screen margin — real preset: UIEdgeInsets(vertical: 40, horizontal: 20). `top`/`left`
     // read off `UIEdgeInsets` (same convention `ModalLayout.resolveContainerOffsets` uses).
     public var cardMarginV: CGFloat
     public var cardMarginH: CGFloat
 
-    // Content padding inside the card — real preset `UIMinMaxEdgeInsets` top/bottom (16,24),
-    // left/right (16,32). Horizontal inset is larger than vertical; using the MAX (design target)
-    // of each, same as the original transcription.
-    public var contentPaddingV: CGFloat
-    public var contentPaddingH: CGFloat
+    /// **Content padding inside the card, carried VERBATIM — all eight edges, min and max.**
+    ///
+    /// Real preset: top/bottom (16,24), left/right (16,32). This used to be two numbers,
+    /// `contentPaddingV`/`contentPaddingH`, both taken from the TOP/LEFT max — which silently threw
+    /// away three facts UIKit honours, all three of them measured as disagreements by the
+    /// differential gate (task 17, finding D-2):
+    ///
+    /// 1. **the bottom/right maxima**, which the real presets do NOT make symmetric:
+    ///    `permissionAlertProperties` is top 20 / bottom **12**, `streakProperties` top 40 /
+    ///    bottom **32**, `renameInputProperties` top 32 / bottom **16** — so a V-only token
+    ///    over-padded those cards by 8, 8 and 16pt of height respectively;
+    /// 2. **the minima**, which are what lets a card under pressure COMPRESS its padding. In UIKit
+    ///    the min is a `>=` at `.required` and the max an `==` at `.low`, so when the card cannot fit
+    ///    its content plus max padding inside the screen margins the padding gives way first. The
+    ///    real `streakProperties` engages exactly this on a 390pt-wide phone: it asks for
+    ///    256 + 48 + 48 = 352 but only 350 is available, so UIKit sheds ~1pt of padding per side and
+    ///    keeps the content at its stated 256. A rigid `.padding()` cannot do that;
+    /// 3. the LEFT/RIGHT distinction, for the same reason as (1).
+    ///
+    /// `UIMinMaxEdgeInsets` is carried as-is rather than remodelled, for the same reason
+    /// `AlertModalScaffold.buttonAxis` speaks `NSLayoutConstraint.Axis`: it is the exact type
+    /// `Properties.padding` speaks, and a parallel SwiftUI vocabulary would be a second thing to
+    /// keep in sync. `contentPaddingV`/`contentPaddingH` survive below as computed accessors.
+    ///
+    /// The `AlertModalScaffold` counterpart of the priority tiers, and its ONE stated limit, are
+    /// documented on `AlertModalScaffold.card`.
+    public var contentPadding: UIMinMaxEdgeInsets
+
+    /// Whether the title/subtitle/button rows span the content width or hug their own content —
+    /// `ContentProperty.childShouldMatchParent`, which UIKit applies as
+    /// `svContentContainer.alignment = .fill` vs `.center` (`GBAlertModal+Style.swift`).
+    ///
+    /// Derived, not ignored: the `ModalTokens` audit used to classify `childShouldMatchParent` as
+    /// "carried by `ResolvedModal`, not a token", and the differential gate MEASURED that claim to be
+    /// false for the title and the subtitle (task 17, finding D-6) — `ResolvedModal` carries the
+    /// BUTTON alignment (`buttonsMatchParent`) and nothing else, so the content rows had no channel
+    /// at all and hugged on SwiftUI while UIKit filled. See the audit table on `init(from:)`.
+    public var contentChildrenFillWidth: Bool
 
     // Banner geometry — the THREE `Properties` banner fields, carried verbatim (including their
     // nil-ness, which means "UIKit installs no such constraint" and is NOT the same as "value
@@ -134,11 +200,21 @@ public struct ModalTokens: Sendable {
 
     public static let standard = ModalTokens(
         cornerRadius: 16,
-        cardMaxWidth: .infinity,   // no `Properties` to derive a cap from — see the doc comment above
+        contentMaxWidth: .infinity,   // no `Properties` to derive a cap from — see the doc above
         cardMarginV: 40,
         cardMarginH: 20,
-        contentPaddingV: 24,
-        contentPaddingH: 32,
+        // min == max: `standard` has no `Properties`, so there is no min/max split to transcribe —
+        // and equal min and max reproduce EXACTLY what the single-number `contentPaddingV: 24` /
+        // `contentPaddingH: 32` did (a rigid 24/32 inset that never compresses). Callers with no
+        // `Properties` therefore see no change from this field's split.
+        contentPadding: UIMinMaxEdgeInsets(
+            top: (24, 24), left: (32, 32), bottom: (24, 24), right: (32, 32)
+        ),
+        // `false`, matching UIKit's own default: `svContentContainer.alignment` is `.fill` only when
+        // `contentProperty?.childShouldMatchParent == true`, and a caller with no `Properties` has no
+        // `contentProperty` at all. It is also what the SwiftUI card already did (each `Text` hugged),
+        // so property-less previews and demos keep today's layout.
+        contentChildrenFillWidth: false,
         bannerMaxHeight: 160,
         gapBelowBanner: 12,
         gapBelowTitle: 12,
@@ -163,13 +239,41 @@ public struct ModalTokens: Sendable {
         )
     )
 
+    // MARK: - Derived geometry
+    //
+    // These three are COMPUTED, not stored: they are the numbers the card is actually laid out with,
+    // and every one of them is a function of the fields above. Storing them alongside their inputs is
+    // what let `cardMaxWidth` mean "the content width" in one place and "the card width" in another.
+
+    /// **The CARD's width cap: the content cap plus the horizontal padding UIKit puts outside it.**
+    ///
+    /// UIKit never states this number anywhere — it FALLS OUT of the constraint graph, because
+    /// `svContentContainer`'s width is pinned to `contentMaxWidth` and its leading/trailing sit
+    /// `leftMax`/`rightMax` inside `vwContainer`, which has no width constraint of its own. So the
+    /// card is exactly `content + leftMax + rightMax` whenever that fits inside the screen margins:
+    /// 256 + 32 + 32 = **320** on the real preset, where the SwiftUI card used to be 256.
+    ///
+    /// `.infinity + finite == .infinity`, so an uncapped `contentMaxWidth` still yields an uncapped
+    /// card and `ModalTokens.standard.cardMaxWidth` is unchanged at `.infinity`.
+    public var cardMaxWidth: CGFloat {
+        contentMaxWidth + contentPadding.leftMax + contentPadding.rightMax
+    }
+
+    /// Compatibility accessor: the TOP max inset, which is what this used to hold for all four
+    /// vertical/horizontal edges. Read-only on purpose — writing one number to four edges is the
+    /// conflation this split removed. Use `contentPadding` for anything that lays out.
+    public var contentPaddingV: CGFloat { contentPadding.topMax }
+
+    /// Compatibility accessor: the LEFT max inset. Same caveat as `contentPaddingV`.
+    public var contentPaddingH: CGFloat { contentPadding.leftMax }
+
     init(
         cornerRadius: CGFloat,
-        cardMaxWidth: CGFloat,
+        contentMaxWidth: CGFloat,
         cardMarginV: CGFloat,
         cardMarginH: CGFloat,
-        contentPaddingV: CGFloat,
-        contentPaddingH: CGFloat,
+        contentPadding: UIMinMaxEdgeInsets,
+        contentChildrenFillWidth: Bool,
         bannerRatio: CGFloat? = nil,
         bannerMaxHeight: CGFloat?,
         bannerFixedHeight: CGFloat? = nil,
@@ -182,11 +286,11 @@ public struct ModalTokens: Sendable {
         palette: Palette
     ) {
         self.cornerRadius = cornerRadius
-        self.cardMaxWidth = cardMaxWidth
+        self.contentMaxWidth = contentMaxWidth
         self.cardMarginV = cardMarginV
         self.cardMarginH = cardMarginH
-        self.contentPaddingV = contentPaddingV
-        self.contentPaddingH = contentPaddingH
+        self.contentPadding = contentPadding
+        self.contentChildrenFillWidth = contentChildrenFillWidth
         self.bannerRatio = bannerRatio
         self.bannerMaxHeight = bannerMaxHeight
         self.bannerFixedHeight = bannerFixedHeight
@@ -233,7 +337,7 @@ public struct ModalTokens: Sendable {
     /// | `overlayColor` | (a) | `palette.scrim` — `test_scrim_comesFromProperties_overlayColor` |
     /// | `contentProperty` | (a) | see the `ContentProperty` table |
     /// | `margin` | (a) | `cardMarginV`/`cardMarginH` — `test_cardMargin_comesFromProperties` |
-    /// | `padding` | (a) | `contentPaddingV`/`contentPaddingH` — `test_contentPadding_comesFromProperties_usingMax` |
+    /// | `padding` | (a) | `contentPadding`, all eight edges verbatim — `test_contentPadding_comesFromProperties_allEightEdges`, `test_contentPadding_carriesTheAsymmetricRealPresets` |
     /// | `bannerRatio` | (a) | `bannerRatio` — `test_bannerRatio_comesFromProperties` |
     /// | `bannerMaxHeight` | (a) | `bannerMaxHeight` — `test_bannerMaxHeight_comesFromProperties`, `test_bannerMaxHeight_isNilWhenPropertiesSetsNoCap` |
     /// | `bannerFixedHeight` | (a) | `bannerFixedHeight` — `test_bannerFixedHeight_comesFromProperties` |
@@ -241,7 +345,7 @@ public struct ModalTokens: Sendable {
     /// | `titleColor` | (a) | `palette.titleText` — `test_titleColor_comesFromProperties` |
     /// | `subtitleFont` | (a) | `subtitleFont` — `test_subtitleFont_comesFromProperties_viaFontBridge` |
     /// | `subtitleColor` | (a) | `palette.subtitleText` — `test_subtitleColor_comesFromProperties` |
-    /// | `buttonActionShouldMatchParent` | (b) | A `UIStackView.alignment` decision (`.fill` vs `.center`), resolved by the SHARED resolver into `ResolvedModal.buttonsMatchParent` — a per-presentation render decision, not a design token. SwiftUI expresses it on the children instead: both `ModalButtonStyles` size their label `.frame(maxWidth: .infinity)`, which is the `true` (`.fill`) behaviour every real preset asks for. |
+    /// | `buttonActionShouldMatchParent` | (b) | Still not a TOKEN — it is a per-presentation render decision, resolved by the SHARED resolver into `ResolvedModal.buttonsMatchParent`. But it is no longer IGNORED: `SwiftUIAlertModal` now threads `resolved.buttonsMatchParent` into `AlertModalScaffold`, which passes it to `ObliquePrimaryStyle.fillsWidth` (the primary fills its slot or hugs its label, exactly as `.fill` vs `.center` does to `vwPrimaryAction`). It was previously deferred because `Properties.init` defaults the flag FALSE and the SwiftUI sentinel would then make every property-less preview hug; the sentinel now sets it `true`, matching every real preset. Measured as task 17's finding D-4. |
     /// | `buttonActionOrientation` | (b) | Same reason: resolved into `ResolvedModal.buttonAxis` and OBEYED by `AlertModalScaffold.card` (HStack vs VStack). A token copy would be a second vocabulary to keep in sync. |
     /// | `primaryActionStyle` | (a) | `palette.accent`/`accentPressed`/`disabled`/`shadow`/`onAccent`/`onAccentDisabled` + `primaryButtonFont`, from its `.obliqueBottomLeft` theme — see the theme table. Its PRESENCE additionally feeds `ResolvedModal.showsPrimary`. |
     /// | `secondaryActionStyle` | (a) | `palette.secondaryLabel`/`secondaryDisabled` + `secondaryButtonFont`, from its `.plain` theme — see the theme table. Its PRESENCE additionally feeds `ResolvedModal.showsSecondary`, which `SwiftUIAlertModal` obeys. |
@@ -254,11 +358,16 @@ public struct ModalTokens: Sendable {
     /// | --- | --- | --- |
     /// | `backgroundColor` | (a) | `palette.cardBackground` — `test_cardBackground_comesFromProperties_contentProperty` |
     /// | `cornerRadius` | (a) | `cornerRadius` — `test_cornerRadius_comesFromProperties` |
-    /// | `fixedWidthPortrait` | (a) | folded into `cardMaxWidth` as a CAP — `test_cardMaxWidth_fallsBackToFixedWidth_whenNoMaxIsSet` |
-    /// | `maxWidthPortrait` | (a) | `cardMaxWidth` — `test_cardMaxWidth_comesFromProperties_maxWidthPortrait` |
-    /// | `fixedWidthLandscape` | (a) | portrait-first fallback into `cardMaxWidth` — `test_cardMaxWidth_fallsBackToLandscapeWidths` |
-    /// | `maxWidthLandscape` | (a) | portrait-first fallback into `cardMaxWidth` — `test_cardMaxWidth_fallsBackToLandscapeWidths` |
-    /// | `childShouldMatchParent` | (b) | Another `UIStackView.alignment` mechanism (the CONTENT stack this time). SwiftUI has no stack-wide "children fill" switch; each child in `SwiftUIAlertModal`/`AlertModalScaffold` states its own width behaviour. Every real preset sets it `true`, which is what the SwiftUI card already does. |
+    /// | `fixedWidthPortrait` | (a) | folded into `contentMaxWidth` as a CAP — `test_contentMaxWidth_fallsBackToFixedWidth_whenNoMaxIsSet` |
+    /// | `maxWidthPortrait` | (a) | `contentMaxWidth`, the CONTENT container's cap — `test_contentMaxWidth_comesFromProperties_maxWidthPortrait`, and `test_cardMaxWidth_isTheContentWidthPlusHorizontalPadding` for the card it implies |
+    /// | `fixedWidthLandscape` | (a) | portrait-first fallback into `contentMaxWidth` — `test_contentMaxWidth_fallsBackToLandscapeWidths` |
+    /// | `maxWidthLandscape` | (a) | portrait-first fallback into `contentMaxWidth` — `test_contentMaxWidth_fallsBackToLandscapeWidths` |
+    /// | `childShouldMatchParent` | (a) | `contentChildrenFillWidth` — `test_contentChildrenFillWidth_comesFromProperties`. **This entry used to read (b), "carried by `ResolvedModal`, not tokens; every real preset sets it `true`, which is what the SwiftUI card already does". The differential gate measured that claim to be FALSE** (task 17, finding D-6): `ResolvedModal` carries only the BUTTON alignment, so the title and subtitle had no channel and hugged on SwiftUI while UIKit filled them to the content width. The claim was true for the buttons and for nothing else. |
+    ///
+    /// **One stated limit on the width group, unchanged by this task.** `fixedWidth` and `maxWidth`
+    /// fold into ONE cap, so a preset that states a max WITHOUT a fixed width hugs its content in
+    /// UIKit (the max is only a `<=`) and fills the cap here. Every preset in the app sets
+    /// `fixed == max`, so no shipped shape is affected; a max-only preset would be.
     ///
     /// ## `Properties.ComponentSpace` — all (a)
     ///
@@ -289,9 +398,13 @@ public struct ModalTokens: Sendable {
     ///
     /// ## Fields of `ModalTokens` with NO `Properties` counterpart
     ///
-    /// `buttonCornerRadius`, `buttonHeight`, `obliqueOffset` — no `ActionStyle` theme carries button
-    /// geometry (`GBAlertModal+ButtonStyling.swift` hardcodes the 8pt radius, the 48pt height and
-    /// the ±3 offset in UIKit too). Pinned by `test_noCounterpartFields_stayAtStandardLiterals`.
+    /// `buttonCornerRadius`, `buttonHeight`, `obliqueOffset`, `buttonLabelPaddingH`,
+    /// `closeButtonSize` — no `ActionStyle` theme carries button geometry, and neither the close
+    /// button's 48pt box nor the buttons' 16pt label inset comes from `Properties` at all: UIKit
+    /// hardcodes every one of them (`GBAlertModal+ButtonStyling.swift`'s 8pt radius, 48pt slot
+    /// height, ±3 offset and `contentEdgeInsets`; `GBAlertModal+ViewGraph.swift`'s `size == 48` on
+    /// `btCloseAction`). Pinned by `test_noCounterpartFields_stayAtStandardLiterals`, and each is
+    /// pinned to UIKIT's literal — not to a SwiftUI-side opinion — by the differential gate.
     // swiftlint:disable:next function_body_length
     public init(from properties: GBAlertModal.Properties) {
         self = .standard
@@ -321,14 +434,18 @@ public struct ModalTokens: Sendable {
             let maxWidth = contentProperty.maxWidthPortrait ?? contentProperty.maxWidthLandscape
             switch (fixedWidth, maxWidth) {
             case let (fixed?, max?):
-                cardMaxWidth = min(fixed, max)
+                contentMaxWidth = min(fixed, max)
             case let (fixed?, nil):
-                cardMaxWidth = fixed
+                contentMaxWidth = fixed
             case let (nil, max?):
-                cardMaxWidth = max
+                contentMaxWidth = max
             case (nil, nil):
                 break   // no width in `Properties` at all — keep `standard`'s uncapped `.infinity`
             }
+            // Unconditional, and `== true` rather than a fallback to `standard`: UIKit reads exactly
+            // `properties?.contentProperty?.childShouldMatchParent == true`, so ABSENCE means
+            // `.center` (children hug) and not "no opinion, use the default".
+            contentChildrenFillWidth = contentProperty.childShouldMatchParent
             if let backgroundColor = contentProperty.backgroundColor {
                 palette.cardBackground = Color(uiColor: backgroundColor)
             }
@@ -339,9 +456,10 @@ public struct ModalTokens: Sendable {
             cardMarginH = margin.left
         }
 
+        // All EIGHT edges, verbatim. Taking `topMax`/`leftMax` for all four sides is what over-padded
+        // the permission-alert and streak cards by 8pt of height and the rename input by 16 (D-2).
         if let padding = properties.padding {
-            contentPaddingV = padding.topMax
-            contentPaddingH = padding.leftMax
+            contentPadding = padding
         }
 
         // BANNER GEOMETRY — assigned unconditionally, unlike every other field here. For the other

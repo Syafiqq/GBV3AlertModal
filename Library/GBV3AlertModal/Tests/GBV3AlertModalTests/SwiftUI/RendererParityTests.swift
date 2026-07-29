@@ -32,7 +32,7 @@ private extension ModalStyle {
 /// `globalProperties` merge cannot make two identical decisions read differently.
 private struct StylingDecision: Equatable {
     let cornerRadius: CGFloat
-    let cardMaxWidth: CGFloat
+    let contentMaxWidth: CGFloat
     let titleColor: UIColor?
     /// The fields added when the `Properties`→`ModalTokens` audit closed three drift channels
     /// (banner geometry, the close-button tint, the secondary label colour). Each is set
@@ -52,7 +52,7 @@ private func decision(from properties: GBAlertModal.Properties) -> StylingDecisi
     let tokens = ModalTokens(from: properties)
     return StylingDecision(
         cornerRadius: tokens.cornerRadius,
-        cardMaxWidth: tokens.cardMaxWidth,
+        contentMaxWidth: tokens.contentMaxWidth,
         titleColor: properties.titleColor,
         bannerRatio: tokens.bannerRatio,
         closeButton: tokens.palette.closeButton,
@@ -438,7 +438,7 @@ final class RendererParityTests: XCTestCase {
         // theme's orange fails here too.
         let expected = StylingDecision(
             cornerRadius: 28,
-            cardMaxWidth: 300,
+            contentMaxWidth: 300,
             titleColor: .magenta,
             bannerRatio: 1,
             closeButton: Color(uiColor: .black),

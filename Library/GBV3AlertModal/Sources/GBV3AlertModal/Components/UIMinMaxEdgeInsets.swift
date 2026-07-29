@@ -4,7 +4,11 @@
 
 import Foundation
 
-public struct UIMinMaxEdgeInsets {
+/// `Sendable`: eight `let CGFloat`s and nothing else, so the conformance is trivially safe. It is
+/// declared because `ModalTokens` (a `Sendable` value carried across isolation boundaries) now
+/// stores one of these VERBATIM rather than collapsing it into two numbers — see
+/// `ModalTokens.contentPadding`.
+public struct UIMinMaxEdgeInsets: Sendable {
     public static var zero: Self {
         Self()
     }

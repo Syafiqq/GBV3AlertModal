@@ -127,7 +127,7 @@ final class SwiftUICustomContentTests: XCTestCase {
         XCTAssertNotNil(presentation.customContent, "the registered view is what ModalHost draws")
         XCTAssertNil(presentation.content, "a custom descriptor projects no AlertDialog")
         XCTAssertEqual(
-            presentation.tokens.cardMaxWidth, 256,
+            presentation.tokens.contentMaxWidth, 256,
             "the factory's real Properties still drive the presentation's tokens"
         )
     }
@@ -160,7 +160,7 @@ final class SwiftUICustomContentTests: XCTestCase {
 
         let presentation = try XCTUnwrap(renderer.presentations.first)
         XCTAssertNotNil(presentation.customContent)
-        XCTAssertEqual(presentation.tokens.cardMaxWidth, ModalTokens.standard.cardMaxWidth)
+        XCTAssertEqual(presentation.tokens.contentMaxWidth, ModalTokens.standard.contentMaxWidth)
     }
 
     /// Regression guard on the branch `ModalHost` takes: a descriptor with only a factory (or only

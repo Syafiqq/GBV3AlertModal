@@ -33,6 +33,10 @@ final class ModalTokensTests: XCTestCase {
 /// button style, caught only by running on a physical device. Each test below constructs a
 /// `Properties` with a DISTINCTIVE value (never today's `standard` default) and asserts the token
 /// reflects it — proving provenance, not merely that `init(from:)` happens to reproduce `standard`.
+// @MainActor: several tests here read the REAL `GeniePresets` presets (the whole point of a
+// provenance test being to assert against the shipped values), and that enum is `@MainActor` because
+// some of its holders build live UIKit views.
+@MainActor
 final class ModalTokensProvenanceTests: XCTestCase {
     func test_cornerRadius_comesFromProperties() {
         let content = GBAlertModal.Properties.ContentProperty(cornerRadius: 21)
@@ -89,39 +93,39 @@ final class ModalTokensProvenanceTests: XCTestCase {
         XCTAssertEqual(ModalTokens(from: properties).palette.subtitleText, Color(uiColor: .systemOrange))
     }
 
-    func test_cardMaxWidth_comesFromProperties_maxWidthPortrait() {
+    func test_contentMaxWidth_comesFromProperties_maxWidthPortrait() {
         let content = GBAlertModal.Properties.ContentProperty(maxWidthPortrait: 271)
         let properties = GBAlertModal.Properties(contentProperty: content)
-        XCTAssertEqual(ModalTokens(from: properties).cardMaxWidth, 271)
+        XCTAssertEqual(ModalTokens(from: properties).contentMaxWidth, 271)
     }
 
-    /// A preset that pins a FIXED width and no max used to leave `cardMaxWidth` at `.infinity`,
+    /// A preset that pins a FIXED width and no max used to leave the cap at `.infinity`,
     /// i.e. UIKit pinned the card and SwiftUI let it fill. The fixed width is folded in as a cap
     /// (see `init(from:)` for why a cap and not `.frame(width:)`).
-    func test_cardMaxWidth_fallsBackToFixedWidth_whenNoMaxIsSet() {
+    func test_contentMaxWidth_fallsBackToFixedWidth_whenNoMaxIsSet() {
         let content = GBAlertModal.Properties.ContentProperty(fixedWidthPortrait: 263)
         let properties = GBAlertModal.Properties(contentProperty: content)
-        XCTAssertEqual(ModalTokens(from: properties).cardMaxWidth, 263)
+        XCTAssertEqual(ModalTokens(from: properties).contentMaxWidth, 263)
     }
 
     /// The cap can never exceed the tighter of the two: in UIKit the max is a `<=` at `.high` and
     /// the fixed width an `==` at `.medium`, so the max wins whenever it is the smaller number.
-    func test_cardMaxWidth_takesTheTighterOfFixedAndMax() {
+    func test_contentMaxWidth_takesTheTighterOfFixedAndMax() {
         let content = GBAlertModal.Properties.ContentProperty(
             fixedWidthPortrait: 290, maxWidthPortrait: 244
         )
         let properties = GBAlertModal.Properties(contentProperty: content)
-        XCTAssertEqual(ModalTokens(from: properties).cardMaxWidth, 244)
+        XCTAssertEqual(ModalTokens(from: properties).contentMaxWidth, 244)
     }
 
     /// Portrait-first with a landscape fallback, mirroring `GBAlertModal.resolve`'s `contentWidth`.
     /// A preset that only states landscape widths used to derive NO cap at all.
-    func test_cardMaxWidth_fallsBackToLandscapeWidths() {
+    func test_contentMaxWidth_fallsBackToLandscapeWidths() {
         let content = GBAlertModal.Properties.ContentProperty(
             fixedWidthLandscape: 311, maxWidthLandscape: 337
         )
         let properties = GBAlertModal.Properties(contentProperty: content)
-        XCTAssertEqual(ModalTokens(from: properties).cardMaxWidth, 311)
+        XCTAssertEqual(ModalTokens(from: properties).contentMaxWidth, 311)
     }
 
     func test_closeButtonTint_comesFromProperties() {
@@ -154,14 +158,88 @@ final class ModalTokensProvenanceTests: XCTestCase {
         XCTAssertEqual(tokens.cardMarginH, 13)
     }
 
-    func test_contentPadding_comesFromProperties_usingMax() {
+    /// All EIGHT edges, each with its own distinctive number, so a derivation that collapsed them
+    /// into a vertical/horizontal pair (which is what shipped) fails here rather than passing on the
+    /// two edges it happened to read.
+    func test_contentPadding_comesFromProperties_allEightEdges() {
         let padding = UIMinMaxEdgeInsets(
-            top: (5, 17), left: (5, 29), bottom: (5, 17), right: (5, 29)
+            top: (5, 17), left: (7, 29), bottom: (9, 19), right: (11, 31)
         )
-        let properties = GBAlertModal.Properties(padding: padding)
-        let tokens = ModalTokens(from: properties)
+        let tokens = ModalTokens(from: GBAlertModal.Properties(padding: padding))
+        XCTAssertEqual(tokens.contentPadding.topMin, 5)
+        XCTAssertEqual(tokens.contentPadding.topMax, 17)
+        XCTAssertEqual(tokens.contentPadding.leftMin, 7)
+        XCTAssertEqual(tokens.contentPadding.leftMax, 29)
+        XCTAssertEqual(tokens.contentPadding.bottomMin, 9)
+        XCTAssertEqual(tokens.contentPadding.bottomMax, 19)
+        XCTAssertEqual(tokens.contentPadding.rightMin, 11)
+        XCTAssertEqual(tokens.contentPadding.rightMax, 31)
+        // The two compatibility accessors still report the TOP/LEFT max, which is all they ever did.
         XCTAssertEqual(tokens.contentPaddingV, 17)
         XCTAssertEqual(tokens.contentPaddingH, 29)
+    }
+
+    /// The specific asymmetry the old two-number token silently symmetrised, on the two REAL presets
+    /// where it changed the card's height: the permission alert (20 top / 12 bottom) and the streak
+    /// popup (40 / 32). A `contentPaddingV`-style derivation reports 20/20 and 40/40 here, i.e. 8pt
+    /// of extra card height each — measured as task 17's finding D-2.
+    func test_contentPadding_carriesTheAsymmetricRealPresets() {
+        let permission = ModalTokens(from: GeniePresets.permissionAlertProperties())
+        XCTAssertEqual(permission.contentPadding.topMax, 20)
+        XCTAssertEqual(permission.contentPadding.bottomMax, 12)
+        XCTAssertNotEqual(
+            permission.contentPadding.bottomMax, permission.contentPadding.topMax,
+            "premise: this preset is asymmetric — if it were not, the test would prove nothing"
+        )
+
+        let streak = ModalTokens(from: GeniePresets.streakProperties())
+        XCTAssertEqual(streak.contentPadding.topMax, 40)
+        XCTAssertEqual(streak.contentPadding.bottomMax, 32)
+        // And the MIN half, which is what lets the streak card compress its 48pt side padding to fit
+        // the 350pt available width instead of shrinking its content.
+        XCTAssertEqual(streak.contentPadding.leftMin, 20)
+        XCTAssertEqual(streak.contentPadding.leftMax, 48)
+    }
+
+    /// **The D-1 fix, as a provenance assertion.** `ContentProperty`'s width is the CONTENT
+    /// container's, and the card is that plus the horizontal padding UIKit puts outside it — which is
+    /// 320 on the real preset, where the SwiftUI card used to be 256.
+    func test_cardMaxWidth_isTheContentWidthPlusHorizontalPadding() {
+        let tokens = ModalTokens(from: GeniePresets.standardProperties())
+        XCTAssertEqual(tokens.contentMaxWidth, 256, "premise: the preset states a 256pt CONTENT width")
+        XCTAssertEqual(tokens.contentPadding.leftMax, 32)
+        XCTAssertEqual(tokens.contentPadding.rightMax, 32)
+        XCTAssertEqual(
+            tokens.cardMaxWidth, 320,
+            "the card is content + leftMax + rightMax. Reading 256 here is the defect that made the "
+                + "SwiftUI card 64pt narrower than the shipping one on every standard shape."
+        )
+    }
+
+    /// An uncapped content width must still produce an uncapped CARD, or `standard`'s callers get a
+    /// card capped at 64pt.
+    func test_cardMaxWidth_staysInfinite_whenNoContentWidthIsStated() {
+        XCTAssertEqual(ModalTokens.standard.contentMaxWidth, .infinity)
+        XCTAssertEqual(ModalTokens.standard.cardMaxWidth, .infinity)
+    }
+
+    /// `childShouldMatchParent` is DERIVED (it used to be classified "not derived, carried by
+    /// `ResolvedModal`" — a claim the differential gate measured to be false; `ResolvedModal` carries
+    /// only the BUTTON alignment). Absence means `.center`, matching UIKit's `== true` test.
+    func test_contentChildrenFillWidth_comesFromProperties() {
+        let fills = GBAlertModal.Properties.ContentProperty(childShouldMatchParent: true)
+        XCTAssertTrue(ModalTokens(from: GBAlertModal.Properties(contentProperty: fills)).contentChildrenFillWidth)
+
+        let hugs = GBAlertModal.Properties.ContentProperty(childShouldMatchParent: false)
+        XCTAssertFalse(ModalTokens(from: GBAlertModal.Properties(contentProperty: hugs)).contentChildrenFillWidth)
+
+        // No `contentProperty` at all: UIKit reads `contentProperty?.childShouldMatchParent == true`,
+        // so the absence is a positive `.center` and not "use the default".
+        XCTAssertFalse(ModalTokens(from: GBAlertModal.Properties()).contentChildrenFillWidth)
+        XCTAssertTrue(
+            ModalTokens(from: GeniePresets.standardProperties()).contentChildrenFillWidth,
+            "the real preset sets it true — this is the value every shipped shape lays out with"
+        )
     }
 
     func test_bannerMaxHeight_comesFromProperties() {
@@ -311,8 +389,10 @@ final class ModalTokensProvenanceTests: XCTestCase {
         XCTAssertEqual(tokens.palette.accentPressed, ModalTokens.standard.palette.accentPressed)
     }
 
-    /// Fields with NO `Properties` counterpart (button geometry, oblique offset) must stay at
-    /// `standard`'s literal even when other, unrelated fields are supplied.
+    /// Fields with NO `Properties` counterpart (button geometry, the oblique offset, the close
+    /// button's box, the button label inset) must stay at `standard`'s literal even when other,
+    /// unrelated fields are supplied — AND those literals must be the numbers UIKit hardcodes, which
+    /// is why each is also asserted absolutely here rather than only against `standard`.
     func test_noCounterpartFields_stayAtStandardLiterals() {
         let properties = GBAlertModal.Properties(titleColor: .magenta)
         let tokens = ModalTokens(from: properties)
@@ -320,5 +400,15 @@ final class ModalTokensProvenanceTests: XCTestCase {
         XCTAssertEqual(tokens.buttonHeight, ModalTokens.standard.buttonHeight)
         XCTAssertEqual(tokens.obliqueOffset.width, ModalTokens.standard.obliqueOffset.width)
         XCTAssertEqual(tokens.obliqueOffset.height, ModalTokens.standard.obliqueOffset.height)
+        XCTAssertEqual(tokens.closeButtonSize, ModalTokens.standard.closeButtonSize)
+        XCTAssertEqual(tokens.buttonLabelPaddingH, ModalTokens.standard.buttonLabelPaddingH)
+
+        // UIKit's own literals: `size == 48` on `btCloseAction` (`installConstraints`) and
+        // `contentEdgeInsets = (6, 16, 6, 16)` on both button factories
+        // (`GBAlertModal+ButtonStyling.swift`). The SwiftUI scaffold shipped 44 for the first of
+        // these, which the differential gate measured as a 4pt disagreement in both dimensions.
+        XCTAssertEqual(tokens.closeButtonSize, 48)
+        XCTAssertEqual(tokens.buttonLabelPaddingH, 16)
+        XCTAssertEqual(tokens.buttonHeight, 48)
     }
 }
