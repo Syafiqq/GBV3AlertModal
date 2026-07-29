@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit // for `NSLayoutConstraint.Axis` — the vocabulary `ResolvedModal.buttonAxis` speaks.
 
 /// The shared modal chrome (spec D1's bespoke-content surface): full-screen scrim + centered card +
 /// primary/secondary buttons + optional close, wrapped around a caller-supplied `@ViewBuilder` body.
@@ -17,6 +18,10 @@ public struct AlertModalScaffold<Content: View>: View {
     public var onClose: () -> Void = {}
     /// Fires on scrim tap; `nil` = scrim not interactive. The caller decides what a tap means.
     public var onOverlayTap: (() -> Void)? = nil
+    /// How primary/secondary stack — `GBAlertModal.ResolvedModal.buttonAxis` verbatim, so the
+    /// SwiftUI card obeys the SAME resolver decision the UIKit main-action stack does. Defaults to
+    /// `.vertical`, which is also what `resolve` returns when `Properties` sets no orientation.
+    public var buttonAxis: NSLayoutConstraint.Axis = .vertical
     @ViewBuilder public let content: () -> Content
 
     public init(
@@ -31,6 +36,7 @@ public struct AlertModalScaffold<Content: View>: View {
         showClose: Bool = false,
         onClose: @escaping () -> Void = {},
         onOverlayTap: (() -> Void)? = nil,
+        buttonAxis: NSLayoutConstraint.Axis = .vertical,
         @ViewBuilder content: @escaping () -> Content
     ) {
         self.tokens = tokens
@@ -46,6 +52,7 @@ public struct AlertModalScaffold<Content: View>: View {
         self.showClose = showClose
         self.onClose = onClose
         self.onOverlayTap = onOverlayTap
+        self.buttonAxis = buttonAxis
         self.content = content
     }
 
@@ -83,33 +90,44 @@ public struct AlertModalScaffold<Content: View>: View {
     }
 
     private var card: some View {
-        // ponytail: primary/secondary always stack vertically here — `ResolvedModal.buttonAxis`
-        // (spec C-1) isn't threaded through yet. Harmless today: `SwiftUIAlertModal` feeds the
-        // resolver a sentinel `Properties` with no `buttonActionOrientation`, so `buttonAxis`
-        // always resolves to `.vertical` anyway. Becomes load-bearing once a SwiftUI renderer
-        // threads real `Properties` in (planned Task 6) — that's when this VStack needs an
-        // HStack/VStack switch on `buttonAxis`, not before.
+        // `buttonAxis` is the resolver's decision (`Properties.buttonActionOrientation`), obeyed
+        // here the way the UIKit main-action `UIStackView` obeys it: `.horizontal` → HStack,
+        // `.vertical` → the (default) vertical run. The vertical branch is spelled inline rather
+        // than in a nested VStack so it stays byte-for-byte the layout that shipped before.
         VStack(spacing: 0) {
             content()
-            Button(action: onPrimary) {
-                if isPrimaryLoading {
-                    ProgressView().tint(tokens.palette.onAccent)
-                } else {
-                    Text(primaryTitle)
+            if buttonAxis == .horizontal {
+                HStack(spacing: tokens.interButton) {
+                    primaryButton
+                    if let secondaryTitle { secondaryButton(secondaryTitle) }
                 }
-            }
-            .buttonStyle(ObliquePrimaryStyle(tokens: tokens))
-            .disabled(!primaryEnabled || isPrimaryLoading)
-
-            if let secondaryTitle {
-                Button(action: onSecondary) { Text(secondaryTitle) }
-                    .buttonStyle(PlainSecondaryStyle(tokens: tokens))
-                    .padding(.top, tokens.interButton)
+            } else {
+                primaryButton
+                if let secondaryTitle {
+                    secondaryButton(secondaryTitle).padding(.top, tokens.interButton)
+                }
             }
         }
         .padding(.vertical, tokens.contentPaddingV)     // inner content inset: 24 v / 32 h
         .padding(.horizontal, tokens.contentPaddingH)
         .background(tokens.palette.cardBackground)
         .clipShape(RoundedRectangle(cornerRadius: tokens.cornerRadius, style: .continuous))
+    }
+
+    private var primaryButton: some View {
+        Button(action: onPrimary) {
+            if isPrimaryLoading {
+                ProgressView().tint(tokens.palette.onAccent)
+            } else {
+                Text(primaryTitle)
+            }
+        }
+        .buttonStyle(ObliquePrimaryStyle(tokens: tokens))
+        .disabled(!primaryEnabled || isPrimaryLoading)
+    }
+
+    private func secondaryButton(_ title: String) -> some View {
+        Button(action: onSecondary) { Text(title) }
+            .buttonStyle(PlainSecondaryStyle(tokens: tokens))
     }
 }
