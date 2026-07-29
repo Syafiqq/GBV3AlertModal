@@ -1,5 +1,4 @@
 import Foundation
-import SwiftUI
 import UIKit
 
 /// Bridges a descriptor `AttributedString` into the legacy `DataHolder`'s plain/attributed
@@ -14,14 +13,15 @@ public enum ModalText {
         // (foreground color, font, link). Presentation-intent attributes (e.g. from
         // `AttributedString(markdown:)` parsing unmarked text) are out of the whitelisted
         // subgrammar and don't bridge reliably to UIKit, so intent-only runs stay plain.
-        // The concrete UIKit- and SwiftUI-scoped color/font keys are distinct
-        // `AttributedStringKey` types; call sites may bind `.foregroundColor`/`.font` to
-        // either depending on ambient overload resolution, so both are checked.
+        //
+        // SwiftUI-scoped color/font keys are deliberately NOT checked: they do not bridge to
+        // NSAttributedString at all, so treating them as "styled" would yield an attributed
+        // string stripped of styling, which the resolver renders as-is — worse than plain,
+        // which at least receives the resolver's default styling. The SwiftUI renderer never
+        // calls `split`; it consumes the descriptor's `AttributedString` directly.
         let isPlain = text.runs.allSatisfy { run in
             run[AttributeScopes.UIKitAttributes.ForegroundColorAttribute.self] == nil
                 && run[AttributeScopes.UIKitAttributes.FontAttribute.self] == nil
-                && run[AttributeScopes.SwiftUIAttributes.ForegroundColorAttribute.self] == nil
-                && run[AttributeScopes.SwiftUIAttributes.FontAttribute.self] == nil
                 && run[AttributeScopes.FoundationAttributes.LinkAttribute.self] == nil
         }
         if isPlain { return (String(text.characters), nil) }

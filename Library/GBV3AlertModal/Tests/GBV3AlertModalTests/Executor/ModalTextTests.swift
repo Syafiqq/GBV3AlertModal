@@ -1,4 +1,5 @@
 import XCTest
+import SwiftUI
 import UIKit
 @testable import GBV3AlertModal
 
@@ -41,5 +42,16 @@ final class ModalTextTests: XCTestCase {
         let (p, a) = ModalText.split(s)
         XCTAssertEqual(p, "Just plain text, no markup")
         XCTAssertNil(a)
+    }
+
+    /// A SwiftUI-scoped colour cannot bridge to NSAttributedString, so it must NOT flip the
+    /// string onto the attributed path — that would strip styling entirely and the resolver
+    /// would render it unstyled. Treating it as plain gets the resolver's default styling.
+    func testSwiftUIScopedColorStaysPlain() {
+        var text = AttributedString("Hello")
+        text.swiftUI.foregroundColor = .red
+        let (plain, attributed) = ModalText.split(text)
+        XCTAssertEqual(plain, "Hello")
+        XCTAssertNil(attributed)
     }
 }
