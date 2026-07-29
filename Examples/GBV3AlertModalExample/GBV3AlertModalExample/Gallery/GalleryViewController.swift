@@ -86,10 +86,14 @@ final class GalleryViewController: UITableViewController {
 
     /// Tier 0: build the library executor over a UIKit renderer and inject it into a SwiftUI VM.
     /// The renderer paints the real UIKit modal on the key window, over the pushed SwiftUI screen.
+    /// Styling comes from `GalleryPresets` — the faithful mirror of the distribution app's
+    /// `Presentation.UiKit.V3AlertModal` preset — so the demo exercises production-shaped config.
     @objc private func openTier0Demo() {
-        // Full styled Properties so the real UIKit modal renders as a proper card (see Tier0DemoStyle).
-        let properties = Tier0DemoStyle.alert()
-        let renderer = UIKitModalRenderer(alertProperties: properties, popupProperties: Tier0DemoStyle.popup())
+        let properties = GalleryPresets.properties
+        let renderer = UIKitModalRenderer(
+            alertProperties: properties,
+            popupProperties: GalleryPresets.popupProperties
+        )
         // Custom-content input descriptors — registered by the consumer with the library's holders.
         renderer.register(TextInputDialog.self) { descriptor, resolve in
             (properties, UIKitModalRenderer.TextInputHolder.make(for: descriptor, resolve: resolve))
