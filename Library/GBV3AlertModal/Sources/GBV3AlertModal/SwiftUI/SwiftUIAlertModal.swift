@@ -113,7 +113,9 @@ public struct SwiftUIAlertModal: View {
                 Image(name)
                     .resizable()
                     .scaledToFit()   // preserve the image's natural aspect ratio (no distortion)
-                    .frame(maxHeight: tokens.bannerMaxHeight)
+                    // The slot geometry `Properties` asks for: ratio, fixed height and cap, with
+                    // the UIKit constraint precedence — see `ModalTokens.bannerLayout`.
+                    .modifier(ModalBannerGeometry(layout: tokens.bannerLayout))
                     .padding(.bottom, tokens.gapBelowBanner)
             }
             if resolved.showsTitle, let title = config.title {

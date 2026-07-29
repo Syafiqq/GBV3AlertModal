@@ -108,7 +108,7 @@ public struct BadgeModalView: View {
             Image(banner.assetName)
                 .resizable()
                 .scaledToFit()                       // natural aspect, same as `SwiftUIAlertModal`
-                .frame(maxHeight: tokens.bannerMaxHeight)
+                .modifier(ModalBannerGeometry(layout: tokens.bannerLayout))
                 .padding(.bottom, tokens.gapBelowBanner)
         }
     }

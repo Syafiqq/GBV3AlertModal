@@ -42,10 +42,13 @@ import XCTest
 ///   `test_bannerSubstitution_isTheOnlyDeviationFromProduction` pins that deviation to exactly one
 ///   resolver field.
 /// * **Animation.** Neither renderer's present/dismiss transition is exercised anywhere.
-/// * **`bannerRatio` / `bannerFixedHeight`.** Both are carried in `Properties` and read by the UIKit
-///   view graph; `ModalTokens` reads only `bannerMaxHeight`, and `SwiftUIAlertModal` renders the
-///   banner with `scaledToFit`. So banner ASPECT is a known SwiftUI-side gap, flagged rather than
-///   asserted.
+/// * **Banner GEOMETRY, as pixels.** `bannerRatio` / `bannerFixedHeight` / `bannerMaxHeight` are no
+///   longer a token-set gap — all three are derived into `ModalTokens` and applied by
+///   `ModalBannerGeometry` with the UIKit constraint precedence (`ModalTokens.bannerLayout`), and
+///   the derivation + precedence are unit-tested (`ModalTokensProvenanceTests`,
+///   `ModalBannerLayoutTests`). What is still NOT proven here is the resulting on-screen SIZE: no
+///   test measures the drawn banner on either backend, and the artwork is substituted anyway (see
+///   the bullet above).
 @MainActor
 final class ShapeCoverageTests: XCTestCase {
 
@@ -243,10 +246,21 @@ final class ShapeCoverageTests: XCTestCase {
         // `Color` equality across two independently-constructed dynamic system colours is not a
         // guarantee worth leaning on, whereas "the red preset's accent differs from the standard
         // preset's" is exactly the claim — the per-call-site theme reached the palette.
-        let standardAccent = ModalTokens(from: GeniePresets.standardProperties()).palette.accent
+        let standardTokens = ModalTokens(from: GeniePresets.standardProperties())
         XCTAssertNotEqual(
-            presented.tokens.palette.accent, standardAccent,
+            presented.tokens.palette.accent, standardTokens.palette.accent,
             "the red oblique theme must reach the primary button's palette"
+        )
+        // …and must NOT reach the SECONDARY button: this shape overrides only `primaryActionStyle`,
+        // so the secondary label stays the standard preset's own colour. The SwiftUI secondary used
+        // to be coloured from `palette.accent`, which made exactly this shape draw a red secondary.
+        XCTAssertEqual(
+            presented.tokens.palette.secondaryLabel, standardTokens.palette.secondaryLabel,
+            "the secondary style is unchanged here, so its label colour must be too"
+        )
+        XCTAssertNotEqual(
+            presented.tokens.palette.secondaryLabel, presented.tokens.palette.accent,
+            "the secondary label must not follow the primary theme"
         )
     }
 

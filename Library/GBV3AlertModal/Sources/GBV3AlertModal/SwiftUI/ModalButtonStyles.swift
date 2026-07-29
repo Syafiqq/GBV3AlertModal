@@ -11,6 +11,14 @@ public struct ObliquePrimaryStyle: ButtonStyle {
         self.tokens = tokens
     }
 
+    /// The label colour decision, as a pure function so a test can assert it without hosting a
+    /// view. UIKit sets `titleColor` / `titleDisableColor` on the two states separately
+    /// (`GBAlertModal+ButtonStyling.swift`, `.obliqueBottomLeft` branch), so SwiftUI must read two
+    /// tokens here — using `onAccent` for both would ignore `titleDisableColor` entirely.
+    static func labelColor(tokens: ModalTokens, isEnabled: Bool) -> Color {
+        isEnabled ? tokens.palette.onAccent : tokens.palette.onAccentDisabled
+    }
+
     public func makeBody(configuration: Configuration) -> some View {
         StyledLabel(configuration: configuration, tokens: tokens)
     }
@@ -28,7 +36,7 @@ public struct ObliquePrimaryStyle: ButtonStyle {
             let showOblique = isEnabled && !pressed
             configuration.label
                 .font(tokens.primaryButtonFont)
-                .foregroundColor(tokens.palette.onAccent)
+                .foregroundColor(ObliquePrimaryStyle.labelColor(tokens: tokens, isEnabled: isEnabled))
                 .frame(maxWidth: .infinity, minHeight: tokens.buttonHeight)
                 .background(
                     // Shadow lives on the BACKGROUND SHAPE only — the text casts none.
@@ -44,12 +52,25 @@ public struct ObliquePrimaryStyle: ButtonStyle {
     }
 }
 
-/// Secondary action: text-only, accent-coloured heavy label, dims on press (spec D8).
+/// Secondary action: text-only, heavy label in the SECONDARY action style's own colour, dims on
+/// press (spec D8).
 public struct PlainSecondaryStyle: ButtonStyle {
     let tokens: ModalTokens
 
     public init(tokens: ModalTokens = .standard) {
         self.tokens = tokens
+    }
+
+    /// The label colour decision, as a pure function so a test can assert it without hosting a
+    /// view — see `ModalButtonStyleColorTests.test_secondaryLabelColor_isTheSecondaryThemeColour_notTheAccent`.
+    ///
+    /// **Must read `secondaryLabel`/`secondaryDisabled`, never `accent`/`disabled`.** Those two are
+    /// derived from the PRIMARY action style's `obliqueBottomLeft` theme; this button's real
+    /// counterpart is `Properties.secondaryActionStyle`'s `PlainTheme`. Reading `accent` here is
+    /// what made the `oblique-red-leave-confirm` shape (RED primary, standard secondary) draw a RED
+    /// secondary label where UIKit draws the secondary theme's colour.
+    static func labelColor(tokens: ModalTokens, isEnabled: Bool) -> Color {
+        isEnabled ? tokens.palette.secondaryLabel : tokens.palette.secondaryDisabled
     }
 
     public func makeBody(configuration: Configuration) -> some View {
@@ -64,7 +85,7 @@ public struct PlainSecondaryStyle: ButtonStyle {
         var body: some View {
             configuration.label
                 .font(tokens.secondaryButtonFont)
-                .foregroundColor(isEnabled ? tokens.palette.accent : tokens.palette.disabled)
+                .foregroundColor(PlainSecondaryStyle.labelColor(tokens: tokens, isEnabled: isEnabled))
                 .frame(maxWidth: .infinity, minHeight: tokens.buttonHeight)
                 .opacity(configuration.isPressed ? 0.5 : 1)
         }

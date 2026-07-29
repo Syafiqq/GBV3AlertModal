@@ -1,3 +1,4 @@
+import SwiftUI
 import UIKit
 import XCTest
 @testable import GBV3AlertModal
@@ -33,6 +34,30 @@ private struct StylingDecision: Equatable {
     let cornerRadius: CGFloat
     let cardMaxWidth: CGFloat
     let titleColor: UIColor?
+    /// The fields added when the `Properties`→`ModalTokens` audit closed three drift channels
+    /// (banner geometry, the close-button tint, the secondary label colour). Each is set
+    /// EXPLICITLY and non-nil by `GeniePresets.standardProperties()` — which both
+    /// `badgeProperties()` and the fallback case inherit — so the UIKit `globalProperties` merge
+    /// cannot make two identical decisions read differently. `bannerFixedHeight`/`bannerMaxHeight`
+    /// are deliberately NOT here: the preset leaves both nil, and a nil field is exactly what that
+    /// merge could fill in from a consumer's globals.
+    let bannerRatio: CGFloat?
+    let closeButton: Color
+    let secondaryLabel: Color
+}
+
+/// Built from the SAME `ModalTokens(from:)` derivation on both backends, over the `Properties` each
+/// renderer actually presented with.
+private func decision(from properties: GBAlertModal.Properties) -> StylingDecision {
+    let tokens = ModalTokens(from: properties)
+    return StylingDecision(
+        cornerRadius: tokens.cornerRadius,
+        cardMaxWidth: tokens.cardMaxWidth,
+        titleColor: properties.titleColor,
+        bannerRatio: tokens.bannerRatio,
+        closeButton: tokens.palette.closeButton,
+        secondaryLabel: tokens.palette.secondaryLabel
+    )
 }
 
 /// **C-2 PARITY GATE.** Executor- and coordinator-level semantics run against BOTH `ModalRenderer`
@@ -397,12 +422,7 @@ final class RendererParityTests: XCTestCase {
                 harness.effectiveProperties(token.id),
                 "renderer \(kind.rawValue) exposed no effective Properties"
             )
-            let tokens = ModalTokens(from: properties)
-            decisions[kind] = StylingDecision(
-                cornerRadius: tokens.cornerRadius,
-                cardMaxWidth: tokens.cardMaxWidth,
-                titleColor: properties.titleColor
-            )
+            decisions[kind] = decision(from: properties)
 
             harness.emit(.primary, on: token.id)
             let result = await token.result
@@ -412,7 +432,18 @@ final class RendererParityTests: XCTestCase {
             )
         }
 
-        let expected = StylingDecision(cornerRadius: 28, cardMaxWidth: 300, titleColor: .magenta)
+        // The badge preset's own values: `.black` close tint and a `.systemBlue` secondary label
+        // (`GeniePresets.plainTheme`), square banner ratio. The secondary label is asserted
+        // ABSOLUTELY rather than against the accent, so a backend that fell back to the primary
+        // theme's orange fails here too.
+        let expected = StylingDecision(
+            cornerRadius: 28,
+            cardMaxWidth: 300,
+            titleColor: .magenta,
+            bannerRatio: 1,
+            closeButton: Color(uiColor: .black),
+            secondaryLabel: Color(uiColor: .systemBlue)
+        )
         XCTAssertEqual(
             decisions[.uiKit], expected,
             "uiKit did not apply the registered style"
@@ -431,11 +462,7 @@ final class RendererParityTests: XCTestCase {
     /// both backends, and crashes neither. `.parityBadge` IS registered here, so falling back to
     /// `.standard` is provably distinct from picking whatever else happens to be in the map.
     func test_unregisteredStyle_fallsBackIdentically_onBothRenderers() async throws {
-        let standard = StylingDecision(
-            cornerRadius: ModalTokens(from: GeniePresets.standardProperties()).cornerRadius,
-            cardMaxWidth: ModalTokens(from: GeniePresets.standardProperties()).cardMaxWidth,
-            titleColor: GeniePresets.standardProperties().titleColor
-        )
+        let standard = decision(from: GeniePresets.standardProperties())
         var decisions: [RendererKind: StylingDecision] = [:]
 
         for kind in RendererKind.allCases {
@@ -455,12 +482,7 @@ final class RendererParityTests: XCTestCase {
                 "renderer \(kind.rawValue): an unregistered style must still present, never crash"
             )
             let properties = try XCTUnwrap(harness.effectiveProperties(token.id))
-            let tokens = ModalTokens(from: properties)
-            decisions[kind] = StylingDecision(
-                cornerRadius: tokens.cornerRadius,
-                cardMaxWidth: tokens.cardMaxWidth,
-                titleColor: properties.titleColor
-            )
+            decisions[kind] = decision(from: properties)
 
             harness.emit(.primary, on: token.id)
             let result = await token.result
@@ -477,6 +499,50 @@ final class RendererParityTests: XCTestCase {
             decisions[.uiKit], decisions[.swiftUI],
             "the backends diverged on the FALLBACK for an unregistered style"
         )
+    }
+
+    // MARK: - The red-primary shape: the secondary button keeps its OWN theme on both backends
+
+    /// **S3 at the renderer level.** `oblique-red-leave-confirm` is the one real shape whose primary
+    /// and secondary themes carry different colours (RED oblique primary, `.systemBlue` plain
+    /// secondary). UIKit has always drawn the secondary from `secondaryActionStyle`'s own theme;
+    /// SwiftUI coloured it from `palette.accent`, i.e. the PRIMARY theme, and therefore drew it RED.
+    ///
+    /// Both backends are driven through the same registered style here, and both must land on the
+    /// secondary theme's colour. Cross-renderer equality alone would not discriminate (both could be
+    /// wrong identically), so the absolute colour AND its inequality with the accent are asserted.
+    func test_redPrimaryShape_keepsTheSecondaryThemeColour_onBothRenderers() async throws {
+        let obliqueRed = ModalStyle("parity.obliqueRed")
+
+        for kind in RendererKind.allCases {
+            let harness = RendererHarness(kind)
+            harness.register(style: obliqueRed, properties: GeniePresets.obliqueRedProperties())
+            let executor = DefaultModalExecutor(renderer: harness.renderer)
+
+            let token = executor.present(
+                AlertDialog(title: "Leave?", primary: "Leave", secondary: "Stay", style: obliqueRed)
+            )
+            let properties = try XCTUnwrap(harness.effectiveProperties(token.id))
+            let tokens = ModalTokens(from: properties)
+
+            XCTAssertEqual(
+                tokens.palette.accent, Color(uiColor: .systemRed),
+                "renderer \(kind.rawValue): premise — the primary theme is RED"
+            )
+            XCTAssertEqual(
+                PlainSecondaryStyle.labelColor(tokens: tokens, isEnabled: true),
+                Color(uiColor: .systemBlue),
+                "renderer \(kind.rawValue) diverged: the secondary label must come from the SECONDARY theme"
+            )
+            XCTAssertNotEqual(
+                tokens.palette.secondaryLabel, tokens.palette.accent,
+                "renderer \(kind.rawValue) diverged: the secondary label must not be the primary accent"
+            )
+
+            harness.emit(.secondary, on: token.id)
+            let result = await token.result
+            XCTAssertEqual(result, .secondary, "renderer \(kind.rawValue) diverged")
+        }
     }
 
     // MARK: - Overriding a built-in factory

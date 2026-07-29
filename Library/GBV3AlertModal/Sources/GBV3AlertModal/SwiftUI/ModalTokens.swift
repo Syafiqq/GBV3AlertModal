@@ -12,16 +12,22 @@ import UIKit
 /// the UIKit renderer already reads, so both renderers read ONE source of truth and cannot drift
 /// apart the way the hand-transcription once did. `standard` freezes TODAY'S transcribed literal
 /// values for call sites with no `Properties` to hand (SwiftUI-only demos, tests, and any field
-/// with no `Properties` counterpart) — nothing about `standard`'s numbers changes in this commit.
+/// with no `Properties` counterpart).
+///
+/// **The FIELD-BY-FIELD AUDIT of `GBAlertModal.Properties` lives on `init(from:)` below.** Every
+/// `Properties` field is classified there as DERIVED (with the provenance test that proves it) or
+/// DELIBERATELY NOT DERIVED (with the reason). There is no third category: a field that is neither
+/// is a silent drift channel — a value UIKit honours and SwiftUI ignores, correct only for as long
+/// as the preset happens to make the ignored value equal the hardcoded one.
 public struct ModalTokens: Sendable {
     // Card geometry. Width MAXIMIZES to fill (screen − 2·horizontal margin), capped at
     // cardMaxWidth. `standard` has no `Properties` to derive a cap from, so it ships `.infinity`
     // (no cap — deliberately NOT a `UIDevice.current.userInterfaceIdiom` runtime check: (1) baking
     // a device query into a token is exactly the hardcoding spec C-0 exists to remove, and (2) it
     // is main-actor-isolated, which a nonisolated `static let`/`init` can't touch. `init(from:)`
-    // applies `contentProperty.maxWidthPortrait` as the cap whenever `Properties` supplies one,
-    // unconditionally: `.frame(maxWidth:)` is a CAP, not a fixed width, so on a phone-width screen
-    // (already narrower than any realistic cap) it is naturally a no-op — no idiom branch needed.
+    // applies `ContentProperty`'s width cap whenever `Properties` supplies one, unconditionally:
+    // `.frame(maxWidth:)` is a CAP, not a fixed width, so on a phone-width screen (already
+    // narrower than any realistic cap) it is naturally a no-op — no idiom branch needed.
     public var cornerRadius: CGFloat
     public var cardMaxWidth: CGFloat
 
@@ -44,12 +50,20 @@ public struct ModalTokens: Sendable {
     public var contentPaddingV: CGFloat
     public var contentPaddingH: CGFloat
 
-    // Banner — image keeps its natural aspect ratio (scaledToFit); this caps the height so tall art
-    // can't dominate. `Properties.bannerMaxHeight` is a real, direct counterpart.
-    public var bannerMaxHeight: CGFloat
+    // Banner geometry — the THREE `Properties` banner fields, carried verbatim (including their
+    // nil-ness, which means "UIKit installs no such constraint" and is NOT the same as "value
+    // absent, fall back to `standard`"). `bannerLayout` below turns them into the SwiftUI slot
+    // geometry, mirroring the UIKit constraint PRIORITIES rather than guessing a precedence.
+    //
+    // `standard` (no `Properties` in play at all) keeps the transcribed 160pt cap and no
+    // ratio/fixed height: natural aspect, capped — exactly what the SwiftUI banner did before
+    // these two fields existed.
+    public var bannerRatio: CGFloat?
+    public var bannerMaxHeight: CGFloat?
+    public var bannerFixedHeight: CGFloat?
 
     // Vertical gaps — owner override to a uniform 12 (real preset was 8/8/16); interButton stays 8.
-    // `standard` keeps that override baked in; `from(properties:)` reads the real `ComponentSpace`
+    // `standard` keeps that override baked in; `init(from:)` reads the real `ComponentSpace`
     // values whenever the caller supplies one (Task 6's per-presentation `effective` properties).
     public var gapBelowBanner: CGFloat
     public var gapBelowTitle: CGFloat
@@ -88,12 +102,32 @@ public struct ModalTokens: Sendable {
         public var disabled: Color
         public var titleText: Color
         public var subtitleText: Color
+        // Primary button label, enabled and disabled — `ObliqueBottomLeftTheme.titleColor` /
+        // `.titleDisableColor`. UIKit sets BOTH (`configureButtonActionStyle`'s
+        // `.obliqueBottomLeft` branch), so a single `onAccent` used for both states would silently
+        // ignore `titleDisableColor` whenever a theme sets the two to different colours.
         public var onAccent: Color
+        public var onAccentDisabled: Color
+        // SECONDARY button label, enabled and disabled — `PlainTheme.titleColor` /
+        // `.titleDisableColor`, i.e. the SECONDARY action style's own theme.
+        //
+        // These exist because `PlainSecondaryStyle` used to colour its label from `accent`, which
+        // is derived from the PRIMARY style's theme: the `oblique-red-leave-confirm` shape (a RED
+        // primary next to the standard secondary) therefore drew a RED secondary label where UIKit
+        // draws the secondary theme's own colour. Split per-role for exactly the same reason
+        // `primaryButtonFont`/`secondaryButtonFont` are.
+        public var secondaryLabel: Color
+        public var secondaryDisabled: Color
         public var shadow: Color
         public var cardBackground: Color
+        // Close ("X") glyph tint — `Properties.closeButtonTint`, which the UIKit renderer applies
+        // as `btCloseAction?.tintColor` (`GBAlertModal+Style.swift`). Before this token existed the
+        // SwiftUI scaffold reused `subtitleText`, which matched only because the real preset's two
+        // colours are close.
+        public var closeButton: Color
         // The FINAL, already-composited scrim colour (any dimming baked in) — not a base hue plus a
         // separate opacity multiply. `standard` bakes its 0.6 dim in at construction time;
-        // `from(properties:)` takes `overlayColor` as-is, since a real `Properties` value already
+        // `init(from:)` takes `overlayColor` as-is, since a real `Properties` value already
         // encodes whatever alpha the app's design intends.
         public var scrim: Color
     }
@@ -119,8 +153,12 @@ public struct ModalTokens: Sendable {
             titleText: Color(hex: 0x262262),        // Genie.primary == GBPNavy
             subtitleText: Color(hex: 0x333333),     // textPrimaryDark
             onAccent: .white,
+            onAccentDisabled: .white,               // real oblique theme: same white when disabled
+            secondaryLabel: Color(hex: 0xF7941E),   // the accent — what the plain style always drew
+            secondaryDisabled: Color(hex: 0xB4B4B4),
             shadow: Color(hex: 0xE57B41),           // orangeMandarin
             cardBackground: .white,
+            closeButton: Color(hex: 0x333333),      // real preset: closeButtonTint == .black-ish
             scrim: Color(hex: 0x626262).opacity(0.6) // Colors.text_primary, dimmed
         )
     )
@@ -132,7 +170,9 @@ public struct ModalTokens: Sendable {
         cardMarginH: CGFloat,
         contentPaddingV: CGFloat,
         contentPaddingH: CGFloat,
-        bannerMaxHeight: CGFloat,
+        bannerRatio: CGFloat? = nil,
+        bannerMaxHeight: CGFloat?,
+        bannerFixedHeight: CGFloat? = nil,
         gapBelowBanner: CGFloat,
         gapBelowTitle: CGFloat,
         gapBelowSubtitle: CGFloat,
@@ -147,7 +187,9 @@ public struct ModalTokens: Sendable {
         self.cardMarginH = cardMarginH
         self.contentPaddingV = contentPaddingV
         self.contentPaddingH = contentPaddingH
+        self.bannerRatio = bannerRatio
         self.bannerMaxHeight = bannerMaxHeight
+        self.bannerFixedHeight = bannerFixedHeight
         self.gapBelowBanner = gapBelowBanner
         self.gapBelowTitle = gapBelowTitle
         self.gapBelowSubtitle = gapBelowSubtitle
@@ -161,11 +203,96 @@ public struct ModalTokens: Sendable {
     /// read ONE source of styling. Hand-transcribing these values is what previously shipped a
     /// wrong card width, wrong spacing and a wrong button style (spec C-0).
     ///
-    /// Starts from `standard` and overrides only the fields `properties` actually supplies —
-    /// every `Properties` field this type reads is `Optional`, and a caller with a partially-filled
-    /// `Properties` (or none at all) should fall back to the same literals `standard` ships, never
-    /// a fabricated or zeroed value. `UIColor -> Color`, `CGColor -> Color`, and `UIFont -> Font`
-    /// are lossless bridging conversions.
+    /// Starts from `standard` and overrides the fields `properties` supplies — every `Properties`
+    /// field this type reads is `Optional`, and a caller with a partially-filled `Properties` (or
+    /// none at all) should fall back to the same literals `standard` ships, never a fabricated or
+    /// zeroed value. `UIColor -> Color`, `CGColor -> Color`, and `UIFont -> Font` are lossless
+    /// bridging conversions.
+    ///
+    /// ONE documented exception to that fallback policy: the three BANNER GEOMETRY fields are
+    /// assigned unconditionally, because there `nil` is a MEANING ("install no such constraint"),
+    /// not a missing value — see the banner block below.
+    ///
+    /// # THE AUDIT
+    ///
+    /// Every field of `Properties` (and of its nested `ContentProperty`, `ComponentSpace` and the
+    /// `ActionStyle` themes the two fixed SwiftUI button styles correspond to) is classified here as
+    /// **(a) DERIVED** — with the provenance test that proves it comes from `Properties` — or
+    /// **(b) NOT DERIVED**, with the reason. There is deliberately no third category; anything
+    /// unclassified is a field UIKit honours and SwiftUI ignores, which is the exact defect this
+    /// derivation exists to prevent.
+    ///
+    /// Provenance tests all live in `ModalTokensProvenanceTests`
+    /// (`Tests/GBV3AlertModalTests/SwiftUI/ModalTokensTests.swift`); names below are that file's.
+    ///
+    /// ## `GBAlertModal.Properties`
+    ///
+    /// | field | class | token / reason |
+    /// | --- | --- | --- |
+    /// | `baseTint` | (b) | UIKit `UIView.tintColor` INHERITANCE. It tints whatever descendant control does not set its own tint; every SwiftUI view in the scaffold sets its foreground explicitly, and the one tint-consuming control (the close glyph) has its own `closeButtonTint`, derived below. There is no view left for an inherited tint to reach. |
+    /// | `overlayColor` | (a) | `palette.scrim` — `test_scrim_comesFromProperties_overlayColor` |
+    /// | `contentProperty` | (a) | see the `ContentProperty` table |
+    /// | `margin` | (a) | `cardMarginV`/`cardMarginH` — `test_cardMargin_comesFromProperties` |
+    /// | `padding` | (a) | `contentPaddingV`/`contentPaddingH` — `test_contentPadding_comesFromProperties_usingMax` |
+    /// | `bannerRatio` | (a) | `bannerRatio` — `test_bannerRatio_comesFromProperties` |
+    /// | `bannerMaxHeight` | (a) | `bannerMaxHeight` — `test_bannerMaxHeight_comesFromProperties`, `test_bannerMaxHeight_isNilWhenPropertiesSetsNoCap` |
+    /// | `bannerFixedHeight` | (a) | `bannerFixedHeight` — `test_bannerFixedHeight_comesFromProperties` |
+    /// | `titleFont` | (a) | `titleFont` — `test_titleFont_comesFromProperties_viaFontBridge` |
+    /// | `titleColor` | (a) | `palette.titleText` — `test_titleColor_comesFromProperties` |
+    /// | `subtitleFont` | (a) | `subtitleFont` — `test_subtitleFont_comesFromProperties_viaFontBridge` |
+    /// | `subtitleColor` | (a) | `palette.subtitleText` — `test_subtitleColor_comesFromProperties` |
+    /// | `buttonActionShouldMatchParent` | (b) | A `UIStackView.alignment` decision (`.fill` vs `.center`), resolved by the SHARED resolver into `ResolvedModal.buttonsMatchParent` — a per-presentation render decision, not a design token. SwiftUI expresses it on the children instead: both `ModalButtonStyles` size their label `.frame(maxWidth: .infinity)`, which is the `true` (`.fill`) behaviour every real preset asks for. |
+    /// | `buttonActionOrientation` | (b) | Same reason: resolved into `ResolvedModal.buttonAxis` and OBEYED by `AlertModalScaffold.card` (HStack vs VStack). A token copy would be a second vocabulary to keep in sync. |
+    /// | `primaryActionStyle` | (a) | `palette.accent`/`accentPressed`/`disabled`/`shadow`/`onAccent`/`onAccentDisabled` + `primaryButtonFont`, from its `.obliqueBottomLeft` theme — see the theme table. Its PRESENCE additionally feeds `ResolvedModal.showsPrimary`. |
+    /// | `secondaryActionStyle` | (a) | `palette.secondaryLabel`/`secondaryDisabled` + `secondaryButtonFont`, from its `.plain` theme — see the theme table. Its PRESENCE additionally feeds `ResolvedModal.showsSecondary`, which `SwiftUIAlertModal` obeys. |
+    /// | `closeButtonTint` | (a) | `palette.closeButton` — `test_closeButtonTint_comesFromProperties` |
+    /// | `space` | (a) | `gapBelowBanner`/`gapBelowTitle`/`gapBelowSubtitle`/`interButton` — see the `ComponentSpace` table |
+    ///
+    /// ## `Properties.ContentProperty`
+    ///
+    /// | field | class | token / reason |
+    /// | --- | --- | --- |
+    /// | `backgroundColor` | (a) | `palette.cardBackground` — `test_cardBackground_comesFromProperties_contentProperty` |
+    /// | `cornerRadius` | (a) | `cornerRadius` — `test_cornerRadius_comesFromProperties` |
+    /// | `fixedWidthPortrait` | (a) | folded into `cardMaxWidth` as a CAP — `test_cardMaxWidth_fallsBackToFixedWidth_whenNoMaxIsSet` |
+    /// | `maxWidthPortrait` | (a) | `cardMaxWidth` — `test_cardMaxWidth_comesFromProperties_maxWidthPortrait` |
+    /// | `fixedWidthLandscape` | (a) | portrait-first fallback into `cardMaxWidth` — `test_cardMaxWidth_fallsBackToLandscapeWidths` |
+    /// | `maxWidthLandscape` | (a) | portrait-first fallback into `cardMaxWidth` — `test_cardMaxWidth_fallsBackToLandscapeWidths` |
+    /// | `childShouldMatchParent` | (b) | Another `UIStackView.alignment` mechanism (the CONTENT stack this time). SwiftUI has no stack-wide "children fill" switch; each child in `SwiftUIAlertModal`/`AlertModalScaffold` states its own width behaviour. Every real preset sets it `true`, which is what the SwiftUI card already does. |
+    ///
+    /// ## `Properties.ComponentSpace` — all (a)
+    ///
+    /// `banner`/`title`/`subtitle` → `gapBelowBanner`/`gapBelowTitle`/`gapBelowSubtitle`
+    /// (`test_gapBelowBannerTitleSubtitle_comeFromProperties`); `interButton` → `interButton`
+    /// (`test_interButtonSpacing_comesFromProperties`).
+    ///
+    /// ## `ActionStyle` themes
+    ///
+    /// The two SwiftUI button styles are FIXED design identity (spec D8): the primary IS the
+    /// oblique button and the secondary IS the plain text button. So exactly two of the four
+    /// `ActionStyle` cases have a SwiftUI counterpart to derive into.
+    ///
+    /// | theme.field | class | token / reason |
+    /// | --- | --- | --- |
+    /// | `ObliqueBottomLeftTheme.unPressedColor` | (a) | `palette.accent` — `test_accentColors_comeFromProperties_obliqueBottomLeftTheme` |
+    /// | `ObliqueBottomLeftTheme.pressedColor` | (a) | `palette.accentPressed` — same test |
+    /// | `ObliqueBottomLeftTheme.disabledColor` | (a) | `palette.disabled` — same test |
+    /// | `ObliqueBottomLeftTheme.shadowColor` | (a) | `palette.shadow` — same test |
+    /// | `ObliqueBottomLeftTheme.titleColor` | (a) | `palette.onAccent` — same test |
+    /// | `ObliqueBottomLeftTheme.titleDisableColor` | (a) | `palette.onAccentDisabled` — `test_primaryDisabledLabel_comesFromObliqueTheme_titleDisableColor` |
+    /// | `ObliqueBottomLeftTheme.titleFont` | (a) | `primaryButtonFont` — `test_primaryButtonFont_comesFromProperties_obliqueBottomLeftTheme` |
+    /// | `PlainTheme.titleColor` | (a) | `palette.secondaryLabel` — `test_secondaryLabel_comesFromSecondaryTheme_notThePrimaryAccent` |
+    /// | `PlainTheme.titleDisableColor` | (a) | `palette.secondaryDisabled` — `test_secondaryDisabledLabel_comesFromPlainTheme_titleDisableColor` |
+    /// | `PlainTheme.titleFont` | (a) | `secondaryButtonFont` — `test_secondaryButtonFont_comesFromProperties_plainTheme` |
+    /// | `CapsuleTheme.*` (5 fields) | (b) | No SwiftUI counterpart: nothing here draws a capsule. Painting a capsule theme's colours onto the oblique/plain SHAPES would be a worse divergence than keeping `standard`'s literals, which is what happens — pinned by `test_accentColors_keepStandardLiterals_whenActionStyleIsNotOblique`. A consumer who ships `.capsule` on this backend gets the oblique look; that is the spec-D8 design decision, recorded here rather than silently absorbed. |
+    /// | `CapsuleOutlineTheme.*` (8 fields) | (b) | Same reason as `CapsuleTheme`, plus the three border fields have no analogue on either fixed style. |
+    ///
+    /// ## Fields of `ModalTokens` with NO `Properties` counterpart
+    ///
+    /// `buttonCornerRadius`, `buttonHeight`, `obliqueOffset` — no `ActionStyle` theme carries button
+    /// geometry (`GBAlertModal+ButtonStyling.swift` hardcodes the 8pt radius, the 48pt height and
+    /// the ±3 offset in UIKit too). Pinned by `test_noCounterpartFields_stayAtStandardLiterals`.
+    // swiftlint:disable:next function_body_length
     public init(from properties: GBAlertModal.Properties) {
         self = .standard
 
@@ -176,16 +303,31 @@ public struct ModalTokens: Sendable {
             // narrower than it, so applying it regardless of idiom is both concurrency-safe and
             // behaviourally equivalent to gating it on `.pad`.
             //
-            // KNOWN LIMITATION: only reads `maxWidthPortrait`. The library's own resolver
-            // (`GBAlertModal+ResolvedModal.swift`, `contentWidth`) does full fixed-vs-max +
-            // portrait/landscape fallback (`fixedWidthPortrait`/`fixedWidthLandscape`/
-            // `maxWidthLandscape`, and a FIXED width wins over a max at all). This derivation
-            // bypasses that shared resolution entirely and only ever reads one of the four
-            // fields. Harmless for today's real preset (portrait and landscape both resolve to
-            // the same 256/300 numbers), but it is a real gap versus the UIKit path, not a
-            // considered equivalence — flagged rather than silently narrowed.
-            if let maxWidthPortrait = contentProperty.maxWidthPortrait {
-                cardMaxWidth = maxWidthPortrait
+            // All FOUR width fields feed this one cap:
+            //  • portrait-first with a landscape fallback, mirroring `GBAlertModal.resolve`'s
+            //    `contentWidth` (`maxWidthPortrait ?? maxWidthLandscape`). `ModalTokens` has no
+            //    orientation input by design — it is a `Sendable` value derived from `Properties`
+            //    alone, and SwiftUI expresses orientation through the layout proposal, not through
+            //    a token — so it takes the portrait reading, exactly as `SwiftUIAlertModal` pins
+            //    `isLandscape: false` for the resolver.
+            //  • a FIXED width is folded in as a cap rather than as `.frame(width:)`. In UIKit the
+            //    fixed width is an `==` at `.medium` while the max is a `<=` at `.high`, so the
+            //    max always wins and the effective width can never exceed `min(fixed, max)`; a cap
+            //    also degrades gracefully on a screen narrower than the card, which a hard
+            //    `.frame(width:)` would not. Every real preset sets fixed == max, so this is the
+            //    same number either way — it only stops a fixed-width-only preset from rendering
+            //    UNCAPPED on SwiftUI while UIKit pins it.
+            let fixedWidth = contentProperty.fixedWidthPortrait ?? contentProperty.fixedWidthLandscape
+            let maxWidth = contentProperty.maxWidthPortrait ?? contentProperty.maxWidthLandscape
+            switch (fixedWidth, maxWidth) {
+            case let (fixed?, max?):
+                cardMaxWidth = min(fixed, max)
+            case let (fixed?, nil):
+                cardMaxWidth = fixed
+            case let (nil, max?):
+                cardMaxWidth = max
+            case (nil, nil):
+                break   // no width in `Properties` at all — keep `standard`'s uncapped `.infinity`
             }
             if let backgroundColor = contentProperty.backgroundColor {
                 palette.cardBackground = Color(uiColor: backgroundColor)
@@ -202,9 +344,16 @@ public struct ModalTokens: Sendable {
             contentPaddingH = padding.leftMax
         }
 
-        if let bannerMaxHeight = properties.bannerMaxHeight {
-            self.bannerMaxHeight = bannerMaxHeight
-        }
+        // BANNER GEOMETRY — assigned unconditionally, unlike every other field here. For the other
+        // fields `nil` means "this `Properties` doesn't say", and `standard`'s literal is the right
+        // answer. For these three `nil` is a POSITIVE statement: the UIKit view graph installs a
+        // ratio / cap / fixed-height constraint ONLY when the field is non-nil, so keeping
+        // `standard`'s 160pt cap for a `Properties` that deliberately sets `bannerMaxHeight: nil`
+        // would apply a cap UIKit does not (the real `V3AlertModal` preset is exactly that case),
+        // and it would also silently clip a `bannerFixedHeight` taller than 160.
+        bannerRatio = properties.bannerRatio
+        bannerMaxHeight = properties.bannerMaxHeight
+        bannerFixedHeight = properties.bannerFixedHeight
 
         if let space = properties.space {
             gapBelowBanner = space.banner
@@ -228,6 +377,9 @@ public struct ModalTokens: Sendable {
         if let overlayColor = properties.overlayColor {
             palette.scrim = Color(uiColor: overlayColor)
         }
+        if let closeButtonTint = properties.closeButtonTint {
+            palette.closeButton = Color(uiColor: closeButtonTint)
+        }
 
         // The fixed SwiftUI primary button only has colours for the `obliqueBottomLeft` `ActionStyle`
         // (see `ModalButtonStyles`/`Palette` doc above) — any other case (or no style at all) has no
@@ -248,6 +400,9 @@ public struct ModalTokens: Sendable {
             if let titleColor = theme.titleColor {
                 palette.onAccent = Color(uiColor: titleColor)
             }
+            if let titleDisableColor = theme.titleDisableColor {
+                palette.onAccentDisabled = Color(uiColor: titleDisableColor)
+            }
             if let titleFont = theme.titleFont {
                 primaryButtonFont = Font(titleFont)
             }
@@ -256,10 +411,64 @@ public struct ModalTokens: Sendable {
         // `PlainSecondaryStyle`'s real counterpart is `ActionStyle.plain` (a borderless text
         // button) — the same case `SwiftUIAlertModal`'s sentinel `Properties` already uses for
         // `secondaryActionStyle`. Any other case (or no style at all) keeps `standard`'s literal.
-        if case let .plain(theme)? = properties.secondaryActionStyle,
-           let titleFont = theme.titleFont {
-            secondaryButtonFont = Font(titleFont)
+        //
+        // These colours come from the SECONDARY style's OWN theme. They must never be re-pointed at
+        // `palette.accent`: that is the primary theme's colour, and doing so is what made the
+        // `oblique-red-leave-confirm` shape draw a red secondary label under a red primary while
+        // UIKit drew the secondary theme's colour.
+        if case let .plain(theme)? = properties.secondaryActionStyle {
+            if let titleColor = theme.titleColor {
+                palette.secondaryLabel = Color(uiColor: titleColor)
+            }
+            if let titleDisableColor = theme.titleDisableColor {
+                palette.secondaryDisabled = Color(uiColor: titleDisableColor)
+            }
+            if let titleFont = theme.titleFont {
+                secondaryButtonFont = Font(titleFont)
+            }
         }
+    }
+}
+
+extension ModalTokens {
+    /// The banner SLOT geometry the SwiftUI banner applies, resolved from the three `Properties`
+    /// banner fields.
+    ///
+    /// `aspectRatio` is width/height (SwiftUI's convention AND `bannerRatio`'s: the UIKit
+    /// constraint is `ivBanner.width == ivBanner.height * bannerRatio`). `height` pins the slot;
+    /// `maxHeight` caps it. Any of them `nil` means "no such constraint", exactly as in UIKit.
+    struct BannerLayout: Equatable {
+        var aspectRatio: CGFloat?
+        var height: CGFloat?
+        var maxHeight: CGFloat?
+    }
+
+    /// PRECEDENCE, read off `GBAlertModal+ViewGraph.swift`'s `installConstraints` (the UIKit
+    /// constraint PRIORITIES), not guessed. On `vwBanner` UIKit installs, at most:
+    ///
+    /// * `height <= bannerMaxHeight` at **751** — whenever `bannerMaxHeight` is set;
+    /// * `height == width * (imageH/imageW)` at **700** — the natural-aspect driver, installed ONLY
+    ///   when `bannerRatio == nil` and the image has a usable size;
+    /// * `height == bannerFixedHeight` at **251** — whenever `bannerFixedHeight` is set.
+    ///
+    /// So:
+    /// 1. the cap (751) outranks everything and is always applied when present;
+    /// 2. when `bannerRatio == nil`, the natural-aspect driver (700) beats the fixed height (251),
+    ///    i.e. **`bannerFixedHeight` is INERT on the natural-aspect path** — SwiftUI's
+    ///    `.scaledToFit()` is that same natural-aspect behaviour, so the fixed height is dropped
+    ///    here too rather than being applied where UIKit would not;
+    /// 3. when `bannerRatio != nil` there is no 700 driver, so the fixed height (251, just above
+    ///    the content stack's `.defaultLow` hugging at 250) is what sizes the slot.
+    ///
+    /// The ratio itself is a constraint on the IMAGE VIEW's frame (`width == height * ratio`) with
+    /// `contentMode = .scaleAspectFit` inside it — i.e. a ratio-shaped SLOT with the picture
+    /// letterboxed in it, which is what `ModalBannerGeometry` reproduces.
+    var bannerLayout: BannerLayout {
+        BannerLayout(
+            aspectRatio: bannerRatio,
+            height: bannerRatio == nil ? nil : bannerFixedHeight,
+            maxHeight: bannerMaxHeight
+        )
     }
 }
 
