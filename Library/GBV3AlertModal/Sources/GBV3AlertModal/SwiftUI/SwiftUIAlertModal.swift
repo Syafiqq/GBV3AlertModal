@@ -103,39 +103,26 @@ public struct SwiftUIAlertModal: View {
         }
     }
 
-    /// Switches on the resolver's four-case `SubtitleKind` (richer than the old single
-    /// `showsSubtitle` bool this view used to derive on its own — spec C-1 picks this up for
-    /// free), but `resolved.subtitle` decides ONLY none/plain/attributed/custom — never supplies
-    /// the rendered payload. That split matters: `resolved.subtitle`'s `.plain` case carries the
-    /// STRIPPED `String` `ModalText.split` produced for the UIKit holder (plain-vs-styled is a
-    /// UIKit-scoped classification — see `ModalText.swift`), which would silently drop SwiftUI-
-    /// scoped styling (e.g. `subtitle.foregroundColor = .red`) a caller applied the natural way.
-    /// So `.plain` renders `config.subtitle` — the descriptor's own `AttributedString` — directly,
-    /// exactly like `showsTitle`/`title` above. `.attributed` is the one case that DOES read the
-    /// payload off `holder`: the resolver only records THAT the subtitle is attributed, the
-    /// `NSAttributedString` itself lives on `holder.subtitleAttributed`, and UIKit renders that
-    /// bridged value as-is — so mirroring it here (rather than the descriptor's `AttributedString`)
-    /// is the correct equivalence, not a shortcut.
+    /// Renders whatever `subtitlePayload` selected. All the DECISION + PAYLOAD SELECTION logic
+    /// lives in that pure function (testable without a view); this just switches on its result.
     @ViewBuilder
     private func subtitleView(
         resolved: GBAlertModal.ResolvedModal,
         holder: GBAlertModal.DataHolder
     ) -> some View {
-        switch resolved.subtitle {
+        switch Self.subtitlePayload(resolved: resolved, config: config, holder: holder) {
         case .none:
             EmptyView()
-        case .plain:
-            if let subtitle = config.subtitle {
-                Text(subtitle)
-                    .font(ModalTokens.subtitleFont)
-                    .foregroundColor(ModalTokens.Palette.subtitleText)
-                    .multilineTextAlignment(.center)
-                    .padding(.bottom, ModalTokens.gapBelowSubtitle)
-            }
-        case .attributed:
+        case let .plain(subtitle):
+            Text(subtitle)
+                .font(ModalTokens.subtitleFont)
+                .foregroundColor(ModalTokens.Palette.subtitleText)
+                .multilineTextAlignment(.center)
+                .padding(.bottom, ModalTokens.gapBelowSubtitle)
+        case let .attributed(attributed):
             // The UIKit path stores an NSAttributedString on the holder. SwiftUI renders the
             // bridged value; styling is limited to the whitelisted bold/color/link subgrammar.
-            Text(AttributedString(holder.subtitleAttributed ?? NSAttributedString()))
+            Text(AttributedString(attributed))
                 .multilineTextAlignment(.center)
                 .padding(.bottom, ModalTokens.gapBelowSubtitle)
         case .custom:
@@ -143,6 +130,54 @@ public struct SwiftUIAlertModal: View {
             // on this descriptor), so this case is unreachable from `SwiftUIAlertModal` in practice.
             // Bespoke content is served by `AlertModalScaffold`'s `ViewBuilder` slot instead.
             EmptyView()
+        }
+    }
+}
+
+extension SwiftUIAlertModal {
+    /// What `subtitleView` renders, once the DECISION (`ResolvedModal.SubtitleKind`) has been
+    /// turned into an actual payload. A separate type (not just `SubtitleKind` reused) because the
+    /// `.plain` payload is deliberately NOT `SubtitleKind.plain`'s associated `String` — see
+    /// `subtitlePayload` below for why.
+    enum SubtitlePayload {
+        case none
+        case plain(AttributedString)
+        case attributed(NSAttributedString)
+        case custom
+    }
+
+    /// The subtitle DECISION + PAYLOAD SELECTION, pulled out of the view body so it's a plain,
+    /// synchronous function a test can call directly (no `View` construction, no hosting).
+    ///
+    /// `resolved.subtitle` (`ResolvedModal.SubtitleKind`) decides ONLY none/plain/attributed/
+    /// custom — it never supplies the payload this function returns for `.plain`. That split
+    /// matters: `SubtitleKind.plain`'s associated `String` is the STRIPPED text
+    /// `ModalText.split` produced for the UIKit `holder` (plain-vs-styled is a UIKit-scoped
+    /// classification — see `ModalText.swift`), which would silently drop SwiftUI-scoped styling
+    /// (e.g. `subtitle.swiftUI.foregroundColor = .red`) a caller applied the natural way. So
+    /// `.plain` here returns `config.subtitle` — the descriptor's own `AttributedString` — as-is,
+    /// exactly like the `showsTitle`/`title` pairing in `body` above.
+    ///
+    /// `.attributed` is the one case that DOES read its payload off `holder`: the resolver only
+    /// records THAT the subtitle is attributed, the `NSAttributedString` itself lives on
+    /// `holder.subtitleAttributed`, and UIKit renders that bridged value as-is — so returning it
+    /// here (rather than the descriptor's `AttributedString`) is the correct equivalence, not a
+    /// shortcut.
+    static func subtitlePayload(
+        resolved: GBAlertModal.ResolvedModal,
+        config: AlertDialog,
+        holder: GBAlertModal.DataHolder
+    ) -> SubtitlePayload {
+        switch resolved.subtitle {
+        case .none:
+            return .none
+        case .plain:
+            guard let subtitle = config.subtitle else { return .none }
+            return .plain(subtitle)
+        case .attributed:
+            return .attributed(holder.subtitleAttributed ?? NSAttributedString())
+        case .custom:
+            return .custom
         }
     }
 }
