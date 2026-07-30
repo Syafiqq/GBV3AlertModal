@@ -182,6 +182,83 @@ final class TitleSubtitleTruncationTests: XCTestCase {
         )
     }
 
+    // MARK: - (a) Root cause: the title wraps at the CONTENT width, not the CARD width
+
+    /// **The regression test for the defect the first attempt at this directive shipped.**
+    ///
+    /// `numberOfLines = 0` and 900 compression resistance were both correct and both insufficient: the
+    /// label was reporting an intrinsic height for the text wrapped at the CARD's width (350 portrait,
+    /// 804 landscape, 320 for the banner shapes) rather than at the 256pt CONTENT width it actually
+    /// gets, because `preferredMaxLayoutWidth` was never set. Auto Layout then handed it exactly the
+    /// height it asked for — so the tail lines were dropped with no constraint capping anything, and no
+    /// amount of compression resistance could have helped. **Resistance cannot defend a wrong intrinsic
+    /// size.**
+    ///
+    /// The symptom tests above caught it (111 of 121 glyphs, 143.3pt against SwiftUI's 172.0). This one
+    /// names the CAUSE, so a regression reports "the title is measuring itself against the wrong width"
+    /// instead of "the title truncated, somewhere, for some reason".
+    func test_theTitleWrapsAtTheContentWidth_notTheCardWidth_portrait() throws {
+        try assertTitleWrapsAtTheContentWidth(hostSize: portrait)
+    }
+
+    /// The same fact in LANDSCAPE, where the gap was widest (the card is ~804 wide, so the stale
+    /// reading was TWO lines against six) — and where the differential harness structurally cannot
+    /// look, since it hosts portrait only.
+    func test_theTitleWrapsAtTheContentWidth_notTheCardWidth_landscape() throws {
+        try assertTitleWrapsAtTheContentWidth(hostSize: pressured)
+    }
+
+    private func assertTitleWrapsAtTheContentWidth(
+        hostSize: CGSize,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) throws {
+        let properties = GeniePresets.standardProperties()
+        let modal = GBAlertModal(
+            properties: properties,
+            holder: UIKitModalRenderer.AlertHolder.make(
+                for: dialog(title: Self.longTitle, subtitle: "Short body."), resolve: { _ in }
+            )
+        )
+
+        renderForSnapshot(modal, size: hostSize)
+
+        let title = try XCTUnwrap(modal.lbTitle)
+        // This preset states the same 256 for portrait and landscape, so one expectation serves both
+        // hosts. (`resolvedContentWidths` picks the orientation's own reading; a preset that made them
+        // differ would need this expectation to follow suit.)
+        let contentWidth = try XCTUnwrap(properties.contentProperty?.fixedWidthPortrait)
+        let text = try XCTUnwrap(title.attributedText)
+
+        // PREMISE: the label really is the content width, so "wrapped at the card width" is a
+        // statement about a DIFFERENT number and not a restatement of the same one.
+        XCTAssertEqual(
+            title.bounds.width, contentWidth, accuracy: 0.5,
+            "premise: the title should be laid out at the content width", file: file, line: line
+        )
+        XCTAssertEqual(
+            title.preferredMaxLayoutWidth, contentWidth, accuracy: 0.5,
+            "the title is measuring its height against the wrong width — this is the channel that "
+                + "tells a numberOfLines == 0 label how wide it will be, and an unset (0) value makes "
+                + "UIKit fill it in from whatever width an earlier layout pass happened to give it",
+            file: file, line: line
+        )
+
+        // The height the string genuinely needs AT THAT WIDTH, measured independently of the label.
+        let needed = text.boundingRect(
+            with: CGSize(width: contentWidth, height: .greatestFiniteMagnitude),
+            options: [.usesLineFragmentOrigin, .usesFontLeading],
+            context: nil
+        ).height
+        XCTAssertGreaterThanOrEqual(
+            title.bounds.height, needed - 0.5,
+            "the title was given \(title.bounds.height)pt but the text needs \(needed)pt at "
+                + "\(contentWidth)pt wide — it is short by "
+                + "\((needed - title.bounds.height) / title.font.lineHeight) line(s)",
+            file: file, line: line
+        )
+    }
+
     // MARK: - (b) Under height pressure the SUBTITLE yields, not the title
 
     func test_underHeightPressure_theSubtitleYields_andTheTitleSurvives_onUIKit() throws {

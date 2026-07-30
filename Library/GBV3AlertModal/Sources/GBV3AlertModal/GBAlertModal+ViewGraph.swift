@@ -496,5 +496,15 @@ internal extension GBAlertModal {
                         .lessThanOrEqualToSuperview()
             }
         }
+
+        // Title wrap width. Not a SnapKit constraint but the same kind of fact — the width the title
+        // label must measure its own height against (`preferredMaxLayoutWidth`), taken from the same
+        // resolved content width that sizes `svContentContainer` above. Stated HERE, at build time, so
+        // the very FIRST layout pass measures the title at the width it will actually have; without it
+        // the label reports the height of the text wrapped at whatever width an earlier pass gave it —
+        // the card's, not the content's — and silently drops the lines that no longer fit. The full
+        // evidence and the reason this is preset-derived rather than bounds-derived are on
+        // `adjustTitleWrapWidth`. `layoutSubviews` re-applies it (rotation, `updateDialog`).
+        adjustTitleWrapWidth()
     }
 }
