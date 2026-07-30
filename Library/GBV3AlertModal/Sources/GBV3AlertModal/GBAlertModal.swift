@@ -64,6 +64,16 @@ open class GBAlertModal: UIView {
 
     // MARK: Data
 
+    /// **The title's UNSCALED attributed text**, kept so rung 2 always scales from the ORIGINAL
+    /// rather than from an already-scaled string (which would compound: 0.75 of 0.75 of 0.75…).
+    /// Assigned by `buildTitleComponent` alongside `lbTitle` and cleared with it.
+    var titleNominalAttributedText: NSAttributedString?
+
+    /// The font scale currently applied to `lbTitle` — 1 whenever the title is at full size. Read by
+    /// `adjustTitleFontScale` purely as an idempotence guard: when the newly computed scale equals
+    /// this, nothing is assigned, nothing is invalidated, and the layout settles instead of looping.
+    var titleFontScaleApplied: CGFloat = 1
+
     // MARK: Public Properties
 
     // MARK: Initialization

@@ -15,6 +15,14 @@ extension GBAlertModal {
         if let svContentContainer {
             adjustSvContentContainerConstraintWidth(svContentContainer)
         }
+
+        // Rung 2 of the no-truncation ladder — a SAFETY NET here, not the driver. The real trigger is
+        // `ModalTitleLabel.onLayout`, because UIKit lays out top-down: at this point `lbTitle` (three
+        // levels down) still carries the PREVIOUS pass's bounds, and rung 2 is a decision about the
+        // height this pass granted. Running it here as well costs nothing — it is idempotent, and at
+        // steady state both call sites read the same views and compute the same scale — and it covers
+        // a pass in which the title's own frame did not change but its budget did.
+        adjustTitleFontScale()
     }
 
     // MARK: Public Function

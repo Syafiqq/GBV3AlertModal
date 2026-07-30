@@ -279,12 +279,28 @@ final class TitleSubtitleTruncationTests: XCTestCase {
                 + "pressure, so it proves nothing about who yields first"
         )
 
-        // THE TITLE SURVIVED: still multi-line, still full size, still complete.
-        XCTAssertEqual(title.font.pointSize, font.pointSize, "the title shrank under pressure")
+        // THE TITLE SURVIVED — and "survived" now means the owner's rung 2, not "untouched": it may
+        // SHRINK once the subtitle has nothing left to give, but only down to the floor, and it may
+        // never lose a glyph. On the reference simulator this fixture engages rung 2 (the landscape
+        // card can offer ~110pt against the 172pt the title wants at full size, so the scale lands at
+        // the 0.75 floor); the assertion is written as an invariant rather than as that number, so a
+        // host with different safe-area insets exercises the same contract instead of going flaky.
+        let floor = ModalLayout.titleMinimumScaleFactor
+        XCTAssertLessThanOrEqual(
+            title.font.pointSize, font.pointSize + 0.01,
+            "the title grew — rung 2 only ever scales DOWN"
+        )
+        XCTAssertGreaterThanOrEqual(
+            title.font.pointSize, font.pointSize * floor - 0.01,
+            "the title shrank BELOW the floor (\(title.font.pointSize)pt against a "
+                + "\(font.pointSize * floor)pt floor). Rung 2 stops at the floor; there is no rung 3."
+        )
         XCTAssertGreaterThan(
             title.bounds.height, font.lineHeight * 2.5,
-            "the title lost lines under pressure — it is supposed to yield LAST"
+            "the title collapsed to a line or two under pressure — even at the floor it should still "
+                + "be wrapping, because shrinking re-wraps rather than dropping lines"
         )
+        // The one that matters: whatever scale it settled at, every glyph is still laid out.
         assertNoTruncation(title, "title (under height pressure)")
 
         // AND THE SUBTITLE DID NOT TRUNCATE EITHER: it yields by SCROLLING, at full size. This is
@@ -293,19 +309,29 @@ final class TitleSubtitleTruncationTests: XCTestCase {
         assertNoTruncation(subtitleLabel, "subtitle (under height pressure)")
     }
 
-    /// The SwiftUI title's height must be the SAME under pressure as with room to spare.
+    /// The SwiftUI title under pressure: it may SCALE, it may not lose text.
     ///
-    /// SwiftUI has no scrolling subtitle slot (D-7), so the "subtitle yields" half of the directive is
-    /// UIKit-only and is not asserted here. What IS assertable is the half the owner emphasised — the
-    /// title still lives — and it is the exact thing `fixedSize(vertical:)` buys: a proposal of less
-    /// height than the title needs changes nothing about the title.
-    func test_swiftUITitle_keepsItsFullHeight_underHeightPressure() throws {
+    /// This test used to assert the pressured height was IDENTICAL to the roomy one, which was the
+    /// right contract while the row carried `fixedSize(vertical:)` — it simply never yielded. Rung 2
+    /// replaced that: `minimumScaleFactor` lets the title shrink once the subtitle has given way, and
+    /// a shrunk title is legitimately shorter. So the contract is now a RANGE, and its lower bound is
+    /// the thing the directive actually forbids crossing:
+    ///
+    /// * never taller than the roomy render (rung 2 only scales down);
+    /// * never shorter than the same string needs AT THE FLOOR SCALE. SwiftUI cannot be asked whether
+    ///   it ellipsized, but a `Text` that dropped text is shorter than the floor-scaled layout of the
+    ///   whole string — so this lower bound is exactly "it scaled instead of truncating".
+    ///
+    /// SwiftUI still has no scrolling subtitle slot (D-7), so the "subtitle scrolls" half stays
+    /// UIKit-only; on SwiftUI the subtitle answers pressure by scaling, one priority rung earlier.
+    func test_swiftUITitle_underHeightPressure_scalesAtMostToTheFloor_neverLosingText() throws {
         let shape = DifferentialGeometry.Shape(
             name: "directive-long-title-pressured",
             dialog: dialog(title: Self.longTitle, subtitle: Self.longSubtitle),
             properties: GeniePresets.standardProperties()
         )
         let font = try XCTUnwrap(shape.properties.titleFont)
+        let contentWidth = try XCTUnwrap(shape.properties.contentProperty?.fixedWidthPortrait)
 
         let roomy = try XCTUnwrap(swiftUITitleFrame(shape, size: portrait), "no title probe (roomy)")
         let squeezed = try XCTUnwrap(
@@ -316,10 +342,23 @@ final class TitleSubtitleTruncationTests: XCTestCase {
             roomy.height, font.lineHeight * 2.5,
             "premise: the roomy render must already be multi-line, or this comparison is vacuous"
         )
-        XCTAssertEqual(
-            squeezed.height, roomy.height, accuracy: DifferentialGeometry.tolerance,
-            "the SwiftUI title LOST height under pressure (\(squeezed.height) against "
-                + "\(roomy.height)) — a shorter Text is a truncated Text"
+        XCTAssertLessThanOrEqual(
+            squeezed.height, roomy.height + DifferentialGeometry.tolerance,
+            "the pressured title is TALLER than the unpressured one"
+        )
+
+        // The floor-scaled layout of the whole string at the same width — the shortest the ladder
+        // permits while still drawing every glyph.
+        let floorFont = font.withSize(font.pointSize * ModalLayout.titleMinimumScaleFactor)
+        let floorHeight = GBAlertModal.textHeight(
+            NSAttributedString(string: Self.longTitle, attributes: [.font: floorFont]),
+            width: contentWidth
+        )
+        XCTAssertGreaterThanOrEqual(
+            squeezed.height, floorHeight - DifferentialGeometry.tolerance,
+            "the SwiftUI title (\(squeezed.height)pt) is shorter than the floor-scaled text needs "
+                + "(\(floorHeight)pt) — below that it cannot be showing the whole string, so it "
+                + "truncated instead of scaling"
         )
     }
 
@@ -393,6 +432,116 @@ final class TitleSubtitleTruncationTests: XCTestCase {
             SwiftUIAlertModal.titleLayoutPriority, SwiftUIAlertModal.subtitleLayoutPriority,
             "the SwiftUI title must out-rank the subtitle in its VStack, mirroring the UIKit ladder"
         )
+    }
+
+    // MARK: - Rung 2: the shrink floor and the fit search
+
+    /// **One floor, read by both renderers.** UIKit searches against
+    /// `ModalLayout.titleMinimumScaleFactor`; SwiftUI hands `ModalTokens.titleMinimumScaleFactor` to
+    /// `minimumScaleFactor`. A hand-transcribed second copy is exactly how this field drifted before
+    /// (the token carried 0.75 while UIKit hardcoded its own), so the token is INITIALISED from the
+    /// constant and this pins that it still is.
+    func test_theShrinkFloor_isOneSharedNumber() {
+        XCTAssertEqual(
+            ModalTokens.standard.titleMinimumScaleFactor, ModalLayout.titleMinimumScaleFactor,
+            "the SwiftUI token and the UIKit constant are different numbers — the two renderers would "
+                + "stop shrinking at different sizes"
+        )
+        XCTAssertEqual(
+            ModalTokens(from: GeniePresets.standardProperties()).titleMinimumScaleFactor,
+            ModalLayout.titleMinimumScaleFactor,
+            "deriving tokens from Properties must not disturb the shared floor"
+        )
+        // The value itself: the same 0.75 this label carried for years, kept so the shrink RANGE is
+        // unchanged and only its trigger moved (last resort, not first).
+        XCTAssertEqual(ModalLayout.titleMinimumScaleFactor, 0.75)
+    }
+
+    /// The fit search, exercised as the pure function it is — no label, no window, no layout pass.
+    /// This is where "walks down, stops at the floor, never goes below it" is pinned; the hosted tests
+    /// above can only observe the OUTCOME of one particular fixture.
+    func test_theFitSearch_walksDownToTheFirstScaleThatFits_andStopsAtTheFloor() {
+        // Fits at full size -> no shrink at all.
+        XCTAssertEqual(
+            ModalLayout.titleFontScale(availableHeight: 200) { scale in 100 * scale }, 1
+        )
+        // Needs to step down: height 200 * scale must be <= 180, i.e. scale <= 0.9.
+        XCTAssertEqual(
+            ModalLayout.titleFontScale(availableHeight: 180) { scale in 200 * scale }, 0.9,
+            accuracy: 0.001
+        )
+        // Nothing fits, even at the floor: return the FLOOR, never less. That is rung 3 — the title
+        // keeps every glyph and the layout gives way somewhere else.
+        XCTAssertEqual(
+            ModalLayout.titleFontScale(availableHeight: 10) { scale in 1000 * scale },
+            ModalLayout.titleMinimumScaleFactor,
+            accuracy: 0.001
+        )
+        // The last rung lands EXACTLY on the floor rather than on accumulated float drift.
+        var visited: [CGFloat] = []
+        _ = ModalLayout.titleFontScale(availableHeight: 1) { scale in
+            visited.append(scale)
+            return 1000
+        }
+        XCTAssertEqual(visited.first, 1)
+        XCTAssertEqual(visited.last ?? -1, ModalLayout.titleMinimumScaleFactor, accuracy: 0.0001)
+        XCTAssertTrue(
+            visited.allSatisfy { $0 >= ModalLayout.titleMinimumScaleFactor - 0.0001 },
+            "the search probed a scale below the floor: \(visited)"
+        )
+    }
+
+    /// Scaling must come off the NOMINAL string every time. If rung 2 ever scaled the label's current
+    /// (already scaled) text, repeated layout passes would compound 0.75 × 0.75 × … down to nothing.
+    func test_scalingIsAlwaysRelativeToTheNominalString() throws {
+        let font = try XCTUnwrap(GeniePresets.standardProperties().titleFont)
+        let nominal = NSAttributedString(string: "Title", attributes: [.font: font])
+
+        let once = GBAlertModal.scaled(nominal, by: 0.75)
+        let onceAgain = GBAlertModal.scaled(nominal, by: 0.75)
+        let compounded = GBAlertModal.scaled(once, by: 0.75)
+
+        let size: (NSAttributedString) -> CGFloat = { text in
+            (text.attribute(.font, at: 0, effectiveRange: nil) as? UIFont)?.pointSize ?? -1
+        }
+        XCTAssertEqual(size(once), font.pointSize * 0.75, accuracy: 0.001)
+        XCTAssertEqual(size(onceAgain), size(once), accuracy: 0.001, "scaling must be idempotent")
+        XCTAssertEqual(
+            size(compounded), font.pointSize * 0.75 * 0.75, accuracy: 0.001,
+            "premise: scaling a scaled string DOES compound — which is why `adjustTitleFontScale` "
+                + "keeps `titleNominalAttributedText` and never scales the label's current text"
+        )
+        // Scale 1 is the identity, and cheaply so.
+        XCTAssertEqual(size(GBAlertModal.scaled(nominal, by: 1)), font.pointSize, accuracy: 0.001)
+    }
+
+    /// The nominal string is captured when the title is built, and reset to full size with it — so a
+    /// re-rendered dialog (`updateDialog`) never inherits the previous one's shrink.
+    func test_rebuildingTheTitle_resetsItToFullSize() throws {
+        let modal = self.modal(dialog(title: Self.longTitle, subtitle: Self.longSubtitle))
+        // ONE host for both renders: `show` installs edge constraints with `makeConstraints`, so
+        // re-hosting the same modal would stack a second set. `updateDialog` rebuilds the content in
+        // place, which is the path under test anyway.
+        let host = renderForSnapshot(modal, size: pressured)
+
+        modal.updateDialog(
+            holder: UIKitModalRenderer.AlertHolder.make(
+                for: dialog(title: "Title", subtitle: "Short body."), resolve: { _ in }
+            ),
+            properties: GeniePresets.standardProperties()
+        )
+        host.setNeedsLayout()
+        host.layoutIfNeeded()
+
+        let title = try XCTUnwrap(modal.lbTitle)
+        let font = try XCTUnwrap(GeniePresets.standardProperties().titleFont)
+        XCTAssertEqual(
+            title.font.pointSize, font.pointSize, accuracy: 0.01,
+            "a one-line title with room to spare must render at full size — the rebuilt title "
+                + "inherited the previous one's shrink"
+        )
+        XCTAssertEqual(modal.titleFontScaleApplied, 1, accuracy: 0.001)
+        assertNoTruncation(title, "rebuilt title")
     }
 
     // MARK: - Helpers

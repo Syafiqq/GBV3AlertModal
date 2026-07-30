@@ -81,6 +81,69 @@ enum ModalLayout {
     }
 }
 
+// MARK: - The title's last resort: shrink, never truncate
+
+extension ModalLayout {
+    /// **How far the TITLE may shrink before it is allowed to give up anything else — the floor of
+    /// rung 2.**
+    ///
+    /// `0.75`, and the number is not arbitrary: it is exactly the `minimumScaleFactor` this label
+    /// carried for years (`generateLabelForTitleDesign`, and still today in the shipped app's
+    /// `V2AlertModal.swift:607`). Keeping it means the shrink RANGE a Geniebook title can occupy is
+    /// unchanged from what has always shipped — only its TRIGGER moved, from first resort (shrink
+    /// before wrapping, then truncate at two lines) to last resort (wrap freely; shrink only once the
+    /// subtitle has surrendered everything; never truncate).
+    ///
+    /// It is also enough for the case that forced the issue: a 121-glyph title in the 256pt content
+    /// column needs 172pt at 24pt, and the landscape card can offer ~110pt. At 0.75 the font is 18pt,
+    /// the same text re-wraps to ~5 lines of 21.5pt ≈ 107.5pt, and it fits with every glyph intact.
+    ///
+    /// Shared by BOTH renderers: `ModalTokens.titleMinimumScaleFactor` is initialised from this
+    /// constant rather than transcribing it, so SwiftUI's `minimumScaleFactor` and UIKit's computed
+    /// fit cannot drift apart (`test_theShrinkFloor_isOneSharedNumber`).
+    static var titleMinimumScaleFactor: CGFloat { 0.75 }
+
+    /// The coarse grid the fit search walks. 0.05 is deliberately coarse: it bounds the search at six
+    /// measurements, and — more importantly — it QUANTISES the answer, so a fractional-point wobble in
+    /// the available height cannot make the chosen scale oscillate between two neighbouring values on
+    /// successive layout passes.
+    static var titleFontScaleStep: CGFloat { 0.05 }
+
+    /// **The largest font scale at which the title still fits, or the floor.**
+    ///
+    /// Pure and closure-driven so it is unit-testable without a `UILabel`, a window or a layout pass:
+    /// the caller supplies `heightAtScale`, which measures the real attributed string at a candidate
+    /// scale. Walks DOWN from 1 on the `step` grid and returns the first scale that fits; if even
+    /// `floor` does not fit, it returns `floor` — never anything smaller, and never a signal to
+    /// truncate. That is rung 3: below the floor the title keeps all of its glyphs and the layout
+    /// gives way elsewhere.
+    ///
+    /// Integer stepping (`1 - step * i`) rather than repeated subtraction, so the last rung lands
+    /// exactly on `floor` instead of on 0.7499999 worth of accumulated float drift.
+    ///
+    /// The 0.5pt slack in the fit test is the same sub-pixel allowance the rest of this module uses:
+    /// `boundingRect` and `UILabel.intrinsicContentSize` round a multi-line height slightly
+    /// differently, and half a point of that must not cost a whole step of font size.
+    static func titleFontScale(
+            availableHeight: CGFloat,
+            floor: CGFloat = ModalLayout.titleMinimumScaleFactor,
+            step: CGFloat = ModalLayout.titleFontScaleStep,
+            heightAtScale: (CGFloat) -> CGFloat
+    ) -> CGFloat {
+        guard availableHeight > 0, floor > 0, floor < 1, step > 0 else {
+            return 1
+        }
+        let steps = Int((((1 - floor) / step).rounded()))
+        for index in 0...Swift.max(steps, 0) {
+            let scale = Swift.max(1 - step * CGFloat(index), floor)
+            if heightAtScale(scale) <= availableHeight + 0.5 {
+                return scale
+            }
+        }
+        return floor
+    }
+}
+
 // MARK: - The vertical priority ladder
 
 extension ModalLayout {

@@ -402,6 +402,7 @@ final class ModalTokensProvenanceTests: XCTestCase {
         XCTAssertEqual(tokens.obliqueOffset.height, ModalTokens.standard.obliqueOffset.height)
         XCTAssertEqual(tokens.closeButtonSize, ModalTokens.standard.closeButtonSize)
         XCTAssertEqual(tokens.buttonLabelPaddingH, ModalTokens.standard.buttonLabelPaddingH)
+        XCTAssertEqual(tokens.titleMinimumScaleFactor, ModalTokens.standard.titleMinimumScaleFactor)
 
         // UIKit's own literals: `size == 48` on `btCloseAction` (`installConstraints`) and
         // `contentEdgeInsets = (6, 16, 6, 16)` on both button factories
@@ -410,10 +411,13 @@ final class ModalTokensProvenanceTests: XCTestCase {
         XCTAssertEqual(tokens.closeButtonSize, 48)
         XCTAssertEqual(tokens.buttonLabelPaddingH, 16)
         XCTAssertEqual(tokens.buttonHeight, 48)
-        // `titleMinimumScaleFactor` used to be asserted here (UIKit's `minimumScaleFactor = 0.75` on
-        // `lbTitle`). The owner no-truncation directive removed the shrink ladder from the UIKit label
-        // and the token with it — the title now wraps at full size on both renderers, which
-        // `TitleSubtitleTruncationTests` pins directly against both view graphs rather than against a
-        // number. See the note where the field used to be declared in `ModalTokens`.
+        // `titleMinimumScaleFactor` is RUNG 2's floor — how far the title may shrink once the subtitle
+        // has yielded, with `numberOfLines`/`lineLimit` unlimited throughout. It is no longer a
+        // literal here: it is initialised from `ModalLayout.titleMinimumScaleFactor`, the same
+        // constant UIKit's `adjustTitleFontScale` searches against, so the two renderers cannot stop
+        // shrinking at different sizes. `TitleSubtitleTruncationTests.test_theShrinkFloor_isOneShared`
+        // `Number` pins that derivation; asserting the literal 0.75 in two files is what let this
+        // field drift from UIKit before.
+        XCTAssertEqual(tokens.titleMinimumScaleFactor, ModalLayout.titleMinimumScaleFactor)
     }
 }

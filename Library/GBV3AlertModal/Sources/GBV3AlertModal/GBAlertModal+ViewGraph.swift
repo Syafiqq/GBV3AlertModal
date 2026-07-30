@@ -79,28 +79,51 @@ internal extension GBAlertModal {
     }
 
     /// Creates + assigns `lbTitle` from either the plain or attributed title source.
+    ///
+    /// Also records the UNSCALED string in `titleNominalAttributedText` and resets
+    /// `titleFontScaleApplied`: rung 2 of the no-truncation ladder scales the title's font as a last
+    /// resort, and it must always scale from THIS string. Scaling an already-scaled label would
+    /// compound on every layout pass, and a rebuilt title (`updateDialog`) must start at full size.
     private func buildTitleComponent(_ resolved: ResolvedModal) {
         // Setup title
         if resolved.showsTitle {
             if let title = dataHolder?.title,
                !title.isEmpty {
                 let lbTitle = generateLabelForTitleDesign()
-                lbTitle.attributedText = NSAttributedString(
+                let attributed = NSAttributedString(
                         string: title,
                         attributes: [
                             .font: properties?.titleFont,
                             .foregroundColor: properties?.titleColor
                         ].compactMapValues({ $0 })
                 )
+                lbTitle.attributedText = attributed
+                titleNominalAttributedText = attributed
+                titleFontScaleApplied = 1
+                bindTitleFontScale(lbTitle)
                 self.lbTitle = lbTitle
             } else if let title = dataHolder?.titleAttributed,
                       title.length > 0 {
                 let lbTitle = generateLabelForTitleDesign()
                 lbTitle.attributedText = title
+                titleNominalAttributedText = title
+                titleFontScaleApplied = 1
+                bindTitleFontScale(lbTitle)
                 self.lbTitle = lbTitle
             }
         } else {
             lbTitle = nil
+            titleNominalAttributedText = nil
+            titleFontScaleApplied = 1
+        }
+    }
+
+    /// Runs rung 2 whenever the title's own frame for a pass has been assigned — the only moment its
+    /// granted height (and its sibling subtitle slot's) is current. WEAK capture: the label is owned by
+    /// the view graph the modal owns, so a strong capture would be a cycle.
+    private func bindTitleFontScale(_ label: ModalTitleLabel) {
+        label.onLayout = { [weak self] in
+            self?.adjustTitleFontScale()
         }
     }
 

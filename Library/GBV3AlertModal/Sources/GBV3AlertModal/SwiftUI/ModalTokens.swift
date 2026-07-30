@@ -65,21 +65,23 @@ public struct ModalTokens: Sendable {
     /// label whatever its slot does. No `Properties` counterpart — UIKit hardcodes it too.
     public var buttonLabelPaddingH: CGFloat = 16
 
-    // **`titleMinimumScaleFactor` USED TO LIVE HERE, and it is gone on purpose.**
-    //
-    // It carried UIKit's `minimumScaleFactor = 0.75` from `generateLabelForTitleDesign`, and
-    // `SwiftUIAlertModal`'s `ShrinkToFitSingleLine` ruler/overlay consumed it to reproduce that
-    // label's measured shrink-onto-one-line behaviour. The owner directive — "title and subtitle
-    // should no truncated, title with more content compression (title will still live while subtitle
-    // begin to wrap)" — deletes that behaviour from the UIKit label itself (`numberOfLines = 0`, no
-    // `adjustsFontSizeToFitWidth`), so there is no longer any shrinking on EITHER side for a token to
-    // describe. Keeping a public field that nothing reads is how a token starts meaning something
-    // different from what draws, which is the failure this whole type exists to prevent.
-    //
-    // PUBLIC API CHANGE: `ModalTokens.titleMinimumScaleFactor` is removed. Nothing replaces it — the
-    // title's no-truncation behaviour is not configurable on either renderer, and the
-    // title-over-subtitle ORDERING lives in `ModalLayout.Priority` (UIKit) and
-    // `SwiftUIAlertModal.titleLayoutPriority` (SwiftUI), neither of which is a design token.
+    /// **How far the title may shrink before it is allowed to give up anything else — RUNG 2 of the
+    /// no-truncation ladder, and the same number on both renderers.**
+    ///
+    /// It no longer means what it used to. The old reading was "shrink the title onto ONE line, then
+    /// truncate at two", which is the ladder the owner directive removed. The new reading is: wrap
+    /// freely (`lineLimit(nil)` here, `numberOfLines = 0` in UIKit); let the SUBTITLE yield first;
+    /// and only then scale the title's glyphs down, as far as this factor and no further — because
+    /// shrinking keeps every glyph and truncating does not.
+    ///
+    /// **Initialised FROM `ModalLayout.titleMinimumScaleFactor`, never transcribed.** That constant is
+    /// what UIKit's `adjustTitleFontScale` searches against, so the two renderers cannot drift to
+    /// different floors — the failure mode this whole type exists to prevent, and one this very field
+    /// used to have (it carried a hand-copied 0.75 while UIKit hardcoded its own). Pinned by
+    /// `test_theShrinkFloor_isOneSharedNumber`.
+    ///
+    /// No `Properties` counterpart: UIKit hardcodes the floor too.
+    public var titleMinimumScaleFactor: CGFloat = ModalLayout.titleMinimumScaleFactor
 
     /// The close button's tap target, 48×48. UIKit pins `btCloseAction` to `vwContainer`'s
     /// top-trailing with `size == 48` (`GBAlertModal+ViewGraph.swift`'s `installConstraints`); the
@@ -415,7 +417,8 @@ public struct ModalTokens: Sendable {
     /// ## Fields of `ModalTokens` with NO `Properties` counterpart
     ///
     /// `buttonCornerRadius`, `buttonHeight`, `obliqueOffset`, `buttonLabelPaddingH`,
-    /// `closeButtonSize` — no `ActionStyle` theme carries button geometry, and neither the close
+    /// `closeButtonSize`, `titleMinimumScaleFactor` (rung 2's floor, shared with UIKit via
+    /// `ModalLayout.titleMinimumScaleFactor`) — no `ActionStyle` theme carries button geometry, and neither the close
     /// button's 48pt box nor the buttons' 16pt label inset comes from `Properties` at all: UIKit
     /// hardcodes every one of them (`GBAlertModal+ButtonStyling.swift`'s 8pt radius, 48pt slot
     /// height, ±3 offset and `contentEdgeInsets`; `GBAlertModal+ViewGraph.swift`'s `size == 48` on

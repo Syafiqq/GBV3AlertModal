@@ -203,6 +203,128 @@ extension GBAlertModal {
         lbTitle.invalidateIntrinsicContentSize()
     }
 
+    // MARK: - Rung 2: the title shrinks rather than truncating
+
+    /// **The title's LAST resort: shrink the font, never drop a glyph.**
+    ///
+    /// The owner's ladder, in full, and this method is only the middle rung:
+    ///
+    /// * **Rung 1 — the SUBTITLE yields.** Pure Auto Layout, nothing here: the title's 900 vertical
+    ///   compression resistance beats the subtitle slot's `frame == content` tie (250/749), so an
+    ///   over-tall card shrinks the subtitle's visible height and it scrolls. Most pressure never
+    ///   reaches rung 2 at all.
+    /// * **Rung 2 — the TITLE shrinks** (this method), once rung 1 has nothing left to give. Down to
+    ///   `ModalLayout.titleMinimumScaleFactor` (0.75), on a coarse grid, keeping `numberOfLines = 0`
+    ///   throughout — so the text RE-WRAPS at the smaller size and every glyph survives.
+    /// * **Rung 3 — there is none.** Below the floor the title stops shrinking and keeps all of its
+    ///   text; whatever still does not fit is the layout's problem, not the string's.
+    ///
+    /// **Why this is computed rather than delegated to `adjustsFontSizeToFitWidth`.** That property is
+    /// the old ladder's shrink rung, it is documented against the label's line count, and with
+    /// `numberOfLines = 0` a label never overflows its WIDTH — it wraps — so there is nothing there to
+    /// trigger it. What we need is a fit against the available HEIGHT, which UIKit does not offer.
+    ///
+    /// **The budget: `title + subtitle` heights, and that choice is the whole design.** The available
+    /// height is read as the title's own laid-out height PLUS whatever the subtitle slot still holds —
+    /// i.e. "everything the title could claim if the subtitle surrendered the lot", which is precisely
+    /// rung 1 followed by rung 2. It also makes the computation a FIXED POINT, which a naive reading
+    /// of `lbTitle.bounds.height` alone is not:
+    ///
+    /// * shrinking the title hands its freed points to the subtitle slot, so the SUM is unchanged and
+    ///   the next pass computes the same scale and assigns nothing — the layout settles;
+    /// * reading the title's height alone would instead see it "fitting exactly" at every scale (the
+    ///   label always gets its own intrinsic height once it is small enough), so the title could never
+    ///   grow back — a one-way ratchet that would survive a rotation back into portrait.
+    ///
+    /// Combined with the 0.05 quantisation and the `titleFontScaleApplied` equality guard, that is
+    /// what makes it safe to run this during layout: a stable input, a quantised output, and no
+    /// assignment when the answer has not changed — so a settled layout stops instead of looping.
+    ///
+    /// **Driven from `ModalTitleLabel.onLayout`**, i.e. from the title's OWN `layoutSubviews`, which is
+    /// the first moment its granted height (and its sibling subtitle slot's) is this pass's value
+    /// rather than the previous one's. `GBAlertModal.layoutSubviews` calls it too, as a safety net for
+    /// a pass in which the title's frame did not change but its budget did. See `ModalTitleLabel`.
+    func adjustTitleFontScale() {
+        guard let lbTitle,
+              let nominal = titleNominalAttributedText,
+              nominal.length > 0 else {
+            return
+        }
+        // The width the title wraps at — the same number `adjustTitleWrapWidth` gave the label. Its
+        // own bounds are the fallback for the flexible-width presets that set no content width.
+        let width = lbTitle.preferredMaxLayoutWidth > 0 ? lbTitle.preferredMaxLayoutWidth : lbTitle.bounds.width
+        let available = lbTitle.bounds.height + (svSubtitleContainer?.bounds.height ?? .zero)
+        guard width > 0,
+              available > 0 else {
+            return
+        }
+
+        let scale = ModalLayout.titleFontScale(availableHeight: available) { candidate in
+            Self.textHeight(Self.scaled(nominal, by: candidate), width: width)
+        }
+
+        // Idempotence: no assignment, no `invalidateIntrinsicContentSize`, no further layout pass.
+        guard abs(scale - titleFontScaleApplied) > 0.001 else {
+            return
+        }
+        titleFontScaleApplied = scale
+        lbTitle.attributedText = Self.scaled(nominal, by: scale)
+        // `UILabel.font` is only the DEFAULT for ranges the attributed string does not style, so it is
+        // kept in step for the case where `Properties.titleFont` was nil and no `.font` attribute was
+        // written at all. It is also what a test can read back to see the rendered point size.
+        //
+        // Both title paths in this library produce a SINGLE-font string (the plain path writes one
+        // `.font` attribute over the whole range; the attributed path takes the caller's). A caller
+        // passing a MULTI-font `titleAttributed` is still scaled correctly by the line above — this
+        // assignment only moves the default underneath it.
+        if let nominalFont = properties?.titleFont {
+            lbTitle.font = scale < 1 ? nominalFont.withSize(nominalFont.pointSize * scale) : nominalFont
+        }
+        lbTitle.invalidateIntrinsicContentSize()
+    }
+
+    /// `text` with every `.font` attribute scaled by `scale`. Returns the input unchanged at scale 1,
+    /// so the full-size path allocates nothing.
+    ///
+    /// The ranges are collected BEFORE anything is written: mutating attributes inside
+    /// `enumerateAttribute` over the same storage is a documented way to invalidate the enumeration.
+    /// Ranges with no font attribute are left alone — they render in `UILabel.font`, which is scaled
+    /// separately by the caller.
+    static func scaled(_ text: NSAttributedString, by scale: CGFloat) -> NSAttributedString {
+        guard scale < 1 else {
+            return text
+        }
+        let whole = NSRange(location: 0, length: text.length)
+        var fonts: [(NSRange, UIFont)] = []
+        text.enumerateAttribute(.font, in: whole, options: []) { value, range, _ in
+            guard let font = value as? UIFont else {
+                return
+            }
+            fonts.append((range, font))
+        }
+
+        let scaledText = NSMutableAttributedString(attributedString: text)
+        scaledText.beginEditing()
+        for (range, font) in fonts {
+            scaledText.addAttribute(.font, value: font.withSize(font.pointSize * scale), range: range)
+        }
+        scaledText.endEditing()
+        return scaledText
+    }
+
+    /// The height `text` needs when wrapped at `width`, with no line limit.
+    ///
+    /// `.usesLineFragmentOrigin` + `.usesFontLeading` is the multi-line measurement pair — without the
+    /// first, `boundingRect` measures a single line and every answer here would be wrong in the same
+    /// direction as the `preferredMaxLayoutWidth` defect this ladder sits on top of.
+    static func textHeight(_ text: NSAttributedString, width: CGFloat) -> CGFloat {
+        text.boundingRect(
+                with: CGSize(width: width, height: .greatestFiniteMagnitude),
+                options: [.usesLineFragmentOrigin, .usesFontLeading],
+                context: nil
+        ).height
+    }
+
     /// The fixed / max content-width constraints to apply. Moved verbatim from
     /// GBAlertModal.swift (Task 6), except the switch over `WidthResolution` itself is now
     /// `ModalLayout.resolveContentWidths(_:)` (pure, unit-tested) — this wrapper just supplies the
