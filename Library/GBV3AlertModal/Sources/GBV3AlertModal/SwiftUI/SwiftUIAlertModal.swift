@@ -149,14 +149,23 @@ public struct SwiftUIAlertModal: View {
                     .font(tokens.titleFont)
                     .foregroundColor(tokens.palette.titleText)
                     .multilineTextAlignment(.center)
-                    // The row's WIDTH first (UIKit's `lbTitle` fills the content width and centres its
-                    // text inside it), because the shrink-to-fit below measures itself against
-                    // whatever width this row ends up with.
+                    // The row's WIDTH first (UIKit's `lbTitle` fills the content width and centres
+                    // its text inside it), because it is what decides where the text wraps.
                     .modifier(ContentRowWidth(fillsWidth: tokens.contentChildrenFillWidth))
-                    // Then the single shrunk line — see `ShrinkToFitSingleLine`.
-                    .modifier(ShrinkToFitSingleLine(minimumScaleFactor: tokens.titleMinimumScaleFactor))
+                    // Then NO TRUNCATION, ever — see `NeverTruncates`. This is the counterpart of
+                    // `generateLabelForTitleDesign`'s `numberOfLines = 0` +
+                    // `lineBreakMode = .byWordWrapping`.
+                    .modifier(NeverTruncates())
                     .modalGeometryProbe(.title)
                     .padding(.bottom, tokens.gapBelowTitle)
+                    // OUTERMOST, and it has to be: `layoutPriority` is read by the enclosing
+                    // container (`AlertModalScaffold`'s VStack) off the view it actually holds, so a
+                    // `.padding` applied after it would be the view the VStack sees. This is the
+                    // SwiftUI analogue of UIKit's vertical compression resistance, and the ORDERING
+                    // is the directive: the title (1) out-ranks the subtitle (0), so when the VStack
+                    // has less height than its children want, the subtitle is what gives way.
+                    // Magnitudes are not comparable to UIKit's 0…1000 scale — only the order is.
+                    .layoutPriority(Self.titleLayoutPriority)
             }
             subtitleView(resolved: resolved, holder: holder)
         }
@@ -178,16 +187,23 @@ public struct SwiftUIAlertModal: View {
                 .foregroundColor(tokens.palette.subtitleText)
                 .multilineTextAlignment(.center)
                 .modifier(ContentRowWidth(fillsWidth: tokens.contentChildrenFillWidth))
+                // Same no-truncation guarantee as the title — `generateLabelForSubtitleDesign` has
+                // always been `numberOfLines = 0`, and it now states `.byWordWrapping` too.
+                .modifier(NeverTruncates())
                 .modalGeometryProbe(.subtitle)
                 .padding(.bottom, tokens.gapBelowSubtitle)
+                // The LOWER rung of the directive's ordering — see `subtitleLayoutPriority`.
+                .layoutPriority(Self.subtitleLayoutPriority)
         case let .attributed(attributed):
             // The UIKit path stores an NSAttributedString on the holder. SwiftUI renders the
             // bridged value; styling is limited to the whitelisted bold/color/link subgrammar.
             Text(AttributedString(attributed))
                 .multilineTextAlignment(.center)
                 .modifier(ContentRowWidth(fillsWidth: tokens.contentChildrenFillWidth))
+                .modifier(NeverTruncates())
                 .modalGeometryProbe(.subtitle)
                 .padding(.bottom, tokens.gapBelowSubtitle)
+                .layoutPriority(Self.subtitleLayoutPriority)
         case .custom:
             // A plain `AlertDialog` never populates `subtitleCustomView` (that field doesn't exist
             // on this descriptor), so this case is unreachable from `SwiftUIAlertModal` in practice.
@@ -219,59 +235,53 @@ private struct ContentRowWidth: ViewModifier {
     }
 }
 
-/// **`UILabel` with `adjustsFontSizeToFitWidth`, reproduced in full: one line, glyphs shrunk to fit,
-/// and the NOMINAL line box kept.**
+/// **Unlimited lines, full size, no ellipsis — the SwiftUI half of the no-truncation directive.**
 ///
-/// `generateLabelForTitleDesign` builds `lbTitle` with `numberOfLines = 2`,
-/// `adjustsFontSizeToFitWidth = true` and `minimumScaleFactor = 0.75`. The measured behaviour of that
-/// combination is a SINGLE shrunk line, not two full-size ones — `numberOfLines = 2` is the ceiling for
-/// when scaling runs out, not the preference. Two facts had to be reproduced, and the gate caught them
-/// one at a time (task 17, Class B):
+/// The owner directive is "title and subtitle should no truncated, title with more content compression
+/// (title will still live while subtitle begin to wrap)", and it applies to BOTH renderers. On the
+/// UIKit side it is `numberOfLines = 0` + `lineBreakMode = .byWordWrapping` with no
+/// `adjustsFontSizeToFitWidth` (see `generateLabelForTitleDesign`). Here it is two modifiers, and both
+/// are load-bearing:
 ///
-/// 1. **It shrinks rather than wraps.** UIKit drew a ~272pt title as one 28.7pt line inside a 256pt
-///    label while a plain `Text` wrapped it to two and made the card 28.7pt taller, cascading into the
-///    subtitle's and both buttons' `y`. Hence `lineLimit(1)` + `minimumScaleFactor`. `.lineLimit(2)`
-///    does NOT reproduce it: with unbounded height SwiftUI has room for two full-size lines, so it
-///    never engages the scale factor at all.
-/// 2. **Shrinking does not shrink the LINE BOX.** `UILabel.intrinsicContentSize` keeps the nominal
-///    font's line height and scales only the glyphs inside it (28.7 measured); SwiftUI's
-///    `minimumScaleFactor` shrinks the reported height too (27.0 measured on
-///    `database-error-banner` — a 1.7pt row that cascaded into the whole card).
+/// * `lineLimit(nil)` — no cap on the line count. Stated rather than left implicit, because this is
+///   the property the directive is ABOUT: this row previously carried `lineLimit(1)` plus a
+///   `minimumScaleFactor` (the `ShrinkToFitSingleLine` ruler/overlay, now deleted), which reproduced
+///   UIKit's old shrink-onto-one-line ladder faithfully — including its ellipsis on any title too wide
+///   to shrink onto that line. Both sides now wrap instead, which is what the owner asked for and what
+///   the example's `long-title` fixture has always expected.
+/// * `fixedSize(horizontal: false, vertical: true)` — take the IDEAL height for the given width,
+///   whatever height the container proposes. Without it, a `Text` handed less height than it needs
+///   truncates with an ellipsis, and a height-pressured card is exactly that situation. Horizontal is
+///   deliberately `false`: the row's width is set by `ContentRowWidth` (applied BEFORE this) and the
+///   text must wrap inside it, not push it wider.
 ///
-/// So the row is sized by a RULER — the same text, same font, `lineLimit(1)`, no scale factor, drawn
-/// nowhere (`hidden()`) — and the real, shrinkable text is drawn as an OVERLAY on top of it. An
-/// overlay is proposed exactly the size the base resolved to and never changes it, so:
-///
-/// * the row's height is ALWAYS the nominal single-line height, whatever the scale factor does. That is
-///   what UIKit reports, and it makes the height independent of a SwiftUI behaviour the numbers say we
-///   cannot predict (streak's scaled title reports the nominal height; this one's did not);
-/// * the row's width is the width it was given, so the overlay shrinks against the SAME width UIKit
-///   shrinks against — which is why `ContentRowWidth` is applied BEFORE this modifier. Applying it
-///   after would let a short title's ruler hug, and the overlay would then be squeezed into that hug.
-///
-/// A truncated ruler is harmless: truncation never changes a line's height, and the ruler is never
-/// drawn. It is hidden from accessibility so VoiceOver reads the drawn text once, not twice.
-///
-/// ONE REGIME STILL DIVERGES, stated rather than hidden: for a title too wide even at 0.75 (wider than
-/// ~133% of the row) UIKit spends its second line while this truncates with an ellipsis. No shape in
-/// the differential suite or the 26-shape catalog is in that regime — the widest real title measures
-/// ~107% — and closing it needs the shrink-vs-wrap DECISION, i.e. measuring the string against the row
-/// width, which means a `UIFont` in `ModalTokens` and a text measurement inside the view: a redesign,
-/// for a regime no shipped dialog occupies.
-private struct ShrinkToFitSingleLine: ViewModifier {
-    let minimumScaleFactor: CGFloat
-
+/// **What this costs, stated rather than hidden.** `fixedSize` means these rows never yield, so a card
+/// whose content genuinely exceeds the screen grows past `cardMarginV` instead of truncating. That is
+/// the pre-existing structural gap D-7 (SwiftUI has no scrolling subtitle slot — UIKit's
+/// `svSubtitleContainer` is a `UIScrollView` whose height tie breaks under pressure), and this
+/// modifier does not close it. It does pick a side: overflow, never an ellipsis, which is the
+/// directive's own priority. `layoutPriority` still expresses the title-over-subtitle ORDER for every
+/// allocation the VStack does make.
+private struct NeverTruncates: ViewModifier {
     func body(content: Content) -> some View {
         content
-            .lineLimit(1)
-            .accessibilityHidden(true)
-            .hidden()
-            .overlay {
-                content
-                    .lineLimit(1)
-                    .minimumScaleFactor(minimumScaleFactor)
-            }
+            .lineLimit(nil)
+            .fixedSize(horizontal: false, vertical: true)
     }
+}
+
+extension SwiftUIAlertModal {
+    /// **The SwiftUI analogue of UIKit's vertical compression-resistance ordering.**
+    ///
+    /// `ModalLayout.Priority` puts the title (900) above the subtitle label (750) and far above the
+    /// subtitle SLOT's height tie (250/749). SwiftUI's `layoutPriority` is a `Double` on an
+    /// unrelated scale, so only the ORDER carries over — which is all the directive states. Two
+    /// named constants rather than bare literals in the body, so the ordering is one visible fact
+    /// that a reader (and `TitleSubtitleTruncationTests`) can check instead of two magic numbers.
+    static var titleLayoutPriority: Double { 1 }
+    /// SwiftUI's default. Stated explicitly because the ordering is the point: if this ever rises to
+    /// meet `titleLayoutPriority`, the directive is silently gone.
+    static var subtitleLayoutPriority: Double { 0 }
 }
 
 extension SwiftUIAlertModal {

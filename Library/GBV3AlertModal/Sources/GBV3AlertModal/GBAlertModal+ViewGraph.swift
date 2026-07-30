@@ -316,27 +316,29 @@ internal extension GBAlertModal {
                 // tight: a very tall image (e.g. 200x2000 → multiplier 10) otherwise asks for
                 // thousands of points and, inside the margin-bounded card, starves the title and
                 // subtitle to zero height. Two things make it yield without lowering this driver
-                // (which would trip the collapse above): the title label's default vertical
-                // compression resistance (750) already out-ranks this 700 driver, and the subtitle
-                // scroll's `frameLayoutGuide`-height tie is raised to 749 *only when this
-                // natural-aspect path is active* (see the Subtitle block) so it too out-ranks 700.
-                // The image view's own intrinsic vertical resistance is separately dropped to 249
-                // (see the ivBanner block) so the raw pixel height can't fight the content either.
+                // (which would trip the collapse above): the title label's vertical compression
+                // resistance (900 — `ModalLayout.Priority.titleCompressionResistance`, raised from
+                // UIKit's 750 default by the no-truncation directive) out-ranks this 700 driver, and
+                // the subtitle scroll's `frameLayoutGuide`-height tie is raised to 749 *only when
+                // this natural-aspect path is active* (see the Subtitle block) so it too out-ranks
+                // 700. The image view's own intrinsic vertical resistance is separately dropped to
+                // 249 (see the ivBanner block) so the raw pixel height can't fight the content
+                // either. Every rung named here lives in `ModalLayout.Priority`.
                 if let bannerHeightMultiplier {
                     make.height
                             .equalTo(vwBanner.snp.width)
                             .multipliedBy(bannerHeightMultiplier)
-                            .priority(UILayoutPriority(700))
+                            .priority(ModalLayout.Priority.bannerNaturalAspect)
                 }
                 if let bannerMaxHeight = properties?.bannerMaxHeight {
                     make.height
                             .lessThanOrEqualTo(bannerMaxHeight)
-                            .priority(UILayoutPriority(751))
+                            .priority(ModalLayout.Priority.bannerMaxHeight)
                 }
                 if let bannerFixedHeight = properties?.bannerFixedHeight {
                     make.height
                             .equalTo(bannerFixedHeight)
-                            .priority(UILayoutPriority(251))
+                            .priority(ModalLayout.Priority.bannerFixedHeight)
                 }
             }
         }
@@ -374,12 +376,16 @@ internal extension GBAlertModal {
 
                     // The image view's INTRINSIC pixel height (e.g. 2000pt for a 200x2000 banner)
                     // otherwise fights the content: at UIImageView's default vertical compression
-                    // resistance (750) it ties the title (750) and out-ranks the subtitle, so a
-                    // very tall image starves both to zero height inside the margin-bounded card.
+                    // resistance (750) it ties the subtitle LABEL (750) and out-ranks the subtitle
+                    // SLOT's height tie, so a very tall image starves the text to zero height
+                    // inside the margin-bounded card.
                     // The banner slot is sized by vwBanner's width-multiplier equality (above) and
                     // scaleAspectFit letterboxes the image, so the image view itself must impose no
                     // vertical size — drop its resistance below every content priority.
-                    ivBanner.setContentCompressionResistancePriority(UILayoutPriority(249), for: .vertical)
+                    ivBanner.setContentCompressionResistancePriority(
+                            ModalLayout.Priority.bannerImageIntrinsic,
+                            for: .vertical
+                    )
                 } else {
                     // bannerRatio == nil and no usable image size (should not happen given
                     // `showsBanner` already gates on a non-zero-size image) — fall back to the
@@ -418,6 +424,13 @@ internal extension GBAlertModal {
                 // while still yielding (shrink-and-scroll) to `.required` so a subtitle taller than
                 // the card can't force the card past its margins.
                 //
+                // **This tie IS the subtitle-yields mechanism the owner directive builds on** —
+                // "title will still live while subtitle begin to wrap". It is the weakest content
+                // rung in `ModalLayout.Priority`, strictly below both the subtitle LABEL's own
+                // resistance (750) and the title's (900), so it is the first thing to break when the
+                // card runs out of height: the scroll's visible height drops below its content
+                // height and the subtitle scrolls at full size, while the title keeps every line.
+                //
                 // Priority is conditional on the banner path:
                 //  • `.low` (250) by default — the baseline. Under a tight (e.g. landscape) card
                 //    the subtitle is then the weakest content and shrink-and-scrolls to fit, which
@@ -432,7 +445,11 @@ internal extension GBAlertModal {
                 //    ratio-banner / bannerless dialog at `.low`, so their snapshots don't move.
                 make.height
                         .equalTo(svSubtitleContainer.frameLayoutGuide)
-                        .priority(bannerHeightMultiplier != nil ? UILayoutPriority(749) : UILayoutPriority.defaultLow)
+                        .priority(
+                                bannerHeightMultiplier != nil
+                                        ? ModalLayout.Priority.subtitleSlotHeightOverBanner
+                                        : ModalLayout.Priority.subtitleSlotHeight
+                        )
             }
         }
 

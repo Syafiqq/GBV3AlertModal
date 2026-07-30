@@ -55,7 +55,10 @@ import UIKit
 /// a `UIScrollView` (`svSubtitleContainer`) whose visible height is tied to its content height at
 /// `.low` (250), so an over-long subtitle SHRINKS AND SCROLLS and the card stays inside its margins.
 /// `SwiftUIAlertModal` renders a bare `Text`: an over-long subtitle grows the card past `cardMarginV`
-/// and off-screen instead. Two consequences, both stated rather than papered over:
+/// and off-screen instead. The owner no-truncation directive makes that overflow EXPLICIT rather than
+/// accidental — both text rows now carry `fixedSize(horizontal: false, vertical: true)`
+/// (`SwiftUIAlertModal.NeverTruncates`), so a squeezed row overflows instead of ellipsizing — and it
+/// leaves the gap itself exactly where it was. Two consequences, both stated rather than papered over:
 ///
 /// * None of the nine shapes below is long enough to engage the scroll, so this is NOT one of the
 ///   disagreements the gate measures — it is a gap in what the gate can see, and the nine shapes'
