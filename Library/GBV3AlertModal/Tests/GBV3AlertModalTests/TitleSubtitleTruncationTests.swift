@@ -349,10 +349,8 @@ final class TitleSubtitleTruncationTests: XCTestCase {
 
         // The floor-scaled layout of the whole string at the same width — the shortest the ladder
         // permits while still drawing every glyph.
-        let floorFont = font.withSize(font.pointSize * ModalLayout.titleMinimumScaleFactor)
-        let floorHeight = GBAlertModal.textHeight(
-            NSAttributedString(string: Self.longTitle, attributes: [.font: floorFont]),
-            width: contentWidth
+        let floorHeight = ModalLayout.titleFloorHeight(
+            Self.longTitle, font: font, width: contentWidth
         )
         XCTAssertGreaterThanOrEqual(
             squeezed.height, floorHeight - DifferentialGeometry.tolerance,
@@ -455,6 +453,67 @@ final class TitleSubtitleTruncationTests: XCTestCase {
         // The value itself: the same 0.75 this label carried for years, kept so the shrink RANGE is
         // unchanged and only its trigger moved (last resort, not first).
         XCTAssertEqual(ModalLayout.titleMinimumScaleFactor, 0.75)
+    }
+
+    /// **The height floor can never make a row TALLER — the property that lets it be applied
+    /// unconditionally without disturbing a single passing shape.**
+    ///
+    /// `minimumScaleFactor` bounds the glyph size; `ModalTokens.titleFloorHeight(for:)` bounds the
+    /// SPACE, because SwiftUI will otherwise propose a row less height than even the floor-scaled text
+    /// needs and let it clip (measured: 64.7pt allocated, 85.9pt needed). The safety argument is that
+    /// the same string in a SMALLER font at the SAME width never needs more height — so the floor is
+    /// always ≤ the nominal height and is inert whenever the row gets its ideal. The differential
+    /// harness only ever measures unpressured shapes, which is why it cannot move.
+    ///
+    /// Asserted over the real catalog titles, not one hand-picked string.
+    func test_theHeightFloor_isNeverTallerThanTheNominalText() throws {
+        let tokens = ModalTokens(from: GeniePresets.standardProperties())
+        let font = try XCTUnwrap(GeniePresets.standardProperties().titleFont)
+        let titles = [
+            Self.longTitle,
+            "You missed your streak!",       // the two differential shapes whose titles wrap to 2 lines
+            "Something went wrong :(",
+            "Failed",                        // and the short, single-line ones
+            "Access Denied",
+            "[API] Confirm action"
+        ]
+
+        for title in titles {
+            let floor = tokens.titleFloorHeight(for: title)
+            let nominal = ModalLayout.textHeight(
+                NSAttributedString(string: title, attributes: [.font: font]),
+                width: tokens.contentMaxWidth
+            )
+            XCTAssertGreaterThan(floor, 0, "'\(title)': the floor was not computed at all")
+            XCTAssertLessThanOrEqual(
+                floor, nominal,
+                "'\(title)': the floor (\(floor)pt) is TALLER than the text needs at full size "
+                    + "(\(nominal)pt), so applying it would grow an unpressured row and move a shape "
+                    + "the differential harness has green"
+            )
+        }
+    }
+
+    /// A property-less caller (`standard`: no `Properties`, so no content width) gets NO floor rather
+    /// than a floor measured against an infinite width. Previews, demos and the example app's
+    /// SwiftUI-only snapshots therefore keep exactly the layout they have.
+    func test_theHeightFloor_isAbsentWhenThereIsNoContentWidth() {
+        XCTAssertEqual(ModalTokens.standard.contentMaxWidth, .infinity, "premise")
+        XCTAssertEqual(ModalTokens.standard.titleFloorHeight(for: Self.longTitle), 0)
+    }
+
+    /// `titleUIFont` is `titleFont`'s measurement twin: `Font` cannot be measured and cannot be
+    /// converted back to a `UIFont`, so the two must be assigned from ONE source. On the derived path
+    /// they are; `standard` carries a literal, and this pins that literal to the `Font` beside it.
+    func test_theStandardTitleFontAndItsMeasurementTwin_agree() {
+        XCTAssertEqual(ModalTokens.standard.titleUIFont.pointSize, 24)
+        XCTAssertEqual(ModalTokens.standard.titleFont, .system(size: 24, weight: .bold))
+
+        // Derived: both come from the one `Properties.titleFont`.
+        let font = UIFont.boldSystemFont(ofSize: 31)
+        let tokens = ModalTokens(from: GBAlertModal.Properties(titleFont: font))
+        XCTAssertEqual(tokens.titleUIFont, font)
+        XCTAssertEqual(tokens.titleFont, Font(font))
     }
 
     /// The fit search, exercised as the pure function it is — no label, no window, no layout pass.

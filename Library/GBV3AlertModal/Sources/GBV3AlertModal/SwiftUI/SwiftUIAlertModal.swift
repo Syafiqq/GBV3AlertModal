@@ -156,6 +156,14 @@ public struct SwiftUIAlertModal: View {
                     // `generateLabelForTitleDesign`'s `numberOfLines = 0` + `.byWordWrapping`, and of
                     // `adjustTitleFontScale`'s shrink floor, which is the SAME number this reads.
                     .modifier(NeverTruncates(minimumScaleFactor: tokens.titleMinimumScaleFactor))
+                    // …and the floor on the SPACE, not just on the glyph scale. `minimumScaleFactor`
+                    // caps how small the text is DRAWN; nothing stops the row being proposed less than
+                    // even that needs, and a `Text` in a too-small frame clips (measured: 64.7pt
+                    // allocated where the floor-scaled text needed 85.9pt, and the difference was
+                    // silently dropped). Provably inert whenever the row gets its ideal height — the
+                    // same string in a smaller font never needs MORE height — so it cannot disturb an
+                    // unpressured shape. See `ModalTokens.titleFloorHeight(for:)`.
+                    .frame(minHeight: tokens.titleFloorHeight(for: String(title.characters)))
                     .modalGeometryProbe(.title)
                     .padding(.bottom, tokens.gapBelowTitle)
                     // OUTERMOST, and it has to be: `layoutPriority` is read by the enclosing
@@ -257,6 +265,17 @@ private struct ContentRowWidth: ViewModifier {
 /// height whatever was proposed, which did guarantee no truncation — by never yielding at all, so the
 /// card overflowed and `minimumScaleFactor` could never engage. Rungs 1 and 2 both need the rows to be
 /// squeezable; with `fixedSize` neither the subtitle could yield nor the title could shrink.
+///
+/// **What replaces it on the TITLE is a floor, not a fixed size** (`.frame(minHeight:)` at the call
+/// site, from `ModalTokens.titleFloorHeight(for:)`). `minimumScaleFactor` alone was not enough and the
+/// gate proved it: it caps how small the glyphs are DRAWN, but the row was still proposed 64.7pt where
+/// the floor-scaled text needed 85.9pt, and a `Text` in a too-small frame clips. A floor bounds the
+/// yielding at exactly the point the scale factor stops helping, while leaving every point ABOVE it
+/// yieldable — so rungs 1 and 2 keep working and rung 3 stays "never".
+///
+/// The SUBTITLE deliberately gets no such floor: it is rung 1's yielder, and flooring it would stop it
+/// yielding. Under enough pressure a SwiftUI subtitle can still clip — the D-7 gap, unchanged, and the
+/// directive's priority is the title.
 ///
 /// Applied to the subtitle as well as the title. The two are ordered by `layoutPriority`, not by
 /// capability: the subtitle is squeezed FIRST (priority 0 against the title's 1) and shrinks rather

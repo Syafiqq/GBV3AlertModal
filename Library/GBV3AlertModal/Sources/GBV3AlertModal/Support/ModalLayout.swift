@@ -144,6 +144,59 @@ extension ModalLayout {
     }
 }
 
+// MARK: - Text measurement, shared by both renderers
+
+extension ModalLayout {
+    /// The height `text` needs when wrapped at `width`, with no line limit.
+    ///
+    /// `.usesLineFragmentOrigin` + `.usesFontLeading` is the multi-line measurement pair — without the
+    /// first, `boundingRect` measures a SINGLE line and every answer is wrong in the same direction as
+    /// the `preferredMaxLayoutWidth` defect this ladder sits on top of.
+    ///
+    /// Lives here, not on `GBAlertModal`, because BOTH renderers measure with it: UIKit's rung 2 walks
+    /// the scale grid against it, and `titleFloorHeight` below turns it into SwiftUI's minimum row
+    /// height. One measurement function means the two cannot compute different floors for the same
+    /// string.
+    static func textHeight(_ text: NSAttributedString, width: CGFloat) -> CGFloat {
+        guard width > 0, width.isFinite else {
+            return 0
+        }
+        return text.boundingRect(
+                with: CGSize(width: width, height: .greatestFiniteMagnitude),
+                options: [.usesLineFragmentOrigin, .usesFontLeading],
+                context: nil
+        ).height
+    }
+
+    /// **The floor of rung 2, expressed as a HEIGHT: what the title needs once it has shrunk as far as
+    /// it is allowed to.**
+    ///
+    /// UIKit does not need this — its rung 2 walks the scale grid and the label's own intrinsic height
+    /// follows the chosen font. SwiftUI does: `minimumScaleFactor` caps how small the GLYPHS get, but
+    /// nothing stops the FRAME being proposed less than even those glyphs need, and a `Text` in a
+    /// too-small frame clips. Measured: the pressured title was allocated 64.7pt where the
+    /// floor-scaled text needs 85.9pt, and the missing 21pt came out of the string. So the SwiftUI row
+    /// carries this as a `.frame(minHeight:)` — a floor on the space, to match the floor on the scale.
+    ///
+    /// **It can never make a row TALLER than it would otherwise be**, which is what makes it safe to
+    /// apply unconditionally: the same string in a SMALLER font at the SAME width always needs less
+    /// height (shorter lines, and more characters fit on each), so this value is ≤ the row's nominal
+    /// ideal height by construction. Whenever the layout can give the title its ideal — every
+    /// unpressured shape, i.e. every shape the differential harness compares — the floor is inert.
+    ///
+    /// Returns 0 (no floor) for a non-finite width. That is the property-less caller
+    /// (`ModalTokens.standard` has no `Properties` to derive a content width from, so
+    /// `contentMaxWidth` is `.infinity`): there is no width to wrap against, so there is no honest
+    /// floor to compute, and previews/demos keep exactly today's layout.
+    static func titleFloorHeight(_ text: String, font: UIFont, width: CGFloat) -> CGFloat {
+        guard !text.isEmpty, width > 0, width.isFinite else {
+            return 0
+        }
+        let flooredFont = font.withSize(font.pointSize * titleMinimumScaleFactor)
+        return textHeight(NSAttributedString(string: text, attributes: [.font: flooredFont]), width: width)
+    }
+}
+
 // MARK: - The vertical priority ladder
 
 extension ModalLayout {

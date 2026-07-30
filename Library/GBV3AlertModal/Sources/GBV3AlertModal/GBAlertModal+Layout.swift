@@ -260,7 +260,7 @@ extension GBAlertModal {
         }
 
         let scale = ModalLayout.titleFontScale(availableHeight: available) { candidate in
-            Self.textHeight(Self.scaled(nominal, by: candidate), width: width)
+            ModalLayout.textHeight(Self.scaled(nominal, by: candidate), width: width)
         }
 
         // Idempotence: no assignment, no `invalidateIntrinsicContentSize`, no further layout pass.
@@ -310,19 +310,6 @@ extension GBAlertModal {
         }
         scaledText.endEditing()
         return scaledText
-    }
-
-    /// The height `text` needs when wrapped at `width`, with no line limit.
-    ///
-    /// `.usesLineFragmentOrigin` + `.usesFontLeading` is the multi-line measurement pair — without the
-    /// first, `boundingRect` measures a single line and every answer here would be wrong in the same
-    /// direction as the `preferredMaxLayoutWidth` defect this ladder sits on top of.
-    static func textHeight(_ text: NSAttributedString, width: CGFloat) -> CGFloat {
-        text.boundingRect(
-                with: CGSize(width: width, height: .greatestFiniteMagnitude),
-                options: [.usesLineFragmentOrigin, .usesFontLeading],
-                context: nil
-        ).height
     }
 
     /// The fixed / max content-width constraints to apply. Moved verbatim from

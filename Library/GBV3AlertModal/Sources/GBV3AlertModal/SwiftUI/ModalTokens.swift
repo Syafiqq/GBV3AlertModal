@@ -83,6 +83,21 @@ public struct ModalTokens: Sendable {
     /// No `Properties` counterpart: UIKit hardcodes the floor too.
     public var titleMinimumScaleFactor: CGFloat = ModalLayout.titleMinimumScaleFactor
 
+    /// **`titleFont`'s measurement twin.**
+    ///
+    /// `SwiftUI.Font` is opaque: it can be rendered but not measured, and there is no `Font -> UIFont`
+    /// direction to recover one from (the bridge only runs `UIFont -> Font`, via `CTFont`). Rung 2's
+    /// SwiftUI half needs a real measurement — how tall the title is once shrunk to
+    /// `titleMinimumScaleFactor` — so the `UIFont` that `titleFont` was BUILT FROM is kept here rather
+    /// than reconstructed by guesswork.
+    ///
+    /// `init(from:)` assigns both from the one `Properties.titleFont`, so on every real presentation
+    /// they are the same font by construction. `standard` has no `Properties`, so it carries the
+    /// literal twin of its own `.system(size: 24, weight: .bold)` — pinned by
+    /// `test_theStandardTitleFontAndItsMeasurementTwin_agree`. A caller who reassigns `titleFont`
+    /// alone would only weaken the floor measurement, never the rendering.
+    public var titleUIFont: UIFont = .systemFont(ofSize: 24, weight: .bold)
+
     /// The close button's tap target, 48×48. UIKit pins `btCloseAction` to `vwContainer`'s
     /// top-trailing with `size == 48` (`GBAlertModal+ViewGraph.swift`'s `installConstraints`); the
     /// SwiftUI scaffold used 44 (the HIG minimum) and therefore drew the glyph 2pt further from both
@@ -285,6 +300,21 @@ public struct ModalTokens: Sendable {
     /// Compatibility accessor: the LEFT max inset. Same caveat as `contentPaddingV`.
     public var contentPaddingH: CGFloat { contentPadding.leftMax }
 
+    /// **The least height the title row may be given — rung 2's floor, in points.**
+    ///
+    /// `minimumScaleFactor` bounds how small SwiftUI draws the glyphs; this bounds how little room the
+    /// row is allocated, which is the other half of the same guarantee (measured: a title allocated
+    /// 64.7pt where its floor-scaled text needed 85.9pt simply lost the difference). Delegates to
+    /// `ModalLayout.titleFloorHeight`, the same measurement UIKit's rung 2 searches with.
+    ///
+    /// Measured at `contentMaxWidth` — the width the content column gives the row. For a HUGGING row
+    /// (`contentChildrenFillWidth == false`) the real width is narrower, so the floor comes out
+    /// slightly small; that errs toward less protection and never toward a too-tall row, which is the
+    /// only direction that could disturb a passing shape.
+    func titleFloorHeight(for text: String) -> CGFloat {
+        ModalLayout.titleFloorHeight(text, font: titleUIFont, width: contentMaxWidth)
+    }
+
     init(
         cornerRadius: CGFloat,
         contentMaxWidth: CGFloat,
@@ -359,7 +389,7 @@ public struct ModalTokens: Sendable {
     /// | `bannerRatio` | (a) | `bannerRatio` — `test_bannerRatio_comesFromProperties` |
     /// | `bannerMaxHeight` | (a) | `bannerMaxHeight` — `test_bannerMaxHeight_comesFromProperties`, `test_bannerMaxHeight_isNilWhenPropertiesSetsNoCap` |
     /// | `bannerFixedHeight` | (a) | `bannerFixedHeight` — `test_bannerFixedHeight_comesFromProperties` |
-    /// | `titleFont` | (a) | `titleFont` — `test_titleFont_comesFromProperties_viaFontBridge` |
+    /// | `titleFont` | (a) | `titleFont` AND its measurement twin `titleUIFont`, both from this one field — `test_titleFont_comesFromProperties_viaFontBridge`, `test_theStandardTitleFontAndItsMeasurementTwin_agree`. The twin exists because `Font` can be rendered but not measured, and rung 2's SwiftUI floor needs a measurement. |
     /// | `titleColor` | (a) | `palette.titleText` — `test_titleColor_comesFromProperties` |
     /// | `subtitleFont` | (a) | `subtitleFont` — `test_subtitleFont_comesFromProperties_viaFontBridge` |
     /// | `subtitleColor` | (a) | `palette.subtitleText` — `test_subtitleColor_comesFromProperties` |
@@ -501,6 +531,9 @@ public struct ModalTokens: Sendable {
 
         if let titleFont = properties.titleFont {
             self.titleFont = Font(titleFont)
+            // The measurement twin, from the SAME `UIFont` — see `titleUIFont`. Assigned here and
+            // nowhere else, so the rendered font and the measured font cannot be different fonts.
+            titleUIFont = titleFont
         }
         if let subtitleFont = properties.subtitleFont {
             self.subtitleFont = Font(subtitleFont)
