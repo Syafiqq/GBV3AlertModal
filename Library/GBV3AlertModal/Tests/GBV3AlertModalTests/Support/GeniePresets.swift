@@ -127,7 +127,15 @@ enum GeniePresets {
     }
 
     private static var margin: UIEdgeInsets {
-        UIEdgeInsets(top: 40, left: 20, bottom: 40, right: 20)
+        // TOP/BOTTOM 0, horizontal unchanged. The card HUGS its content, so a zero vertical margin
+        // only changes cards that are actually constrained — portrait fits either way and does not
+        // move. Landscape gains the whole 80pt: the card ceiling goes 214 -> 294 and the popup
+        // preset's content budget 174 -> 254, which is the difference between "one line of each does
+        // not fit" and a comfortable fit.
+        //
+        // Zero to the SAFE AREA, not to the device bounds — `adjustVwContainerConstraint` pins
+        // against `safeAreaLayoutGuide`, so the card still clears the home indicator and the notch.
+        UIEdgeInsets(top: 0, left: 20, bottom: 0, right: 20)
     }
 
     private static var padding: UIMinMaxEdgeInsets {

@@ -30,7 +30,8 @@ enum GalleryPresets {
     )
 
     /// Mirrors `Presentation.UiKit.V3AlertModal.margin` (`UIEdgeInsets(vertical: 40, horizontal: 20)`).
-    static let margin = UIEdgeInsets(top: 40, left: 20, bottom: 40, right: 20)
+    /// Vertical margin 0 — see `GeniePresets.margin` for the reasoning and the measured effect.
+    static let margin = UIEdgeInsets(top: 0, left: 20, bottom: 0, right: 20)
 
     /// Mirrors `Presentation.UiKit.V3AlertModal.padding`.
     static let padding = UIMinMaxEdgeInsets(

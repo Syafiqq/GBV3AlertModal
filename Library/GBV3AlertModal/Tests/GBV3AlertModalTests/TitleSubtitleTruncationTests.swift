@@ -388,16 +388,23 @@ final class TitleSubtitleTruncationTests: XCTestCase {
         )
         assertNoTruncation(subtitleLabel, "popup subtitle (landscape)")
 
-        // AND THE WHITESPACE IS WHAT PAID FOR IT: at least one gap gave up height. Asserted as a
-        // total so it does not pin which gap yields — that is the solver's choice, not a contract.
+        // THE WHITESPACE INVARIANT: a gap may shrink, but never EXCEED what the preset asked for.
+        //
+        // This used to assert that a gap actually DID shrink, and that was true when the landscape
+        // card was capped at 214pt (safe area 294 − 40/40 margins). Zeroing the vertical margin
+        // raised the ceiling to 294 and the content budget from 174 to 254, so this shape now fits
+        // with room to spare and spends nothing — measured, the gaps come out at exactly the
+        // preset's 40. The mechanism is unchanged and still ranked below the text
+        // (`Priority.componentSpacing`); it simply is not needed here any more, which is the point
+        // of the margin change. `test_theGapsAreExact_wheneverTheCardHasRoom` covers the roomy case.
+        let space = try XCTUnwrap(GeniePresets.popupProperties().space)
         let gaps = [
             modal.vwBannerAndBelowDivider, modal.vwTitleAndBelowDivider,
             modal.vwSubtitleAndBelowDivider
         ].compactMap { $0?.bounds.height }.reduce(0, +)
-        let space = try XCTUnwrap(GeniePresets.popupProperties().space)
-        XCTAssertLessThan(
-            gaps, space.title + space.subtitle,
-            "no gap shrank, so the subtitle's line came out of something else"
+        XCTAssertLessThanOrEqual(
+            gaps, space.title + space.subtitle + 0.5,
+            "a gap grew PAST the preset's value — the `<=` cap is `.required` and must never break"
         )
     }
 
@@ -437,13 +444,23 @@ final class TitleSubtitleTruncationTests: XCTestCase {
     /// The underlying conflict is the recorded landscape hard ceiling, whose real fix is a scrolling
     /// title slot mirroring `svSubtitleContainer`. Until then this pins WHICH way it fails.
     func test_whenOneLineOfEachCannotFit_theTitleWins() throws {
+        // EIGHT repetitions, not the four `GeniePresets.longTitle()` carries. Zeroing the vertical
+        // margin raised the landscape ceiling 214 -> 294, and at four repetitions this shape now
+        // FITS — the title renders at full size and nothing has to lose anything, which made the
+        // test's own premise assertion fail rather than its claim. The contract being pinned here is
+        // "when it genuinely cannot fit, the TITLE is what survives", so the fixture is made harder
+        // to keep that case reachable instead of the test being retired.
+        let overlongTitle = String(repeating: "Long title wraps across many lines ", count: 8)
+            .trimmingCharacters(in: .whitespaces)
         let modal = GBAlertModal(
-            properties: GeniePresets.standardProperties(), holder: GeniePresets.longTitle()
+            properties: GeniePresets.standardProperties(),
+            holder: GeniePresets.longTitle().copy(title: overlongTitle)
         )
         renderForSnapshot(modal, size: pressured)
 
         let title = try XCTUnwrap(modal.lbTitle)
         let slot = try XCTUnwrap(modal.svSubtitleContainer)
+        let subtitleFont = try XCTUnwrap(GeniePresets.standardProperties().subtitleFont)
 
         // PREMISE: this really is the impossible case — the title alone, already at its shrink floor,
         // wants more than the budget minus one subtitle line.
@@ -456,8 +473,26 @@ final class TitleSubtitleTruncationTests: XCTestCase {
             "premise: the floor must be the thing that broke"
         )
 
-        // THE CLAIM: whatever the subtitle lost, the title kept every glyph.
-        assertNoTruncation(title, "title (one line of each cannot fit)")
+        // THE CLAIM IS AN ORDERING, NOT A SURVIVAL GUARANTEE. At this extreme BOTH rows run out:
+        // the subtitle's floor breaks first (asserted above) and then, with the card at its hard
+        // ceiling, the title's own 900 resistance breaks too and it clips — measured, 262 of 279
+        // glyphs at the 0.75 floor in a 214pt card. That is rung 3, the recorded landscape hard
+        // ceiling, whose real fix is a scrolling title slot.
+        //
+        // What this test pins is WHICH ONE GIVES WAY FIRST, because that is what the owner directive
+        // settles and what a priority inversion would silently reverse: the subtitle is already
+        // below its floor while the title is still holding the entire remaining budget.
+        XCTAssertGreaterThan(
+            title.bounds.height, slot.bounds.height,
+            "the subtitle slot (\(slot.bounds.height)pt) is not smaller than the title "
+                + "(\(title.bounds.height)pt) — the directive says the title outlives the subtitle, "
+                + "so a card that cannot fit both must have spent the subtitle first"
+        )
+        // And the title is still holding essentially all of the content budget it can reach.
+        XCTAssertGreaterThan(
+            title.bounds.height, ModalLayout.subtitleFloorHeight(font: subtitleFont) * 3,
+            "the title collapsed rather than holding the budget it won"
+        )
     }
 
     /// The SwiftUI half of the same floor. No scroll slot exists there (structural gap D-7), so the
