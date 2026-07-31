@@ -55,6 +55,15 @@ private extension StressCatalog {
         "within the alert content stack along with its surrounding padding insets interbutton spacing " +
         "and overall scroll container sizing logic under sustained stress conditions"
 
+    /// The LayerC `test_longTitle_*` fixture verbatim (`GeniePresets.longTitle()`), so the
+    /// gallery and the library baseline are exercising ONE string rather than two similar ones.
+    static let title4Repeat = String(repeating: "Long title wraps across many lines ", count: 4)
+        .trimmingCharacters(in: .whitespaces)
+
+    /// The LayerC fixture's subtitle (`GeniePresets.base()`), which wraps to two lines in the
+    /// 256pt card — enough that the slot has something to yield, which the artifact needs.
+    static let subtitleOneLine = "This is the subtitle text for the alert modal."
+
     static let primaryFull = "Continue"
     static let secondaryFull = "Not Now"
 
@@ -301,6 +310,22 @@ private extension StressCatalog {
 
     static var extraEntries: [DialogEntry] {
         [
+            // **The landscape subtitle-slicing artifact, reproducible on device.**
+            //
+            // This is the LayerC `longTitle` fixture verbatim — the one shape where the
+            // subtitle slot settles at a FRACTION of a line, so the body text is drawn with
+            // its bottom half cut off by the button. The existing `title10Line` shapes
+            // overshoot it: a ten-line title cannot fit at any scale, so the subtitle floor
+            // breaks completely and the artifact never appears. This title is short enough
+            // that the floor ALMOST holds, which is exactly the condition that produces a
+            // half-drawn line.
+            //
+            // Portrait is the control: same entry, everything renders cleanly.
+            entry(
+                "stress-title-4x-sliced-subtitle", category: extraCategory,
+                title: title4Repeat, subtitle: subtitleOneLine,
+                primary: "Okay"
+            ),
             // Title + subtitle present, but zero buttons — does the button
             // container collapse cleanly with no content in it?
             entry(
