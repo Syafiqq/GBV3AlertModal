@@ -646,22 +646,15 @@ final class TitleSubtitleTruncationTests: XCTestCase {
         // an over-long subtitle SCROLL instead of being squeezed into an ellipsis.
         XCTAssertGreaterThan(
             ModalLayout.Priority.subtitleCompressionResistance.rawValue,
-            ModalLayout.Priority.subtitleSlotHeightOverBanner.rawValue
+            ModalLayout.Priority.subtitleSlotHeight.rawValue
         )
-        XCTAssertGreaterThan(
-            ModalLayout.Priority.subtitleSlotHeightOverBanner.rawValue,
-            ModalLayout.Priority.bannerNaturalAspect.rawValue
-        )
+        // The banner's own internal order is unchanged.
         XCTAssertGreaterThan(
             ModalLayout.Priority.bannerNaturalAspect.rawValue,
             ModalLayout.Priority.bannerFixedHeight.rawValue
         )
         XCTAssertGreaterThan(
             ModalLayout.Priority.bannerFixedHeight.rawValue,
-            ModalLayout.Priority.subtitleSlotHeight.rawValue
-        )
-        XCTAssertGreaterThan(
-            ModalLayout.Priority.subtitleSlotHeight.rawValue,
             ModalLayout.Priority.bannerImageIntrinsic.rawValue
         )
 
@@ -671,6 +664,52 @@ final class TitleSubtitleTruncationTests: XCTestCase {
             ModalLayout.Priority.titleCompressionResistance.rawValue,
             UILayoutPriority.required.rawValue,
             "a `.required` title turns an over-tall title into an unsatisfiable constraint system"
+        )
+    }
+
+    /// **The owner's ordering, stated as one chain: buttons > title > description > banner.**
+    ///
+    /// > "buttons should have the higher content compression / continue with title / then
+    /// > description / then banner"
+    ///
+    /// Asserted end to end so the ladder cannot be reordered a rung at a time without this failing.
+    /// The banner is represented by its DRIVERS — the constraints that make it big. `bannerMaxHeight`
+    /// is deliberately excluded and checked separately below: it is a `<=` cap, so holding it FIRMLY
+    /// keeps the banner small, and demoting it would do the opposite of what this ordering wants.
+    func test_theLadderRunsButtonsThenTitleThenDescriptionThenBanner() {
+        let buttons = ModalLayout.Priority.buttonSlotHeight.rawValue
+        let title = ModalLayout.Priority.titleCompressionResistance.rawValue
+        let description = [
+            ModalLayout.Priority.subtitleSlotFloor,
+            ModalLayout.Priority.subtitleCompressionResistance,
+            ModalLayout.Priority.subtitleSlotHeight
+        ].map(\.rawValue)
+        let banner = [
+            ModalLayout.Priority.bannerNaturalAspect,
+            ModalLayout.Priority.bannerFixedHeight,
+            ModalLayout.Priority.bannerImageIntrinsic
+        ].map(\.rawValue)
+
+        XCTAssertGreaterThan(
+            buttons, title,
+            "the buttons must outrank the title — a squeezed button is a broken tap target"
+        )
+        XCTAssertGreaterThan(
+            title, description.max() ?? 0,
+            "the title must outrank every description rung"
+        )
+        XCTAssertGreaterThan(
+            description.min() ?? 0, banner.max() ?? 0,
+            "EVERY description rung must outrank EVERY banner driver — a decorative image must not "
+                + "take space from the body text (was: bannerNaturalAspect 700 against the slot's 250)"
+        )
+
+        // The cap is the exception, and points the other way ON PURPOSE.
+        XCTAssertGreaterThan(
+            ModalLayout.Priority.bannerMaxHeight.rawValue, title,
+            "`bannerMaxHeight` is a `<=` CAP: held firmly it keeps the banner SMALL and protects the "
+                + "text. Demoting it with the banner's drivers would let a banner exceed the size the "
+                + "caller asked for."
         )
     }
 

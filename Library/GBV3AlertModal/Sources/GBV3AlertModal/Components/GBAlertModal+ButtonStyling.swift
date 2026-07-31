@@ -70,6 +70,7 @@ internal extension GBAlertModal {
                 // Pin
                 make.height
                         .equalTo(48)
+                        .priority(ModalLayout.Priority.buttonSlotHeight)
             }
         case .plain:
             button.snp.makeConstraints { (make: ConstraintMaker) in
@@ -87,6 +88,7 @@ internal extension GBAlertModal {
                 // Pin
                 make.height
                         .equalTo(48)
+                        .priority(ModalLayout.Priority.buttonSlotHeight)
             }
         case .obliqueBottomLeft:
             button.snp.makeConstraints { (make: ConstraintMaker) in
@@ -109,6 +111,7 @@ internal extension GBAlertModal {
                 // Pin
                 make.height
                         .equalTo(48)
+                        .priority(ModalLayout.Priority.buttonSlotHeight)
             }
         }
     }

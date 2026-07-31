@@ -82,9 +82,21 @@ final class BannerAspectStressTests: XCTestCase {
 
     // MARK: - Uncapped natural aspect (portrait only — ample height, no cap needed)
 
-    /// With no `bannerMaxHeight`, the banner should render at its full natural aspect
-    /// (`height == width * imageSize.height/imageSize.width`) when there's room for it, proving
-    /// the new constraint path (not just the capped fallback) actually derives the right height.
+    /// **The banner is cosmetic, so it never wins — not even against the card's own shape.**
+    ///
+    /// This test used to assert the opposite: that an uncapped `bannerRatio: nil` banner renders at
+    /// its FULL natural aspect (391pt tall here) whenever the host has room. That contract predates
+    /// the owner's ordering — "buttons > title > description > banner", with the banner explicitly
+    /// "just cosmetic, not information" — and the two cannot both hold. `vwContainer.center` and
+    /// `svContentContainer`'s padding-max equalities are all `.low` (250): they are what makes the
+    /// card HUG its content rather than sprawl, and a banner that outranks them grows the card to
+    /// 391pt of decoration around two lines of text. So `bannerNaturalAspect` now sits BELOW them.
+    ///
+    /// What survives is the part that was ever about correctness: the natural aspect is the banner's
+    /// CEILING, derived from the image (a 9:16 source must never render WIDER than 9:16 and get
+    /// cropped), `scaleAspectFit` letterboxes whatever height it is granted, and the content is
+    /// untouched. `test_tallBanner_uncapped_titleAndSubtitleSurvive` below covers the same principle
+    /// at the extreme.
     func test_banner9x16_uncapped_portrait() {
         let modal = GBAlertModal(properties: GeniePresets.standardPropertiesNilBannerRatio(),
                                   holder: GeniePresets.withBanner(width: 90, height: 160))
@@ -95,9 +107,13 @@ final class BannerAspectStressTests: XCTestCase {
             XCTFail("expected vwBanner to be non-nil")
             return
         }
-        // width 220 (256 fixed card width minus padding) * (160/90) ~= 391, well within the
-        // portrait host's available height.
-        XCTAssertEqual(vwBanner.bounds.height / vwBanner.bounds.width, 160.0 / 90.0, accuracy: 0.01)
+        let aspect = vwBanner.bounds.height / vwBanner.bounds.width
+        XCTAssertGreaterThan(vwBanner.bounds.height, 0, "the banner must still be visible")
+        XCTAssertLessThanOrEqual(
+            aspect, 160.0 / 90.0 + 0.01,
+            "the source image's natural aspect is the banner's CEILING — a taller slot would crop or "
+                + "stretch a 9:16 image rather than letterbox it"
+        )
     }
 
     // MARK: - Tall uncapped banner must yield to title/subtitle (regression)

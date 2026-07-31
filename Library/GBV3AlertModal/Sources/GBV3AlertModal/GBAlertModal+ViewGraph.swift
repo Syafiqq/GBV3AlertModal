@@ -474,25 +474,15 @@ internal extension GBAlertModal {
                 // card runs out of height: the scroll's visible height drops below its content
                 // height and the subtitle scrolls at full size, while the title keeps every line.
                 //
-                // Priority is conditional on the banner path:
-                //  • `.low` (250) by default — the baseline. Under a tight (e.g. landscape) card
-                //    the subtitle is then the weakest content and shrink-and-scrolls to fit, which
-                //    is the recorded behavior of every non-natural-aspect dialog. Raising it
-                //    globally would stop that compression and diff those landscape snapshots.
-                //  • 749 when the natural-aspect banner path is active (`bannerHeightMultiplier`
-                //    non-nil, i.e. bannerRatio == nil with a valid image). There the decorative
-                //    banner's height driver sits at 700 (see the Banner block); the subtitle must
-                //    out-rank it so a very tall banner yields to the subtitle instead of starving
-                //    it to zero height. Still below `.required` (1000) so an over-tall subtitle
-                //    keeps shrinking-and-scrolling. Scoping the bump to this path leaves every
-                //    ratio-banner / bannerless dialog at `.low`, so their snapshots don't move.
+                // ONE priority on every path. This used to be conditional — 749 on the
+                // natural-aspect banner path, `.low` (250) everywhere else — because the banner's
+                // height driver sat at 700 and would otherwise starve the subtitle to zero. The
+                // owner's ordering (buttons > title > description > banner) moved every banner
+                // driver below every text rung, so the banner can no longer out-rank this tie on
+                // any path and the special case has nothing left to defend against.
                 make.height
                         .equalTo(svSubtitleContainer.frameLayoutGuide)
-                        .priority(
-                                bannerHeightMultiplier != nil
-                                        ? ModalLayout.Priority.subtitleSlotHeightOverBanner
-                                        : ModalLayout.Priority.subtitleSlotHeight
-                        )
+                        .priority(ModalLayout.Priority.subtitleSlotHeight)
             }
 
             // **And the floor on that yield.** The tie above is what lets the slot shrink; nothing

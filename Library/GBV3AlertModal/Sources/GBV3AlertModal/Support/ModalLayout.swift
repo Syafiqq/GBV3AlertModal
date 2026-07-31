@@ -259,10 +259,29 @@ extension ModalLayout {
     /// are stated here — as one ladder a test can assert the order of — instead of being inferred
     /// from a platform default at three call sites.
     ///
+    /// **THE ORDER, as the owner stated it:** buttons > title > description (subtitle) > banner.
+    /// Everything below is that sentence expressed as numbers. Two things in the table are NOT
+    /// content rungs and must not be read as part of that order:
+    ///
+    /// * `bannerMaxHeight` is a `<=` CAP, not a size driver. A cap held FIRMLY keeps the banner
+    ///   SMALL, which protects the text — so it belongs near the top, and lowering it would let a
+    ///   banner grow past the size the caller asked for. "The banner yields last" is a statement
+    ///   about the constraints that make the banner BIG (`bannerNaturalAspect`, `bannerFixedHeight`,
+    ///   `bannerImageIntrinsic`), all of which now sit below every text rung.
+    /// * `componentSpacing` is whitespace, which is cheaper than any content.
+    ///
     /// Top to bottom, and WHY each rung sits where it does:
     ///
     /// | rung | value | what it is |
     /// | --- | --- | --- |
+    /// | `buttonSlotHeight` | **`.required`** | each action slot's `height == 48`. The buttons are
+    ///   the one thing on the card that must never shrink: a squeezed button is a broken tap target,
+    ///   and a dialog whose action cannot be pressed is worse than one whose text is scrolled. They
+    ///   were already `.required` implicitly (a SnapKit constraint with no stated priority); naming
+    ///   it puts the top of the ladder in the same table as the rest, where a test can assert it. |
+    /// | `bannerMaxHeight` | **950** | `vwBanner.height <= bannerMaxHeight` — the explicit cap a
+    ///   caller asked for. A CAP, so high priority means the banner stays small: this is the
+    ///   constraint that stops a tall banner eating the card, and it out-ranks every driver below. |
     /// | `titleCompressionResistance` | **900** | `lbTitle`'s vertical resistance. Raised from
     ///   UIKit's 750 default so the title out-ranks EVERY other content rung: it keeps its font
     ///   size and however many lines it needs (`numberOfLines = 0`), and the subtitle is what gives
@@ -298,26 +317,35 @@ extension ModalLayout {
     ///   spends its whitespace before it spends its text — but ABOVE nothing else it needs to beat,
     ///   and the `<=` cap stays `.required` so a gap can only ever shrink, never grow past what the
     ///   preset asked for. On any card with room the equality holds exactly and nothing moves. |
-    /// | `bannerMaxHeight` | 751 | `vwBanner.height <= bannerMaxHeight`. An explicit cap the caller
-    ///   asked for; it out-ranks the natural-aspect driver so a capped banner stays capped. |
     /// | `subtitleCompressionResistance` | **750** | `lbSubtitle`'s vertical resistance — UIKit's
     ///   default, now stated explicitly because the directive's ordering depends on it being BELOW
-    ///   the title's. It must stay ABOVE `subtitleSlotHeight*` (see the next two rows): the label
-    ///   is what refuses to shrink, which is what turns "the slot is too short" into SCROLLING
-    ///   instead of into a truncated subtitle. |
-    /// | `subtitleSlotHeightOverBanner` | 749 | `svSubtitleContainer.frameLayoutGuide.height ==
-    ///   contentLayoutGuide.height`, on the natural-aspect banner path only — above the banner's
-    ///   700 driver so a very tall banner yields to the subtitle rather than starving it. |
-    /// | `bannerNaturalAspect` | 700 | `vwBanner.height == vwBanner.width * imageH/imageW`. |
-    /// | `bannerFixedHeight` | 251 | `vwBanner.height == bannerFixedHeight`; inert whenever the 700
-    ///   driver is installed (i.e. on the `bannerRatio == nil` path). |
-    /// | `subtitleSlotHeight` | 250 (`.defaultLow`) | the same frame/content height tie on every
-    ///   other path. **This is the SUBTITLE-YIELDS mechanism**: it is the weakest content rung, so
-    ///   when the card cannot fit everything between its margins this equality is what breaks, the
-    ///   scroll's visible height shrinks below its content height, and the subtitle scrolls —
-    ///   full-size, unshrunk, un-truncated — while the title keeps every line. |
-    /// | `bannerImageIntrinsic` | 249 | `ivBanner`'s own vertical resistance, dropped below every
-    ///   content rung so a 2000px-tall image's intrinsic height cannot fight the text. |
+    ///   the title's. It must stay ABOVE `subtitleSlotHeight` (next row): the label is what refuses
+    ///   to shrink, which is what turns "the slot is too short" into SCROLLING instead of into a
+    ///   truncated subtitle. |
+    /// | `subtitleSlotHeight` | **300** | `svSubtitleContainer.frameLayoutGuide.height ==
+    ///   contentLayoutGuide.height`. **This is the SUBTITLE-YIELDS mechanism**: the weakest TEXT
+    ///   rung, so when the card cannot fit everything between its margins this equality is what
+    ///   breaks, the scroll's visible height shrinks below its content height, and the subtitle
+    ///   scrolls — full-size, unshrunk, un-truncated — while the title keeps every line. Bounded
+    ///   below by `subtitleSlotFloor`, so it scrolls rather than disappearing. |
+    /// | `bannerNaturalAspect` | **290** | `vwBanner.height == vwBanner.width * imageH/imageW`. |
+    /// | `bannerFixedHeight` | **280** | `vwBanner.height == bannerFixedHeight`; inert whenever the
+    ///   natural-aspect driver is installed (i.e. on the `bannerRatio == nil` path). |
+    /// | `bannerImageIntrinsic` | **270** | `ivBanner`'s own vertical resistance, below every other
+    ///   content rung so a 2000px-tall image's intrinsic height cannot fight anything. |
+    /// | *(the card hug)* | 250 (`.low`) | NOT a rung of this ladder, but the reason the numbers
+    ///   above stop where they do. `vwContainer.center == superview` and `svContentContainer`'s
+    ///   four `== superview + paddingMax` constraints are all `.low`, and together they are what
+    ///   makes the card HUG its content instead of filling the screen. |
+    ///
+    /// **Why the banner does not simply go below 250.** The obvious reading of "banner last" is to
+    /// drop its drivers under every text rung, and `subtitleSlotHeight` was `.defaultLow` (250) — so
+    /// the banner would land at 245ish. That puts it below the card hug, and then shrinking the
+    /// BANNER becomes the solver's cheapest way to make the card smaller: measured, a 9:16 banner
+    /// with room to spare in PORTRAIT rendered at 0.625 natural aspect instead of 1.778, because the
+    /// hug (250) outbid its own aspect driver (245). So the text rung moved UP to 300 to open a gap,
+    /// and the banner sits inside it — below every word on the card, above the hug that would
+    /// otherwise crush it for free.
     ///
     /// **Why the title is 900 and not `.required`.** The card is bounded by `.required` margin
     /// constraints on `vwContainer` and `.required` minimum padding on `svContentContainer`, so a
@@ -331,15 +359,15 @@ extension ModalLayout {
         // Computed rather than `static let`: a stored static of a non-`Sendable` type is a Swift 6
         // strict-concurrency error, and `UILayoutPriority`'s conformance is SDK-version-dependent.
         // These are constants either way — there is no state here to share.
+        static var buttonSlotHeight: UILayoutPriority { .required }
+        static var bannerMaxHeight: UILayoutPriority { UILayoutPriority(950) }
         static var titleCompressionResistance: UILayoutPriority { UILayoutPriority(900) }
         static var subtitleSlotFloor: UILayoutPriority { UILayoutPriority(850) }
         static var componentSpacing: UILayoutPriority { UILayoutPriority(800) }
-        static var bannerMaxHeight: UILayoutPriority { UILayoutPriority(751) }
         static var subtitleCompressionResistance: UILayoutPriority { UILayoutPriority(750) }
-        static var subtitleSlotHeightOverBanner: UILayoutPriority { UILayoutPriority(749) }
-        static var bannerNaturalAspect: UILayoutPriority { UILayoutPriority(700) }
-        static var bannerFixedHeight: UILayoutPriority { UILayoutPriority(251) }
         static var subtitleSlotHeight: UILayoutPriority { .defaultLow }
-        static var bannerImageIntrinsic: UILayoutPriority { UILayoutPriority(249) }
+        static var bannerNaturalAspect: UILayoutPriority { UILayoutPriority(245) }
+        static var bannerFixedHeight: UILayoutPriority { UILayoutPriority(243) }
+        static var bannerImageIntrinsic: UILayoutPriority { UILayoutPriority(241) }
     }
 }
