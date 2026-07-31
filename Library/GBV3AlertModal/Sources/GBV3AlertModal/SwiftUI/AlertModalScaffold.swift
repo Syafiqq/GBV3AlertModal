@@ -77,13 +77,23 @@ public struct AlertModalScaffold<Content: View>: View {
     }
 
     public var body: some View {
-        ZStack {
-            scrim
-                .ignoresSafeArea()
-                .contentShape(Rectangle())
-                .onTapGesture { onOverlayTap?() }
+        // **The card is BOUNDED by the space it has.**
+        //
+        // UIKit's counterpart is `adjustVwContainerConstraint`: `top >= safeArea + margin` and
+        // `bottom <= safeArea − margin`, both `.required`, so an over-tall card compresses its
+        // content rather than growing off-screen. SwiftUI had no equivalent — the card simply took
+        // its content's height and the excess was cut by `clipShape`, which is what an over-stuffed
+        // landscape card was observed doing on device.
+        //
+        // The reader is the container's own size, so nothing the card contains can influence it.
+        GeometryReader { proxy in
+            ZStack {
+                scrim
+                    .ignoresSafeArea()
+                    .contentShape(Rectangle())
+                    .onTapGesture { onOverlayTap?() }
 
-            card
+                card
                 // The CARD's cap — `contentMaxWidth + leftMax + rightMax`, i.e. the width UIKit's
                 // `vwContainer` ends up with, NOT the width `ContentProperty` states (that one caps
                 // the content container inside `card`). Feeding the content width in here is the
@@ -111,8 +121,16 @@ public struct AlertModalScaffold<Content: View>: View {
                         .modalGeometryProbe(.closeButton)
                     }
                 }
-                .padding(.vertical, tokens.cardMarginV)     // card→screen margin: 40 v / 20 h
-                .padding(.horizontal, tokens.cardMarginH)
+                    // The cap, applied BEFORE the margin padding so the two compose the way UIKit's
+                    // inequality pair does: the card may occupy the container minus its margins and
+                    // not one point more.
+                    .frame(maxHeight: max(0, proxy.size.height - tokens.cardMarginV * 2))
+                    .padding(.vertical, tokens.cardMarginV)     // card→screen margin: 40 v / 20 h
+                    .padding(.horizontal, tokens.cardMarginH)
+            }
+            // `GeometryReader` aligns its content top-leading; the modal is centred, so the ZStack is
+            // given the reader's full size back rather than being left in the corner.
+            .frame(width: proxy.size.width, height: proxy.size.height)
         }
     }
 

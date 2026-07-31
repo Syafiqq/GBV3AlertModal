@@ -51,6 +51,11 @@ struct ScrollableContent<Content: View>: View {
     /// `nil` until the content has reported a height — see the note on greediness above.
     @State private var idealHeight: CGFloat?
 
+    /// The height the scroll was actually GRANTED. Used only to decide whether the content overflows,
+    /// and only to drive the fade below — never to size anything, so unlike the banner ceiling that
+    /// was tried and reverted, this reading cannot feed back into the layout it is measured from.
+    @State private var grantedHeight: CGFloat?
+
     var body: some View {
         ScrollView(.vertical, showsIndicators: true) {
             // `VStack(spacing: 0)` EXPLICITLY, and it is load-bearing. A `ScrollView` whose content
@@ -74,6 +79,31 @@ struct ScrollableContent<Content: View>: View {
             )
         }
         .frame(maxHeight: idealHeight)
+        // **The fold, made to read as "there is more" rather than as a rendering fault.**
+        //
+        // A scroll viewport ends wherever the available height runs out, which is generally MID-LINE:
+        // the bottom row of glyphs is sliced horizontally, and that is visually the same defect this
+        // whole effort set out to remove from the subtitle slot.
+        //
+        // Snapping the viewport to whole lines is the obvious fix and is NOT expressible here: the
+        // fold can land inside the 24pt title or the 16pt subtitle, and SwiftUI exposes no per-line
+        // geometry to snap against. What it can do is fade the last few points, so a half-drawn line
+        // reads as content continuing past the edge — the standard affordance — instead of as text
+        // that has been cut off.
+        //
+        // Applied ONLY when the content actually overflows; a card whose content fits keeps a hard,
+        // unfaded bottom edge and is pixel-identical to one with no scroll at all.
+        .mask(foldFade)
+        .background(
+            GeometryReader { proxy in
+                Color.clear.preference(key: ScrollGrantedHeightKey.self, value: proxy.size.height)
+            }
+        )
+        .onPreferenceChange(ScrollGrantedHeightKey.self) { height in
+            if height > 0, grantedHeight != height {
+                grantedHeight = height
+            }
+        }
         .onPreferenceChange(ScrollableContentHeightKey.self) { height in
             // Guard the assignment: an unconditional write re-renders on every pass with the same
             // value, which is a layout loop rather than a settled layout.
@@ -81,6 +111,52 @@ struct ScrollableContent<Content: View>: View {
                 idealHeight = height
             }
         }
+    }
+
+    /// Opaque everywhere except the last few points, and only when there is something below the fold
+    /// to hint at.
+    @ViewBuilder
+    private var foldFade: some View {
+        if overflows {
+            LinearGradient(
+                stops: [
+                    .init(color: .black, location: 0),
+                    .init(color: .black, location: 1 - fadeFraction),
+                    .init(color: .black.opacity(0), location: 1)
+                ],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+        } else {
+            Color.black
+        }
+    }
+
+    private var overflows: Bool {
+        guard let idealHeight, let grantedHeight else {
+            return false
+        }
+        // A point of slack: `maxHeight` resolves to the ideal when there is room, and the two
+        // measurements can differ in the last fractional point without anything being cut.
+        return idealHeight > grantedHeight + 1
+    }
+
+    /// Roughly one 16pt line's worth of softening — enough to read as a soft edge, small enough not
+    /// to dim text that is fully visible.
+    private var fadeFraction: CGFloat {
+        guard let grantedHeight, grantedHeight > 0 else {
+            return 0
+        }
+        return Swift.min(0.25, 12 / grantedHeight)
+    }
+}
+
+/// The height the scroll was granted, for the overflow test behind the fold fade.
+private struct ScrollGrantedHeightKey: PreferenceKey {
+    static var defaultValue: CGFloat { 0 }
+
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+        value = Swift.max(value, nextValue())
     }
 }
 
