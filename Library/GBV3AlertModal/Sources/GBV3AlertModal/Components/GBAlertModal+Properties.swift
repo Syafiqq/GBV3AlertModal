@@ -29,6 +29,19 @@ extension GBAlertModal {
 
         public let space: ComponentSpace?
 
+        /// **Whether the content region (banner + title + subtitle) SCROLLS when it does not fit.**
+        ///
+        /// `nil`/`false` is today's behaviour and the default, deliberately: a card that fits needs no
+        /// scroll, and every shape in the app that already renders correctly must keep rendering
+        /// byte-for-byte the same. Opt in per preset, where the caller knows the copy can be long.
+        ///
+        /// **SwiftUI only, for now.** UIKit's `GBAlertModal` keeps its subtitle-only
+        /// `svSubtitleContainer`: this module ships to the production app as an SPM dependency, so
+        /// restructuring its view tree, its public `svSubtitleContainer` and its keyboard-avoidance
+        /// anchor is a change every consumer inherits on the next version bump. The flag is read by
+        /// `ModalTokens` and honoured by `AlertModalScaffold`; the UIKit renderer ignores it.
+        public let contentScrollable: Bool?
+
         public init(
                 baseTint: UIColor? = nil,
                 overlayColor: UIColor? = nil,
@@ -47,7 +60,8 @@ extension GBAlertModal {
                 primaryActionStyle: ActionStyle? = nil,
                 secondaryActionStyle: ActionStyle? = nil,
                 closeButtonTint: UIColor? = nil,
-                space: ComponentSpace? = nil
+                space: ComponentSpace? = nil,
+                contentScrollable: Bool? = nil
         ) {
             self.baseTint = baseTint
             self.overlayColor = overlayColor
@@ -67,6 +81,7 @@ extension GBAlertModal {
             self.secondaryActionStyle = secondaryActionStyle
             self.closeButtonTint = closeButtonTint
             self.space = space
+            self.contentScrollable = contentScrollable
         }
 
         public func copy(
@@ -87,7 +102,8 @@ extension GBAlertModal {
                 primaryActionStyle: ActionStyle? = nil,
                 secondaryActionStyle: ActionStyle? = nil,
                 closeButtonTint: UIColor? = nil,
-                space: ComponentSpace? = nil
+                space: ComponentSpace? = nil,
+                contentScrollable: Bool? = nil
         ) -> Self {
             Self(
                     baseTint: baseTint ?? self.baseTint,
@@ -107,7 +123,8 @@ extension GBAlertModal {
                     primaryActionStyle: primaryActionStyle ?? self.primaryActionStyle,
                     secondaryActionStyle: secondaryActionStyle ?? self.secondaryActionStyle,
                     closeButtonTint: closeButtonTint ?? self.closeButtonTint,
-                    space: space ?? self.space
+                    space: space ?? self.space,
+                    contentScrollable: contentScrollable ?? self.contentScrollable
             )
         }
     }

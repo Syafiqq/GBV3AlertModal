@@ -144,6 +144,15 @@ public struct SwiftUIAlertModal: View {
                     .modalGeometryProbe(.banner)
                     .padding(.bottom, tokens.gapBelowBanner)
             }
+            textRows(resolved: resolved, holder: holder)
+        }
+    }
+
+    /// The two text rows, in the order and with the priorities the directive states.
+    @ViewBuilder
+    private func titleAndSubtitle(
+        resolved: GBAlertModal.ResolvedModal, holder: GBAlertModal.DataHolder
+    ) -> some View {
             if resolved.showsTitle, let title = config.title {
                 Text(title)
                     .font(tokens.titleFont)
@@ -176,6 +185,25 @@ public struct SwiftUIAlertModal: View {
                     .layoutPriority(Self.titleLayoutPriority)
             }
             subtitleView(resolved: resolved, holder: holder)
+    }
+
+    /// **The TEXT rows, optionally scrollable — the banner deliberately stays outside.**
+    ///
+    /// Scoped to title + subtitle on purpose. Wrapping the banner too was tried and abandoned: inside
+    /// a scroll nothing competes for space, so each row simply takes its natural size in order, and
+    /// the banner — being first and being large — claimed the whole viewport and pushed the words out
+    /// of sight. That is the opposite of the ladder, where every banner driver sits BELOW every text
+    /// rung. Left outside, the banner is still governed by that ladder and needs no special ceiling.
+    ///
+    /// Off by default (`Properties.contentScrollable`), so every shape that fits today is untouched.
+    @ViewBuilder
+    private func textRows(resolved: GBAlertModal.ResolvedModal, holder: GBAlertModal.DataHolder) -> some View {
+        if tokens.contentScrollable {
+            ScrollableContent {
+                titleAndSubtitle(resolved: resolved, holder: holder)
+            }
+        } else {
+            titleAndSubtitle(resolved: resolved, holder: holder)
         }
     }
 
