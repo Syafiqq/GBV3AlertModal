@@ -98,6 +98,11 @@ public struct ModalTokens: Sendable {
     /// alone would only weaken the floor measurement, never the rendering.
     public var titleUIFont: UIFont = .systemFont(ofSize: 24, weight: .bold)
 
+    /// `subtitleFont`'s measurement twin, for the same reason `titleUIFont` is `titleFont`'s: the
+    /// subtitle's floor is ONE LINE of the font it renders in, and a `Font` cannot report a line
+    /// height. Assigned from the one `Properties.subtitleFont` in `init(from:)`.
+    public var subtitleUIFont: UIFont = .systemFont(ofSize: 16, weight: .regular)
+
     /// The close button's tap target, 48×48. UIKit pins `btCloseAction` to `vwContainer`'s
     /// top-trailing with `size == 48` (`GBAlertModal+ViewGraph.swift`'s `installConstraints`); the
     /// SwiftUI scaffold used 44 (the HIG minimum) and therefore drew the glyph 2pt further from both
@@ -313,6 +318,19 @@ public struct ModalTokens: Sendable {
     /// only direction that could disturb a passing shape.
     func titleFloorHeight(for text: String) -> CGFloat {
         ModalLayout.titleFloorHeight(text, font: titleUIFont, width: contentMaxWidth)
+    }
+
+    /// **The subtitle row's floor: one line, the SwiftUI half of `ModalLayout.subtitleFloorHeight`.**
+    ///
+    /// UIKit holds this back with a `>=` on the scroll slot at `Priority.subtitleSlotFloor`; SwiftUI
+    /// has no slot to constrain, so the row carries it as a `.frame(minHeight:)`. Same function, same
+    /// number, so neither renderer can protect more of the body text than the other.
+    ///
+    /// Unconditional and inert by the same argument as the title's floor: a non-empty `Text` already
+    /// reports at least one line, so this can only bind when the row was about to be given LESS than
+    /// one line — which is the case it exists for.
+    var subtitleFloorHeight: CGFloat {
+        ModalLayout.subtitleFloorHeight(font: subtitleUIFont)
     }
 
     init(
@@ -537,6 +555,8 @@ public struct ModalTokens: Sendable {
         }
         if let subtitleFont = properties.subtitleFont {
             self.subtitleFont = Font(subtitleFont)
+            // The measurement twin, from the SAME `UIFont` — see `subtitleUIFont`.
+            subtitleUIFont = subtitleFont
         }
         if let titleColor = properties.titleColor {
             palette.titleText = Color(uiColor: titleColor)

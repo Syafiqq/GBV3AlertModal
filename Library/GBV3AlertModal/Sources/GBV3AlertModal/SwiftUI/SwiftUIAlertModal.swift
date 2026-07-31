@@ -199,6 +199,10 @@ public struct SwiftUIAlertModal: View {
                 // the row that is squeezed FIRST, and the scale factor means it answers by shrinking
                 // rather than by ellipsizing. UIKit's counterpart is the subtitle SLOT's scroll.
                 .modifier(NeverTruncates(minimumScaleFactor: tokens.titleMinimumScaleFactor))
+                // …and the floor on how far "lower rung" goes. Being the row that yields is the
+                // directive; being squeezed out of existence is not. UIKit's counterpart is the
+                // `>=` on the subtitle slot at `ModalLayout.Priority.subtitleSlotFloor`.
+                .frame(minHeight: tokens.subtitleFloorHeight)
                 .modalGeometryProbe(.subtitle)
                 .padding(.bottom, tokens.gapBelowSubtitle)
                 // The LOWER rung of the directive's ordering — see `subtitleLayoutPriority`.
@@ -210,6 +214,8 @@ public struct SwiftUIAlertModal: View {
                 .multilineTextAlignment(.center)
                 .modifier(ContentRowWidth(fillsWidth: tokens.contentChildrenFillWidth))
                 .modifier(NeverTruncates(minimumScaleFactor: tokens.titleMinimumScaleFactor))
+                // Same floor as the `.plain` row above.
+                .frame(minHeight: tokens.subtitleFloorHeight)
                 .modalGeometryProbe(.subtitle)
                 .padding(.bottom, tokens.gapBelowSubtitle)
                 .layoutPriority(Self.subtitleLayoutPriority)

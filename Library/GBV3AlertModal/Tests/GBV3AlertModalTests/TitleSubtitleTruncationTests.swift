@@ -307,6 +307,251 @@ final class TitleSubtitleTruncationTests: XCTestCase {
         // the assertion that catches a `.byTruncatingTail` line-break mode coming back, which is
         // invisible whenever a label has all the room it wants.
         assertNoTruncation(subtitleLabel, "subtitle (under height pressure)")
+
+    }
+
+    /// **The regression test for what "the subtitle yields" shipped as.**
+    ///
+    /// Rung 1 was measured working and was still wrong: on the landscape card the slot's frame height
+    /// went to ZERO — or worse, to a fraction of a line, so the body text was drawn sliced in half by
+    /// the button below it. Measured on the LayerC shapes before the floor existed: 0.0pt with a
+    /// banner, 9.3pt on the two-button shape (a 19.1pt line showing its top half). The subtitle was
+    /// not scrolled — there was nothing to scroll and no indicator saying so.
+    ///
+    /// **The fixture is a SHORT title with a long subtitle**, which is the point: this is the case
+    /// where nothing forces the collapse. The card has room for one line of body text; the slot gave
+    /// it up anyway, because its height tie was the weakest rung and no floor stopped it at a
+    /// sensible place. Contrast `test_whenOneLineOfEachCannotFit_theTitleWins`, which covers the case
+    /// where the room genuinely is not there.
+    func test_underHeightPressure_theSubtitleYieldsToOneLine_andNoFurther() throws {
+        let modal = self.modal(dialog(title: "Heads up", subtitle: Self.longSubtitle))
+        renderForSnapshot(modal, size: pressured)
+
+        let slot = try XCTUnwrap(modal.svSubtitleContainer)
+        let subtitleFont = try XCTUnwrap(GeniePresets.standardProperties().subtitleFont)
+        let floor = modal.subtitleSlotFloorHeight
+
+        // PREMISE 1: the floor is one line of the font actually rendered — not of `UILabel`'s 17pt
+        // default, which is what `lbSubtitle.font` reads (nothing ever assigns it; the text carries
+        // its own `.font`).
+        XCTAssertEqual(
+            floor, subtitleFont.lineHeight, accuracy: 0.01,
+            "the floor was measured against the wrong font"
+        )
+        // PREMISE 2: this fixture really is pressured, or "it did not collapse" proves nothing.
+        XCTAssertLessThan(
+            slot.bounds.height, slot.contentSize.height - 0.5, "premise: the slot must be squeezed"
+        )
+
+        XCTAssertGreaterThanOrEqual(
+            slot.bounds.height, floor - 0.5,
+            "the subtitle slot is \(slot.bounds.height)pt — below the \(floor)pt one-line floor. "
+                + "Below a full line the body text is drawn sliced or not at all, which is the defect "
+                + "this floor exists to stop."
+        )
+        // And the floor is a floor, not a fixed height: an unpressured card still gives the subtitle
+        // everything it asks for.
+        let roomy = self.modal(dialog(title: "Heads up", subtitle: "Short body."))
+        renderForSnapshot(roomy, size: portrait)
+        let roomySlot = try XCTUnwrap(roomy.svSubtitleContainer)
+        XCTAssertEqual(
+            roomySlot.bounds.height, roomySlot.contentSize.height, accuracy: 0.5,
+            "an unpressured subtitle slot must still equal its content height — the floor is not "
+                + "supposed to be load-bearing here"
+        )
+    }
+
+    /// **The popup preset in landscape — a real app state, and the case whitespace used to win.**
+    ///
+    /// `popupProperties` pairs bigger padding (20 vs 16) with much bigger gaps (16 + 24 = 40pt against
+    /// the standard preset's 8 + 16), which left a 174pt content budget carrying 40pt of decorative
+    /// space at `.required`. The subtitle lost, every time.
+    ///
+    /// Not synthetic: `V2LiveKitOnlineLessonViewController` locks iPhone to landscape in
+    /// `viewDidLoad` and presents two-button `popupProperties` dialogs (banner + title + subtitle)
+    /// from that screen, as does the V1 lesson controller. A student in a live class on a phone sees
+    /// exactly this card.
+    func test_thePopupPresetInLandscape_keepsItsSubtitle_bySpendingWhitespace() throws {
+        let modal = GBAlertModal(
+            properties: GeniePresets.popupProperties(), holder: GeniePresets.twoButton()
+        )
+        renderForSnapshot(modal, size: pressured)
+
+        let slot = try XCTUnwrap(modal.svSubtitleContainer)
+        let subtitleLabel = try XCTUnwrap(modal.lbSubtitle)
+        let floor = modal.subtitleSlotFloorHeight
+
+        XCTAssertGreaterThanOrEqual(
+            slot.bounds.height, floor - 0.5,
+            "the popup's subtitle slot is \(slot.bounds.height)pt against a \(floor)pt one-line "
+                + "floor — the card is drawing a void where the body text belongs"
+        )
+        assertNoTruncation(subtitleLabel, "popup subtitle (landscape)")
+
+        // AND THE WHITESPACE IS WHAT PAID FOR IT: at least one gap gave up height. Asserted as a
+        // total so it does not pin which gap yields — that is the solver's choice, not a contract.
+        let gaps = [
+            modal.vwBannerAndBelowDivider, modal.vwTitleAndBelowDivider,
+            modal.vwSubtitleAndBelowDivider
+        ].compactMap { $0?.bounds.height }.reduce(0, +)
+        let space = try XCTUnwrap(GeniePresets.popupProperties().space)
+        XCTAssertLessThan(
+            gaps, space.title + space.subtitle,
+            "no gap shrank, so the subtitle's line came out of something else"
+        )
+    }
+
+    /// The same preset with ROOM: every gap is exactly what the preset asked for. This is what makes
+    /// the shrink safe to apply unconditionally — it is invisible until the card is cramped.
+    func test_theGapsAreExact_wheneverTheCardHasRoom() throws {
+        let modal = GBAlertModal(
+            properties: GeniePresets.popupProperties(), holder: GeniePresets.twoButton()
+        )
+        renderForSnapshot(modal, size: portrait)
+        let space = try XCTUnwrap(GeniePresets.popupProperties().space)
+
+        XCTAssertEqual(
+            try XCTUnwrap(modal.vwTitleAndBelowDivider).bounds.height, space.title, accuracy: 0.5,
+            "an unpressured card must render the preset's exact title gap"
+        )
+        XCTAssertEqual(
+            try XCTUnwrap(modal.vwSubtitleAndBelowDivider).bounds.height, space.subtitle,
+            accuracy: 0.5,
+            "an unpressured card must render the preset's exact subtitle gap"
+        )
+    }
+
+    /// **The other side of the floor: it is a floor, not a guarantee.**
+    ///
+    /// The landscape card is capped at 214pt (safe area 294 − 40/40 margins), which leaves 110pt for
+    /// title + subtitle once the button and padding are taken. A 139-glyph title needs 107.4 of that
+    /// AT ITS OWN 0.75 FLOOR, so one line of each does not fit and something must lose text. The
+    /// directive settles which: "title with more content compression" — the title outlives the
+    /// subtitle, so `Priority.subtitleSlotFloor` sits BELOW `titleCompressionResistance` and the floor
+    /// is what breaks.
+    ///
+    /// This is the test that fails if someone "fixes" the collapse by promoting the floor above the
+    /// title — which reads like an improvement and silently starts truncating titles instead. (That
+    /// exact inversion was tried and measured: 23 of 139 glyphs lost.)
+    ///
+    /// The underlying conflict is the recorded landscape hard ceiling, whose real fix is a scrolling
+    /// title slot mirroring `svSubtitleContainer`. Until then this pins WHICH way it fails.
+    func test_whenOneLineOfEachCannotFit_theTitleWins() throws {
+        let modal = GBAlertModal(
+            properties: GeniePresets.standardProperties(), holder: GeniePresets.longTitle()
+        )
+        renderForSnapshot(modal, size: pressured)
+
+        let title = try XCTUnwrap(modal.lbTitle)
+        let slot = try XCTUnwrap(modal.svSubtitleContainer)
+
+        // PREMISE: this really is the impossible case — the title alone, already at its shrink floor,
+        // wants more than the budget minus one subtitle line.
+        XCTAssertEqual(
+            modal.titleFontScaleApplied, ModalLayout.titleMinimumScaleFactor, accuracy: 0.001,
+            "premise: the title must already be at its shrink floor, or nothing is impossible here"
+        )
+        XCTAssertLessThan(
+            slot.bounds.height, modal.subtitleSlotFloorHeight,
+            "premise: the floor must be the thing that broke"
+        )
+
+        // THE CLAIM: whatever the subtitle lost, the title kept every glyph.
+        assertNoTruncation(title, "title (one line of each cannot fit)")
+    }
+
+    /// The SwiftUI half of the same floor. No scroll slot exists there (structural gap D-7), so the
+    /// claim is on the ROW: pressured or not, it is never given less than one line.
+    ///
+    /// Same SHORT-title fixture as the UIKit test, and for the same reason — this is the avoidable
+    /// case, which is the one both renderers must agree on. In the IMPOSSIBLE case they diverge by
+    /// construction: UIKit's floor is a priority that Auto Layout can break in the title's favour,
+    /// while SwiftUI's `.frame(minHeight:)` is absolute and simply overflows. Recording that here
+    /// rather than building machinery to reconcile it, since the underlying conflict is the landscape
+    /// hard ceiling and its fix (a scrolling title slot) changes both sides anyway.
+    func test_swiftUISubtitle_underHeightPressure_keepsAtLeastOneLine() throws {
+        let shape = DifferentialGeometry.Shape(
+            name: "directive-subtitle-floor",
+            dialog: dialog(title: "Heads up", subtitle: Self.longSubtitle),
+            properties: GeniePresets.standardProperties()
+        )
+        let floor = ModalTokens(from: shape.properties).subtitleFloorHeight
+        XCTAssertGreaterThan(floor, 0, "premise: the tokens carry a floor at all")
+
+        let squeezed = try XCTUnwrap(
+            swiftUIFrame(shape, element: .subtitle, size: pressured), "no subtitle probe (pressured)"
+        )
+        XCTAssertGreaterThanOrEqual(
+            squeezed.height, floor - DifferentialGeometry.tolerance,
+            "the SwiftUI subtitle row is \(squeezed.height)pt against a \(floor)pt one-line floor — "
+                + "it was squeezed out rather than merely being the row that yields"
+        )
+    }
+
+    /// **One floor, read by both renderers** — the subtitle's counterpart of
+    /// `test_theShrinkFloor_isOneSharedNumber`, and the reason `subtitleUIFont` exists.
+    func test_theSubtitleFloor_isOneSharedNumber() throws {
+        let properties = GeniePresets.standardProperties()
+        let font = try XCTUnwrap(properties.subtitleFont)
+        let tokens = ModalTokens(from: properties)
+
+        XCTAssertEqual(tokens.subtitleUIFont, font, "the measurement twin is not the rendered font")
+        XCTAssertEqual(tokens.subtitleFont, Font(font))
+        XCTAssertEqual(tokens.subtitleFloorHeight, ModalLayout.subtitleFloorHeight(font: font))
+
+        // …and UIKit derives the SAME number from the live label, via the text's own `.font`.
+        let modal = self.modal(dialog(title: "Heads up", subtitle: "Short body."))
+        renderForSnapshot(modal, size: portrait)
+        XCTAssertEqual(
+            modal.subtitleSlotFloorHeight, tokens.subtitleFloorHeight, accuracy: 0.01,
+            "the two renderers protect different amounts of subtitle"
+        )
+
+        // `standard` has no `Properties`; its literal twin must match the `Font` beside it.
+        XCTAssertEqual(ModalTokens.standard.subtitleUIFont.pointSize, 16)
+        XCTAssertEqual(ModalTokens.standard.subtitleFont, .system(size: 16, weight: .regular))
+    }
+
+    /// `renderedFont` is the piece that keeps the floor honest: the subtitle label is never assigned a
+    /// `font`, so reading `UILabel.font` would measure the 17pt system default rather than the 16pt
+    /// the preset actually draws. Asserted as a discrimination, not just a happy path.
+    func test_theFloorReadsTheFontTheTextCarries_notTheLabelsDefault() {
+        let label = UILabel()
+        let drawn = UIFont.systemFont(ofSize: 40)
+        XCTAssertNotEqual(label.font.pointSize, drawn.pointSize, "premise: the two must differ")
+
+        label.attributedText = NSAttributedString(string: "Body", attributes: [.font: drawn])
+        XCTAssertEqual(ModalLayout.renderedFont(label.attributedText, fallback: label.font), drawn)
+
+        // No text, or text carrying no font: the fallback is the honest answer.
+        XCTAssertEqual(ModalLayout.renderedFont(nil, fallback: label.font), label.font)
+        XCTAssertEqual(
+            ModalLayout.renderedFont(NSAttributedString(string: ""), fallback: label.font), label.font
+        )
+        XCTAssertEqual(
+            ModalLayout.renderedFont(NSAttributedString(string: "Body"), fallback: label.font),
+            label.font
+        )
+    }
+
+    /// A `.custom` subtitle gets NO floor: "one line" is not a fact about an arbitrary caller view, and
+    /// inventing one would move a snapshot for a reason nothing measured.
+    func test_aCustomSubtitleView_getsNoFloor() {
+        let custom = UIView()
+        custom.translatesAutoresizingMaskIntoConstraints = false
+        custom.heightAnchor.constraint(equalToConstant: 120).isActive = true
+
+        let modal = GBAlertModal(
+            properties: GeniePresets.standardProperties(),
+            holder: GBAlertModal.DataHolder(
+                title: "Heads up", subtitleCustomView: custom, primaryAction: "OK"
+            )
+        )
+        renderForSnapshot(modal, size: portrait)
+
+        XCTAssertNotNil(modal.svSubtitleContainer, "premise: the custom view took the subtitle slot")
+        XCTAssertNil(modal.lbSubtitle, "premise: the custom path builds no label")
+        XCTAssertEqual(modal.subtitleSlotFloorHeight, 0)
     }
 
     /// The SwiftUI title under pressure: it may SCALE, it may not lose text.
@@ -363,6 +608,34 @@ final class TitleSubtitleTruncationTests: XCTestCase {
     // MARK: - (b) The ordering itself
 
     func test_theVerticalPriorityLadder_putsTheTitleAboveTheSubtitle() {
+        // The slot floor holds one line of subtitle open — but still BELOW the title, so on a card
+        // that cannot fit one line of each it is the floor that breaks and the title keeps every
+        // glyph. Promoting it above 900 inverts the directive (measured: the `longTitle` landscape
+        // fixture lost 23 of 139 title glyphs to buy the subtitle its line).
+        XCTAssertLessThan(
+            ModalLayout.Priority.subtitleSlotFloor.rawValue,
+            ModalLayout.Priority.titleCompressionResistance.rawValue,
+            "the subtitle's floor must not out-rank the title — 'title with more content compression'"
+        )
+        // …and ABOVE the subtitle label's own resistance, so it is the SLOT that holds the line open
+        // rather than the label refusing to shrink.
+        XCTAssertGreaterThan(
+            ModalLayout.Priority.subtitleSlotFloor.rawValue,
+            ModalLayout.Priority.subtitleCompressionResistance.rawValue
+        )
+        // WHITESPACE IS THE CHEAPEST THING ON THE CARD. The gaps must yield before the subtitle's
+        // last line and before the title — at `.required` (where they started) 40pt of decorative
+        // space outranked every word, and the popup landscape card drew a title, a void and two
+        // buttons.
+        XCTAssertLessThan(
+            ModalLayout.Priority.componentSpacing.rawValue,
+            ModalLayout.Priority.subtitleSlotFloor.rawValue,
+            "a cramped card must spend its whitespace before it spends its text"
+        )
+        XCTAssertLessThan(
+            ModalLayout.Priority.componentSpacing.rawValue,
+            ModalLayout.Priority.titleCompressionResistance.rawValue
+        )
         XCTAssertGreaterThan(
             ModalLayout.Priority.titleCompressionResistance.rawValue,
             ModalLayout.Priority.subtitleCompressionResistance.rawValue,
@@ -685,6 +958,14 @@ final class TitleSubtitleTruncationTests: XCTestCase {
         _ shape: DifferentialGeometry.Shape,
         size: CGSize
     ) -> CGRect? {
+        swiftUIFrame(shape, element: .title, size: size)
+    }
+
+    private func swiftUIFrame(
+        _ shape: DifferentialGeometry.Shape,
+        element: ModalGeometryElement,
+        size: CGSize
+    ) -> CGRect? {
         let sink = DifferentialGeometry.Sink()
         let root = DifferentialGeometry.ProbeHost(sink: sink) {
             SwiftUIAlertModal(
@@ -702,7 +983,7 @@ final class TitleSubtitleTruncationTests: XCTestCase {
         defer { DifferentialGeometry.teardown(window) }
         controller.view.frame = CGRect(origin: .zero, size: size)
         window.rootViewController = controller
-        DifferentialGeometry.pump(window) { sink.frames[.title] != nil }
-        return sink.frames[.title]
+        DifferentialGeometry.pump(window) { sink.frames[element] != nil }
+        return sink.frames[element]
     }
 }

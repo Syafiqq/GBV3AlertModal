@@ -127,6 +127,29 @@ internal extension GBAlertModal {
         }
     }
 
+    /// **One inter-component gap: never taller than the preset asks, shrinkable when the card is
+    /// cramped.**
+    ///
+    /// The three gap dividers used to be a plain `height == space`, i.e. `.required` — so decorative
+    /// whitespace out-ranked every word on the card. Measured on the popup preset in landscape: 40pt
+    /// of gap held firm inside a 174pt budget while the subtitle was squeezed to nothing, and the card
+    /// drew a title, a void and two buttons. That is a real app state, not a synthetic one — the
+    /// lesson screens lock iPhone to landscape and present two-button `popupProperties` dialogs.
+    ///
+    /// The `<=` stays `.required` (a gap may never exceed its design value, so no roomy card changes)
+    /// and the `==` drops to `ModalLayout.Priority.componentSpacing`, below the subtitle's floor and
+    /// the title. A card with room satisfies the equality exactly; a cramped one spends its
+    /// whitespace before it spends its text.
+    private func installGapHeight(_ divider: UIView, _ space: CGFloat) {
+        divider.snp.makeConstraints { (make: ConstraintMaker) in
+            make.height
+                    .lessThanOrEqualTo(space)
+            make.height
+                    .equalTo(space)
+                    .priority(ModalLayout.Priority.componentSpacing)
+        }
+    }
+
     /// Creates + assigns `svSubtitleContainer` and its inner `lbSubtitle` / `vwSubtitle`,
     /// nesting the resolved subtitle content inside the scroll container.
     private func buildSubtitleComponent(_ resolved: ResolvedModal) {
@@ -428,10 +451,7 @@ internal extension GBAlertModal {
 
         // Banner divider
         if let vwBannerAndBelowDivider {
-            vwBannerAndBelowDivider.snp.makeConstraints { (make: ConstraintMaker) in
-                make.height
-                        .equalTo(properties?.space?.banner ?? .zero)
-            }
+            installGapHeight(vwBannerAndBelowDivider, properties?.space?.banner ?? .zero)
         }
 
         // Subtitle
@@ -474,22 +494,35 @@ internal extension GBAlertModal {
                                         : ModalLayout.Priority.subtitleSlotHeight
                         )
             }
+
+            // **And the floor on that yield.** The tie above is what lets the slot shrink; nothing
+            // stopped it shrinking to ZERO, which is what the landscape card did — the subtitle was
+            // not scrolled, it was gone (measured: 0.0pt with a banner, 9.3pt on the two-button
+            // shape, i.e. a line sliced in half by the button below it).
+            //
+            // At 850: above the slot's own height tie (250/749) and above the subtitle label's 750,
+            // so it holds the line open; but BELOW the title's 900, so on the one landscape shape
+            // where the two genuinely cannot both fit, this is what gives way and the title keeps
+            // every glyph. Inert whenever the tie above holds, since a non-empty label is already at
+            // least one line tall. See `ModalLayout.subtitleFloorHeight`.
+            let floor = subtitleSlotFloorHeight
+            if floor > 0 {
+                svSubtitleContainer.snp.makeConstraints { (make: ConstraintMaker) in
+                    make.height
+                            .greaterThanOrEqualTo(floor)
+                            .priority(ModalLayout.Priority.subtitleSlotFloor)
+                }
+            }
         }
 
         // Title Divider
         if let vwTitleAndBelowDivider {
-            vwTitleAndBelowDivider.snp.makeConstraints { (make: ConstraintMaker) in
-                make.height
-                        .equalTo(properties?.space?.title ?? .zero)
-            }
+            installGapHeight(vwTitleAndBelowDivider, properties?.space?.title ?? .zero)
         }
 
         // Subtitle Divider
         if let vwSubtitleAndBelowDivider {
-            vwSubtitleAndBelowDivider.snp.makeConstraints { (make: ConstraintMaker) in
-                make.height
-                        .equalTo(properties?.space?.subtitle ?? .zero)
-            }
+            installGapHeight(vwSubtitleAndBelowDivider, properties?.space?.subtitle ?? .zero)
         }
 
         // Primary Action

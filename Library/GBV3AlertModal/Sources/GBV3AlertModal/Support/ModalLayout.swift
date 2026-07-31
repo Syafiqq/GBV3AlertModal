@@ -197,6 +197,55 @@ extension ModalLayout {
     }
 }
 
+// MARK: - The subtitle's floor: it yields, but not all the way to nothing
+
+extension ModalLayout {
+    /// **How far the SUBTITLE may yield: down to ONE LINE, and no further.**
+    ///
+    /// Rung 1 makes the subtitle the row that gives way, and that was measured working — in the
+    /// pressured landscape card it gave way *entirely*: the slot's frame height went to zero, so the
+    /// body text was not scrolled, it was gone, with no scroll indicator and nothing to scroll. A
+    /// reader saw a title and a button and no explanation of either. "The subtitle begins to wrap"
+    /// does not mean "the subtitle disappears", and a zero-height scroll slot is truncation by
+    /// another name — the one outcome the whole ladder exists to forbid.
+    ///
+    /// So the yield is bounded. One line is the smallest floor that is still honest (the reader gets
+    /// real words plus a scroll affordance), and it is the largest floor that cannot disturb an
+    /// unpressured shape: every non-empty label is already at least one line tall, so the floor is
+    /// `<=` the slot's content height by construction and the `frame == content` tie (250) satisfies
+    /// it for free whenever it holds.
+    ///
+    /// **It is a floor, not a guarantee**, and deliberately: at `Priority.subtitleSlotFloor` (850) it
+    /// still ranks below the title (900). On a card that cannot fit one line of each — the landscape
+    /// `longTitle` fixture, where a 214pt ceiling leaves 110pt for a title that needs 107.4 at its own
+    /// floor — this is what gives way, because the directive's ordering says the title outlives the
+    /// subtitle. That case is the recorded landscape hard ceiling, whose real fix is a scrolling title
+    /// slot; the floor's job is every OTHER shape, where the subtitle was vanishing for no reason at
+    /// all.
+    ///
+    /// Read by BOTH renderers — UIKit installs it as a `>=` on the slot at
+    /// `Priority.subtitleSlotFloor`, SwiftUI as the subtitle row's `.frame(minHeight:)` — so the two
+    /// cannot protect different amounts of text.
+    static func subtitleFloorHeight(font: UIFont) -> CGFloat {
+        font.lineHeight
+    }
+
+    /// The font `text` actually renders its FIRST line in, falling back to `fallback`.
+    ///
+    /// The subtitle label is never assigned a `font`: both subtitle paths write an `attributedText`
+    /// carrying its own `.font` (the `.plain` path from `Properties.subtitleFont`, the `.attributed`
+    /// path from the caller's string). So `UILabel.font` is the 17pt system default and reading it
+    /// would measure a line of a font nothing draws — which for the real preset's 16pt subtitle would
+    /// reserve a floor slightly TALLER than the line it protects.
+    static func renderedFont(_ text: NSAttributedString?, fallback: UIFont) -> UIFont {
+        guard let text, text.length > 0,
+              let font = text.attribute(.font, at: 0, effectiveRange: nil) as? UIFont else {
+            return fallback
+        }
+        return font
+    }
+}
+
 // MARK: - The vertical priority ladder
 
 extension ModalLayout {
@@ -218,6 +267,37 @@ extension ModalLayout {
     ///   UIKit's 750 default so the title out-ranks EVERY other content rung: it keeps its font
     ///   size and however many lines it needs (`numberOfLines = 0`), and the subtitle is what gives
     ///   way. Deliberately NOT `.required` (1000) — see below. |
+    /// | `subtitleSlotFloor` | **850** | `svSubtitleContainer.height >= one line`. Rung 1 says the
+    ///   subtitle yields first; this says how far. Without it the slot yields to ZERO and the body
+    ///   text does not scroll, it VANISHES — measured on the landscape card, where three of the four
+    ///   ordinary shapes were rendering the subtitle sliced in half or not at all.
+    ///
+    ///   **BELOW the title's 900, and that placement is the whole design.** Above it, the title
+    ///   would be the one to give up glyphs whenever the two genuinely cannot both fit — which
+    ///   inverts the directive's ordering. Measured on the `longTitle` landscape fixture: the card
+    ///   is capped at 214pt (safe area 294 − 40/40 margins), leaving 110pt for title + subtitle, and
+    ///   the floor-scaled title alone needs 107.4. At 950 the title lost 23 of 139 glyphs to buy the
+    ///   subtitle its line. At 850 the floor is what breaks in that impossible case, and the title
+    ///   keeps every glyph — while every shape where the two DON'T conflict still gets its line of
+    ///   body text. See `ModalLayout.subtitleFloorHeight`.
+    ///
+    ///   Above the subtitle LABEL's own 750, so it is the SLOT that holds the line open rather than
+    ///   the label refusing to shrink. |
+    /// | `componentSpacing` | **800** | the three inter-component GAPS
+    ///   (`vwBannerAndBelowDivider`, `vwTitleAndBelowDivider`, `vwSubtitleAndBelowDivider`), each
+    ///   `height == space` at this priority under a `<=` cap at `.required`.
+    ///
+    ///   These used to be `.required` outright, which meant **decorative whitespace outranked every
+    ///   word on the card**. Measured on the popup preset in landscape: 16 + 24 = 40pt of gap held
+    ///   firm inside a 174pt content budget while the subtitle was squeezed to nothing — the card
+    ///   drew a title, a void, and two buttons. The real app reaches exactly this
+    ///   (`V2LiveKitOnlineLessonViewController` locks iPhone to landscape and presents two-button
+    ///   `popupProperties` dialogs with a banner, title and subtitle).
+    ///
+    ///   At 800 the gaps sit BELOW the subtitle's floor (850) and the title (900), so a cramped card
+    ///   spends its whitespace before it spends its text — but ABOVE nothing else it needs to beat,
+    ///   and the `<=` cap stays `.required` so a gap can only ever shrink, never grow past what the
+    ///   preset asked for. On any card with room the equality holds exactly and nothing moves. |
     /// | `bannerMaxHeight` | 751 | `vwBanner.height <= bannerMaxHeight`. An explicit cap the caller
     ///   asked for; it out-ranks the natural-aspect driver so a capped banner stays capped. |
     /// | `subtitleCompressionResistance` | **750** | `lbSubtitle`'s vertical resistance — UIKit's
@@ -252,6 +332,8 @@ extension ModalLayout {
         // strict-concurrency error, and `UILayoutPriority`'s conformance is SDK-version-dependent.
         // These are constants either way — there is no state here to share.
         static var titleCompressionResistance: UILayoutPriority { UILayoutPriority(900) }
+        static var subtitleSlotFloor: UILayoutPriority { UILayoutPriority(850) }
+        static var componentSpacing: UILayoutPriority { UILayoutPriority(800) }
         static var bannerMaxHeight: UILayoutPriority { UILayoutPriority(751) }
         static var subtitleCompressionResistance: UILayoutPriority { UILayoutPriority(750) }
         static var subtitleSlotHeightOverBanner: UILayoutPriority { UILayoutPriority(749) }

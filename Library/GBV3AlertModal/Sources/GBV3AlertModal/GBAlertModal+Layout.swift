@@ -253,6 +253,14 @@ extension GBAlertModal {
         // The width the title wraps at — the same number `adjustTitleWrapWidth` gave the label. Its
         // own bounds are the fallback for the flexible-width presets that set no content width.
         let width = lbTitle.preferredMaxLayoutWidth > 0 ? lbTitle.preferredMaxLayoutWidth : lbTitle.bounds.width
+        // The FULL budget — the subtitle's one-line floor is deliberately NOT subtracted here.
+        //
+        // It was, briefly, on the reasoning that the title should not plan to use points the floor
+        // holds back. That was wrong, and measurably so: the floor sits BELOW the title's compression
+        // resistance (`Priority.subtitleSlotFloor`, 850 against 900), so when the two genuinely cannot
+        // both fit it is the FLOOR that breaks, not the title. Subtracting it made the title budget
+        // for a conflict it always wins — on the `longTitle` landscape fixture that cost 23 of 139
+        // glyphs to protect a line the constraint system then gave away anyway.
         let available = lbTitle.bounds.height + (svSubtitleContainer?.bounds.height ?? .zero)
         guard width > 0,
               available > 0 else {
@@ -281,6 +289,24 @@ extension GBAlertModal {
             lbTitle.font = scale < 1 ? nominalFont.withSize(nominalFont.pointSize * scale) : nominalFont
         }
         lbTitle.invalidateIntrinsicContentSize()
+    }
+
+    /// **The one line the subtitle slot never gives up — computed once, read twice.**
+    ///
+    /// `installConstraints` installs it as a `>=` on `svSubtitleContainer` and `adjustTitleFontScale`
+    /// subtracts it from the title's budget. They MUST be the same number: a constraint holding back
+    /// points the font search believes are available is precisely how the title ends up clipped.
+    ///
+    /// Zero when there is no subtitle LABEL — the `.custom` subtitle path puts a caller's view in the
+    /// slot, and "one line" is not a fact about an arbitrary view. That path keeps exactly today's
+    /// behaviour (and today's snapshots) rather than inheriting a floor invented for text.
+    var subtitleSlotFloorHeight: CGFloat {
+        guard let lbSubtitle else {
+            return .zero
+        }
+        return ModalLayout.subtitleFloorHeight(
+                font: ModalLayout.renderedFont(lbSubtitle.attributedText, fallback: lbSubtitle.font)
+        )
     }
 
     /// `text` with every `.font` attribute scaled by `scale`. Returns the input unchanged at scale 1,
