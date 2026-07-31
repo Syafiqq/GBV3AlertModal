@@ -385,6 +385,86 @@ final class DifferentialGeometryTests: XCTestCase {
     func test_geometry_streakPopupBanner() { assertAgrees("streak-popup-banner") }
     func test_geometry_databaseErrorBanner() { assertAgrees("database-error-banner") }
 
+    /// The scrolling path, gated for the first time — see the shape's note in
+    /// `DifferentialGeometrySupport`. Every other shape here is short enough that UIKit's subtitle
+    /// scroll slot IS its label's height, so this is the only one that compares the two backends
+    /// while both are actually scrolling.
+    /// **The scrolling path, gated element by element — because one element is not comparable.**
+    ///
+    /// Deliberately NOT `assertAgrees`, which would demand every row agree and would have to be
+    /// silenced wholesale. Three of the four rows DO agree, exactly, and that is a real new
+    /// guarantee: two backends both scrolling produce the same card, the same title and the same
+    /// button position. Measured — card 778.0 both, title 28.7 both, primary button y 711.0 both.
+    ///
+    /// The `subtitle` row cannot agree, and not because either backend is wrong: the two probes are
+    /// on different things once a scroll exists. UIKit's `.subtitle` sits on `svSubtitleContainer` —
+    /// the VIEWPORT (645.3) — while SwiftUI's sits on the `Text` — the CONTENT (1222.0). SwiftUI has
+    /// no per-subtitle viewport to probe, because its scroll wraps title AND subtitle together.
+    /// That is the residue of D-7, now stated in numbers instead of prose.
+    func test_geometry_longSubtitleScrolling_agreesExceptOnTheScrollViewport() throws {
+        let shape = try XCTUnwrap(DifferentialGeometry.shape(named: "long-subtitle-scrolling"))
+        let rows = DifferentialGeometry.rows(for: shape)
+
+        for element in [ModalGeometryElement.card, .title, .primaryButton] {
+            let row = try XCTUnwrap(rows.first { $0.element == element })
+            XCTAssertFalse(
+                row.verdict.isDisagreement,
+                "'\(element)' disagrees under scrolling — the outer geometry of the two scrolling "
+                    + "backends is supposed to be identical. Full table:\n"
+                    + DifferentialGeometry.table(name: shape.name, rows: rows)
+            )
+        }
+
+        // And the one that cannot: pinned by its MECHANISM, so that if SwiftUI ever grows a real
+        // per-subtitle viewport this fails and says to compare the two properly rather than leaving
+        // a stale exception behind.
+        let subtitle = try XCTUnwrap(rows.first { $0.element == .subtitle })
+        let uiKit = try XCTUnwrap(subtitle.uiKit)
+        let swiftUI = try XCTUnwrap(subtitle.swiftUI)
+        XCTAssertLessThan(
+            uiKit.height, swiftUI.height,
+            "UIKit's subtitle probe is no longer smaller than SwiftUI's. It is supposed to be a "
+                + "scroll VIEWPORT measured against SwiftUI's CONTENT; if that is no longer true, "
+                + "the two are finally comparable and this exception should be replaced by a real "
+                + "row in the gate."
+        )
+    }
+
+    /// **The premise behind the row above — without this it is another vacuous agreement.**
+    ///
+    /// The whole reason D-7 stayed open is that every shape in the gate is short enough for UIKit's
+    /// `svSubtitleContainer` to be exactly its label's height, so "the slot agrees with the `Text`"
+    /// was true for a reason that had nothing to do with scrolling. A new shape that ALSO fails to
+    /// engage the scroll would extend that mistake rather than fix it.
+    ///
+    /// So: the UIKit slot must be strictly shorter than its content (it is scrolling), and the
+    /// SwiftUI side must have `contentScrollable` on. Then the agreement above is a statement about
+    /// two scrolling backends.
+    @MainActor
+    func test_theScrollingShape_actuallyScrolls() throws {
+        let shape = try XCTUnwrap(DifferentialGeometry.shape(named: "long-subtitle-scrolling"))
+
+        XCTAssertTrue(
+            ModalTokens(from: shape.properties).contentScrollable,
+            "the SwiftUI side of this shape is not scrolling, so the row compares a scroll against a "
+                + "plain column"
+        )
+
+        let modal = GBAlertModal(
+            properties: shape.properties,
+            holder: UIKitModalRenderer.AlertHolder.make(for: shape.dialog, resolve: { _ in })
+        )
+        renderForSnapshot(modal, size: DifferentialGeometry.host)
+        let slot = try XCTUnwrap(modal.svSubtitleContainer)
+
+        XCTAssertLessThan(
+            slot.bounds.height, slot.contentSize.height - 0.5,
+            "UIKit's subtitle slot (\(slot.bounds.height)pt) is not shorter than its content "
+                + "(\(slot.contentSize.height)pt) — this shape does not engage the scroll, so the "
+                + "differential row it feeds proves nothing about the scrolling path"
+        )
+    }
+
     private func assertAgrees(
         _ name: String,
         file: StaticString = #filePath,

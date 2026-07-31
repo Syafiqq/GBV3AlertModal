@@ -61,10 +61,24 @@ import UIKit
 /// through a different mechanism and with a floor rather than an unbounded scroll. The gap itself is
 /// unchanged. Two consequences, both stated rather than papered over:
 ///
-/// * None of the nine shapes below is long enough to engage the scroll, so this is NOT one of the
-///   disagreements the gate measures — it is a gap in what the gate can see, and the nine shapes'
-///   subtitle rows compare the `UIScrollView`'s frame against the `Text`'s frame legitimately,
-///   because at these lengths the scroll slot IS the label's height.
+/// * The nine ORIGINAL shapes are all short enough that the scroll never engages, so their subtitle
+///   rows compare the `UIScrollView`'s frame against the `Text`'s frame legitimately — at those
+///   lengths the slot IS the label's height. That was the whole gap: the gate could only see the one
+///   case where the two happen to coincide.
+///
+///   **`long-subtitle-scrolling` now closes most of it, and MEASURES the rest.** With both backends
+///   scrolling, card / title / primary button agree EXACTLY (778.0, 28.7, y 711.0), which is a real
+///   guarantee the gate never had. The `subtitle` row cannot agree, for a reason that is about the
+///   PROBES rather than the layout: UIKit's sits on `svSubtitleContainer`, the VIEWPORT (645.3),
+///   and SwiftUI's on the `Text`, the CONTENT (1222.0) — SwiftUI has no per-subtitle viewport,
+///   because its scroll wraps title and subtitle together. Pinned element-by-element in
+///   `test_geometry_longSubtitleScrolling_agreesExceptOnTheScrollViewport`, with the inequality
+///   asserted by mechanism so a future per-subtitle viewport turns the exception red instead of
+///   leaving it stale.
+///
+///   The shape's premise is itself gated (`test_theScrollingShape_actuallyScrolls`) — at twenty
+///   repetitions its subtitle came to 611pt and the portrait card, whose ceiling the zeroed vertical
+///   margin raised, simply FIT it, making the row vacuous. Forty engages it.
 /// * It is also why `AlertModalScaffold.card` applies the VERTICAL content padding at its max with no
 ///   compression toward `topMin`/`bottomMin`, even though the horizontal padding does compress.
 ///
@@ -219,6 +233,34 @@ enum DifferentialGeometry {
                     primary: "Okay"
                 ),
                 properties: GeniePresets.errorBannerProperties()
+            ),
+            /// **The shape that ENGAGES the scroll — the half of D-7 the gate could not see.**
+            ///
+            /// Every shape above is short enough that UIKit's `svSubtitleContainer` is exactly its
+            /// label's height, so the gate was comparing a scroll slot against a `Text` in the one
+            /// case where the two happen to coincide. This subtitle is long enough to overflow even
+            /// the portrait card, so UIKit's slot genuinely shrinks-and-scrolls and the comparison
+            /// is finally against the mechanism rather than around it.
+            ///
+            /// `contentScrollable` is ON so BOTH backends scroll. With it off, SwiftUI would render
+            /// the whole subtitle and the two would differ for a reason already recorded — this
+            /// shape exists to measure the SCROLLING paths against each other.
+            Shape(
+                name: "long-subtitle-scrolling",
+                dialog: AlertDialog(
+                    title: "Heads up",
+                    subtitle: String(
+                        // FORTY, not twenty. At twenty the subtitle came to 611pt and the portrait
+                        // card — whose ceiling the zeroed vertical margin raised — simply FIT it, so
+                        // the slot equalled its content and the row was vacuous. The premise test
+                        // `test_theScrollingShape_actuallyScrolls` caught that, which is the whole
+                        // reason it exists.
+                        repeating: "This subtitle keeps going so the slot has to engage. ", count: 40
+                    ).trimmingCharacters(in: .whitespaces),
+                    primary: "Okay",
+                    closeOnTapOverlay: true
+                ),
+                properties: GeniePresets.standardProperties().copy(contentScrollable: true)
             )
         ]
     }
