@@ -66,12 +66,16 @@ import UIKit
 ///   subtitle rows compare the `UIScrollView`'s frame against the `Text`'s frame legitimately,
 ///   because at these lengths the scroll slot IS the label's height.
 /// * It is also why `AlertModalScaffold.card` applies the VERTICAL content padding at its max with no
-///   compression toward `topMin`/`bottomMin`, even though the horizontal padding does compress:
-///   vertical compression only engages in the very case SwiftUI cannot express, and modelling it
-///   alone would trade one wrong answer for another. Closing this needs a scrolling subtitle slot in
-///   `SwiftUIAlertModal` (a `ScrollView` whose height is tied to its content with a ceiling — SwiftUI
-///   has no `.low`-priority equality, so it needs a real layout redesign, not a modifier), plus a
-///   long-subtitle shape here to gate it.
+///   compression toward `topMin`/`bottomMin`, even though the horizontal padding does compress.
+///
+///   **THAT SECOND POINT'S REASONING IS NOW OUT OF DATE, AND THE GAP IS SMALLER THAN IT SAYS.** It
+///   used to read that closing it "needs a scrolling subtitle slot … a real layout redesign, not a
+///   modifier". That slot now exists — `ScrollableContent`, opt-in via `Properties.contentScrollable`
+///   — and the card can no longer grow off-screen either, since it is capped at its container's
+///   height. So the two stated blockers are gone. What remains is that SwiftUI has no min/max padding
+///   primitive: a `Spacer` collapses to its minimum inside a hugging container, and deriving the give
+///   from a measured content height feeds that measurement back into the layout that produced it —
+///   the cycle that had to be removed from the banner ceiling. Unbuilt, not impossible.
 ///
 /// Do NOT "close" this by adding a shape that engages the scroll and widening the tolerance to fit.
 // @MainActor: builds `GBAlertModal`, `UIWindow` and `UIHostingController`, all main-actor-isolated

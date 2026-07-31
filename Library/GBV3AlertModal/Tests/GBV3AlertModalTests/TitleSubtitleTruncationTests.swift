@@ -628,6 +628,59 @@ final class TitleSubtitleTruncationTests: XCTestCase {
         )
     }
 
+    /// **The vertical content padding compresses from max toward min, as UIKit's does.**
+    ///
+    /// UIKit states it as two constraints on `svContentContainer`: `top >= topMin` at `.required`
+    /// beating `top == topMax` at `.low`. SwiftUI applied `topMax` rigidly and never gave the 16pt
+    /// per edge back — recorded as half of finding D-7, and justified by two claims that have since
+    /// stopped being true (no SwiftUI scroll container, and a card that could grow off-screen).
+    ///
+    /// Asserted as a COMPARISON rather than against a literal, so it states the mechanism: the same
+    /// dialog, unpressured and pressured, must not have the same top inset — and the pressured one
+    /// must never fall below the rigid minimum.
+    func test_theVerticalPadding_compressesTowardItsMinimum_underPressure() throws {
+        let padding = try XCTUnwrap(GeniePresets.standardProperties().padding)
+        let roomy = DifferentialGeometry.Shape(
+            name: "padding-roomy",
+            dialog: dialog(title: "Heads up", subtitle: "Short body."),
+            properties: GeniePresets.standardProperties()
+        )
+        let overlong = String(repeating: "Long title wraps across many lines ", count: 8)
+            .trimmingCharacters(in: .whitespaces)
+        let squeezed = DifferentialGeometry.Shape(
+            name: "padding-squeezed",
+            dialog: dialog(title: overlong, subtitle: Self.longSubtitle),
+            properties: GeniePresets.standardProperties()
+        )
+
+        func topInset(_ shape: DifferentialGeometry.Shape) throws -> CGFloat {
+            let card = try XCTUnwrap(swiftUIFrame(shape, element: .card, size: pressured))
+            let title = try XCTUnwrap(swiftUIFrame(shape, element: .title, size: pressured))
+            return title.minY - card.minY
+        }
+
+        let roomyInset = try topInset(roomy)
+        let squeezedInset = try topInset(squeezed)
+
+        // ROOMY: the full max, i.e. this is inert whenever the card has room — which is why every
+        // differential shape and every snapshot stayed green.
+        XCTAssertEqual(
+            roomyInset, padding.topMax, accuracy: DifferentialGeometry.tolerance,
+            "an unpressured card must render the preset's MAX top inset"
+        )
+        // PRESSURED: it gave some back...
+        XCTAssertLessThan(
+            squeezedInset, roomyInset - DifferentialGeometry.tolerance,
+            "the pressured card kept its full \(roomyInset)pt top inset — the padding is supposed to "
+                + "yield before the content does, the way UIKit's `.low` equality does"
+        )
+        // ...but never past the rigid minimum.
+        XCTAssertGreaterThanOrEqual(
+            squeezedInset, padding.topMin - DifferentialGeometry.tolerance,
+            "the top inset fell below `topMin` (\(padding.topMin)pt), which UIKit pins as .required"
+        )
+    }
+
     /// **One floor, read by both renderers** — the subtitle's counterpart of
     /// `test_theShrinkFloor_isOneSharedNumber`, and the reason `subtitleUIFont` exists.
     func test_theSubtitleFloor_isOneSharedNumber() throws {

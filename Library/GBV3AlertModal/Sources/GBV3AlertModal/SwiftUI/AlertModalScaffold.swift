@@ -175,17 +175,17 @@ public struct AlertModalScaffold<Content: View>: View {
     /// preset in the app is horizontally asymmetric — the asymmetry the real presets do have is
     /// vertical, and that one is honoured exactly below.
     ///
-    /// **ONE STATED LIMIT.** Vertically the MAX insets are applied rigidly (`.padding(.top,
-    /// topMax)` / `.padding(.bottom, bottomMax)`) — top and bottom independently, which is the D-2
-    /// fix, but with no compression toward `topMin`/`bottomMin`. Vertical compression only engages
-    /// when the card cannot fit its content between the vertical margins, and in UIKit what happens
-    /// then is that `svSubtitleContainer` (a `UIScrollView` whose visible height is tied to its
-    /// content at `.low`) SHRINKS AND SCROLLS. SwiftUI renders the subtitle as a bare `Text` with no
-    /// scroll container, so it cannot do that at all — modelling the vertical minima alone would
-    /// produce a card that compresses its padding and then still grows off-screen, which is a
-    /// different wrong answer rather than a closer one. That structural gap is recorded as task 17's
-    /// finding D-7 and excluded explicitly in `DifferentialGeometrySupport`; closing it needs a
-    /// scrolling subtitle slot, not a padding change.
+    /// **The vertical insets now COMPRESS from max toward min, as UIKit's do** — see
+    /// `CompressibleVerticalPadding`. This used to be a stated limit ("applied rigidly at the max"),
+    /// justified by two claims that stopped being true: that SwiftUI had no scroll container for the
+    /// subtitle (it does — `ScrollableContent`, opt-in via `Properties.contentScrollable`) and that
+    /// compressing the padding would leave a card that still grew off-screen (it cannot — the card is
+    /// capped at its container's height in `body`).
+    ///
+    /// Worth 16pt per edge on the real preset (24 against 16), and pinned by
+    /// `test_theVerticalPadding_compressesTowardItsMinimum_underPressure`, which asserts the
+    /// comparison rather than a literal: the same dialog roomy and pressured must not share a top
+    /// inset, and the pressured one must never fall below `topMin`.
     private var card: some View {
         // `buttonAxis` is the resolver's decision (`Properties.buttonActionOrientation`), obeyed
         // here the way the UIKit main-action `UIStackView` obeys it: `.horizontal` → HStack,
@@ -227,8 +227,17 @@ public struct AlertModalScaffold<Content: View>: View {
         // Vertical insets: top and bottom INDEPENDENTLY (the real presets are asymmetric — the
         // permission alert is 20/12 and the streak popup 40/32), at their max. See the limit stated
         // in this property's doc comment for why the vertical minima are not modelled.
-        .padding(.top, tokens.contentPadding.topMax)
-        .padding(.bottom, tokens.contentPadding.bottomMax)
+        // Vertical padding as a min/max PAIR, mirroring UIKit's `top >= topMin` (.required) beating
+        // `top == topMax` (.low): the rigid minimum is real padding, and the difference is a
+        // compressible strip that gives way when the card is against its cap.
+        .padding(.top, tokens.contentPadding.topMin)
+        .padding(.bottom, tokens.contentPadding.bottomMin)
+        .modifier(
+            CompressibleVerticalPadding(
+                top: tokens.contentPadding.topMax - tokens.contentPadding.topMin,
+                bottom: tokens.contentPadding.bottomMax - tokens.contentPadding.bottomMin
+            )
+        )
         .background(tokens.palette.cardBackground)
         // Radius read off `tokens.cardVisual` — the value the C-3b layer-visual test compares
         // `vwContainer.layer.cornerRadius` against, so the test cannot drift from what draws.
@@ -284,5 +293,37 @@ public struct AlertModalScaffold<Content: View>: View {
             // and not the inter-button gap (UIKit's counterpart, `btSecondaryAction`, likewise
             // excludes the main-action stack's spacing).
             .modalGeometryProbe(.secondaryButton)
+    }
+}
+
+/// **The give between `topMin`/`topMax` — padding that yields before the content does.**
+///
+/// UIKit expresses this as two constraints on `svContentContainer`: `top >= topMin` at `.required`
+/// and `top == topMax` at `.low`, so the inset sits at its max until the card runs out of room and
+/// then compresses toward the min. SwiftUI has no min/max padding modifier, and the obvious
+/// substitutes both fail: a `Spacer` collapses to its minimum inside a hugging container (which this
+/// card is), and computing the give from a measured content height feeds that measurement back into
+/// the layout it came from.
+///
+/// What works is a strip with a FLEXIBLE height (`maxHeight`, no fixed height) carrying a NEGATIVE
+/// layout priority. In a `VStack` the lowest priority is served last, so the strips take their full
+/// `maxHeight` whenever the card has room — the unpressured case, where this is inert and the padding
+/// reads exactly `topMax` — and are the first thing squeezed when the card is against its cap, down
+/// to zero, i.e. to `topMin`.
+///
+/// The `maxHeight` is load-bearing and was got wrong first: `.frame(height:)` is RIGID, so the strips
+/// kept their full height under pressure and nothing compressed — the test caught it, reporting a
+/// pressured inset still sitting at the full 24.0. A fixed frame does not become compressible by
+/// being given a low priority.
+private struct CompressibleVerticalPadding: ViewModifier {
+    let top: CGFloat
+    let bottom: CGFloat
+
+    func body(content: Content) -> some View {
+        VStack(spacing: 0) {
+            Color.clear.frame(maxHeight: top).layoutPriority(-1)
+            content
+            Color.clear.frame(maxHeight: bottom).layoutPriority(-1)
+        }
     }
 }
