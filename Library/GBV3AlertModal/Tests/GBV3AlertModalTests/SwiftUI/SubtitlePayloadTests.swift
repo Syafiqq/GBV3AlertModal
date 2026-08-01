@@ -40,9 +40,15 @@ final class SubtitlePayloadTests: XCTestCase {
     /// instead of from `config.subtitle`, then `text.swiftUI.foregroundColor` below would read
     /// back `nil`, not `.red`, and `XCTAssertEqual` would fail. This test DOES discriminate
     /// between the two payload sources; it is not just re-pinning `ModalText.split` again.
+    ///
+    /// Uses a SwiftUI-scoped FONT rather than a colour, and that swap is load-bearing: `split` now
+    /// converts SwiftUI COLOUR onto UIKit's scope, so a coloured subtitle classifies as `.attributed`
+    /// and never reaches the `.plain` branch this test is about. Font has no `Font -> UIFont`
+    /// direction to convert through, so it still routes to `.plain` — which keeps this discrimination
+    /// (payload sourced from `config.subtitle`, not from the holder's stripped `String`) testable.
     func test_plainPayload_retainsSwiftUIScopedStyling() {
         var subtitle = AttributedString("Body")
-        subtitle.swiftUI.foregroundColor = .red
+        subtitle.swiftUI.font = .largeTitle
         let dialog = AlertDialog(title: "T", subtitle: subtitle, primary: "OK")
         let (resolved, holder) = resolvedAndHolder(for: dialog)
 
@@ -51,7 +57,7 @@ final class SubtitlePayloadTests: XCTestCase {
             XCTFail("expected .plain, got \(payload)")
             return
         }
-        XCTAssertEqual(text.swiftUI.foregroundColor, .red,
+        XCTAssertEqual(text.swiftUI.font, .largeTitle,
                         "SwiftUI-scoped styling must survive in the .plain payload")
     }
 
