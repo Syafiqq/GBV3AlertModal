@@ -44,6 +44,11 @@ let package = Package(
                 .product(name: "SnapshotTesting", package: "swift-snapshot-testing"),
             ],
             path: "Library/GBV3AlertModal/Tests/GBV3AlertModalTests",
+            // An asset catalog the TEST bundle owns, so a banner can finally be compared. Both
+            // renderers resolve artwork from the main bundle by default and this target has none,
+            // which is why `bannerIsUnresolvableInTheLibraryBundle` excluded every banner from the
+            // one gate that measures the two backends against each other.
+            resources: [.process("Resources")],
             plugins: [
             ]
         )

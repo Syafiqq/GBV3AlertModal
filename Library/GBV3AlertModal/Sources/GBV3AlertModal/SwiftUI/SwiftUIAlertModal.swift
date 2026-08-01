@@ -157,6 +157,14 @@ public struct SwiftUIAlertModal: View {
                     // The slot geometry `Properties` asks for: ratio, fixed height and cap, with
                     // the UIKit constraint precedence — see `ModalTokens.bannerLayout`.
                     .modifier(ModalBannerGeometry(layout: tokens.bannerLayout))
+                    // FILL THE CONTENT WIDTH, like `vwBanner` does. This row used to be left to hug,
+                    // on the reasoning that "this row's width is driven by bannerRatio/
+                    // bannerFixedHeight" — which was never checked against UIKit, because no banner
+                    // asset resolved in the library test bundle and so no gate could see it. The
+                    // first comparable banner shape showed the cost: UIKit's slot is 256x160 (the
+                    // content column) where SwiftUI drew 47.7x26.8 centred, pushing every row below
+                    // it up ~92pt and making the card 70pt shorter.
+                    .modifier(ContentRowWidth(fillsWidth: tokens.contentChildrenFillWidth))
                     // Probed AFTER the slot geometry and BEFORE the gap, so it measures the banner
                     // SLOT — the counterpart of UIKit's `vwBanner`, not of `vwBannerAndBelowDivider`.
                     //

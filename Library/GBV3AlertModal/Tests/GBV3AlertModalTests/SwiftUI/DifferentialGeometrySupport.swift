@@ -243,6 +243,29 @@ enum DifferentialGeometry {
                 ),
                 properties: GeniePresets.errorBannerProperties()
             ),
+            /// **The first shape whose BANNER is actually compared.**
+            ///
+            /// Every other banner shape here draws nothing on either side: both renderers resolve
+            /// artwork from the main bundle, this target has none, and `bannerIsUnresolvableInThe
+            /// LibraryBundle` therefore reports `absent (both)` — agreement about an absence, which
+            /// is not a measurement. `ModalImage.bundleIdentifier` closes that: the asset lives in
+            /// this target's own resource bundle, so both backends draw a real 16:9 image and the
+            /// `.banner` row finally carries two frames.
+            ///
+            /// `TestBundleAssetTests` gates the premise — that the asset resolves at all — because a
+            /// banner row over an unresolvable name would go back to `absent (both)` and PASS.
+            Shape(
+                name: "banner-comparable",
+                dialog: AlertDialog(
+                    image: ModalImage(
+                        "gb_test_banner", bundleIdentifier: Bundle.module.bundleIdentifier
+                    ),
+                    title: "Heads up",
+                    subtitle: "A banner the gate can actually measure.",
+                    primary: "Okay"
+                ),
+                properties: GeniePresets.standardProperties()
+            ),
             /// **The shape that ENGAGES the scroll — the half of D-7 the gate could not see.**
             ///
             /// Every shape above is short enough that UIKit's `svSubtitleContainer` is exactly its
@@ -763,7 +786,13 @@ enum DifferentialGeometry {
     /// banner comparison is not expressible from this target at all. It needs the example app,
     /// which owns the assets. Recorded as a real coverage gap, not papered over.
     static func bannerIsUnresolvableInTheLibraryBundle(_ shape: Shape) -> Bool {
-        guard let assetName = shape.dialog.image?.assetName else { return false }
-        return UIImage(named: assetName) == nil
+        guard let image = shape.dialog.image else { return false }
+        // Resolve through the SAME path the renderers use. This checked `UIImage(named:)` with no
+        // bundle, which was right while every asset came from the main bundle — and became wrong the
+        // moment `ModalImage` could name its own: a bundle-scoped asset that BOTH renderers load
+        // happily was reported unresolvable, so the shape built to close this very gap read as
+        // excluded. Caught by `test_theBannerRow_actuallyMeasuresABanner`, which exists precisely
+        // because "absent on both" passes quietly.
+        return UIImage(named: image.assetName, in: image.bundle, compatibleWith: nil) == nil
     }
 }
