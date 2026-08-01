@@ -326,6 +326,86 @@ final class SwiftUIAlertModalSnapshotTests: XCTestCase {
     }
 }
 
+// MARK: - Tier 1 adoption — VM → executor → coordinator → SwiftUI renderer
+
+/// **The adoption screen, exercised as a consumer would use it.**
+///
+/// `RendererParityTests` already proves coordinator semantics against both renderers with a spy.
+/// What it cannot show is the chain assembled the way a product screen assembles it: a VM owning a
+/// `SwiftUIModalRenderer`, a `DefaultModalExecutor` over it, a `RootScreenModalCoordinator` behind
+/// that, and `ModalHost` rendering the result inside a real view hierarchy. That is what
+/// `AdoptionScreen` is, and this is its gate.
+@MainActor
+final class AdoptionScreenTests: XCTestCase {
+
+    private func viewModel() -> AdoptionViewModel {
+        AdoptionViewModel(
+            properties: GalleryPresets.properties,
+            popupProperties: GalleryPresets.popupProperties
+        )
+    }
+
+    func test_theScreenBuildsAndHostsItsRenderer() {
+        let screen = AdoptionScreen(
+            properties: GalleryPresets.properties,
+            popupProperties: GalleryPresets.popupProperties
+        )
+        let host = UIHostingController(rootView: screen)
+        let window = UIWindow(frame: CGRect(x: 0, y: 0, width: 390, height: 844))
+        window.rootViewController = host
+        window.isHidden = false
+        window.makeKeyAndVisible()
+        window.setNeedsLayout()
+        window.layoutIfNeeded()
+        defer { window.isHidden = true; window.rootViewController = nil }
+
+        XCTAssertFalse(host.view.bounds.isEmpty, "the adoption screen was not laid out")
+    }
+
+    /// **The coordinator serialises — the property the whole screen exists to demonstrate.**
+    ///
+    /// Two presentations are launched together. With the coordinator installed the second must WAIT:
+    /// at any moment exactly one presentation is live, never two. Asserted on the renderer's own
+    /// presentation list, which is what `ModalHost` draws from.
+    func test_twoPresentationsAtOnce_serialise() async {
+        let vm = viewModel()
+
+        let both = Task { await vm.presentTwoAtOnce() }
+        // Let the first presentation land.
+        await Task.yield()
+        try? await Task.sleep(nanoseconds: 50_000_000)
+
+        XCTAssertEqual(
+            vm.renderer.presentations.count, 1,
+            "two modals are live at once — the coordinator is not serialising, which is the single "
+                + "thing this screen is wired to prove"
+        )
+
+        // Resolve the first through the SAME handle the rendered modal's buttons call — the
+        // renderer exposes no test-only door, and using one would prove less.
+        vm.renderer.presentations.first?.onAction(.primary)
+        try? await Task.sleep(nanoseconds: 50_000_000)
+        XCTAssertLessThanOrEqual(
+            vm.renderer.presentations.count, 1,
+            "more than one presentation after the first resolved"
+        )
+
+        both.cancel()
+    }
+
+    /// The VM records a result only when one actually arrives — a cancelled await (screen dismissed
+    /// mid-presentation) must not be logged as if the user chose something.
+    func test_aCancelledPresentation_isNotRecorded() async {
+        let vm = viewModel()
+        let task = Task { await vm.confirmDelete() }
+        await Task.yield()
+        task.cancel()
+        _ = await task.value
+
+        XCTAssertEqual(vm.lastResult, "—", "a cancelled presentation was recorded as a result")
+    }
+}
+
 // MARK: - Tier 0 — the existing UIKit executor paints OVER a live SwiftUI screen
 
 /// Proves (not just reasons) that a SwiftUI ViewModel can drive dialogs TODAY with zero new

@@ -76,6 +76,7 @@ final class GalleryViewController: UITableViewController {
         navigationItem.rightBarButtonItems = [
             UIBarButtonItem(title: "SwiftUI", style: .plain, target: self, action: #selector(openSwiftUIDemo)),
             UIBarButtonItem(title: "Tier 0", style: .plain, target: self, action: #selector(openTier0Demo)),
+            UIBarButtonItem(title: "Tier 1", style: .plain, target: self, action: #selector(openAdoptionDemo)),
             UIBarButtonItem(
                 title: "SwiftUI Catalog",
                 style: .plain,
@@ -117,6 +118,19 @@ final class GalleryViewController: UITableViewController {
         }
         let executor = DefaultModalExecutor(renderer: renderer)
         let host = UIHostingController(rootView: Tier0DemoScreen(executor: executor))
+        navigationController?.pushViewController(host, animated: true)
+    }
+
+    /// Tier 1: the whole chain — VM → executor → coordinator → `SwiftUIModalRenderer`, with the
+    /// modals rendered as SwiftUI views inside the pushed screen rather than on the key window. The
+    /// same `GalleryPresets` config the Tier 0 demo uses, so the two differ only by renderer.
+    @objc private func openAdoptionDemo() {
+        let host = UIHostingController(
+            rootView: AdoptionScreen(
+                properties: GalleryPresets.properties,
+                popupProperties: GalleryPresets.popupProperties
+            )
+        )
         navigationController?.pushViewController(host, animated: true)
     }
 

@@ -43,11 +43,18 @@ final class SwiftUIDemoScreenSmokeTests: XCTestCase {
         )
     }
 
-    func test_gallery_exposes_tier0_entry_point() {
+    /// Asserts the entry points BY TITLE rather than by count. The count form failed the moment a
+    /// fourth entry point was added and said only "expected 3, got 4" — which is true of both an
+    /// accidental extra button and a deliberate one, and names neither.
+    func test_gallery_exposes_its_entry_points() {
         let gallery = GalleryViewController()
         gallery.loadViewIfNeeded()
-        XCTAssertEqual(gallery.navigationItem.rightBarButtonItems?.count, 3,
-                       "gallery should expose the SwiftUI, Tier 0 and SwiftUI Catalog entry points")
+        let titles = (gallery.navigationItem.rightBarButtonItems ?? []).compactMap(\.title)
+        XCTAssertEqual(
+            titles, ["SwiftUI", "Tier 0", "Tier 1", "SwiftUI Catalog"],
+            "the gallery's entry points changed. 'Tier 1' is the AdoptionScreen — VM → executor → "
+                + "coordinator → SwiftUIModalRenderer, the whole chain assembled as a consumer would."
+        )
     }
 
     /// **The under-delivery gate for the SwiftUI gallery.** It must list the SAME
