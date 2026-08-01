@@ -150,6 +150,41 @@ Two further shapes give DoD item 3 its three paths, both reusing the same asset:
 | `banner-capped` | `.copy(bannerMaxHeight: 144)` | 144 |
 | `banner-natural` | `standardPropertiesNilBannerRatio()` — `r = 256/256 = 1` | 256 |
 
+**4.5 — The real app artwork violates 4.4, and this design does not fix that.**
+
+Measured from `Geniebook/Assets.xcassets` (point sizes, not pixels — `aiNotes`' `960.0/681.0` is the
+3× pixel ratio of a **320×227pt** asset):
+
+| asset | point size | preset column | pushes? |
+|---|---|---|---|
+| `img_database_error` | 295×256 | 256 | **yes**, 295 > 256 |
+| `img_illust_ai_notes_banner` | 320×227 | 256 | **yes**, 320 > 256 |
+
+`popupProperties` inherits `standardProperties`' 256pt column — the 300 belongs to
+`badgeProperties` alone. So every shipping banner asset is wider than the column it sits in, and
+UIKit's card grows to absorb it. Both backends, real point sizes, portrait:
+
+| shape | UIKit card / col / banner h | SwiftUI card / col / banner h | Δcard |
+|---|---|---|---|
+| `errorBanner` + 295×256 | **350** / 295 / 256.0 | 320 / 256 / 320.0 | −30 |
+| `aiNotes` + 320×227 | **350** / 310 / 220.0 | 320 / 256 / 320.0 | −30 |
+| `errorBanner` + 160×90 | 320 / 256 / 139.0 | 320 / 256 / 320.0 | 0 |
+
+**Consequence, stated plainly: §4.1–4.4 make the fixture agree, not the app.** UIKit's column for a
+real banner dialog is the artwork width (295) or the card's own maximum (310), never 256. Even with
+the reorder landed, `errorBanner` computes `256/1.152 = 222.2` in SwiftUI against UIKit's 256 —
+because the columns differ, not because the height rule is wrong. The card is 30pt narrower on
+every real banner dialog.
+
+Closing that means letting the SwiftUI content column grow with the banner, which reintroduces the
+artwork's point size as an input and changes `AlertModalScaffold`'s width ladder — the container
+every element's width flows through, currently held green by 469 tests. That is a **separate piece
+of work**, not a paragraph in this one.
+
+**Decision:** ship §4.1–4.4, which fixes the height rule and clears the gate for artwork that fits
+the column. Do **not** claim it unblocks app adoption. The brief's "Blocks: adopting any
+banner-carrying SwiftUI dialog in the app" stays open, now with a measured cause and a number.
+
 This is the whole design. There is no arithmetic, no `UIImage` point-size lookup, and
 `ModalTokens.bannerLayout` stays a pure function of `Properties`.
 
@@ -208,10 +243,13 @@ The exception must be typed, not hand-written: add `excluding:` + a required `be
 
 ## 8. Open risks
 
-- **Real artwork may violate §4.4.** The catalog presets pair a 256pt column with assets whose real
-  point sizes live in the app, not this repo. If they are wider than the column, UIKit's card grows
-  and SwiftUI's cannot — a card-**width** divergence beyond this design's scope. Unverified here.
-  Check before adopting a banner dialog in the app; it is measurable with one screenshot.
+- **Real artwork violates §4.4 — verified, ~30pt of card width.** See §4.5. This is the actual
+  blocker on app adoption and it is not fixed here. Next piece of work: decide whether SwiftUI's
+  column should grow with the banner (mirrors UIKit, costs an asset-dependent input and a change to
+  `AlertModalScaffold`'s width ladder) or whether the app's presets should state the width their
+  artwork already forces (`fixedWidthPortrait: 295` for the error banner, and so on — an app-side
+  change that makes both backends agree without touching the ladder). The second is cheaper and
+  probably more honest, since the 256 in those presets is already fiction.
 - **An asset re-exported at a different scale factor breaks §4.4 silently** — the point size, not
   the pixel size, is what the constraint sees. Test 2 in §7 is the tripwire.
 - **§4.1 may not hold**, per the spike. If the `GeometryReader` fallback is needed, the slot height
