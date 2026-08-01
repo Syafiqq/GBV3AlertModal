@@ -216,8 +216,14 @@ Landscape banner parity is the next piece of work after this one, and it is the 
 ## 9. Out of scope
 
 - **UIKit is frozen.** The app consumes this module as an SPM dependency. Fix SwiftUI to match.
-- **`badgeBannerMissing`** — a runtime `UIImage` still cannot be expressed; `ModalImage` must stay
-  `Sendable`. The app passes `UIImage(named:)` directly at every call site checked in §3, so this
-  gap is on the adoption path and needs its own decision.
+- **`badgeBannerMissing` is a GALLERY fixture note, not an app blocker.** Checked: all 13 banner
+  call sites in the app pass `UIImage(named:)` with a literal or a `String` (`badge.localImageName`
+  is `let localImageName: String`, resolved through `UIImage(named:)` in three other views too).
+  No runtime-constructed `UIImage` exists on the app's banner path, so every one is expressible as
+  `ModalImage(name)`. Adoption is a mechanical call-site migration, not an API gap. The catalog
+  entry draws a generated placeholder only because the example app has no real badge artwork —
+  that placeholder is what `ModalImage` cannot name. The forward-looking version of this risk is
+  narrow: if badge artwork ever becomes API-supplied rather than a local name, `ModalImage` needs a
+  case for it.
 - **`bannerFixedHeight` on the UIKit side.** Measured dead, but removing it is a UIKit change.
 - **The vertical margin divergence** from the app's preset is deliberate.
