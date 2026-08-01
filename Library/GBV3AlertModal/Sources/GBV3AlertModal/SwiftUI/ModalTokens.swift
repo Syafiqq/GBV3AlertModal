@@ -690,19 +690,30 @@ extension ModalTokens {
     /// PRECEDENCE, read off `GBAlertModal+ViewGraph.swift`'s `installConstraints` (the UIKit
     /// constraint PRIORITIES), not guessed. On `vwBanner` UIKit installs, at most:
     ///
-    /// * `height <= bannerMaxHeight` at **751** — whenever `bannerMaxHeight` is set;
-    /// * `height == width * (imageH/imageW)` at **700** — the natural-aspect driver, installed ONLY
+    /// * `height <= bannerMaxHeight` at **950** — whenever `bannerMaxHeight` is set;
+    /// * `height == width * (imageH/imageW)` at **245** — the natural-aspect driver, installed ONLY
     ///   when `bannerRatio == nil` and the image has a usable size;
-    /// * `height == bannerFixedHeight` at **251** — whenever `bannerFixedHeight` is set.
+    /// * `height == bannerFixedHeight` at **243** — whenever `bannerFixedHeight` is set.
+    ///
+    /// (These were 751/700/251 until the ladder was reordered to put every banner DRIVER below every
+    /// text rung — "banner never wins". The cap moved the other way, UP, because it is a `<=` that
+    /// keeps the banner SMALL and so protects the text. The relative order of the three, and every
+    /// conclusion drawn from it below, is unchanged.)
     ///
     /// So:
-    /// 1. the cap (751) outranks everything and is always applied when present;
-    /// 2. when `bannerRatio == nil`, the natural-aspect driver (700) beats the fixed height (251),
+    /// 1. the cap (950) outranks everything and is always applied when present;
+    /// 2. when `bannerRatio == nil`, the natural-aspect driver (245) beats the fixed height (243),
     ///    i.e. **`bannerFixedHeight` is INERT on the natural-aspect path** — SwiftUI's
     ///    `.scaledToFit()` is that same natural-aspect behaviour, so the fixed height is dropped
     ///    here too rather than being applied where UIKit would not;
-    /// 3. when `bannerRatio != nil` there is no 700 driver, so the fixed height (251, just above
-    ///    the content stack's `.defaultLow` hugging at 250) is what sizes the slot.
+    /// 3. when `bannerRatio != nil` there is no natural-aspect driver, so the fixed height (243) is
+    ///    what sizes the slot — and note it now sits BELOW the card's `.low` (250) hugging, not above
+    ///    it as it did at 251. That is deliberate ("banner never be a winner, it is just cosmetic,
+    ///    not information"): where the card wants to be smaller than the banner wants to be tall, the
+    ///    banner yields. Measured consequence, accepted at the time: an UNCAPPED natural-aspect
+    ///    banner no longer renders at its full natural aspect when the card can hug tighter — see
+    ///    `BannerAspectStressTests.test_banner9x16_uncapped_portrait`, whose contract was rewritten
+    ///    to make the natural aspect a CEILING rather than an entitlement.
     ///
     /// The ratio itself is a constraint on the IMAGE VIEW's frame (`width == height * ratio`) with
     /// `contentMode = .scaleAspectFit` inside it — i.e. a ratio-shaped SLOT with the picture
