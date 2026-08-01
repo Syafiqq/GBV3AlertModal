@@ -174,10 +174,30 @@ public struct DatePickerModalView: View {
             // `.date` only + wheels — the same two choices `DatePickerHolder` makes
             // (`datePickerMode = .date`, `preferredDatePickerStyle = .wheels`).
             // `WheelDatePickerStyle` is iOS 13+, safely inside the iOS 15 floor.
-            DatePicker("", selection: $date, displayedComponents: [.date])
+            // The descriptor's range, honoured the way `DatePickerHolder` honours it. SwiftUI has
+            // no single initialiser taking two optional bounds, so the four cases are spelled out —
+            // `PartialRangeFrom`/`PartialRangeThrough` are what express "one end only".
+            datePicker
                 .datePickerStyle(WheelDatePickerStyle())
                 .labelsHidden()
                 .padding(.bottom, tokens.gapBelowSubtitle)
+        }
+    }
+
+    /// `DatePicker` has a distinct initialiser per bound combination, so the descriptor's optional
+    /// range becomes four branches rather than one expression. Unbounded is the default and matches
+    /// `UIDatePicker`'s, so an existing caller that sets neither is unaffected.
+    @ViewBuilder
+    private var datePicker: some View {
+        switch (descriptor.minimumDate, descriptor.maximumDate) {
+        case let (minimum?, maximum?):
+            DatePicker("", selection: $date, in: minimum...maximum, displayedComponents: [.date])
+        case let (minimum?, nil):
+            DatePicker("", selection: $date, in: minimum..., displayedComponents: [.date])
+        case let (nil, maximum?):
+            DatePicker("", selection: $date, in: ...maximum, displayedComponents: [.date])
+        case (nil, nil):
+            DatePicker("", selection: $date, displayedComponents: [.date])
         }
     }
 

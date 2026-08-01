@@ -236,9 +236,12 @@ public struct SwiftUIAlertModal: View {
                 // The LOWER rung of the directive's ordering — see `subtitleLayoutPriority`.
                 .layoutPriority(Self.subtitleLayoutPriority)
         case let .attributed(attributed):
-            // The UIKit path stores an NSAttributedString on the holder. SwiftUI renders the
-            // bridged value; styling is limited to the whitelisted bold/color/link subgrammar.
-            Text(AttributedString(attributed))
+            // The UIKit path stores an NSAttributedString on the holder. Bridged straight through,
+            // its runs stay on UIKIT's attribute scope and SwiftUI's `Text` — which reads its own —
+            // draws them completely unstyled. `AttributedTextBridge` re-scopes colour and font so the
+            // emphasis the caller asked for survives. Styling stays limited to the whitelisted
+            // bold/color/link subgrammar.
+            Text(AttributedTextBridge.swiftUIRenderable(attributed))
                 .multilineTextAlignment(.center)
                 .modifier(ContentRowWidth(fillsWidth: tokens.contentChildrenFillWidth))
                 .modifier(NeverTruncates(minimumScaleFactor: tokens.titleMinimumScaleFactor))

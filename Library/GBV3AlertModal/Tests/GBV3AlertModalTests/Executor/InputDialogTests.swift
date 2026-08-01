@@ -77,3 +77,71 @@ import UIKit
         return nil
     }
 }
+
+// MARK: - The selectable date range, on both renderers
+
+/// **`datePickerRange` — closing a BEHAVIOURAL divergence, not a cosmetic one.**
+///
+/// The app's date-picker worksheet pins `minimumDate = tomorrow` / `maximumDate = +2 years` on the
+/// `UIDatePicker` it builds at the call site. `DatePickerDialog` could not express that, so BOTH
+/// renderers drew an unbounded wheel — and a SwiftUI adoption would have returned dates the UIKit
+/// dialog forbids, surfacing as a backend rejection rather than as a wrong-looking card.
+@MainActor
+final class DatePickerRangeTests: XCTestCase {
+
+    private let start = Date(timeIntervalSince1970: 1_800_000_000)
+
+    private func dialog(minimum: Date?, maximum: Date?) -> DatePickerDialog {
+        DatePickerDialog(
+            title: "Select date",
+            initialDate: start,
+            minimumDate: minimum,
+            maximumDate: maximum,
+            primary: "Done",
+            secondary: "Cancel"
+        )
+    }
+
+    /// UIKit: the bounds reach the live `UIDatePicker` the holder puts in the custom-content slot.
+    func test_uiKitPicker_carriesTheDescriptorsRange() throws {
+        let minimum = start.addingTimeInterval(86_400)
+        let maximum = start.addingTimeInterval(86_400 * 730)
+        let holder = UIKitModalRenderer.DatePickerHolder.make(
+            for: dialog(minimum: minimum, maximum: maximum), resolve: { _ in }
+        )
+        let picker = try XCTUnwrap(holder.subtitleCustomView as? UIDatePicker)
+
+        XCTAssertEqual(picker.minimumDate, minimum)
+        XCTAssertEqual(picker.maximumDate, maximum)
+    }
+
+    /// An unset range stays unbounded — `UIDatePicker`'s own default, so existing callers that pass
+    /// neither bound are unaffected by the descriptor gaining the fields.
+    func test_anUnsetRange_leavesThePickerUnbounded() throws {
+        let holder = UIKitModalRenderer.DatePickerHolder.make(
+            for: dialog(minimum: nil, maximum: nil), resolve: { _ in }
+        )
+        let picker = try XCTUnwrap(holder.subtitleCustomView as? UIDatePicker)
+
+        XCTAssertNil(picker.minimumDate)
+        XCTAssertNil(picker.maximumDate)
+    }
+
+    /// The descriptor is the SHARED source both renderers read, so parity is a statement about it
+    /// reaching each side rather than about two independently-configured pickers agreeing.
+    func test_theDescriptorCarriesTheRange_forBothRenderers() {
+        let minimum = start.addingTimeInterval(86_400)
+        let maximum = start.addingTimeInterval(86_400 * 730)
+        let descriptor = dialog(minimum: minimum, maximum: maximum)
+
+        XCTAssertEqual(descriptor.minimumDate, minimum)
+        XCTAssertEqual(descriptor.maximumDate, maximum)
+        // And the SwiftUI view builds from that same descriptor without discarding it.
+        let view = DatePickerModalView(
+            descriptor: descriptor, tokens: .standard, resolve: { _ in }
+        )
+        XCTAssertEqual(view.descriptor.minimumDate, minimum)
+        XCTAssertEqual(view.descriptor.maximumDate, maximum)
+    }
+}
+

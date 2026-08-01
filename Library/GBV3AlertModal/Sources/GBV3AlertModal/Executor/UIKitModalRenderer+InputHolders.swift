@@ -46,6 +46,11 @@ extension UIKitModalRenderer {
             let picker = UIDatePicker()
             picker.datePickerMode = .date
             picker.date = descriptor.initialDate
+            // Range BEFORE the date would clamp the initial value; UIDatePicker applies bounds as
+            // they are set, so the order here is deliberate — date first, then the bounds that may
+            // legitimately move it.
+            picker.minimumDate = descriptor.minimumDate
+            picker.maximumDate = descriptor.maximumDate
             picker.overrideUserInterfaceStyle = .light // legible dark wheels on the standard light card
             picker.translatesAutoresizingMaskIntoConstraints = false
             if #available(iOS 14.0, *) { picker.preferredDatePickerStyle = .wheels }

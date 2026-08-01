@@ -89,8 +89,12 @@ struct SwiftUIDivergence: Hashable {
         )
     ]
 
+    /// CLOSED 2026-08-01 — kept as a named constant so the entries referencing it keep compiling
+    /// while the caption tells the truth. `AttributedTextBridge` re-scopes UIKit colour and font onto
+    /// SwiftUI's scope before `Text` draws, so bold and colour now survive.
     static let attributedRuns = SwiftUIDivergence(
-        caption: "Attributed text: the bold/colour RUNS are UIKit-scoped, so SwiftUI draws them unstyled."
+        caption: "Attributed text: bold/colour runs are re-scoped by AttributedTextBridge and now render "
+            + "as UIKit draws them. Compare against the UIKit gallery entry of the same name."
     )
     static let bespokePort = SwiftUIDivergence(
         caption: "Bespoke port: drawn by a register(_:view:) body, where the UIKit entry builds a UIView and hands "
@@ -108,17 +112,25 @@ struct SwiftUIDivergence: Hashable {
         caption: "Badge artwork is [API] (badge.localImageName): no such asset in this bundle, so the badge cell "
             + "draws its name and description with no picture."
     )
+    /// NOT a renderer divergence, and the old caption implied it was. The library's two backends
+    /// AGREE: `TextInputHolder` constrains a `UITextField` to 44pt and the SwiftUI view draws a
+    /// `TextField` at 44pt. What differs is the GALLERY's UIKit entry, which hand-builds a bordered
+    /// `UITextView` at the call site — the bespoke construction the descriptor path exists to
+    /// replace. Worth showing on screen, but as a comparison note rather than a gap.
     static let inputChrome = SwiftUIDivergence(
-        caption: "Input chrome: SwiftUI draws a RoundedBorderTextFieldStyle field / wheel DatePicker; the UIKit entry "
-            + "builds a 48pt bordered UITextView / UIDatePicker in the subtitle slot."
+        caption: "Input chrome: this SwiftUI entry renders TextInputDialog through the descriptor path "
+            + "(TextField, 44pt — matching the library's UITextField holder). The UIKit entry beside it "
+            + "hand-builds a bordered UITextView at the call site, which is what the descriptor replaces."
     )
     static let subtitleSlotNone = SwiftUIDivergence(
         caption: "Subtitle slot resolves .none here — bespoke content lives in Presentation.customContent, and no "
             + "empty UIView is fabricated on the holder just to make the resolver say .custom."
     )
+    /// CLOSED 2026-08-01 — `DatePickerDialog` now carries `minimumDate`/`maximumDate` and BOTH
+    /// renderers apply them, so the wheel is bounded identically on either backend.
     static let datePickerRange = SwiftUIDivergence(
-        caption: "No date RANGE: DatePickerDialog carries only an initial date, where the UIKit entry pins "
-            + "minimumDate = tomorrow and maximumDate = +2 years."
+        caption: "Date range: DatePickerDialog now carries minimumDate/maximumDate and both renderers "
+            + "apply them. This entry leaves them unset, so the wheel is unbounded on both."
     )
     static let loadingPort = SwiftUIDivergence(
         caption: "Ported to LoadingDialog, which additionally carries a busy-primary state the UIKit gallery entry "

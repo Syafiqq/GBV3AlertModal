@@ -117,3 +117,67 @@ final class SubtitlePayloadTests: XCTestCase {
         }
     }
 }
+
+// MARK: - `attributedRuns` — UIKit-scoped styling must reach SwiftUI's scope
+
+/// The declared catalog divergence said SwiftUI "draws them unstyled": an `NSAttributedString`
+/// bridged with `AttributedString(_:)` keeps its runs on UIKit's scope, and `Text` reads its own, so
+/// bold and colour were carried to the draw call and dropped there.
+final class AttributedTextBridgeTests: XCTestCase {
+
+    private func styled() -> NSAttributedString {
+        NSAttributedString(
+            string: "Bold and red",
+            attributes: [
+                .font: UIFont.boldSystemFont(ofSize: 19),
+                .foregroundColor: UIColor.red
+            ]
+        )
+    }
+
+    func test_uiKitScopedColourAndFont_reachSwiftUIsScope() throws {
+        let converted = AttributedTextBridge.swiftUIRenderable(styled())
+        let run = try XCTUnwrap(converted.runs.first)
+
+        XCTAssertNotNil(
+            run.swiftUI.foregroundColor,
+            "the colour never reached SwiftUI's scope — Text would draw this in the default colour"
+        )
+        XCTAssertNotNil(
+            run.swiftUI.font,
+            "the font never reached SwiftUI's scope — Text would draw this unbolded, which is the "
+                + "emphasis the caller explicitly asked for"
+        )
+    }
+
+    /// The UIKit attributes are left in place: the same value still bridges back for any UIKit
+    /// consumer, so this is additive re-scoping rather than a move.
+    func test_theUIKitScopeIsPreserved() throws {
+        let converted = AttributedTextBridge.swiftUIRenderable(styled())
+        let run = try XCTUnwrap(converted.runs.first)
+
+        XCTAssertNotNil(run.uiKit.foregroundColor)
+        XCTAssertNotNil(run.uiKit.font)
+    }
+
+    /// A caller who set SwiftUI's scope explicitly is not second-guessed.
+    func test_anExplicitSwiftUIScope_isNotOverwritten() throws {
+        var text = AttributedString("Mixed")
+        text.uiKit.foregroundColor = .red
+        text.swiftUI.foregroundColor = .green
+
+        let converted = AttributedTextBridge.swiftUIRenderable(NSAttributedString(text))
+        let run = try XCTUnwrap(converted.runs.first)
+        XCTAssertEqual(run.swiftUI.foregroundColor, .green)
+    }
+
+    /// Unstyled text is unchanged — the bridge must not invent attributes.
+    func test_unstyledText_gainsNothing() throws {
+        let converted = AttributedTextBridge.swiftUIRenderable(NSAttributedString(string: "Plain"))
+        let run = try XCTUnwrap(converted.runs.first)
+
+        XCTAssertNil(run.swiftUI.foregroundColor)
+        XCTAssertNil(run.swiftUI.font)
+    }
+}
+
