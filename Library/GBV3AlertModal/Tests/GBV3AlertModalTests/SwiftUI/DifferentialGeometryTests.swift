@@ -430,6 +430,24 @@ final class DifferentialGeometryTests: XCTestCase {
         )
     }
 
+    // MARK: - Landscape, gated for the first time
+
+    /// **Every landscape fix in this module was verified by snapshot and by eye until now.**
+    ///
+    /// The harness hosted portrait only, because `SwiftUIAlertModal` hardcoded `isLandscape: false`
+    /// for the resolver — a landscape comparison would have measured that assumption rather than the
+    /// layout. Both backends now read orientation from the container they are given, so this is the
+    /// same element-for-element comparison the portrait rows get, at 844x390.
+    ///
+    /// This is the coverage gap that mattered most: the subtitle floor, the whitespace rung, the
+    /// ladder ordering and the zeroed vertical margin are ALL landscape-motivated changes, and none
+    /// of them was ever checked against UIKit's measured numbers.
+    func test_geometry_landscape_standardOneButton() { assertAgrees("standard-one-button", size: DifferentialGeometry.landscapeHost) }
+    func test_geometry_landscape_standardTwoButton() { assertAgrees("standard-two-button", size: DifferentialGeometry.landscapeHost) }
+    func test_geometry_landscape_permissionDenied() { assertAgrees("permission-denied-settings", size: DifferentialGeometry.landscapeHost) }
+    func test_geometry_landscape_obliqueRedLeaveConfirm() { assertAgrees("oblique-red-leave-confirm", size: DifferentialGeometry.landscapeHost) }
+    func test_geometry_landscape_onboardingWelcomeNoBanner() { assertAgrees("onboarding-welcome-nobanner", size: DifferentialGeometry.landscapeHost) }
+
     /// **The premise behind the row above — without this it is another vacuous agreement.**
     ///
     /// The whole reason D-7 stayed open is that every shape in the gate is short enough for UIKit's
@@ -467,6 +485,7 @@ final class DifferentialGeometryTests: XCTestCase {
 
     private func assertAgrees(
         _ name: String,
+        size: CGSize = DifferentialGeometry.host,
         file: StaticString = #filePath,
         line: UInt = #line
     ) {
@@ -474,8 +493,9 @@ final class DifferentialGeometryTests: XCTestCase {
             XCTFail("no differential shape named '\(name)'", file: file, line: line)
             return
         }
-        let rows = DifferentialGeometry.rows(for: shape)
-        let table = DifferentialGeometry.table(name: name, rows: rows)
+        let rows = DifferentialGeometry.rows(for: shape, size: size)
+        let orientation = size.width > size.height ? "landscape" : "portrait"
+        let table = DifferentialGeometry.table(name: "\(name) [\(orientation)]", rows: rows)
 
         // Honesty first: an empty measurement must never read as agreement.
         guard rows.contains(where: { $0.uiKit != nil }), rows.contains(where: { $0.swiftUI != nil }) else {

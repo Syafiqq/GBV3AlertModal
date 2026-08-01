@@ -92,19 +92,43 @@ public struct SwiftUIAlertModal: View {
     /// can compute it exactly once per render and hand it to both this and `subtitleView` — the
     /// resolver call itself is cheap, but `self.holder` re-runs `UIImage(named:)` and
     /// `ModalText.split`, which isn't free to repeat.
-    private func resolved(from holder: GBAlertModal.DataHolder) -> GBAlertModal.ResolvedModal {
+    private func resolved(from holder: GBAlertModal.DataHolder, isLandscape: Bool) -> GBAlertModal.ResolvedModal {
         GBAlertModal.resolve(
             properties: properties ?? Self.sentinelProperties,
             holder: holder,
-            isLandscape: false
+            isLandscape: isLandscape
         )
     }
 
+    /// **The orientation the resolver is told about, read from the screen rather than assumed.**
+    ///
+    /// This was hardcoded `false`, which meant `contentWidth` — the one orientation-sensitive field
+    /// the resolver produces — always came back as the PORTRAIT width. Inert on every Genie preset,
+    /// because each sets `fixedWidthPortrait == fixedWidthLandscape`, but wrong for any preset that
+    /// distinguishes them, and it is why the differential harness hosted portrait only: a landscape
+    /// comparison would have been measuring this assumption rather than the layout.
+    ///
+    /// Read from the modal's OWN container, matching what UIKit does. `GBAlertModal.makeResolvedModal`
+    /// takes `isLandscape: bounds.width > bounds.height` from `self.bounds` — deliberately, and its
+    /// comment says why: reading the window scene's real orientation would make the landscape width
+    /// branch untestable, because a test host cannot rotate a device. Reading the container makes it
+    /// a function of the size the modal was given.
+    ///
+    /// Using `UIScreen.main` here instead would have reintroduced exactly that problem from the other
+    /// side: the differential harness sets a landscape WINDOW, and the screen would still have said
+    /// portrait, so a landscape comparison would measure two different assumptions rather than two
+    /// layouts.
     public var body: some View {
+        GeometryReader { proxy in
+            content(isLandscape: proxy.size.width > proxy.size.height)
+        }
+    }
+
+    private func content(isLandscape: Bool) -> some View {
         // Computed exactly once per render: both `holder` and `resolved` are otherwise re-derived
         // (re-running `UIImage(named:)` / `ModalText.split` / the resolver) on every access.
         let holder = self.holder
-        let resolved = self.resolved(from: holder)
+        let resolved = self.resolved(from: holder, isLandscape: isLandscape)
         return AlertModalScaffold(
             tokens: tokens,
             primaryTitle: config.primary,
@@ -124,8 +148,10 @@ public struct SwiftUIAlertModal: View {
             // be resolved and dropped (task 17, finding D-4).
             buttonsMatchParent: resolved.buttonsMatchParent
         ) {
-            if resolved.showsBanner, let name = config.image?.assetName {
-                Image(name)
+            if resolved.showsBanner, let image = config.image {
+                // `Image(_:bundle:)` with a nil bundle IS `Image(_:)`, so the default path is
+                // unchanged — this only adds the ability to name a non-main bundle.
+                Image(image.assetName, bundle: image.bundle)
                     .resizable()
                     .scaledToFit()   // preserve the image's natural aspect ratio (no distortion)
                     // The slot geometry `Properties` asks for: ratio, fixed height and cap, with

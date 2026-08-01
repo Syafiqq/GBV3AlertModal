@@ -97,10 +97,19 @@ import UIKit
 @MainActor
 enum DifferentialGeometry {
 
-    /// A phone-sized portrait host. One size only: `SwiftUIAlertModal` hardcodes `isLandscape:
-    /// false` for the resolver, so a landscape comparison would be measuring that known divergence
-    /// rather than the layout. Recorded as an exclusion, not silently skipped.
+    /// A phone-sized portrait host — the default both measurement functions use.
+    ///
+    /// It used to be the ONLY size, because `SwiftUIAlertModal` hardcoded `isLandscape: false` for
+    /// the resolver: a landscape comparison would have measured that assumption rather than the
+    /// layout. Both backends now read orientation from the container they are given
+    /// (`GBAlertModal.makeResolvedModal` from `self.bounds`, `SwiftUIAlertModal` from a
+    /// `GeometryReader`), so landscape is comparable and `landscapeHost` below is gated for real.
     static let host = CGSize(width: 390, height: 844)
+
+    /// The same phone, rotated. Every landscape fix in this module was verified by snapshot and by
+    /// eye until this existed; nothing compared SwiftUI's landscape geometry against UIKit's
+    /// measured numbers.
+    static let landscapeHost = CGSize(width: 844, height: 390)
 
     /// Sub-pixel only. Auto Layout resolves to fractional points and SwiftUI rounds to the display
     /// scale, so a shared edge can legitimately land half a point apart; anything larger is a
@@ -412,17 +421,17 @@ enum DifferentialGeometry {
         }
     }
 
-    static func rows(for shape: Shape) -> [Row] {
-        compare(uiKit: uiKitFrames(shape), swiftUI: swiftUIFrames(shape))
+    static func rows(for shape: Shape, size: CGSize = host) -> [Row] {
+        compare(uiKit: uiKitFrames(shape, size: size), swiftUI: swiftUIFrames(shape, size: size))
     }
 
     // MARK: - UIKit measurement (the source of truth)
 
     /// Reads the real `GBAlertModal`'s laid-out frames. Not a computation and not a recording —
     /// Auto Layout resolved these numbers, in this process, at this host size.
-    static func uiKitFrames(_ shape: Shape) -> [ModalGeometryElement: CGRect] {
+    static func uiKitFrames(_ shape: Shape, size: CGSize = host) -> [ModalGeometryElement: CGRect] {
         let modal = makeUIKitModal(shape)
-        let window = makeWindow()
+        let window = makeWindow(size: size)
         defer { teardown(window) }
         modal.show(parent: window, completion: {})
         window.setNeedsLayout()
@@ -470,7 +479,8 @@ enum DifferentialGeometry {
     /// exactly how 26 vacuous green assertions got written on this plan once already.
     static func swiftUIFrames(
         _ shape: Shape,
-        tokens: ModalTokens? = nil
+        tokens: ModalTokens? = nil,
+        size: CGSize = host
     ) -> [ModalGeometryElement: CGRect] {
         let sink = Sink()
         let root = ProbeHost(sink: sink) {
@@ -483,9 +493,9 @@ enum DifferentialGeometry {
         }
         let controller = UIHostingController(rootView: root)
         controller.view.backgroundColor = .clear
-        controller.view.frame = CGRect(origin: .zero, size: host)
+        controller.view.frame = CGRect(origin: .zero, size: size)
 
-        let window = makeWindow()
+        let window = makeWindow(size: size)
         defer { teardown(window) }
         window.rootViewController = controller
         pump(window) { sink.frames[.card] != nil }
@@ -666,7 +676,7 @@ enum DifferentialGeometry {
     /// for the scene's lifetime, and a host left alive across a test boundary on this target once
     /// became a zombie that crashed the next synchronous render (see `SnapshotSupport`'s note). No
     /// window created here ever outlives the function that made it.
-    static func makeWindow() -> UIWindow {
+    static func makeWindow(size: CGSize = host) -> UIWindow {
         let window: UIWindow
         if let scene = UIApplication.shared.connectedScenes
             .first(where: { $0.activationState == .foregroundActive }) as? UIWindowScene {
@@ -674,7 +684,7 @@ enum DifferentialGeometry {
         } else {
             window = UIWindow(frame: .zero)
         }
-        window.frame = CGRect(origin: .zero, size: host)
+        window.frame = CGRect(origin: .zero, size: size)
         window.backgroundColor = .white
         window.isHidden = false
         window.makeKeyAndVisible()

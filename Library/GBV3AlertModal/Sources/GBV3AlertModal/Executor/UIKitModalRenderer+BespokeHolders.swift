@@ -34,7 +34,7 @@ extension UIKitModalRenderer {
             let (subPlain, subAttr) = ModalText.split(descriptor.subtitle)
             return GBAlertModal.DataHolder(
                 closeOnTapOverlay: descriptor.closeOnTapOverlay,
-                banner: descriptor.banner.flatMap { UIImage(named: $0.assetName) },
+                banner: descriptor.banner.flatMap { UIImage(named: $0.assetName, in: $0.bundle, compatibleWith: nil) },
                 title: titlePlain,
                 titleAttributed: titleAttr,
                 subtitle: subPlain,

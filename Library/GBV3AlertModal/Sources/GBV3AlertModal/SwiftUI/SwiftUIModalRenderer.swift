@@ -523,11 +523,27 @@ public final class SwiftUIModalRenderer: ObservableObject, ModalRenderer {
 
     // MARK: - Internals
 
+    /// The presenting screen's orientation.
+    ///
+    /// Unlike `SwiftUIAlertModal`, which reads its own container, a `Presentation` is built BEFORE
+    /// any view exists — there is nothing to measure yet. `UIScreen.main` is the honest answer at
+    /// that moment, and the value is only consumed for `contentWidth`, which every Genie preset
+    /// states identically for both orientations.
+    @MainActor
+    static var isLandscape: Bool {
+        let bounds = UIScreen.main.bounds
+        return bounds.width > bounds.height
+    }
+
     /// Builds a `Presentation` by running the SHARED chain: `GBAlertModal.resolve` for structure and
     /// `ModalTokens(from:)` for styling, both over the EFFECTIVE properties.
     ///
-    /// `isLandscape: false` matches the SwiftUI card, which is width-adaptive rather than
-    /// orientation-switched; it is the one resolver input that is still fixed here.
+    /// Orientation is READ, not assumed. This used to pass `isLandscape: false` unconditionally, on
+    /// the grounds that the SwiftUI card is width-adaptive — true of the card, but `contentWidth` is a
+    /// resolver output that `ContentProperty` states per orientation, so a preset distinguishing
+    /// `fixedWidthPortrait` from `fixedWidthLandscape` was silently given the portrait one. Every Genie
+    /// preset sets them equal, so this was inert; it was also the reason landscape could not be
+    /// compared against UIKit at all.
     private func makePresentation(
         id: ModalID,
         properties: GBAlertModal.Properties?,
@@ -541,7 +557,7 @@ public final class SwiftUIModalRenderer: ObservableObject, ModalRenderer {
         return Presentation(
             id: id,
             resolved: GBAlertModal.resolve(
-                properties: effective, holder: holder, isLandscape: false
+                properties: effective, holder: holder, isLandscape: Self.isLandscape
             ),
             holder: holder,
             properties: effective,
