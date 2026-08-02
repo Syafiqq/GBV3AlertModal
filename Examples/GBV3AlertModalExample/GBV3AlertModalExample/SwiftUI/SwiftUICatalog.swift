@@ -102,9 +102,13 @@ struct SwiftUIDivergence: Hashable {
             + "it to holder.subtitleCustomView."
     )
     static let bannerArtworkNote = SwiftUIDivergence(
-        caption: "Banner shape: same asset name as the UIKit entry, but drawn by Image(_:) inside the "
-            + "slot/image split ModalTokens.bannerGeometry computes. Check the height, aspect and cropping "
-            + "against the UIKit gallery entry of the same name."
+        caption: "Banner geometry is GATED, not eyeballed: the slot's column and height come from "
+            + "ModalTokens.bannerGeometry, pinned against measured UIKit output in "
+            + "BannerGeometryTruthTests and compared element-for-element in DifferentialGeometryTests "
+            + "(PORTRAIT only). Landscape banner shapes are not gated at all, and the divergence there "
+            + "is not merely a taller banner: UIKit's height-constrained residual arbitration also "
+            + "narrows the banner's WIDTH demand, and that wrong column reaches the CARD and every row "
+            + "that matches the card's width — see the design spec §5."
     )
     static let badgeBannerMissing = SwiftUIDivergence(
         caption: "No banner drawn: the UIKit entry's banner is a GENERATED placeholder standing in for the [API] "
