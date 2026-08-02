@@ -110,11 +110,25 @@ public struct BadgeModalView: View {
                 .scaledToFit()                       // natural aspect, same as `SwiftUIAlertModal`
                 // `ModalBannerGeometry` (the `ViewModifier`) is gone — Task 3 dropped it along with
                 // `bannerLayout.height` (measured inert in UIKit, `BannerGeometryTruthTests`). This
-                // bespoke banner never went through the slot/image split `SwiftUIAlertModal` got
-                // (`BadgeDialog` has no UIKit view graph to hold it to, unlike the standard shape),
-                // so it keeps the two live fields inline rather than gaining the split unasked-for.
-                .aspectRatio(tokens.bannerLayout.aspectRatio, contentMode: .fit)
-                .frame(maxHeight: tokens.bannerLayout.maxHeight)
+                // bespoke banner did NOT gain the slot/image split `SwiftUIAlertModal`'s standard
+                // banner got: `BadgeDialog` DOES have a real UIKit view graph behind it
+                // (`UIKitModalRenderer.BadgeHolder.make` builds a genuine `banner: UIImage` and
+                // `GBAlertModal` renders it through the same `vwBanner`/`ivBanner` constraints as
+                // every other shape) — it is simply UNTESTED, not ungraphed: `DifferentialGeometry`
+                // excludes all three bespoke descriptors because they render through their OWN
+                // `AlertModalScaffold` wrapper (`BadgeModalView`) rather than through
+                // `SwiftUIAlertModal`, which is the one the gate measures. So this keeps the two live
+                // fields inline, branching exactly as the deleted `ModalBannerGeometry` did — a nil
+                // field adds NO modifier, rather than relying on `.aspectRatio(nil, ...)` /
+                // `.frame(maxHeight: nil)` being no-ops, which was the assumption that type existed
+                // to avoid making.
+                //
+                // This banner also lost its `.frame(height: bannerFixedHeight)` pin along with every
+                // other banner in this module (Task 3): UIKit ignores that field on both paths
+                // (`BannerGeometryTruthTests.test_bannerFixedHeight_isInert_*`), so dropping it here
+                // is correct — but it is a real behavioural change to a path NO test covers, since
+                // `BadgeModalView` sits outside the differential gate for the reason above.
+                .modifier(BespokeBannerLayout(layout: tokens.bannerLayout))
                 .padding(.bottom, tokens.gapBelowBanner)
         }
     }
@@ -353,6 +367,62 @@ public struct SatisfactionModalView: View {
             return .submitted(index: selectedIndex)
         case .secondary, .close:
             return .dismissed
+        }
+    }
+}
+
+// MARK: - The bespoke banner's own layout (BadgeDialog only)
+
+/// **`BadgeModalView.bannerView`'s counterpart to the deleted `ModalBannerGeometry`.**
+///
+/// This is NOT the standard banner path — `SwiftUIAlertModal`'s `BannerSlot` reads
+/// `ModalTokens.bannerGeometry` instead (Task 3's slot/image split, verified against measured UIKit
+/// output). This one still applies `ModalTokens.bannerLayout` (`aspectRatio` / `maxHeight`) directly
+/// to the `Image`, exactly as the deleted `ModalBannerGeometry` did, because `BadgeDialog` sits
+/// outside the differential gate (see the call site's comment) and nothing was asked to change here.
+///
+/// Each field is applied ONLY when `BannerLayout` supplies it — a nil field adds NO modifier at all.
+/// `ModalBannerGeometry`'s doc stated exactly why this branching exists rather than passing the
+/// optionals straight to `.aspectRatio(_:contentMode:)` / `.frame(maxHeight:)`: "Relying on
+/// `.frame(height: nil)` / `.frame(maxHeight: nil)` being a no-op would be an assumption about
+/// SwiftUI's flexible-frame behaviour; branching states the intent instead." `BadgeModalView` has no
+/// differential test to catch that assumption being wrong, so the branching is restored rather than
+/// re-introduced as an implicit nil-pass-through.
+private struct BespokeBannerLayout: ViewModifier {
+    let layout: ModalTokens.BannerLayout
+
+    func body(content: Content) -> some View {
+        cap(pin(shape(content)))
+    }
+
+    @ViewBuilder
+    private func shape<V: View>(_ view: V) -> some View {
+        if let aspectRatio = layout.aspectRatio {
+            view.aspectRatio(aspectRatio, contentMode: .fit)
+        } else {
+            view
+        }
+    }
+
+    /// Always a no-op today — `ModalTokens.bannerLayout.height` is unconditionally `nil` since Task
+    /// 3 (`bannerFixedHeight` measured inert in UIKit on every path). Kept, rather than deleted along
+    /// with the field, so this modifier still does the right thing if `bannerLayout` ever grows a
+    /// live `height` again.
+    @ViewBuilder
+    private func pin<V: View>(_ view: V) -> some View {
+        if let height = layout.height {
+            view.frame(height: height)
+        } else {
+            view
+        }
+    }
+
+    @ViewBuilder
+    private func cap<V: View>(_ view: V) -> some View {
+        if let maxHeight = layout.maxHeight {
+            view.frame(maxHeight: maxHeight)
+        } else {
+            view
         }
     }
 }
