@@ -75,8 +75,9 @@ struct SwiftUIDivergence: Hashable {
         ),
         SwiftUIDivergence(
             caption: "Banner artwork + geometry. SwiftUI resolves the asset by NAME (Image(_:)) and sizes the slot "
-                + "with ModalBannerGeometry; UIKit passes a real UIImage and lets constraint priorities decide. "
-                + "Same inputs, different layout engines — compare every banner shape side by side."
+                + "from ModalTokens.bannerGeometry (mirroring UIKit's vwBanner/ivBanner split); UIKit passes a "
+                + "real UIImage and lets constraint priorities decide. Same inputs, different layout engines — "
+                + "compare every banner shape side by side."
         ),
         SwiftUIDivergence(
             caption: "Fonts. Title/subtitle/button fonts DO flow from the same Properties (UIFont→Font bridge over "
@@ -101,8 +102,9 @@ struct SwiftUIDivergence: Hashable {
             + "it to holder.subtitleCustomView."
     )
     static let bannerArtworkNote = SwiftUIDivergence(
-        caption: "Banner shape: same asset name as the UIKit entry, but drawn by Image(_:) + ModalBannerGeometry. "
-            + "Check the height, aspect and cropping against the UIKit gallery entry of the same name."
+        caption: "Banner shape: same asset name as the UIKit entry, but drawn by Image(_:) inside the "
+            + "slot/image split ModalTokens.bannerGeometry computes. Check the height, aspect and cropping "
+            + "against the UIKit gallery entry of the same name."
     )
     static let badgeBannerMissing = SwiftUIDivergence(
         caption: "No banner drawn: the UIKit entry's banner is a GENERATED placeholder standing in for the [API] "

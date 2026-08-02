@@ -108,7 +108,13 @@ public struct BadgeModalView: View {
             Image(banner.assetName)
                 .resizable()
                 .scaledToFit()                       // natural aspect, same as `SwiftUIAlertModal`
-                .modifier(ModalBannerGeometry(layout: tokens.bannerLayout))
+                // `ModalBannerGeometry` (the `ViewModifier`) is gone — Task 3 dropped it along with
+                // `bannerLayout.height` (measured inert in UIKit, `BannerGeometryTruthTests`). This
+                // bespoke banner never went through the slot/image split `SwiftUIAlertModal` got
+                // (`BadgeDialog` has no UIKit view graph to hold it to, unlike the standard shape),
+                // so it keeps the two live fields inline rather than gaining the split unasked-for.
+                .aspectRatio(tokens.bannerLayout.aspectRatio, contentMode: .fit)
+                .frame(maxHeight: tokens.bannerLayout.maxHeight)
                 .padding(.bottom, tokens.gapBelowBanner)
         }
     }

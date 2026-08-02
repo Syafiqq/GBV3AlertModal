@@ -430,51 +430,17 @@ final class DifferentialGeometryTests: XCTestCase {
         )
     }
 
-    /// **The banner, compared for the first time.**
+    /// **The banner, compared element-for-element.**
     ///
-    /// `bannerIsUnresolvableInTheLibraryBundle` is still correct for every OTHER shape — their assets
-    /// live in the app — so the exclusion stays. This shape sidesteps it by naming the test target's
-    /// own resource bundle, which is what `ModalImage.bundleIdentifier` exists for.
-    /// Gated element-by-element, because the banner's HEIGHT is a live, measured divergence and
-    /// `assertAgrees` would have to be silenced wholesale to accommodate it.
+    /// This replaces an inequality pin (`swiftUI.height < uiKit.height`) that recorded the open bug
+    /// rather than freezing its wrong numbers. The bug is closed: UIKit's slot is 256x160 (the
+    /// artwork is 160pt wide at ratio 1, so `max(imageH, imageW/r)` is 160) and SwiftUI now
+    /// computes the same from `ModalTokens.bannerGeometry`.
     ///
-    /// **What agrees, and it did not before:** the banner's x and WIDTH. UIKit's `vwBanner` fills the
-    /// 256pt content column; SwiftUI drew 47.7pt wide, centred, because the row was deliberately not
-    /// given `ContentRowWidth` on reasoning no gate could check. Now both are `x 32, w 256`.
-    ///
-    /// **What does NOT agree — an open bug, recorded in numbers rather than prose:** the HEIGHT.
-    /// UIKit's slot is 160pt; SwiftUI's is 26.8. UIKit models the banner as TWO views — `vwBanner`
-    /// fills the content column and `ivBanner` is ratio-sized inside it, so the slot's height follows
-    /// the ratio-sized image (square at `bannerRatio: 1`, sized from the 160pt-wide source). SwiftUI
-    /// has one view carrying `.resizable().scaledToFit()` plus `ModalBannerGeometry`, and an outer
-    /// width frame does not make it grow vertically. Everything below the banner is displaced by the
-    /// difference, which is why the card comes out 70pt shorter.
-    ///
-    /// Pinned as an INEQUALITY rather than as the current numbers, so the day SwiftUI's banner height
-    /// reaches UIKit's this test fails and says to promote the row to a full comparison — instead of
-    /// freezing today's wrong answer as the expectation.
-    func test_geometry_bannerComparable_agreesOnWidth_notYetOnHeight() throws {
-        let shape = try XCTUnwrap(DifferentialGeometry.shape(named: "banner-comparable"))
-        let rows = DifferentialGeometry.rows(for: shape)
-        let banner = try XCTUnwrap(rows.first { $0.element == .banner })
-        let uiKit = try XCTUnwrap(banner.uiKit)
-        let swiftUI = try XCTUnwrap(banner.swiftUI)
-
-        XCTAssertEqual(
-            swiftUI.minX, uiKit.minX, accuracy: DifferentialGeometry.tolerance,
-            "the banner is no longer aligned to the content column"
-        )
-        XCTAssertEqual(
-            swiftUI.width, uiKit.width, accuracy: DifferentialGeometry.tolerance,
-            "the banner no longer fills the content width the way vwBanner does"
-        )
-        XCTAssertLessThan(
-            swiftUI.height, uiKit.height,
-            "SwiftUI's banner height has reached UIKit's. That is the OPEN BUG being tracked here — "
-                + "if it is fixed, replace this test with `assertAgrees(\"banner-comparable\")` and "
-                + "delete the height exception rather than leaving a stale one behind."
-        )
-    }
+    /// `bannerIsUnresolvableInTheLibraryBundle` is still correct for every OTHER banner shape —
+    /// their assets live in the app — so that exclusion stays. This shape sidesteps it by naming
+    /// the test target's own resource bundle, which is what `ModalImage.bundleIdentifier` is for.
+    func test_geometry_bannerComparable() { assertAgrees("banner-comparable") }
 
     /// And the premise: the `.banner` row must carry TWO frames. If the asset failed to resolve the
     /// row would read `absent (both)` — agreement about an absence — and the test above would pass

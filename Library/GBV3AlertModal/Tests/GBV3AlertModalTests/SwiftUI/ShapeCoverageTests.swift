@@ -42,13 +42,15 @@ import XCTest
 ///   `test_bannerSubstitution_isTheOnlyDeviationFromProduction` pins that deviation to exactly one
 ///   resolver field.
 /// * **Animation.** Neither renderer's present/dismiss transition is exercised anywhere.
-/// * **Banner GEOMETRY, as pixels.** `bannerRatio` / `bannerFixedHeight` / `bannerMaxHeight` are no
-///   longer a token-set gap — all three are derived into `ModalTokens` and applied by
-///   `ModalBannerGeometry` with the UIKit constraint precedence (`ModalTokens.bannerLayout`), and
-///   the derivation + precedence are unit-tested (`ModalTokensProvenanceTests`,
-///   `ModalBannerLayoutTests`). What is still NOT proven here is the resulting on-screen SIZE: no
-///   test measures the drawn banner on either backend, and the artwork is substituted anyway (see
-///   the bullet above).
+/// * **Banner GEOMETRY, as pixels.** `bannerRatio` / `bannerMaxHeight` are no longer a token-set gap
+///   — both are derived into `ModalTokens.bannerGeometry` and applied by `SwiftUIAlertModal`'s
+///   `BannerSlot` (the standard path) with the UIKit constraint precedence (`bannerFixedHeight` is
+///   dropped entirely — measured inert on both UIKit paths, `BannerGeometryTruthTests`), and the
+///   derivation + precedence are unit-tested (`ModalTokensProvenanceTests`, `ModalBannerLayoutTests`,
+///   `ModalBannerGeometryRuleTests`). What is still NOT proven here is the resulting on-screen SIZE:
+///   no test measures the drawn banner on either backend, and the artwork is substituted anyway (see
+///   the bullet above) — that comparison lives in `DifferentialGeometryTests.test_geometry_
+///   bannerComparable`, which is the one shape not routed through this substitution.
 @MainActor
 final class ShapeCoverageTests: XCTestCase {
 

@@ -10,7 +10,7 @@ import SwiftUI
 /// | case | UIKit counterpart (`GBAlertModal`) | SwiftUI counterpart |
 /// | --- | --- | --- |
 /// | `card` | `vwContainer` (the rounded, filled container) | `AlertModalScaffold.card` |
-/// | `banner` | `vwBanner` (the banner SLOT, not `ivBanner`) | the `Image` after `ModalBannerGeometry` |
+/// | `banner` | `vwBanner` (the banner SLOT, not `ivBanner`) | `BannerSlot`'s `Color.clear` slot, not the `Image` inside it |
 /// | `title` | `lbTitle` | the title `Text` |
 /// | `subtitle` | `svSubtitleContainer` (the scroll SLOT) | the subtitle `Text` |
 /// | `primaryButton` | `btPrimaryAction` — the VISIBLE oblique rect, which UIKit insets ±3 from its slot | the primary `Button` |

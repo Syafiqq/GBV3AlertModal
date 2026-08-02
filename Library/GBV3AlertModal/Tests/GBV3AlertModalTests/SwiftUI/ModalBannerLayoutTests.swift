@@ -2,10 +2,18 @@ import UIKit
 import XCTest
 @testable import GBV3AlertModal
 
-/// `ModalTokens.bannerLayout` — the PRECEDENCE between the three banner fields, which
-/// `ModalBannerGeometry` then applies. It is not a free choice: it mirrors the UIKit constraint
-/// priorities in `GBAlertModal+ViewGraph.swift`'s `installConstraints` (cap 751 > natural-aspect
-/// driver 700 > fixed height 251), so these tests are the record of that mirroring.
+/// `ModalTokens.bannerLayout` — the PRECEDENCE between the three banner fields. It is not a free
+/// choice: it mirrors the UIKit constraint priorities in `GBAlertModal+ViewGraph.swift`'s
+/// `installConstraints` (cap 950 > natural-aspect driver 245 > fixed height 243), so these tests are
+/// the record of that mirroring.
+///
+/// `height` is now `nil` on EVERY path, not just the natural-aspect one. It used to read as pinning
+/// the slot on the ratio path — that was wrong: `bannerFixedHeight` sits below the card's `.low`
+/// (250) hugging as well as below the image's compression resistance (750), so UIKit ignores it on
+/// BOTH paths (measured zero effect at every size tried,
+/// `BannerGeometryTruthTests.test_bannerFixedHeight_isInert_onTheRatioPath` and
+/// `..._onTheNaturalAspectPath`). Applying it here was a live divergence on every real preset that
+/// sets both `bannerRatio` and `bannerFixedHeight`, which is all of them.
 @MainActor
 final class ModalBannerLayoutTests: XCTestCase {
 
@@ -19,18 +27,21 @@ final class ModalBannerLayoutTests: XCTestCase {
         ).bannerLayout
     }
 
-    /// `bannerRatio != nil` removes the natural-aspect driver in UIKit, so the fixed height (251) is
-    /// what sizes the slot — and the ratio shapes it.
-    func test_ratioPath_pinsTheFixedHeightAndShapesTheSlot() {
+    /// `bannerRatio != nil` removes the natural-aspect driver in UIKit, but the fixed height is STILL
+    /// inert there — it sits below the card's `.low` (250) hugging, which wins the tie before the
+    /// fixed height ever gets a say. See `BannerGeometryTruthTests.test_bannerFixedHeight_isInert_
+    /// onTheRatioPath`. The ratio still shapes the slot; the fixed height contributes nothing.
+    func test_ratioPath_ignoresTheFixedHeight_asUIKitDoes() {
         XCTAssertEqual(
             layout(ratio: 320.0 / 229.0, maxHeight: 216, fixedHeight: 184),
-            ModalTokens.BannerLayout(aspectRatio: 320.0 / 229.0, height: 184, maxHeight: 216)
+            ModalTokens.BannerLayout(aspectRatio: 320.0 / 229.0, height: nil, maxHeight: 216)
         )
     }
 
-    /// `bannerRatio == nil` installs the natural-aspect driver at 700, which OUT-RANKS the fixed
-    /// height at 251 — so UIKit ignores `bannerFixedHeight` there, and so must SwiftUI. Applying it
-    /// anyway would be a divergence in the opposite direction.
+    /// `bannerRatio == nil` installs the natural-aspect driver at 245, which OUT-RANKS the fixed
+    /// height at 243 — so UIKit ignores `bannerFixedHeight` there, and so must SwiftUI. Applying it
+    /// anyway would be a divergence in the opposite direction. See
+    /// `BannerGeometryTruthTests.test_bannerFixedHeight_isInert_onTheNaturalAspectPath`.
     func test_naturalAspectPath_ignoresTheFixedHeight_asUIKitDoes() {
         XCTAssertEqual(
             layout(maxHeight: 144, fixedHeight: 999),
@@ -55,12 +66,13 @@ final class ModalBannerLayoutTests: XCTestCase {
         XCTAssertNil(ModalTokens(from: GeniePresets.standardProperties()).bannerLayout.maxHeight)
     }
 
-    /// End-to-end over a REAL preset: the streak popup's 200:168 / 168 / 168 geometry reaches the
-    /// SwiftUI layout intact.
+    /// End-to-end over a REAL preset: the streak popup's 200:168 ratio and 168 cap reach the SwiftUI
+    /// layout intact — its `bannerFixedHeight` (also 168) does not, because it is inert on the ratio
+    /// path (see `test_ratioPath_ignoresTheFixedHeight_asUIKitDoes` above).
     func test_realStreakPreset_reachesTheLayout() {
         XCTAssertEqual(
             ModalTokens(from: GeniePresets.streakProperties()).bannerLayout,
-            ModalTokens.BannerLayout(aspectRatio: 200.0 / 168.0, height: 168, maxHeight: 168)
+            ModalTokens.BannerLayout(aspectRatio: 200.0 / 168.0, height: nil, maxHeight: 168)
         )
     }
 }

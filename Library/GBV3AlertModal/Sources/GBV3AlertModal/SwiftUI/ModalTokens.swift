@@ -747,31 +747,38 @@ extension ModalTokens {
     ///
     /// (These were 751/700/251 until the ladder was reordered to put every banner DRIVER below every
     /// text rung — "banner never wins". The cap moved the other way, UP, because it is a `<=` that
-    /// keeps the banner SMALL and so protects the text. The relative order of the three, and every
-    /// conclusion drawn from it below, is unchanged.)
+    /// keeps the banner SMALL and so protects the text.)
     ///
-    /// So:
-    /// 1. the cap (950) outranks everything and is always applied when present;
-    /// 2. when `bannerRatio == nil`, the natural-aspect driver (245) beats the fixed height (243),
-    ///    i.e. **`bannerFixedHeight` is INERT on the natural-aspect path** — SwiftUI's
-    ///    `.scaledToFit()` is that same natural-aspect behaviour, so the fixed height is dropped
-    ///    here too rather than being applied where UIKit would not;
-    /// 3. when `bannerRatio != nil` there is no natural-aspect driver, so the fixed height (243) is
-    ///    what sizes the slot — and note it now sits BELOW the card's `.low` (250) hugging, not above
-    ///    it as it did at 251. That is deliberate ("banner never be a winner, it is just cosmetic,
-    ///    not information"): where the card wants to be smaller than the banner wants to be tall, the
-    ///    banner yields. Measured consequence, accepted at the time: an UNCAPPED natural-aspect
-    ///    banner no longer renders at its full natural aspect when the card can hug tighter — see
-    ///    `BannerAspectStressTests.test_banner9x16_uncapped_portrait`, whose contract was rewritten
-    ///    to make the natural aspect a CEILING rather than an entitlement.
+    /// So: the cap (950) outranks everything and is always applied when present. Below it,
+    /// `bannerFixedHeight` (243) sits BELOW both remaining drivers on EITHER path:
+    /// * when `bannerRatio == nil`, the natural-aspect driver (245) beats it outright;
+    /// * when `bannerRatio != nil`, there is no natural-aspect driver, but the fixed height now sits
+    ///   below the card's `.low` (250) hugging too — the card wins the tie before the fixed height
+    ///   ever gets a say.
+    ///
+    /// **So `bannerFixedHeight` is INERT on BOTH paths** — measured zero effect at every size tried
+    /// (`BannerGeometryTruthTests.test_bannerFixedHeight_isInert_onTheRatioPath` and
+    /// `..._onTheNaturalAspectPath`), which is why `bannerLayout` below never applies it. This used to
+    /// read as a two-path story ("inert on natural-aspect, pins the slot on ratio") — that was wrong;
+    /// the truth-table tests are what caught it.
     ///
     /// The ratio itself is a constraint on the IMAGE VIEW's frame (`width == height * ratio`) with
     /// `contentMode = .scaleAspectFit` inside it — i.e. a ratio-shaped SLOT with the picture
-    /// letterboxed in it, which is what `ModalBannerGeometry` reproduces.
+    /// letterboxed in it, which `SwiftUIAlertModal`'s banner row reproduces directly (the slot/image
+    /// split — see its doc comment). `bannerLayout` itself now only feeds the bespoke-content banner
+    /// rows (`SwiftUIModalRenderer+BespokeViews.swift`), which apply `aspectRatio`/`maxHeight` inline;
+    /// the standard banner path reads `bannerGeometry(imageSize:availableCardWidth:)` instead.
     var bannerLayout: BannerLayout {
         BannerLayout(
             aspectRatio: bannerRatio,
-            height: bannerRatio == nil ? nil : bannerFixedHeight,
+            // `bannerFixedHeight` is NOT applied. At priority 243 it loses to the card's hugging
+            // (250) going up and to the image's compression resistance (750) coming down, so UIKit
+            // ignores it on BOTH paths — measured zero effect at every size tried, including
+            // `fixed 200` on a 64pt image (`BannerGeometryTruthTests.test_bannerFixedHeight_*`).
+            // Applying it here was a live divergence on every preset that sets both, which is all
+            // of them. `ModalTokens.bannerFixedHeight` still carries the value; nothing lays out
+            // with it.
+            height: nil,
             maxHeight: bannerMaxHeight
         )
     }

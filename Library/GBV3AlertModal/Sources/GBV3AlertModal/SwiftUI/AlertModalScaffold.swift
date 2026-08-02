@@ -1,6 +1,21 @@
 import SwiftUI
 import UIKit // for `NSLayoutConstraint.Axis` — the vocabulary `ResolvedModal.buttonAxis` speaks.
 
+/// How the banner row — which lives inside the caller's `content` closure — learns the geometry the
+/// scaffold computed from its `GeometryReader`. An environment value rather than a `PreferenceKey`
+/// on purpose: preferences flow UP from content, which is the measurement cycle the brief's §7
+/// warns about. This flows DOWN from the container.
+private struct ModalBannerGeometryKey: EnvironmentKey {
+    static let defaultValue = ModalTokens.BannerGeometry.zero
+}
+
+extension EnvironmentValues {
+    var modalBannerGeometry: ModalTokens.BannerGeometry {
+        get { self[ModalBannerGeometryKey.self] }
+        set { self[ModalBannerGeometryKey.self] = newValue }
+    }
+}
+
 /// The shared modal chrome (spec D1's bespoke-content surface): full-screen scrim + centered card +
 /// primary/secondary buttons + optional close, wrapped around a caller-supplied `@ViewBuilder` body.
 /// Never dismisses itself. `SwiftUIAlertModal` is this with a built-in standard body; bespoke dialogs
@@ -40,6 +55,9 @@ public struct AlertModalScaffold<Content: View>: View {
     /// Defaults to `true`, which is what every real Genie preset sets and what this scaffold did
     /// unconditionally before the flag was threaded (task 17, finding D-4).
     public var buttonsMatchParent: Bool = true
+    /// The banner artwork's point size, or `.zero` when this modal has no banner. Drives
+    /// `ModalTokens.bannerGeometry`, which the banner row reads back out of the environment.
+    public let bannerArtworkSize: CGSize
     @ViewBuilder public let content: () -> Content
 
     public init(
@@ -56,6 +74,7 @@ public struct AlertModalScaffold<Content: View>: View {
         onOverlayTap: (() -> Void)? = nil,
         buttonAxis: NSLayoutConstraint.Axis = .vertical,
         buttonsMatchParent: Bool = true,
+        bannerArtworkSize: CGSize = .zero,
         @ViewBuilder content: @escaping () -> Content
     ) {
         self.tokens = tokens
@@ -73,6 +92,7 @@ public struct AlertModalScaffold<Content: View>: View {
         self.onOverlayTap = onOverlayTap
         self.buttonAxis = buttonAxis
         self.buttonsMatchParent = buttonsMatchParent
+        self.bannerArtworkSize = bannerArtworkSize
         self.content = content
     }
 
@@ -87,6 +107,10 @@ public struct AlertModalScaffold<Content: View>: View {
         //
         // The reader is the container's own size, so nothing the card contains can influence it.
         GeometryReader { proxy in
+            let bannerGeometry = tokens.bannerGeometry(
+                imageSize: bannerArtworkSize,
+                availableCardWidth: max(0, proxy.size.width - tokens.cardMarginH * 2)
+            )
             ZStack {
                 scrim
                     .ignoresSafeArea()
@@ -94,6 +118,7 @@ public struct AlertModalScaffold<Content: View>: View {
                     .onTapGesture { onOverlayTap?() }
 
                 card
+                    .environment(\.modalBannerGeometry, bannerGeometry)
                 // The CARD's cap — `contentMaxWidth + leftMax + rightMax`, i.e. the width UIKit's
                 // `vwContainer` ends up with, NOT the width `ContentProperty` states (that one caps
                 // the content container inside `card`). Feeding the content width in here is the

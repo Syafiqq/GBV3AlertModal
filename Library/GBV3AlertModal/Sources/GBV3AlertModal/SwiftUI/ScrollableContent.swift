@@ -166,7 +166,13 @@ private struct ScrollGrantedHeightKey: PreferenceKey {
 /// An environment value rather than a parameter because the banner row is supplied by the CALLER
 /// through `AlertModalScaffold`'s `content` slot: the scaffold cannot reach into it, and threading a
 /// height through every bespoke content view would put this constraint's existence in the hands of
-/// each of them. `ModalBannerGeometry` reads it where the banner is actually built.
+/// each of them.
+///
+/// UNUSED at present: nothing currently reads `modalBannerMaxHeight` — the standard banner row
+/// (`SwiftUIAlertModal.BannerSlot`) reads `\.modalBannerGeometry` instead, whose height already
+/// accounts for the space the card was offered (`ModalTokens.bannerGeometry`). Left in place rather
+/// than removed in Task 3, which did not touch the scrolling path; a future pass through
+/// `ScrollableContent` should confirm whether this key is still needed or is dead.
 ///
 /// **Derived from the CARD's available space, never from the scroll's own.** The first version of
 /// this measured the scroll's viewport — which is sized from `idealHeight`, which is the content's
