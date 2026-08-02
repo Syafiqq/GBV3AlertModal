@@ -462,6 +462,85 @@ final class DifferentialGeometryTests: XCTestCase {
         )
     }
 
+    /// The wide-artwork case — see the shape's note. This is the regime every real app banner is in.
+    func test_geometry_bannerWide() { assertAgrees("banner-wide") }
+
+    /// The premise: this shape must actually be in the wider-than-column regime, or it is just
+    /// `banner-comparable` with a different asset and proves nothing.
+    func test_bannerWide_actuallyExceedsTheColumn() throws {
+        let shape = try XCTUnwrap(DifferentialGeometry.shape(named: "banner-wide"))
+        let artwork = try XCTUnwrap(shape.dialog.image).pointSize
+        let column = try XCTUnwrap(shape.properties.contentProperty?.maxWidthPortrait)
+        XCTAssertGreaterThan(
+            artwork.width, column,
+            "'banner-wide' artwork (\(artwork.width)pt) no longer exceeds the column (\(column)pt), "
+                + "so this shape has stopped testing column growth"
+        )
+        let frames = DifferentialGeometry.uiKitFrames(shape)
+        let banner = try XCTUnwrap(frames[.banner])
+        XCTAssertGreaterThan(
+            banner.width, column,
+            "UIKit stopped widening the column for wide artwork — the rule in "
+                + "ModalTokens.bannerGeometry is now wrong, not just this shape"
+        )
+    }
+
+    /// **The ceiling's honesty, on a host wide enough for the card's own cap to bite.**
+    ///
+    /// `AlertModalScaffold.body` derives `availableCardWidth` from the HOST
+    /// (`proxy.size.width − 2·cardMarginH`) and not from `tokens.cardMaxWidth`. On a host wider than
+    /// `cardMaxWidth + 2·cardMarginH` — landscape, or any iPad — that is a larger number than a card
+    /// pinned at `cardMaxWidth` could ever hand the column, and it was harmless only while `column`
+    /// could not exceed `contentMaxWidth`. It can now, and `BannerSlot`'s frame is RIGID
+    /// (`.frame(width:)`, not `maxWidth`), so a column wider than its container would be an overflow
+    /// that clips rather than a layout that compresses.
+    ///
+    /// What makes it safe is the card cap growing by the SAME `column` (see `body`'s note): the card
+    /// is `min(host − 2·cardMarginH, max(cardMaxWidth, column + leftMax + rightMax))`, so either the
+    /// host clamps it — and then `column ≤ host − 2·cardMarginH − leftMin − rightMin` by the ceiling
+    /// itself — or it does not, and the card is at least `column + leftMax + rightMax`, which clears
+    /// `column + leftMin + rightMin`. Either way the slot fits. That argument is only as good as its
+    /// two premises, so this asserts the CONSEQUENCE at three host widths that exercise both branches
+    /// rather than restating the algebra.
+    func test_bannerWide_theSlotNeverOverflowsTheCard_atAnyHostWidth() throws {
+        let shape = try XCTUnwrap(DifferentialGeometry.shape(named: "banner-wide"))
+        // 390x844 clamps the card (350 < the 374 it asks for); 844x390 and 1024x1366 do not, and are
+        // the hosts on which the host-derived ceiling over-reports.
+        let hosts: [(String, CGSize)] = [
+            ("portrait phone", DifferentialGeometry.host),
+            ("landscape phone", DifferentialGeometry.landscapeHost),
+            ("iPad portrait", CGSize(width: 1024, height: 1366))
+        ]
+        for (label, size) in hosts {
+            let frames = DifferentialGeometry.swiftUIFrames(shape, size: size)
+            let card = try XCTUnwrap(frames[.card], "\(label): SwiftUI measured no card")
+            let banner = try XCTUnwrap(frames[.banner], "\(label): SwiftUI drew no banner")
+            // Frames are normalised to the card's origin, so the card spans 0...card.width.
+            XCTAssertGreaterThanOrEqual(
+                banner.minX, -DifferentialGeometry.tolerance,
+                "\(label) (\(size.width)pt): the banner slot starts \(-banner.minX)pt LEFT of the "
+                    + "card. The column outgrew its container — `availableCardWidth`'s ceiling and "
+                    + "the card's cap have stopped agreeing."
+            )
+            XCTAssertLessThanOrEqual(
+                banner.maxX, card.width + DifferentialGeometry.tolerance,
+                "\(label) (\(size.width)pt): the banner slot (\(banner.width)pt, ending at "
+                    + "\(banner.maxX)) overflows the card (\(card.width)pt). `BannerSlot`'s frame is "
+                    + "rigid, so this CLIPS — the column was allowed a width the card cannot give."
+            )
+            // And the rigid slot must still be inside the card's RIGID minimum padding, which is the
+            // bound `bannerGeometry`'s ceiling is written against.
+            let minima = ModalTokens(from: shape.properties).contentPadding
+            XCTAssertLessThanOrEqual(
+                banner.width, card.width - minima.leftMin - minima.rightMin
+                    + DifferentialGeometry.tolerance,
+                "\(label) (\(size.width)pt): the banner slot (\(banner.width)pt) is wider than the "
+                    + "card (\(card.width)pt) minus its required minimum padding — UIKit's "
+                    + "`.required` leading/trailing inequalities would not permit this."
+            )
+        }
+    }
+
     // MARK: - Landscape, gated for the first time
 
     /// **Every landscape fix in this module was verified by snapshot and by eye until now.**

@@ -266,6 +266,28 @@ enum DifferentialGeometry {
                 ),
                 properties: GeniePresets.standardProperties()
             ),
+            /// **The banner shape whose artwork is WIDER than the content column.**
+            ///
+            /// Eight of the app's nine real banner assets are (`img_gc2gs_prompt_*` at 320x190pt is
+            /// this one, verbatim). UIKit lets the artwork push the column past `contentMaxWidth` —
+            /// `ivBanner`'s compression resistance (750) outranks `width == fixedWidth` at
+            /// `.medium` (500) — and before this shape existed nothing on the SwiftUI side could
+            /// see that. Measured cost when it was missed: card 30pt narrow, banner 72pt tall.
+            ///
+            /// Expected on both sides: card 350, column 310, banner height 184.06.
+            Shape(
+                name: "banner-wide",
+                dialog: AlertDialog(
+                    image: ModalImage(
+                        "gb_test_banner_wide", bundleIdentifier: Bundle.module.bundleIdentifier
+                    ),
+                    title: "Heads up",
+                    subtitle: "A banner wider than the column it sits in.",
+                    primary: "Okay"
+                ),
+                properties: GeniePresets.popupProperties()
+                    .copy(bannerRatio: 320.0 / 190.0, bannerMaxHeight: 256)
+            ),
             /// **The shape that ENGAGES the scroll — the half of D-7 the gate could not see.**
             ///
             /// Every shape above is short enough that UIKit's `svSubtitleContainer` is exactly its

@@ -117,13 +117,42 @@ public struct AlertModalScaffold<Content: View>: View {
                     .contentShape(Rectangle())
                     .onTapGesture { onOverlayTap?() }
 
-                card
+                // The geometry is passed as a PARAMETER as well as published to the environment, and
+                // the two are not redundant: `card` needs it for its own frames, and a view cannot
+                // read an environment value it publishes on its own descendant. The `.environment`
+                // injection stays for `BannerSlot`, which is built inside the caller's `content`
+                // closure and so is a genuine descendant.
+                card(bannerGeometry: bannerGeometry)
                     .environment(\.modalBannerGeometry, bannerGeometry)
                 // The CARD's cap — `contentMaxWidth + leftMax + rightMax`, i.e. the width UIKit's
                 // `vwContainer` ends up with, NOT the width `ContentProperty` states (that one caps
                 // the content container inside `card`). Feeding the content width in here is the
                 // 64pt-narrow-card defect D-1; see `ModalTokens.cardMaxWidth`.
-                .frame(maxWidth: tokens.cardMaxWidth)   // fills to margin, capped (not fixed width)
+                //
+                // …or the banner's column plus that same max padding, when wide artwork has widened
+                // the column. UIKit's `vwContainer` has NO width constraint at all, only the margin
+                // inequalities, so it takes whatever the content plus its `.low` max padding asks
+                // for, bounded by the margins. Measured: a 320pt asset in a 256pt column produces a
+                // 350pt card, not a 320pt one. `bannerGeometry` is `.zero` with no banner, so this
+                // `max` is the identity for every shape that has none.
+                //
+                // **This is also what keeps `bannerGeometry`'s ceiling honest.** That ceiling is
+                // derived from the HOST (`proxy.size.width − 2·cardMarginH`), not from
+                // `cardMaxWidth`, so on a host wider than `cardMaxWidth + 2·cardMarginH` it names
+                // more room than a card pinned at `cardMaxWidth` could hand over — and `BannerSlot`'s
+                // frame is RIGID, so a column wider than its container clips rather than compresses.
+                // Growing the card by the SAME `column` closes that: the card ends up
+                // `min(host − 2·cardMarginH, max(cardMaxWidth, column + leftMax + rightMax))`, so
+                // either the host clamps it — and then `column ≤ host − 2·cardMarginH − leftMin −
+                // rightMin` by the ceiling itself — or it does not, and the card is at least
+                // `column + leftMax + rightMax ≥ column + leftMin + rightMin`. The slot fits either
+                // way, and `test_bannerWide_theSlotNeverOverflowsTheCard_atAnyHostWidth` asserts the
+                // consequence at three host widths rather than trusting the algebra.
+                .frame(maxWidth: max(
+                    tokens.cardMaxWidth,
+                    bannerGeometry.column
+                        + tokens.contentPadding.leftMax + tokens.contentPadding.rightMax
+                ))   // fills to margin, capped (not fixed width)
                 .overlay(alignment: .topTrailing) {
                     // Pinned to the CARD's top-right corner (real modal: top.trailing.equalToSuperview,
                     // 48pt tap target), not the screen corner.
@@ -211,7 +240,14 @@ public struct AlertModalScaffold<Content: View>: View {
     /// `test_theVerticalPadding_compressesTowardItsMinimum_underPressure`, which asserts the
     /// comparison rather than a literal: the same dialog roomy and pressured must not share a top
     /// inset, and the pressured one must never fall below `topMin`.
-    private var card: some View {
+    ///
+    /// **A function rather than a computed property, and `bannerGeometry` is why.** The value is
+    /// computed in `body`'s `GeometryReader` and PUBLISHED to the environment on this very view, so
+    /// an `@Environment(\.modalBannerGeometry)` stored property on the scaffold would resolve from
+    /// the scaffold's OWN ambient environment — the one fixed before it published anything — and read
+    /// `.zero` forever. Threading it as a parameter is the only way `card` can see the same number
+    /// `BannerSlot` does. (Same trap, opposite side, as the one `BannerSlot`'s doc records.)
+    private func card(bannerGeometry: ModalTokens.BannerGeometry) -> some View {
         // `buttonAxis` is the resolver's decision (`Properties.buttonActionOrientation`), obeyed
         // here the way the UIKit main-action `UIStackView` obeys it: `.horizontal` → HStack,
         // `.vertical` → the (default) vertical run. The vertical branch is spelled inline rather
@@ -242,7 +278,12 @@ public struct AlertModalScaffold<Content: View>: View {
         //     children want, so a row that hugs does not narrow the card), the outer is the
         //     `width <= maxWidth` at `.high` that clamps it.
         .frame(maxWidth: .infinity)
-        .frame(maxWidth: tokens.contentMaxWidth)
+        // The stated cap, or the banner's column when the artwork demands a wider one. UIKit has no
+        // separate mechanism for this: `ivBanner`'s compression resistance (750) simply outranks
+        // `svContentContainer`'s `width == fixedWidth` at `.medium` (500), so a wide banner widens
+        // the column. `bannerGeometry` is `.zero` with no banner, so `max` is the identity for
+        // every shape that has none.
+        .frame(maxWidth: max(tokens.contentMaxWidth, bannerGeometry.column))
         // (2) the rigid MINIMUM horizontal padding (`.required` in UIKit).
         .padding(.leading, tokens.contentPadding.leftMin)
         .padding(.trailing, tokens.contentPadding.rightMin)
