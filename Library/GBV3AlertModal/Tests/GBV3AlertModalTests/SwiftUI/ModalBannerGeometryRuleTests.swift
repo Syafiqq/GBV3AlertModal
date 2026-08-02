@@ -83,6 +83,38 @@ final class ModalBannerGeometryRuleTests: XCTestCase {
         XCTAssertEqual(g.height, 0, accuracy: 0.01)
     }
 
+    /// **The rigid slot has NO yield term, and this is the number that says so.**
+    ///
+    /// A 200x2000pt artwork with no ratio and no cap is the one regime where UIKit has explicit
+    /// machinery to make the banner give way: the natural-aspect driver sits at
+    /// `ModalLayout.Priority.bannerNaturalAspect` (245) and the image's own intrinsic resistance is
+    /// dropped to `bannerImageIntrinsic` (241), both BELOW the title's compression resistance (900)
+    /// and the subtitle slot's height tie (250), so UIKit shrinks the banner rather than starving
+    /// the text. `GBAlertModal+ViewGraph.swift` names this exact 200x2000 case by number as the
+    /// reason those priorities are where they are.
+    ///
+    /// `ModalTokens.bannerGeometry` has no equivalent term. It returns a **2000pt** slot height for
+    /// a card whose whole host is 844pt tall, and `BannerSlot`'s frame is rigid, so nothing
+    /// downstream shrinks it either. This test asserts what the rule ACTUALLY returns — it is not a
+    /// statement that 2000 is right. It is here so the divergence is a pinned number rather than a
+    /// rumour, and so that a future landscape/yield rule changes this assertion deliberately.
+    ///
+    /// No shipping asset is in this regime: all eight real banner assets are landscape or square,
+    /// and all of them set a `bannerMaxHeight`, either of which alone keeps the height bounded.
+    /// This belongs with the landscape rule work (design spec §5), not with the portrait rules the
+    /// rest of this file pins.
+    func test_tallUncappedArtwork_producesAnUnyieldingSlot_whereUIKitWouldYield() {
+        let g = tokens(ratio: nil, cap: nil)
+            .bannerGeometry(imageSize: CGSize(width: 200, height: 2000), availableCardWidth: available)
+
+        // r = 200/2000 = 0.1. demand = 200, so column = max(200, contentMaxWidth 256) = 256,
+        // under the 310 ceiling.
+        XCTAssertEqual(g.column, 256, accuracy: 0.01)
+        // min(column/r = 2560, max(2000, 200/r = 2000) = 2000) = 2000. No cap to bring it down, and
+        // no term anywhere that lets the text push back.
+        XCTAssertEqual(g.height, 2000, accuracy: 0.01)
+    }
+
     func test_infiniteContentMaxWidth_doesNotProduceAnInfiniteColumn() {
         // `ModalTokens.standard` uses `contentMaxWidth: .infinity` (no Properties to derive a cap
         // from). The ceiling must still bound it.

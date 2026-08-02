@@ -83,6 +83,16 @@ public struct BadgeModalView: View {
     }
 
     public var body: some View {
+        // NO `bannerArtworkSize:` — a KNOWN, pre-existing asymmetry, recorded rather than fixed.
+        // Without it the scaffold's `bannerGeometry` stays `.zero`, so a badge banner can never
+        // widen the content column or the card, however wide its artwork is. UIKit's counterpart
+        // DOES widen both (`ivBanner`'s compression resistance, 750, outranks
+        // `svContentContainer`'s `width == fixedWidth` at `.medium`, 500 — see
+        // `ModalTokens.bannerGeometry`). `BadgeDialog` sits outside the differential gate (it has
+        // no `GBAlertModal` view graph to measure against), so nothing catches this; the row below
+        // instead applies `bannerLayout`'s ratio/cap directly to the `Image`, which bounds the
+        // banner but never grows the column. Passing the size here would change badge layout, which
+        // is outside this pass's remit.
         AlertModalScaffold(
             tokens: tokens,
             primaryTitle: descriptor.primary,
@@ -108,8 +118,9 @@ public struct BadgeModalView: View {
             Image(banner.assetName)
                 .resizable()
                 .scaledToFit()                       // natural aspect, same as `SwiftUIAlertModal`
-                // `ModalBannerGeometry` (the `ViewModifier`) is gone — Task 3 dropped it along with
-                // `bannerLayout.height` (measured inert in UIKit, `BannerGeometryTruthTests`). This
+                // `ModalBannerGeometry` (the `ViewModifier`) is gone — Task 3 dropped it, and
+                // neutralised `bannerLayout.height` (measured inert in UIKit,
+                // `BannerGeometryTruthTests`); the field itself has since been deleted. This
                 // bespoke banner did NOT gain the slot/image split `SwiftUIAlertModal`'s standard
                 // banner got: `BadgeDialog` DOES have a real UIKit view graph behind it
                 // (`UIKitModalRenderer.BadgeHolder.make` builds a genuine `banner: UIImage` and
@@ -392,26 +403,13 @@ private struct BespokeBannerLayout: ViewModifier {
     let layout: ModalTokens.BannerLayout
 
     func body(content: Content) -> some View {
-        cap(pin(shape(content)))
+        cap(shape(content))
     }
 
     @ViewBuilder
     private func shape<V: View>(_ view: V) -> some View {
         if let aspectRatio = layout.aspectRatio {
             view.aspectRatio(aspectRatio, contentMode: .fit)
-        } else {
-            view
-        }
-    }
-
-    /// Always a no-op today — `ModalTokens.bannerLayout.height` is unconditionally `nil` since Task
-    /// 3 (`bannerFixedHeight` measured inert in UIKit on every path). Kept, rather than deleted along
-    /// with the field, so this modifier still does the right thing if `bannerLayout` ever grows a
-    /// live `height` again.
-    @ViewBuilder
-    private func pin<V: View>(_ view: V) -> some View {
-        if let height = layout.height {
-            view.frame(height: height)
         } else {
             view
         }

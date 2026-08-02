@@ -160,36 +160,13 @@ private struct ScrollGrantedHeightKey: PreferenceKey {
     }
 }
 
-/// The banner's ceiling inside a scrolling card, in points — `nil` outside one (every non-scrolling
-/// card, where the priority ladder already keeps the banner below the text and this must not apply).
-///
-/// An environment value rather than a parameter because the banner row is supplied by the CALLER
-/// through `AlertModalScaffold`'s `content` slot: the scaffold cannot reach into it, and threading a
-/// height through every bespoke content view would put this constraint's existence in the hands of
-/// each of them.
-///
-/// UNUSED at present: nothing currently reads `modalBannerMaxHeight` — the standard banner row
-/// (`SwiftUIAlertModal.BannerSlot`) reads `\.modalBannerGeometry` instead, whose height already
-/// accounts for the space the card was offered (`ModalTokens.bannerGeometry`). Left in place rather
-/// than removed in Task 3, which did not touch the scrolling path; a future pass through
-/// `ScrollableContent` should confirm whether this key is still needed or is dead.
-///
-/// **Derived from the CARD's available space, never from the scroll's own.** The first version of
-/// this measured the scroll's viewport — which is sized from `idealHeight`, which is the content's
-/// height, which includes the banner. Banner sizes content, content sizes viewport, viewport caps
-/// banner: a cycle, and layout built on a cycle settles somewhere arbitrary. `AlertModalScaffold`
-/// now feeds it from the space the card is offered (screen minus margins), which no content can
-/// influence.
-extension EnvironmentValues {
-    var modalBannerMaxHeight: CGFloat? {
-        get { self[ModalBannerMaxHeightKey.self] }
-        set { self[ModalBannerMaxHeightKey.self] = newValue }
-    }
-}
-
-private struct ModalBannerMaxHeightKey: EnvironmentKey {
-    static let defaultValue: CGFloat? = nil
-}
+// `modalBannerMaxHeight` (an `EnvironmentValues` key for the banner's ceiling inside a scrolling
+// card) lived here and is DELETED. It had no reader and no writer: the standard banner row
+// (`SwiftUIAlertModal.BannerSlot`) reads `\.modalBannerGeometry` instead, whose height already
+// accounts for the space the card was offered (`ModalTokens.bannerGeometry`). Its own doc had
+// drifted into contradicting itself — "UNUSED at present" in one paragraph, `AlertModalScaffold`
+// "now feeds it" in the next; neither half was worth keeping over the other, because the key was
+// dead either way.
 
 /// The height the CARD is offered — screen minus margins. Read by `AlertModalScaffold` from a
 /// background reader on its own container, so it depends on the window and nothing else.

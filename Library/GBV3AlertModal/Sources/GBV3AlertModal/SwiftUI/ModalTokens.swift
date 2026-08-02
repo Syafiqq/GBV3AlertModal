@@ -300,6 +300,13 @@ public struct ModalTokens: Sendable {
     ///
     /// `.infinity + finite == .infinity`, so an uncapped `contentMaxWidth` still yields an uncapped
     /// card and `ModalTokens.standard.cardMaxWidth` is unchanged at `.infinity`.
+    ///
+    /// **This is a FLOOR ON the card's cap, not the cap itself.** Since the banner column became a
+    /// live input, `AlertModalScaffold.body` applies
+    /// `max(cardMaxWidth, bannerGeometry.column + leftMax + rightMax)` — so artwork wider than the
+    /// content column pushes the card PAST this number, exactly as UIKit's unconstrained
+    /// `vwContainer` does. Read this as "the card is never narrower than this", and read
+    /// `AlertModalScaffold`'s `max(...)` for how wide it may actually get.
     public var cardMaxWidth: CGFloat {
         contentMaxWidth + contentPadding.leftMax + contentPadding.rightMax
     }
@@ -679,11 +686,14 @@ extension ModalTokens {
     /// banner fields.
     ///
     /// `aspectRatio` is width/height (SwiftUI's convention AND `bannerRatio`'s: the UIKit
-    /// constraint is `ivBanner.width == ivBanner.height * bannerRatio`). `height` pins the slot;
-    /// `maxHeight` caps it. Any of them `nil` means "no such constraint", exactly as in UIKit.
+    /// constraint is `ivBanner.width == ivBanner.height * bannerRatio`); `maxHeight` caps the slot.
+    /// Either `nil` means "no such constraint", exactly as in UIKit.
+    ///
+    /// There is deliberately no `height` field. It existed to carry `bannerFixedHeight`, which is
+    /// measured INERT in UIKit on both paths (see `bannerLayout` below), so it was unconditionally
+    /// `nil` and the modifier branch that read it was unconditionally a no-op. Both are gone.
     struct BannerLayout: Equatable {
         var aspectRatio: CGFloat?
-        var height: CGFloat?
         var maxHeight: CGFloat?
     }
 
@@ -702,22 +712,33 @@ extension ModalTokens {
     ///
     /// PORTRAIT ONLY. In a height-constrained card UIKit distributes the remainder across four
     /// sub-required priority tiers and the banner takes the residual (measured ~102.3 for every
-    /// real preset, regardless of ratio or cap). Nothing here reaches that, and the differential
-    /// gate excludes the banner row in landscape for exactly this reason.
+    /// real preset, regardless of ratio or cap). Nothing here reaches that. There is NO landscape
+    /// exclusion in the differential gate — the landscape comparison for the wide-banner shape was
+    /// DELETED rather than narrowed, because `banner`, `card`, `title`, `subtitle` and
+    /// `primaryButton` are exactly the elements that shape draws and all five diverge, so any
+    /// honest exclusion set would have left nothing to compare. `assertAgrees` now refuses that
+    /// shape structurally (its "nothing left to compare" guard). What remains in landscape is a
+    /// presence check, not agreement — see `BannerSlot`'s doc, which says the same thing.
     ///
     /// Pinned against measured Auto Layout output in `BannerGeometryTruthTests`.
-    public struct BannerGeometry: Equatable, Sendable {
+    struct BannerGeometry: Equatable {
         /// The content column's width — `contentMaxWidth`, or wider when the artwork demands it.
-        public var column: CGFloat
+        var column: CGFloat
         /// The banner SLOT's height — the counterpart of `vwBanner`, not of the picture inside it.
-        public var height: CGFloat
+        var height: CGFloat
 
-        public static let zero = BannerGeometry(column: 0, height: 0)
+        static let zero = BannerGeometry(column: 0, height: 0)
     }
 
     /// `imageSize` is the artwork's POINT size (`ModalImage.pointSize`), not its pixel size.
     /// `availableCardWidth` is the host width minus both card margins.
-    public func bannerGeometry(imageSize: CGSize, availableCardWidth: CGFloat) -> BannerGeometry {
+    ///
+    /// One degenerate case worth naming: when `contentMaxWidth` is `.infinity` — the
+    /// no-`Properties` sentinel path, `ModalTokens.standard` — the `max(demand, contentMaxWidth)`
+    /// term is `.infinity` for ANY artwork, so the column collapses to the ceiling and the
+    /// artwork's own demand stops mattering. The ceiling is what keeps that finite; pinned by
+    /// `ModalBannerGeometryRuleTests.test_infiniteContentMaxWidth_doesNotProduceAnInfiniteColumn`.
+    func bannerGeometry(imageSize: CGSize, availableCardWidth: CGFloat) -> BannerGeometry {
         guard imageSize.width > 0, imageSize.height > 0 else { return .zero }
         let ratio = bannerRatio ?? (imageSize.width / imageSize.height)
         guard ratio > 0, ratio.isFinite else { return .zero }
@@ -769,18 +790,14 @@ extension ModalTokens {
     /// rows (`SwiftUIModalRenderer+BespokeViews.swift`), which apply `aspectRatio`/`maxHeight` inline;
     /// the standard banner path reads `bannerGeometry(imageSize:availableCardWidth:)` instead.
     var bannerLayout: BannerLayout {
-        BannerLayout(
-            aspectRatio: bannerRatio,
-            // `bannerFixedHeight` is NOT applied. At priority 243 it loses to the card's hugging
-            // (250) going up and to the image's compression resistance (750) coming down, so UIKit
-            // ignores it on BOTH paths — measured zero effect at every size tried, including
-            // `fixed 200` on a 64pt image (`BannerGeometryTruthTests.test_bannerFixedHeight_*`).
-            // Applying it here was a live divergence on every preset that sets both, which is all
-            // of them. `ModalTokens.bannerFixedHeight` still carries the value; nothing lays out
-            // with it.
-            height: nil,
-            maxHeight: bannerMaxHeight
-        )
+        // `bannerFixedHeight` is NOT carried at all — `BannerLayout` has no field for it. At
+        // priority 243 it loses to the card's hugging (250) going up and to the image's
+        // compression resistance (750) coming down, so UIKit ignores it on BOTH paths — measured
+        // zero effect at every size tried, including `fixed 200` on a 64pt image
+        // (`BannerGeometryTruthTests.test_bannerFixedHeight_*`). Applying it here was a live
+        // divergence on every preset that sets both, which is all of them.
+        // `ModalTokens.bannerFixedHeight` still carries the value; nothing lays out with it.
+        BannerLayout(aspectRatio: bannerRatio, maxHeight: bannerMaxHeight)
     }
 }
 

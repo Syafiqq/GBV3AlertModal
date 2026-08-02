@@ -209,15 +209,20 @@ public struct AlertModalScaffold<Content: View>: View {
     ///
     /// The three modifiers below are that ladder, in order, and they reproduce both cases exactly:
     ///
-    /// 1. `.frame(maxWidth: .infinity).frame(maxWidth: contentMaxWidth)` — the content container
-    ///    takes its stated width and no more (`.medium` fixed width, clamped by the `.high` max).
+    /// 1. `.frame(maxWidth: .infinity).frame(maxWidth: max(contentMaxWidth, bannerGeometry.column))`
+    ///    — the content container takes its stated width and no more (`.medium` fixed width,
+    ///    clamped by the `.high` max), EXCEPT that wide artwork widens the column past the stated
+    ///    cap, which is UIKit's `ivBanner` compression resistance (750) outranking
+    ///    `width == fixedWidth` at `.medium` (500). `bannerGeometry` is `.zero` with no banner, so
+    ///    the `max` is the identity for every shape that has none.
     /// 2. `.padding(.leading/.trailing, leftMin/rightMin)` — the RIGID minima (`.required`).
     /// 3. `.frame(maxWidth: .infinity)` — fill whatever the card's own cap left, centring the
-    ///    content in it (`.low` equalities + `.low` centring). The card is capped at
-    ///    `cardMaxWidth` by the caller in `body`, so this resolves to
-    ///    `min(available, content + leftMax + rightMax)` and the effective padding is the leftover,
-    ///    which equals `leftMax`/`rightMax` whenever there is room and compresses toward the minima
-    ///    when there is not.
+    ///    content in it (`.low` equalities + `.low` centring). The card is capped by the caller in
+    ///    `body` at `max(cardMaxWidth, bannerGeometry.column + leftMax + rightMax)` — the same
+    ///    banner term again, one level out — so this resolves to
+    ///    `min(available, max(content, column) + leftMax + rightMax)` and the effective padding is
+    ///    the leftover, which equals `leftMax`/`rightMax` whenever there is room and compresses
+    ///    toward the minima when there is not.
     ///
     /// Step 3 also means the card FILLS its cap rather than hugging its content, which is UIKit's
     /// `width == fixedWidth` at `.medium` beating the content stack's hugging at 250. Every Genie
@@ -231,10 +236,18 @@ public struct AlertModalScaffold<Content: View>: View {
     ///
     /// **The vertical insets now COMPRESS from max toward min, as UIKit's do** — see
     /// `CompressibleVerticalPadding`. This used to be a stated limit ("applied rigidly at the max"),
-    /// justified by two claims that stopped being true: that SwiftUI had no scroll container for the
-    /// subtitle (it does — `ScrollableContent`, opt-in via `Properties.contentScrollable`) and that
-    /// compressing the padding would leave a card that still grew off-screen (it cannot — the card is
-    /// capped at its container's height in `body`).
+    /// justified by a claim that stopped being true: that SwiftUI had no scroll container for the
+    /// subtitle (it does — `ScrollableContent`, opt-in via `Properties.contentScrollable`).
+    ///
+    /// **The card CAN still grow off-screen, and an earlier version of this comment denied it.** It
+    /// claimed the card "cannot" overflow because `body` caps it at its container's height. That
+    /// cap is `.frame(maxHeight:)`, which only PROPOSES a height; `BannerSlot`'s frame is rigid
+    /// (`.frame(height:)`), so a banner row reports a larger ideal than the proposal and SwiftUI
+    /// centres the overflow rather than compressing it. Measured on the wide-banner shape in
+    /// landscape: the card runs from ~11pt to ~375pt in a 390pt-tall host — ~364pt against a 310pt
+    /// cap, i.e. it breaches the 40pt vertical card margin at both ends. This is the landscape
+    /// regression §5 of the banner-height design spec covers, not a separate defect; it is not
+    /// reachable in portrait, where the card is free to grow and nothing is yielding.
     ///
     /// Worth 16pt per edge on the real preset (24 against 16), and pinned by
     /// `test_theVerticalPadding_compressesTowardItsMinimum_underPressure`, which asserts the

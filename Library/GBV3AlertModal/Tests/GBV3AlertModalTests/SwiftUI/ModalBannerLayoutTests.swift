@@ -7,13 +7,16 @@ import XCTest
 /// `installConstraints` (cap 950 > natural-aspect driver 245 > fixed height 243), so these tests are
 /// the record of that mirroring.
 ///
-/// `height` is now `nil` on EVERY path, not just the natural-aspect one. It used to read as pinning
-/// the slot on the ratio path — that was wrong: `bannerFixedHeight` sits below the card's `.low`
-/// (250) hugging as well as below the image's compression resistance (750), so UIKit ignores it on
-/// BOTH paths (measured zero effect at every size tried,
+/// `BannerLayout` no longer HAS a `height` field — the assertions below are what pins that.
+/// `bannerFixedHeight` was carried there and applied on the ratio path; that was wrong, because it
+/// sits below the card's `.low` (250) hugging as well as below the image's compression resistance
+/// (750), so UIKit ignores it on BOTH paths (measured zero effect at every size tried,
 /// `BannerGeometryTruthTests.test_bannerFixedHeight_isInert_onTheRatioPath` and
-/// `..._onTheNaturalAspectPath`). Applying it here was a live divergence on every real preset that
-/// sets both `bannerRatio` and `bannerFixedHeight`, which is all of them.
+/// `..._onTheNaturalAspectPath`). Applying it was a live divergence on every real preset that sets
+/// both `bannerRatio` and `bannerFixedHeight`, which is all of them. It was first neutralised by
+/// hardcoding `height: nil`, then deleted outright; these tests moved from "`height` is `nil`" to
+/// "a `fixedHeight` in `Properties` reaches NOTHING in `BannerLayout`", which is the claim that
+/// actually matters and the one that survives the field's removal.
 @MainActor
 final class ModalBannerLayoutTests: XCTestCase {
 
@@ -31,10 +34,14 @@ final class ModalBannerLayoutTests: XCTestCase {
     /// inert there — it sits below the card's `.low` (250) hugging, which wins the tie before the
     /// fixed height ever gets a say. See `BannerGeometryTruthTests.test_bannerFixedHeight_isInert_
     /// onTheRatioPath`. The ratio still shapes the slot; the fixed height contributes nothing.
+    ///
+    /// The `184` passed in is the load-bearing part: `BannerLayout` is `Equatable` over ALL its
+    /// fields, so an exact match against `(aspectRatio: 320/229, maxHeight: 216)` says the fixed
+    /// height reached nothing at all — not that it landed in a field asserted to be `nil`.
     func test_ratioPath_ignoresTheFixedHeight_asUIKitDoes() {
         XCTAssertEqual(
             layout(ratio: 320.0 / 229.0, maxHeight: 216, fixedHeight: 184),
-            ModalTokens.BannerLayout(aspectRatio: 320.0 / 229.0, height: nil, maxHeight: 216)
+            ModalTokens.BannerLayout(aspectRatio: 320.0 / 229.0, maxHeight: 216)
         )
     }
 
@@ -43,9 +50,10 @@ final class ModalBannerLayoutTests: XCTestCase {
     /// anyway would be a divergence in the opposite direction. See
     /// `BannerGeometryTruthTests.test_bannerFixedHeight_isInert_onTheNaturalAspectPath`.
     func test_naturalAspectPath_ignoresTheFixedHeight_asUIKitDoes() {
+        // 999 is deliberately absurd: if any field of the result carried it, this equality fails.
         XCTAssertEqual(
             layout(maxHeight: 144, fixedHeight: 999),
-            ModalTokens.BannerLayout(aspectRatio: nil, height: nil, maxHeight: 144)
+            ModalTokens.BannerLayout(aspectRatio: nil, maxHeight: 144)
         )
     }
 
@@ -61,7 +69,7 @@ final class ModalBannerLayoutTests: XCTestCase {
     /// is that case for the cap specifically.
     func test_noGeometryInProperties_producesNoGeometry() {
         XCTAssertEqual(
-            layout(), ModalTokens.BannerLayout(aspectRatio: nil, height: nil, maxHeight: nil)
+            layout(), ModalTokens.BannerLayout(aspectRatio: nil, maxHeight: nil)
         )
         XCTAssertNil(ModalTokens(from: GeniePresets.standardProperties()).bannerLayout.maxHeight)
     }
@@ -72,7 +80,7 @@ final class ModalBannerLayoutTests: XCTestCase {
     func test_realStreakPreset_reachesTheLayout() {
         XCTAssertEqual(
             ModalTokens(from: GeniePresets.streakProperties()).bannerLayout,
-            ModalTokens.BannerLayout(aspectRatio: 200.0 / 168.0, height: nil, maxHeight: 168)
+            ModalTokens.BannerLayout(aspectRatio: 200.0 / 168.0, maxHeight: 168)
         )
     }
 }

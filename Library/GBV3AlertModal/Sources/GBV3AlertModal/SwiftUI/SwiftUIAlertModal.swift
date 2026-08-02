@@ -314,6 +314,13 @@ public struct SwiftUIAlertModal: View {
 /// there, before this view is built; by the time this body runs the answer is already yes. The
 /// zero-artwork collapse that guard was reaching for is served by the SAME call-site check, on the
 /// artwork's point size, which is known without measuring anything.
+///
+/// **This row does NOT honour `contentChildrenFillWidth`** — it applies no `ContentRowWidth`, where
+/// the title and subtitle rows both do. Its width is the banner column, always, because that is
+/// what UIKit's `vwBanner` resolves to. Inert for every shipping preset (all of them set the flag
+/// `true`, so filling is what the other rows do anyway) and recorded here because it was recorded
+/// nowhere: a preset that set it `false` would hug the title and subtitle while this row still
+/// spanned the column.
 private struct BannerSlot: View {
     let image: ModalImage
     let tokens: ModalTokens

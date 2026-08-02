@@ -563,11 +563,10 @@ final class DifferentialGeometryTests: XCTestCase {
     ///
     /// There is no landscape comparison for `banner-wide`: `banner`, `card`, `title`, `subtitle`
     /// and `primaryButton` are exactly the elements this shape draws, and all five diverge in
-    /// landscape (see `ModalTokens.bannerGeometry`'s doc — it is a PORTRAIT rule). An
-    /// `excluding:` set that covers everything comparable is not a narrower gate, it is an
-    /// assertion-free test wearing a gate's clothes — `assertAgrees` now refuses that shape
-    /// itself (its "nothing left to compare" guard), so this shape cannot be run through it in
-    /// landscape at all.
+    /// landscape (see `ModalTokens.bannerGeometry`'s doc — it is a PORTRAIT rule). Excluding
+    /// everything comparable is not a narrower gate, it is an assertion-free test wearing a gate's
+    /// clothes — which is why `assertAgrees` has no exclusion mechanism at all, and why this shape
+    /// is simply not run through it in landscape.
     ///
     /// What is still worth asserting: that the shape renders SOMETHING real on both backends in
     /// landscape, so a regression that made it vanish (a `nil` frame, a zero-size rect) is still
@@ -627,11 +626,20 @@ final class DifferentialGeometryTests: XCTestCase {
         )
     }
 
+    /// **This compares EVERY element, and there is deliberately no way to exclude one.**
+    ///
+    /// An `excluding:` / `because:` pair was added here in Task 5 and is now DELETED, unused. The
+    /// same task's ruling is why it never gained a caller: for the one shape that motivated it
+    /// (`banner-wide` in landscape) every element it draws diverges, so the only honest exclusion
+    /// set was the whole set — and the conclusion was to delete the comparison rather than narrow
+    /// it. A partial-gate mechanism with no honest use is a mechanism whose own guard rail
+    /// (`because:` must be non-empty) is itself untested. Re-add it if, and only if, a shape ever
+    /// diverges on a proper subset of what it draws; the `comparable.isEmpty` check below is what
+    /// would keep it honest, and it stays here regardless — it independently catches an
+    /// unexcluded shape that measures nothing comparable at all.
     private func assertAgrees(
         _ name: String,
         size: CGSize = DifferentialGeometry.host,
-        excluding: Set<ModalGeometryElement> = [],
-        because reason: String = "",
         file: StaticString = #filePath,
         line: UInt = #line
     ) {
@@ -639,24 +647,11 @@ final class DifferentialGeometryTests: XCTestCase {
             XCTFail("no differential shape named '\(name)'", file: file, line: line)
             return
         }
-        if !excluding.isEmpty {
-            XCTAssertFalse(
-                reason.isEmpty,
-                "'\(name)': excluding \(excluding) without a stated reason. An unexplained "
-                    + "exclusion is how a gate rots — pass `because:`.",
-                file: file, line: line
-            )
-        }
         let allRows = DifferentialGeometry.rows(for: shape, size: size)
         let orientation = size.width > size.height ? "landscape" : "portrait"
-        var title = "\(name) [\(orientation)]"
-        if !excluding.isEmpty {
-            title += " — EXCLUDING \(excluding.map(String.init(describing:)).sorted().joined(separator: ", ")): \(reason)"
-        }
-        let table = DifferentialGeometry.table(name: title, rows: allRows)
+        let table = DifferentialGeometry.table(name: "\(name) [\(orientation)]", rows: allRows)
 
-        // Honesty first: an empty measurement must never read as agreement. Checked on ALL rows,
-        // including excluded ones — an exclusion suppresses a comparison, not a measurement.
+        // Honesty first: an empty measurement must never read as agreement.
         guard allRows.contains(where: { $0.uiKit != nil }), allRows.contains(where: { $0.swiftUI != nil }) else {
             XCTFail(
                 "'\(name)': one side measured nothing, so there is no comparison to report.\n" + table,
@@ -665,20 +660,18 @@ final class DifferentialGeometryTests: XCTestCase {
             return
         }
 
-        let rows = allRows.filter { !excluding.contains($0.element) }
-        let disagreements = rows.filter { $0.verdict.isDisagreement }
-        let comparable = rows.filter { $0.verdict != .absentOnBoth }
+        let disagreements = allRows.filter { $0.verdict.isDisagreement }
+        let comparable = allRows.filter { $0.verdict != .absentOnBoth }
 
-        // An exclusion suppresses a COMPARISON, never a measurement — the guard above already
-        // enforces that. This is the complementary failure mode: an exclusion that suppresses
-        // ALL of them leaves nothing for `disagreements.isEmpty` below to be true ABOUT, so it
-        // passes vacuously — an assertion-free test wearing a gate's clothes. Runs for every
-        // call, excluding or not, so an unexcluded shape that somehow measures nothing
-        // comparable (every row `absentOnBoth`) is caught here too, not just the excluded case.
+        // The complementary failure mode to the guard above: a shape where every row is
+        // `absentOnBoth` leaves nothing for `disagreements.isEmpty` below to be true ABOUT, so it
+        // passes vacuously — an assertion-free test wearing a gate's clothes. Load-bearing, and
+        // NOT a leftover of the deleted `excluding:` parameter: it is the check that would make
+        // any future exclusion mechanism safe, and it is meaningful without one.
         XCTAssertFalse(
             comparable.isEmpty,
-            "'\(name)': the exclusion set left NOTHING to compare. A gate that compares "
-                + "nothing is not a gate — narrow the exclusion or delete the call.\n" + table,
+            "'\(name)': NOTHING was comparable — every element is absent on both backends. A gate "
+                + "that compares nothing is not a gate.\n" + table,
             file: file, line: line
         )
 

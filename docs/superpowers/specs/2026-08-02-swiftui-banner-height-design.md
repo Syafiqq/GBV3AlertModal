@@ -107,11 +107,18 @@ dialog wrong. That approach was drafted, measured, and rejected here.
 Give SwiftUI the two rules from §2 as a computed input. The artwork's point size is a genuine
 operand that `.resizable()` discards, and there is no way to reach app parity without it.
 
-**4.1 — `ModalTokens.bannerLayout` takes the artwork size.**
+**4.1 — A new `ModalTokens` rule takes the artwork size.** Shipped as a SEPARATE member rather than
+a reshaped `bannerLayout`, because the two answer different questions and both are still live:
+`bannerLayout` keeps feeding the bespoke banner rows (ratio + cap applied to an `Image`), while the
+standard banner row reads the computed slot geometry.
 
 ```swift
-func bannerLayout(imageSize: CGSize, available: CGFloat) -> BannerLayout
+func bannerGeometry(imageSize: CGSize, availableCardWidth: CGFloat) -> BannerGeometry
 ```
+
+`BannerGeometry` is `(column, height)`. Both it and the function are `internal` — they have no
+external callers, and everything needed to use them (`\.modalBannerGeometry`, `BannerSlot`) is
+internal or private.
 
 Not a measurement cycle: the input is the asset, prior to and independent of the frame it produces.
 The trap §7 of the brief records is deriving a size from a measurement that the same size feeds
@@ -145,10 +152,20 @@ on the ratio path (`ModalTokens.swift:724`) — a live divergence on every prese
 which is all of them. `ModalTokens.bannerFixedHeight` keeps carrying the value; only `bannerLayout`
 stops using it.
 
-**4.5 — Re-cut `gb_test_banner`** to a size that exercises the rules rather than dodging them:
-**320×190 at 1x**, matching the real `img_gc2gs_prompt_*` assets, with `banner-comparable` moved to
-`popupProperties().copy(bannerRatio: 320.0/190.0, bannerMaxHeight: 256)`. Expected on both sides:
-column 310, height 184.0.
+**4.5 — Cover the wide-artwork regime with a NEW asset, not by re-cutting the old one.** This
+section originally proposed re-cutting `gb_test_banner` to **320×190 at 1x** (matching the real
+`img_gc2gs_prompt_*` assets) and repointing `banner-comparable` at
+`popupProperties().copy(bannerRatio: 320.0/190.0, bannerMaxHeight: 256)`. That would have traded one
+regime for the other: the artwork-NARROWER-than-the-column case would have lost its only shape.
+
+What shipped instead is a second asset, `gb_test_banner_wide` (320×190 at 1x), behind a second
+differential shape, `banner-wide`, carrying exactly the properties above. `gb_test_banner` and
+`banner-comparable` are unchanged, so both regimes are covered at once:
+
+| shape | asset | regime | expected on both sides |
+|---|---|---|---|
+| `banner-comparable` | `gb_test_banner` (160×90 at 1x — 16:9, narrower than the column) | column stays at `contentMaxWidth` | column 256 |
+| `banner-wide` | `gb_test_banner_wide` (320×190) | artwork widens the column | card 350, column 310, height 184.06 |
 
 ## 5. Landscape — measured, and corrected in Task 6
 
@@ -189,11 +206,19 @@ from a passing test that asserts nothing. So the landscape comparison test for `
 
 **What actually shipped, in Task 5 and Task 6:**
 
-1. An `excluding:` / `because:` pair on `assertAgrees`, with a structural guard: any call whose
-   exclusion set leaves nothing comparable fails outright (`'\(name)': the exclusion set left
-   NOTHING to compare` — `DifferentialGeometryTests.assertAgrees`). This makes the vacuous-exclusion
-   failure mode this section almost shipped structurally impossible to repeat, not just avoided by
-   discipline.
+1. A structural guard on `assertAgrees`: any call that leaves nothing comparable fails outright
+   (`'\(name)': NOTHING was comparable` — `DifferentialGeometryTests.assertAgrees`). This makes the
+   vacuous-gate failure mode this section almost shipped structurally impossible to repeat, not just
+   avoided by discipline.
+
+   An `excluding:` / `because:` pair was added alongside it and has since been **deleted**. It never
+   gained a caller, because this section's own ruling is that the honest response to a shape whose
+   every element diverges is to delete the comparison, not narrow it — so the parameters encoded an
+   option the design had already decided against, and their guard rail (`because:` must be
+   non-empty) was itself unreachable and untested. `assertAgrees` now has no exclusion mechanism at
+   all. The `comparable.isEmpty` guard stays regardless: it independently catches an unexcluded
+   shape that measures nothing comparable, and it is what would make any future exclusion mechanism
+   safe.
 2. A landscape **presence** test for `banner-wide` (`test_bannerWide_landscape_
    stillDrawsABannerOnBothSides`): both backends must draw something non-zero on every element that
    isn't `absentOnBoth`. This catches a regression that makes the shape vanish; it does NOT catch a
@@ -210,6 +235,13 @@ The five portrait-only landscape shapes (`standard-one-button`, `standard-two-bu
 `permission-denied-settings`, `oblique-red-leave-confirm`, `onboarding-welcome-nobanner`) are
 gated as before — none of them carries a banner.
 
+**It also breaches the card's VERTICAL margins, which the width cascade above does not cover.** The
+card's height cap in `AlertModalScaffold.body` is a `.frame(maxHeight:)`, which only *proposes* a
+height; `BannerSlot`'s rigid `.frame(height:)` reports a larger ideal and SwiftUI centres the
+overflow rather than compressing it. Measured on `banner-wide` in landscape: the card runs from
+~11pt to ~375pt in a 390pt-tall host — ~364pt against a 310pt cap, i.e. past the 40pt card margin at
+both ends. Same root cause (the rigid slot cannot yield), second symptom.
+
 **Consequence, stated plainly:** any preset that combines landscape with artwork wider than its
 content column — which is eight of the app's nine real banner assets (§3) — renders measurably
 differently between the two backends. Not "a taller banner": a WIDER CARD, with its title,
@@ -220,13 +252,13 @@ next piece of work after this one, and it is the harder half.
 
 | file | change |
 |---|---|
-| `SwiftUI/ModalTokens.swift` | `bannerLayout(imageSize:available:)` per §2's rules; drop `height`; correct the precedence doc |
+| `SwiftUI/ModalTokens.swift` | add `bannerGeometry(imageSize:availableCardWidth:)` per §2's rules (internal); drop `BannerLayout.height`; correct the precedence doc |
 | `SwiftUI/AlertModalScaffold.swift` | column becomes `max(contentMaxWidth, bannerColumnDemand)` |
 | `SwiftUI/SwiftUIAlertModal.swift` | slot/image split per §4.3; rewrite the stale comment at 160-178 |
 | `SwiftUI/ModalBannerGeometry.swift` | folded into the slot frame, or deleted; fix the "751 wins over 251" comment |
 | `GBAlertModal+ViewGraph.swift` | comments cite 700/749/249; constants are 245/243/241. Fix. |
-| `Tests/.../Resources/GBTestAssets.xcassets` | re-cut `gb_test_banner` to 320×190 at 1x |
-| `Tests/.../SwiftUI/DifferentialGeometrySupport.swift` | repoint `banner-comparable`; add `excluding:`/`because:` |
+| `Tests/.../Resources/GBTestAssets.xcassets` | ADD `gb_test_banner_wide` at 320×190 1x; `gb_test_banner` (160×90) unchanged |
+| `Tests/.../SwiftUI/DifferentialGeometrySupport.swift` | add the `banner-wide` shape; `banner-comparable` unchanged |
 | `docs/superpowers/specs/2026-08-02-swiftui-banner-height.md` | correct §3, or point it here |
 
 ## 7. Tests

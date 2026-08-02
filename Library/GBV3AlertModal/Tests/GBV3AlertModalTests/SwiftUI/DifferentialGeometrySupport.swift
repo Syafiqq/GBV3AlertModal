@@ -130,7 +130,7 @@ enum DifferentialGeometry {
         let properties: GBAlertModal.Properties
     }
 
-    /// **Nine shapes, chosen to vary the fields the two backends read differently.**
+    /// **Twelve shapes, chosen to vary the fields the two backends read differently.**
     ///
     /// Covered: the standard 1-button and 2-button shapes; a nil-title shape; a close-button shape;
     /// the oblique-RED shape (a different `ObliqueBottomLeftTheme`); the permission-alert preset and
@@ -140,11 +140,17 @@ enum DifferentialGeometry {
     /// preset (32pt uniform padding, different
     /// `ComponentSpace`); and the error-banner preset (popup + banner ratio/cap/fixed height).
     ///
+    /// Plus the three added for the banner work: `banner-comparable` (an artwork NARROWER than the
+    /// content column, so the column stays at `contentMaxWidth`), `banner-wide` (artwork wider than
+    /// the column, the regime eight of the app's nine real banner assets are in), and
+    /// `long-subtitle-scrolling` (the only shape that actually engages UIKit's subtitle scroll).
+    ///
     /// NOT covered, and why: the three bespoke descriptors (`BadgeDialog`, `LoadingDialog`,
     /// `SatisfactionDialog`) and the two input descriptors (`TextInputDialog`,
     /// `DatePickerDialog`) — those render through `register(_:view:)` bodies that build their OWN
     /// scaffold and have no `GBAlertModal` counterpart view graph to measure against, so there is
-    /// nothing differential to do. Landscape is excluded (see `host`).
+    /// nothing differential to do. Landscape is gated for the five non-banner shapes only
+    /// (`landscapeHost` below, and `DifferentialGeometryTests`' landscape section).
     static var shapes: [Shape] {
         [
             Shape(
