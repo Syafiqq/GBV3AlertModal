@@ -177,6 +177,13 @@ final class BannerGeometryTruthTests: XCTestCase {
 
     func test_zeroSizeArtwork_collapsesTheSlot() {
         let measured = measure(GeniePresets.standardProperties(), imageSize: .zero)
+        // Guard against a vacuous pass: if the modal never laid out at all, `vwBanner` would be
+        // nil and both assertions below would read 0 from `?? .zero` regardless of whether the
+        // slot actually collapsed. Proving the card built confirms the zeros mean something.
+        XCTAssertGreaterThan(
+            measured.card, 0,
+            "the modal did not lay out at all, so the zero-size slot below proves nothing"
+        )
         XCTAssertEqual(measured.column, 0, accuracy: 0.5)
         XCTAssertEqual(measured.height, 0, accuracy: 0.5)
     }
