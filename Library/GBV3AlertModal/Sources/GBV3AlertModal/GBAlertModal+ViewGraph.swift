@@ -353,13 +353,26 @@ internal extension GBAlertModal {
                 // Natural-aspect height driver (bannerRatio == nil), priority
                 // `ModalLayout.Priority.bannerNaturalAspect` (245). This sizes the banner slot to
                 // the image's own aspect (height == width * imageH/imageW). The content-container's
-                // vertical content-hugging is also `.defaultLow` (250): that hugging wants the stack
-                // as SHORT as possible, so a driver below 250 loses to it and the banner COLLAPSES
-                // to a sliver even when there is ample room (verified — dropping this below 250
-                // letterboxes the image into a tiny centered strip). 245 is
-                // `ModalLayout.Priority.bannerNaturalAspect`'s current value, below that 250, not
-                // above it; `BannerGeometryTruthTests` is the ground truth for what this number
-                // actually produces, not this paragraph's arithmetic.
+                // vertical content-hugging is also `.defaultLow` (250), and 245 sits below it — this
+                // driver loses that tie.
+                //
+                // What losing it measures as TODAY, pinned by
+                // `BannerGeometryTruthTests.test_naturalAspect_artworkNarrowerThanColumn`: a 160x90
+                // nil-ratio image renders at a 256x**90** slot — the banner falls back to the
+                // artwork's own intrinsic height (via `bannerImageIntrinsic`, 241 — see the ivBanner
+                // block below), not to some fraction of the hugging.
+                //
+                // An OLDER version of this comment claimed losing the tie "COLLAPSES [the banner] to
+                // a sliver even when there is ample room (verified — dropping this below 250
+                // letterboxes the image into a tiny centered strip)". That was a real, once-measured
+                // observation, kept here for the record — but it was measured under an earlier
+                // priority ordering and has not been re-checked against the numbers that ship today,
+                // where the natural-aspect path instead falls back to intrinsic height (above), not a
+                // sliver. Whether it still applies is genuinely UNKNOWN, not settled either way: every
+                // artwork size `BannerGeometryTruthTests` exercises is landscape or square (160x90,
+                // 160x160, 320x190, 320x229, 295x256, 1168x760, 64x64) — no test covers a narrow/tall
+                // PORTRAIT aspect, which is exactly the shape ("a very tall image") the old claim was
+                // about.
                 //
                 // Yet the banner is decorative and must YIELD to essential content when space is
                 // tight: a very tall image (e.g. 200x2000 → multiplier 10) otherwise asks for

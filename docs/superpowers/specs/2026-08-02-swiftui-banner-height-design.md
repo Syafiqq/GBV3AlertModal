@@ -242,8 +242,13 @@ next piece of work after this one, and it is the harder half.
    the one that proves the column change is a no-op when it should be.
 5. **A non-banner regression sweep** — the §4.2 column change must be provably inert without a
    banner. The existing suite covers this; run it and say so.
-6. **Landscape**, `excluding: [.banner]` with the §5 reason, plus a bound: the banner is non-zero on
-   both sides.
+6. **Landscape.** This item originally read "`excluding: [.banner]` with the §5 reason, plus a
+   bound: the banner is non-zero on both sides" — superseded, see §5 (Task 6). `excluding: [.banner]`
+   alone does not gate `banner-wide`: `card`, `title`, `subtitle` and `primaryButton` also diverge,
+   and excluding all five leaves nothing comparable, which `assertAgrees`'s structural guard now
+   refuses outright. What shipped instead: no landscape agreement comparison for banner shapes at
+   all, a landscape **presence** test (both backends draw something non-zero on every element that
+   isn't `absentOnBoth`), and Task 4's slot-containment invariant checked at three host sizes.
 7. **A zero-artwork shape.** Measured 0×0 slot / card 187 in UIKit, both paths; SwiftUI unknown.
 8. **`BannerAspectStressTests`** — UIKit-side, must stay green untouched.
 9. Example snapshots re-recorded and **looked at**; `SwiftUICatalog.bannerArtworkNote` updated.
@@ -252,8 +257,9 @@ next piece of work after this one, and it is the harder half.
 
 - **§4.2 is the dangerous change.** It touches the card's width ladder. Mitigation is §7.5: prove
   inertness without a banner before touching anything else.
-- **§4.3's rigid frame cannot yield**, which is a regression in landscape (§5) — accepted, gated,
-  and named as the next piece of work.
+- **§4.3's rigid frame cannot yield**, which is a regression in landscape (§5) — accepted, left
+  **un**gated for banner shapes (§5, corrected in Task 6: excluding only `.banner` is not a gate,
+  since `card`/`title`/`subtitle`/`primaryButton` diverge too), and named as the next piece of work.
 - **Scale-factor re-exports** change the point size the constraint sees while the pixel size looks
   unchanged. §7.1's truth table is the tripwire.
 - **iPad is unmeasured.** The app's column is 300 there. The rules are width-parameterised so they
