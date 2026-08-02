@@ -124,9 +124,10 @@ extension GBAlertModal {
     ///
     /// Rung 1 is the ORDERING: the title's vertical compression resistance is raised from UIKit's 750
     /// default to `ModalLayout.Priority.titleCompressionResistance` (900), which puts it above every
-    /// other content rung — most importantly above the subtitle slot's frame/content height tie (250,
-    /// or 749 on the natural-aspect banner path), the existing SUBTITLE-YIELDS mechanism. So under
-    /// vertical pressure the subtitle shrink-and-scrolls inside `svSubtitleContainer` first, at full
+    /// other content rung — most importantly above the subtitle slot's frame/content height tie
+    /// (`ModalLayout.Priority.subtitleSlotHeight`, `.defaultLow`/250, unconditionally on every
+    /// path), the existing SUBTITLE-YIELDS mechanism. So under vertical pressure the subtitle
+    /// shrink-and-scrolls inside `svSubtitleContainer` first, at full
     /// size, and only what is left over reaches the title. The whole ladder, and why 900 rather than
     /// `.required`, is documented on `ModalLayout.Priority`.
     ///
@@ -170,8 +171,9 @@ extension GBAlertModal {
     ///   `ModalLayout.Priority.subtitleCompressionResistance` (750 — UIKit's own default, so this
     ///   changes no behaviour). It is BELOW the title's 900, which is the directive's "title with
     ///   more content compression", and it is deliberately ABOVE the subtitle slot's frame/content
-    ///   height tie (250, or 749 on the natural-aspect banner path). That gap is what makes the
-    ///   subtitle SCROLL rather than shrink: the tie is what breaks under pressure, so the scroll's
+    ///   height tie (`ModalLayout.Priority.subtitleSlotHeight`, `.defaultLow`/250, unconditionally).
+    ///   That gap is what makes the subtitle SCROLL rather than shrink: the tie is what breaks
+    ///   under pressure, so the scroll's
     ///   visible height falls below its content height while the label itself keeps every line at
     ///   full size. Lowering this label below the tie would invert that and produce a squeezed,
     ///   clipped subtitle — the exact outcome the directive forbids.

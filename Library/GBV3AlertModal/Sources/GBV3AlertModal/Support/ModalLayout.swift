@@ -322,30 +322,35 @@ extension ModalLayout {
     ///   the title's. It must stay ABOVE `subtitleSlotHeight` (next row): the label is what refuses
     ///   to shrink, which is what turns "the slot is too short" into SCROLLING instead of into a
     ///   truncated subtitle. |
-    /// | `subtitleSlotHeight` | **300** | `svSubtitleContainer.frameLayoutGuide.height ==
-    ///   contentLayoutGuide.height`. **This is the SUBTITLE-YIELDS mechanism**: the weakest TEXT
+    /// | `subtitleSlotHeight` | **`.defaultLow`** (250) | `svSubtitleContainer.frameLayoutGuide.height
+    ///   == contentLayoutGuide.height`. **This is the SUBTITLE-YIELDS mechanism**: the weakest TEXT
     ///   rung, so when the card cannot fit everything between its margins this equality is what
     ///   breaks, the scroll's visible height shrinks below its content height, and the subtitle
     ///   scrolls — full-size, unshrunk, un-truncated — while the title keeps every line. Bounded
     ///   below by `subtitleSlotFloor`, so it scrolls rather than disappearing. |
-    /// | `bannerNaturalAspect` | **290** | `vwBanner.height == vwBanner.width * imageH/imageW`. |
-    /// | `bannerFixedHeight` | **280** | `vwBanner.height == bannerFixedHeight`; inert whenever the
+    /// | `bannerNaturalAspect` | **245** | `vwBanner.height == vwBanner.width * imageH/imageW`. |
+    /// | `bannerFixedHeight` | **243** | `vwBanner.height == bannerFixedHeight`; inert whenever the
     ///   natural-aspect driver is installed (i.e. on the `bannerRatio == nil` path). |
-    /// | `bannerImageIntrinsic` | **270** | `ivBanner`'s own vertical resistance, below every other
+    /// | `bannerImageIntrinsic` | **241** | `ivBanner`'s own vertical resistance, below every other
     ///   content rung so a 2000px-tall image's intrinsic height cannot fight anything. |
     /// | *(the card hug)* | 250 (`.low`) | NOT a rung of this ladder, but the reason the numbers
     ///   above stop where they do. `vwContainer.center == superview` and `svContentContainer`'s
     ///   four `== superview + paddingMax` constraints are all `.low`, and together they are what
     ///   makes the card HUG its content instead of filling the screen. |
     ///
-    /// **Why the banner does not simply go below 250.** The obvious reading of "banner last" is to
-    /// drop its drivers under every text rung, and `subtitleSlotHeight` was `.defaultLow` (250) — so
-    /// the banner would land at 245ish. That puts it below the card hug, and then shrinking the
-    /// BANNER becomes the solver's cheapest way to make the card smaller: measured, a 9:16 banner
-    /// with room to spare in PORTRAIT rendered at 0.625 natural aspect instead of 1.778, because the
-    /// hug (250) outbid its own aspect driver (245). So the text rung moved UP to 300 to open a gap,
-    /// and the banner sits inside it — below every word on the card, above the hug that would
-    /// otherwise crush it for free.
+    /// **Why the banner does not simply go below 250 — and a correction to this paragraph's own
+    /// numbers, made in Task 6.** The obvious reading of "banner last" is to drop its drivers under
+    /// every text rung, and `subtitleSlotHeight` is `.defaultLow` (250) — so the banner lands at
+    /// 245ish. This paragraph used to claim the fix was to move `subtitleSlotHeight` UP to 300 and
+    /// lift the banner drivers into the 290/280/270 gap that opened above the hug. That never
+    /// shipped: `subtitleSlotHeight` is `.defaultLow` (see the table above, itself corrected in
+    /// Task 6 from a stale 300/290/280/270), and the banner drivers sit at 245/243/241 — below the
+    /// hug, exactly where the "obvious reading" above lands. Measured once, on an earlier ladder, a
+    /// 9:16 banner with room to spare in PORTRAIT rendered at 0.625 natural aspect instead of 1.778
+    /// because the hug (250) outbid its own aspect driver (245); whether that failure mode still
+    /// applies to the numbers that actually ship is not re-derived here.
+    /// `BannerGeometryTruthTests` is the source of truth for the geometry the current numbers
+    /// produce, not this paragraph's arithmetic.
     ///
     /// **Why the title is 900 and not `.required`.** The card is bounded by `.required` margin
     /// constraints on `vwContainer` and `.required` minimum padding on `svContentContainer`, so a
@@ -353,8 +358,8 @@ extension ModalLayout {
     /// would have to break one of those `.required` constraints and would log
     /// "Unable to simultaneously satisfy constraints"; at 900 it breaks the title's own resistance
     /// instead, which is a normal, silent resolution. 900 is above every other content rung, so the
-    /// title still yields LAST — after the subtitle slot (250/749), after the banner (700) and after
-    /// the banner image (249).
+    /// title still yields LAST — after the subtitle slot (`.defaultLow`, 250), after the banner
+    /// (245) and after the banner image (241).
     enum Priority {
         // Computed rather than `static let`: a stored static of a non-`Sendable` type is a Swift 6
         // strict-concurrency error, and `UILayoutPriority`'s conformance is SDK-version-dependent.

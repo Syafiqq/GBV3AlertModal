@@ -413,7 +413,7 @@ extension SwiftUIAlertModal {
     /// **The SwiftUI analogue of UIKit's vertical compression-resistance ordering.**
     ///
     /// `ModalLayout.Priority` puts the title (900) above the subtitle label (750) and far above the
-    /// subtitle SLOT's height tie (250/749). SwiftUI's `layoutPriority` is a `Double` on an
+    /// subtitle SLOT's height tie (`.defaultLow`, 250). SwiftUI's `layoutPriority` is a `Double` on an
     /// unrelated scale, so only the ORDER carries over — which is all the directive states. Two
     /// named constants rather than bare literals in the body, so the ordering is one visible fact
     /// that a reader (and `TitleSubtitleTruncationTests`) can check instead of two magic numbers.

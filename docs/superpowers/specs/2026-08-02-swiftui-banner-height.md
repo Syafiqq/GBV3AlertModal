@@ -1,5 +1,11 @@
 # Brief — SwiftUI banner height
 
+> **§3 of this brief is WRONG and is superseded by
+> `2026-08-02-swiftui-banner-height-design.md`.** It omits the term that actually produces the
+> headline 160 — the artwork's intrinsic point size — and states that `bannerFixedHeight` sizes the
+> slot on the `bannerRatio != nil` path. Measured: `bannerFixedHeight` is inert on BOTH paths at
+> every size tried. §1, §4, §5 and §7 still hold.
+
 **Status:** open. Width fixed (`4ee0b23`), height not.
 **Blocks:** adopting any banner-carrying SwiftUI dialog in the app.
 **Branch:** `feat/modal-executor-capability`. Library 469 tests green, example green.

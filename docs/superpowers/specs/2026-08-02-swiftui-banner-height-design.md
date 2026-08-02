@@ -150,7 +150,12 @@ stops using it.
 `popupProperties().copy(bannerRatio: 320.0/190.0, bannerMaxHeight: 256)`. Expected on both sides:
 column 310, height 184.0.
 
-## 5. Landscape — scoped out, deliberately
+## 5. Landscape — measured, and corrected in Task 6
+
+**This section originally said the divergence was a taller banner (102.3 vs 184.0) and that the fix
+was to exclude the `.banner` row. Task 5 measured the actual shape and both halves of that were
+wrong.** The numbers below are still the real measurements; the account of what they mean and what
+to do about it is rewritten here.
 
 | shape | UIKit | SwiftUI |
 |---|---|---|
@@ -159,16 +164,57 @@ column 310, height 184.0.
 | every real preset, tight card | ~102.3 regardless of ratio or cap | — |
 
 In a height-constrained card UIKit distributes the remainder across four sub-required priority
-tiers and the banner takes the residual. No closed form reaches 102.3, and §4.3's rigid frame
-cannot yield at all — so landscape gets *worse* under this design before it gets better.
+tiers and the banner takes the residual — no closed form reaches 102.3, and §4.3's rigid frame
+cannot yield at all, so landscape gets *worse* under this design before it gets better. That part
+still holds. What does not hold is treating this as a HEIGHT problem contained to one row.
 
-**Decision:** the `.banner` row is compared for height in **portrait only**. Landscape keeps full
-element-for-element agreement for every other element, plus the banner's `x` and `width`. The
-exception is typed — add `excluding:` + a required `because:` to `assertAgrees` — so it shows up in
-failure output and cannot rot into an unexplained skip. Do **not** widen
-`DifferentialGeometry.tolerance`.
+**It is a width problem that starts at the banner and ends at the card.** In landscape, UIKit's
+residual arbitration shrinks the banner's height — and, because the artwork is WIDER than the
+content column on every real preset (§3), the required `ivBanner.width == ivBanner.height * ratio`
+tie shrinks the banner's WIDTH DEMAND right along with it. That wrong width does not stay on the
+banner: it propagates to the CARD (the card's width is sized off its widest row), and from the card
+to every OTHER row that matches the card's width. Measured: `card`, `title`, `subtitle` and
+`primaryButton` all diverge from UIKit in landscape on a wide-artwork shape — four rows that read
+as four defects until you trace them back to the one place the number is actually wrong. It is one
+root cause, not four.
 
-Landscape banner parity is the next piece of work after this one, and it is the harder half.
+**Excluding only `.banner` does not work.** `banner`, `card`, `title`, `subtitle` and
+`primaryButton` are exactly the elements `banner-wide` draws, so an `excluding: [.banner]` call
+still measures four more rows that also diverge — the exclusion this section originally proposed
+does not gate the shape, it just hides the row where the divergence is easiest to see. Excluding
+the whole cascade (`[.banner, .card, .title, .subtitle, .primaryButton]`) is honest about the
+divergence but leaves `banner-wide` with NOTHING left to compare — a vacuous gate, indistinguishable
+from a passing test that asserts nothing. So the landscape comparison test for `banner-wide` was
+**deleted**, not excluded.
+
+**What actually shipped, in Task 5 and Task 6:**
+
+1. An `excluding:` / `because:` pair on `assertAgrees`, with a structural guard: any call whose
+   exclusion set leaves nothing comparable fails outright (`'\(name)': the exclusion set left
+   NOTHING to compare` — `DifferentialGeometryTests.assertAgrees`). This makes the vacuous-exclusion
+   failure mode this section almost shipped structurally impossible to repeat, not just avoided by
+   discipline.
+2. A landscape **presence** test for `banner-wide` (`test_bannerWide_landscape_
+   stillDrawsABannerOnBothSides`): both backends must draw something non-zero on every element that
+   isn't `absentOnBoth`. This catches a regression that makes the shape vanish; it does NOT catch a
+   regression that changes its size or position, and its name says so.
+3. Task 4's slot-containment invariant
+   (`test_bannerWide_theSlotNeverOverflowsTheCard_atAnyHostWidth`), checked at three host sizes
+   (portrait phone, landscape phone, iPad portrait): the banner slot never starts left of the card
+   and never overflows it, and stays inside the card's required minimum padding. This is a bound on
+   where the (wrong) numbers land, not an agreement check.
+
+**Landscape is not gated for banner shapes.** No test asserts that UIKit and SwiftUI agree on
+`banner`, `card`, `title`, `subtitle`, or `primaryButton` for a banner-carrying shape in landscape.
+The five portrait-only landscape shapes (`standard-one-button`, `standard-two-button`,
+`permission-denied-settings`, `oblique-red-leave-confirm`, `onboarding-welcome-nobanner`) are
+gated as before — none of them carries a banner.
+
+**Consequence, stated plainly:** any preset that combines landscape with artwork wider than its
+content column — which is eight of the app's nine real banner assets (§3) — renders measurably
+differently between the two backends. Not "a taller banner": a WIDER CARD, with its title,
+subtitle and primary button all displaced to match the wrong width. Landscape banner parity is the
+next piece of work after this one, and it is the harder half.
 
 ## 6. Changes
 

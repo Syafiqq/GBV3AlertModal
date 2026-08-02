@@ -210,9 +210,9 @@ extension GBAlertModal {
     /// The owner's ladder, in full, and this method is only the middle rung:
     ///
     /// * **Rung 1 — the SUBTITLE yields.** Pure Auto Layout, nothing here: the title's 900 vertical
-    ///   compression resistance beats the subtitle slot's `frame == content` tie (250/749), so an
-    ///   over-tall card shrinks the subtitle's visible height and it scrolls. Most pressure never
-    ///   reaches rung 2 at all.
+    ///   compression resistance beats the subtitle slot's `frame == content` tie (`.defaultLow`,
+    ///   250, unconditionally), so an over-tall card shrinks the subtitle's visible height and it
+    ///   scrolls. Most pressure never reaches rung 2 at all.
     /// * **Rung 2 — the TITLE shrinks** (this method), once rung 1 has nothing left to give. Down to
     ///   `ModalLayout.titleMinimumScaleFactor` (0.75), on a coarse grid, keeping `numberOfLines = 0`
     ///   throughout — so the text RE-WRAPS at the smaller size and every glyph survives.

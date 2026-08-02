@@ -350,26 +350,33 @@ internal extension GBAlertModal {
         if let vwBanner {
             vwBanner.snp.makeConstraints { (make: ConstraintMaker) in
                 // Pin
-                // Natural-aspect height driver (bannerRatio == nil), priority 700. This sizes the
-                // banner slot to the image's own aspect (height == width * imageH/imageW). It must
-                // sit ABOVE the content-container's vertical content-hugging (`.defaultLow`, 250):
-                // that hugging wants the stack as SHORT as possible, so a driver below 250 loses to
-                // it and the banner COLLAPSES to a sliver even when there is ample room (verified —
-                // dropping this below 250 letterboxes the image into a tiny centered strip). 700 is
-                // comfortably above 250 so the banner expands to natural aspect whenever it fits.
+                // Natural-aspect height driver (bannerRatio == nil), priority
+                // `ModalLayout.Priority.bannerNaturalAspect` (245). This sizes the banner slot to
+                // the image's own aspect (height == width * imageH/imageW). The content-container's
+                // vertical content-hugging is also `.defaultLow` (250): that hugging wants the stack
+                // as SHORT as possible, so a driver below 250 loses to it and the banner COLLAPSES
+                // to a sliver even when there is ample room (verified — dropping this below 250
+                // letterboxes the image into a tiny centered strip). 245 is
+                // `ModalLayout.Priority.bannerNaturalAspect`'s current value, below that 250, not
+                // above it; `BannerGeometryTruthTests` is the ground truth for what this number
+                // actually produces, not this paragraph's arithmetic.
                 //
                 // Yet the banner is decorative and must YIELD to essential content when space is
                 // tight: a very tall image (e.g. 200x2000 → multiplier 10) otherwise asks for
                 // thousands of points and, inside the margin-bounded card, starves the title and
-                // subtitle to zero height. Two things make it yield without lowering this driver
-                // (which would trip the collapse above): the title label's vertical compression
-                // resistance (900 — `ModalLayout.Priority.titleCompressionResistance`, raised from
-                // UIKit's 750 default by the no-truncation directive) out-ranks this 700 driver, and
-                // the subtitle scroll's `frameLayoutGuide`-height tie is raised to 749 *only when
-                // this natural-aspect path is active* (see the Subtitle block) so it too out-ranks
-                // 700. The image view's own intrinsic vertical resistance is separately dropped to
-                // 249 (see the ivBanner block) so the raw pixel height can't fight the content
-                // either. Every rung named here lives in `ModalLayout.Priority`.
+                // subtitle to zero height. Two things make it yield: the title label's vertical
+                // compression resistance (900 — `ModalLayout.Priority.titleCompressionResistance`,
+                // raised from UIKit's 750 default by the no-truncation directive) out-ranks this 245
+                // driver, and the subtitle scroll's `frameLayoutGuide`-height tie sits at
+                // `ModalLayout.Priority.subtitleSlotHeight` (`.defaultLow`, 250) on EVERY path, not
+                // only when this natural-aspect path is active (see the Subtitle block), so it too
+                // out-ranks 245. The image view's own intrinsic vertical resistance is separately
+                // dropped to `ModalLayout.Priority.bannerImageIntrinsic` (241, see the ivBanner
+                // block) so the raw pixel height can't fight the content either.
+                //
+                // Every rung named here lives in `ModalLayout.Priority` and is pinned by
+                // `BannerGeometryTruthTests` — these numbers drifted from the constants once
+                // already, and only a comment showed it.
                 if let bannerHeightMultiplier {
                     make.height
                             .equalTo(vwBanner.snp.width)
@@ -490,7 +497,8 @@ internal extension GBAlertModal {
             // not scrolled, it was gone (measured: 0.0pt with a banner, 9.3pt on the two-button
             // shape, i.e. a line sliced in half by the button below it).
             //
-            // At 850: above the slot's own height tie (250/749) and above the subtitle label's 750,
+            // At 850: above the slot's own height tie (`.defaultLow`, 250) and above the subtitle
+            // label's 750,
             // so it holds the line open; but BELOW the title's 900, so on the one landscape shape
             // where the two genuinely cannot both fit, this is what gives way and the title keeps
             // every glyph. Inert whenever the tie above holds, since a non-empty label is already at
