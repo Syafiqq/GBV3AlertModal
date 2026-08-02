@@ -311,9 +311,17 @@ private struct BannerSlot: View {
             // The frame is RIGID, knowingly. UIKit's banner yields under pressure (its drivers sit
             // below the card's `.low` 250 hugging) and this cannot. In portrait, with the card free
             // to grow, nothing is yielding and the two coincide — every row of
-            // `BannerGeometryTruthTests` is such a case. In landscape they do not, which is why the
-            // differential gate excludes this row there. `.frame(maxHeight:)` does not work here: the
-            // height must be REACHED, not merely bounded.
+            // `BannerGeometryTruthTests` is such a case. In landscape they do not, and there is no
+            // differential gate for banner shapes there at all (measured, not assumed —
+            // `DifferentialGeometryTests.swift`'s `test_bannerWide_landscape_stillDrawsABannerOnBothSides`
+            // only proves the shape still renders). `ModalTokens.bannerGeometry` is a PORTRAIT rule
+            // (see its doc) and the divergence is not just a taller banner: UIKit's height-constrained
+            // residual arbitration also changes the banner's WIDTH demand through the required
+            // `ivBanner.width == ivBanner.height * ratio` tie, so wide artwork's real landscape column
+            // is narrower than this formula computes — and that wrong column reaches the CARD
+            // (`AlertModalScaffold`'s cap) and every row that matches the card's width, not just this
+            // one. `.frame(maxHeight:)` does not work here: the height must be REACHED, not merely
+            // bounded.
             Color.clear
                 .frame(width: bannerGeometry.column, height: bannerGeometry.height)
                 .overlay {

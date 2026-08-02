@@ -559,67 +559,36 @@ final class DifferentialGeometryTests: XCTestCase {
     func test_geometry_landscape_obliqueRedLeaveConfirm() { assertAgrees("oblique-red-leave-confirm", size: DifferentialGeometry.landscapeHost) }
     func test_geometry_landscape_onboardingWelcomeNoBanner() { assertAgrees("onboarding-welcome-nobanner", size: DifferentialGeometry.landscapeHost) }
 
-    /// **Landscape, with the banner-driven cascade excluded and the reason stated.**
+    /// **The landscape presence check — NOT a gate.**
     ///
-    /// The banner's HEIGHT does not agree and is not expected to: in a height-constrained card
-    /// UIKit distributes the remainder across four sub-required priority tiers and the banner
-    /// takes the residual (measured 102.3 for every real preset, regardless of ratio or cap)
-    /// instead of the ~190pt this shape's own PORTRAIT-derived formula computes.
-    /// `ModalTokens.bannerGeometry` is a PORTRAIT rule and says so.
+    /// There is no landscape comparison for `banner-wide`: `banner`, `card`, `title`, `subtitle`
+    /// and `primaryButton` are exactly the elements this shape draws, and all five diverge in
+    /// landscape (see `ModalTokens.bannerGeometry`'s doc — it is a PORTRAIT rule). An
+    /// `excluding:` set that covers everything comparable is not a narrower gate, it is an
+    /// assertion-free test wearing a gate's clothes — `assertAgrees` now refuses that shape
+    /// itself (its "nothing left to compare" guard), so this shape cannot be run through it in
+    /// landscape at all.
     ///
-    /// **Measured, not assumed: excluding only `.banner` is not enough here, and that is ONE
-    /// cause, not several.** This shape's artwork (320pt) is wider than the content column
-    /// (256pt), so `bannerGeometry`'s column-push formula is in play — and in UIKit's
-    /// `bannerRatio != nil` path, `ivBanner.width == ivBanner.height * ratio` is a REQUIRED tie,
-    /// so the SAME residual squeeze that shrinks the banner's height also shrinks its resolved
-    /// WIDTH: UIKit's real landscape column stays at 256 (measured), not the 320
-    /// `bannerGeometry`'s portrait-shaped formula still returns. `AlertModalScaffold` caps the
-    /// CARD at `max(cardMaxWidth, bannerGeometry.column + …)`, so the card inherits the wrong
-    /// column, and `childShouldMatchParent` carries it from the card to every row that matches
-    /// its width — title, subtitle, primaryButton. Excluding `.banner` alone still leaves those
-    /// four DIFFERing, not because of four independent defects, but because all four are one hop
-    /// downstream of the same portrait-only formula.
-    ///
-    /// This is an exclusion, not a widened tolerance: `DifferentialGeometry.tolerance` stays
-    /// 0.5pt. And every excluded row is proven a REAL, non-degenerate measurement on both
-    /// backends below — this is not agreement about an absence either.
-    func test_geometry_bannerWide_landscape() {
-        assertAgrees(
-            "banner-wide",
-            size: DifferentialGeometry.landscapeHost,
-            excluding: Self.bannerWideLandscapeCascade,
-            because: "ModalTokens.bannerGeometry is a portrait rule (see its doc); in landscape "
-                + "UIKit's residual arbitration re-sizes the banner's height and, because this "
-                + "artwork is wider than the content column, its width too, and both propagate to "
-                + "the card and to every row that matches the card's width through the SAME "
-                + "required ratio tie — not independent defects. See the design spec §5"
-        )
-    }
-
-    /// The elements downstream of the banner-height/column residual, for `banner-wide` in
-    /// landscape specifically — see `test_geometry_bannerWide_landscape`'s doc for the mechanism.
-    private static let bannerWideLandscapeCascade: Set<ModalGeometryElement> =
-        [.banner, .card, .title, .subtitle, .primaryButton]
-
-    /// The excluded rows must still EXIST — and be non-degenerate — on both sides. Without this,
-    /// `excluding: bannerWideLandscapeCascade` would also pass for a shape that drew nothing at
-    /// those rows at all — agreement about an absence, which is the vacuous-pass failure mode
-    /// this suite exists to prevent. `test_harness_measuresEveryElementBothBackendsDraw` proves
-    /// this same thing for every shape, but only at the PORTRAIT host — landscape is this test's
-    /// to prove.
+    /// What is still worth asserting: that the shape renders SOMETHING real on both backends in
+    /// landscape, so a regression that made it vanish (a `nil` frame, a zero-size rect) is still
+    /// caught, even though a regression that changed its size or position is not. That is a
+    /// strictly weaker claim than agreement, and this test's name says so.
     func test_bannerWide_landscape_stillDrawsABannerOnBothSides() throws {
         let shape = try XCTUnwrap(DifferentialGeometry.shape(named: "banner-wide"))
         let rows = DifferentialGeometry.rows(for: shape, size: DifferentialGeometry.landscapeHost)
-        for element in Self.bannerWideLandscapeCascade.sorted(by: { $0.rawValue < $1.rawValue }) {
-            let row = try XCTUnwrap(rows.first { $0.element == element })
-            let uiKit = try XCTUnwrap(row.uiKit, "'\(element.rawValue)': UIKit drew nothing in landscape")
-            let swiftUI = try XCTUnwrap(
-                row.swiftUI, "'\(element.rawValue)': SwiftUI drew nothing in landscape"
+        let drawn = rows.filter { $0.verdict != .absentOnBoth }
+        XCTAssertFalse(drawn.isEmpty, "'banner-wide': nothing drew on either backend in landscape")
+        for row in drawn {
+            let uiKit = try XCTUnwrap(
+                row.uiKit, "'\(row.element.rawValue)': UIKit drew nothing in landscape"
             )
-            XCTAssertGreaterThan(uiKit.width, 0, "'\(element.rawValue)': UIKit width is zero")
-            XCTAssertGreaterThan(uiKit.height, 0, "'\(element.rawValue)': UIKit height is zero")
-            XCTAssertGreaterThan(swiftUI.width, 0, "'\(element.rawValue)': SwiftUI width is zero")
-            XCTAssertGreaterThan(swiftUI.height, 0, "'\(element.rawValue)': SwiftUI height is zero")
+            let swiftUI = try XCTUnwrap(
+                row.swiftUI, "'\(row.element.rawValue)': SwiftUI drew nothing in landscape"
+            )
+            XCTAssertGreaterThan(uiKit.width, 0, "'\(row.element.rawValue)': UIKit width is zero")
+            XCTAssertGreaterThan(uiKit.height, 0, "'\(row.element.rawValue)': UIKit height is zero")
+            XCTAssertGreaterThan(swiftUI.width, 0, "'\(row.element.rawValue)': SwiftUI width is zero")
+            XCTAssertGreaterThan(swiftUI.height, 0, "'\(row.element.rawValue)': SwiftUI height is zero")
         }
     }
 
@@ -699,6 +668,20 @@ final class DifferentialGeometryTests: XCTestCase {
         let rows = allRows.filter { !excluding.contains($0.element) }
         let disagreements = rows.filter { $0.verdict.isDisagreement }
         let comparable = rows.filter { $0.verdict != .absentOnBoth }
+
+        // An exclusion suppresses a COMPARISON, never a measurement — the guard above already
+        // enforces that. This is the complementary failure mode: an exclusion that suppresses
+        // ALL of them leaves nothing for `disagreements.isEmpty` below to be true ABOUT, so it
+        // passes vacuously — an assertion-free test wearing a gate's clothes. Runs for every
+        // call, excluding or not, so an unexcluded shape that somehow measures nothing
+        // comparable (every row `absentOnBoth`) is caught here too, not just the excluded case.
+        XCTAssertFalse(
+            comparable.isEmpty,
+            "'\(name)': the exclusion set left NOTHING to compare. A gate that compares "
+                + "nothing is not a gate — narrow the exclusion or delete the call.\n" + table,
+            file: file, line: line
+        )
+
         XCTAssertTrue(
             disagreements.isEmpty,
             "\(disagreements.count) of \(comparable.count) comparable elements DIFFER.\n" + table,
