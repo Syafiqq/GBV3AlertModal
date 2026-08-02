@@ -687,6 +687,56 @@ extension ModalTokens {
         var maxHeight: CGFloat?
     }
 
+    /// **The banner's content column and slot height, as UIKit resolves them.**
+    ///
+    /// UIKit gives `vwBanner` no height constraint at all on the `bannerRatio != nil` path: the
+    /// slot's size falls out of `ivBanner`'s INTRINSIC content size meeting its default vertical
+    /// compression resistance (750) through the `width == height * ratio` tie — and that same 750
+    /// outranks the content column's `width == fixedWidth` at `.medium` (500), so wide artwork
+    /// makes the COLUMN wider too. Both facts are invisible from `Properties` alone, which is why
+    /// this takes the artwork's point size.
+    ///
+    /// Not a measurement cycle (the trap recorded in the brief's §7): `imageSize` is a property of
+    /// the asset, prior to and independent of the frame this returns, and `availableCardWidth`
+    /// comes from the CONTAINER, not from the content it constrains.
+    ///
+    /// PORTRAIT ONLY. In a height-constrained card UIKit distributes the remainder across four
+    /// sub-required priority tiers and the banner takes the residual (measured ~102.3 for every
+    /// real preset, regardless of ratio or cap). Nothing here reaches that, and the differential
+    /// gate excludes the banner row in landscape for exactly this reason.
+    ///
+    /// Pinned against measured Auto Layout output in `BannerGeometryTruthTests`.
+    public struct BannerGeometry: Equatable, Sendable {
+        /// The content column's width — `contentMaxWidth`, or wider when the artwork demands it.
+        public var column: CGFloat
+        /// The banner SLOT's height — the counterpart of `vwBanner`, not of the picture inside it.
+        public var height: CGFloat
+
+        public static let zero = BannerGeometry(column: 0, height: 0)
+    }
+
+    /// `imageSize` is the artwork's POINT size (`ModalImage.pointSize`), not its pixel size.
+    /// `availableCardWidth` is the host width minus both card margins.
+    public func bannerGeometry(imageSize: CGSize, availableCardWidth: CGFloat) -> BannerGeometry {
+        guard imageSize.width > 0, imageSize.height > 0 else { return .zero }
+        let ratio = bannerRatio ?? (imageSize.width / imageSize.height)
+        guard ratio > 0, ratio.isFinite else { return .zero }
+
+        let cap = bannerMaxHeight ?? .greatestFiniteMagnitude
+        // The column can never exceed what is left of the card after its RIGID minimum padding —
+        // UIKit's `.required` leading/trailing inequalities. The max padding is `.low` and gives
+        // way, which is why the minima are what bound this.
+        let ceiling = max(0, availableCardWidth - contentPadding.leftMin - contentPadding.rightMin)
+        // What the artwork asks the column for: its own width, but never more than the cap allows
+        // a ratio-shaped slot to be wide.
+        let demand = min(imageSize.width, cap * ratio)
+        let column = min(max(demand, contentMaxWidth), ceiling)
+        // The smallest of: the cap, what the column allows at this ratio, and the smallest
+        // ratio-shaped box containing the artwork.
+        let height = min(cap, min(column / ratio, max(imageSize.height, imageSize.width / ratio)))
+        return BannerGeometry(column: column, height: height)
+    }
+
     /// PRECEDENCE, read off `GBAlertModal+ViewGraph.swift`'s `installConstraints` (the UIKit
     /// constraint PRIORITIES), not guessed. On `vwBanner` UIKit installs, at most:
     ///
