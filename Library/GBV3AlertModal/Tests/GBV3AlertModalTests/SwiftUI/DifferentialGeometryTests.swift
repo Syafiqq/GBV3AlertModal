@@ -559,6 +559,60 @@ final class DifferentialGeometryTests: XCTestCase {
     func test_geometry_landscape_obliqueRedLeaveConfirm() { assertAgrees("oblique-red-leave-confirm", size: DifferentialGeometry.landscapeHost) }
     func test_geometry_landscape_onboardingWelcomeNoBanner() { assertAgrees("onboarding-welcome-nobanner", size: DifferentialGeometry.landscapeHost) }
 
+    /// **The card must fit inside its vertical margins — pinned where it currently holds.**
+    ///
+    /// `AlertModalScaffold.body` applies `.frame(maxHeight: proxy.size.height - cardMarginV * 2)` to
+    /// the card, and that only PROPOSES a height: a rigid child can still report a larger ideal size,
+    /// and SwiftUI centres the overflow rather than clamping it. That is exactly what happens to the
+    /// banner shapes in landscape — `BannerSlot`'s frame is rigid (see its doc in
+    /// `SwiftUIAlertModal.swift`), so the slot cannot yield, the card's ideal height exceeds the
+    /// proposal, and the excess bleeds past the vertical margin. That is the known regression
+    /// recorded in the design spec's §5, and nothing in this suite asserted the containment those five
+    /// non-banner shapes actually have.
+    ///
+    /// So this is scoped to exactly the five shapes already gated in landscape
+    /// (`assertAgrees(..., size: landscapeHost)` above) rather than all twelve: those five have no
+    /// rigid banner slot to refuse to yield, so the containment invariant is expected to hold for them
+    /// today, and this test PINS that. It deliberately does not extend to the banner shapes — doing so
+    /// would either fail on a known, already-recorded regression, or have to weaken the assertion to
+    /// dodge it, and this test exists precisely so the landscape banner work has a red test to turn
+    /// green when it extends this guarantee to them.
+    func test_landscape_cardFitsWithinItsVerticalMargins() throws {
+        let names = [
+            "standard-one-button",
+            "standard-two-button",
+            "permission-denied-settings",
+            "oblique-red-leave-confirm",
+            "onboarding-welcome-nobanner"
+        ]
+        let host = DifferentialGeometry.landscapeHost
+        for name in names {
+            let shape = try XCTUnwrap(DifferentialGeometry.shape(named: name))
+            let cardMarginV = ModalTokens(from: shape.properties).cardMarginV
+            let cap = host.height - cardMarginV * 2
+
+            let uiKit = DifferentialGeometry.uiKitFrames(shape, size: host)
+            let swiftUI = DifferentialGeometry.swiftUIFrames(shape, size: host)
+            let uiKitCard = try XCTUnwrap(uiKit[.card], "'\(name)': UIKit measured no card")
+            let swiftUICard = try XCTUnwrap(swiftUI[.card], "'\(name)': SwiftUI measured no card")
+
+            XCTAssertLessThanOrEqual(
+                uiKitCard.height, cap + DifferentialGeometry.tolerance,
+                "'\(name)' UIKit: card height \(uiKitCard.height)pt exceeds the vertical-margin cap "
+                    + "\(cap)pt (host \(host.height)pt, cardMarginV \(cardMarginV)pt). If this fires "
+                    + "the SHIPPING dialog breaches its own margins in landscape — do not weaken this "
+                    + "assertion, report it."
+            )
+            XCTAssertLessThanOrEqual(
+                swiftUICard.height, cap + DifferentialGeometry.tolerance,
+                "'\(name)' SwiftUI: card height \(swiftUICard.height)pt exceeds the vertical-margin "
+                    + "cap \(cap)pt (host \(host.height)pt, cardMarginV \(cardMarginV)pt). "
+                    + "`.frame(maxHeight:)` only proposes a height; something in this shape's content "
+                    + "is refusing to yield to it."
+            )
+        }
+    }
+
     /// **The landscape presence check — NOT a gate.**
     ///
     /// There is no landscape comparison for `banner-wide`: `banner`, `card`, `title`, `subtitle`
@@ -665,9 +719,14 @@ final class DifferentialGeometryTests: XCTestCase {
 
         // The complementary failure mode to the guard above: a shape where every row is
         // `absentOnBoth` leaves nothing for `disagreements.isEmpty` below to be true ABOUT, so it
-        // passes vacuously — an assertion-free test wearing a gate's clothes. Load-bearing, and
-        // NOT a leftover of the deleted `excluding:` parameter: it is the check that would make
-        // any future exclusion mechanism safe, and it is meaningful without one.
+        // passes vacuously — an assertion-free test wearing a gate's clothes. Currently
+        // UNREACHABLE: `comparable.isEmpty` implies no row has `uiKit != nil`, which means the
+        // guard immediately above (`allRows.contains(where: { $0.uiKit != nil })…`) already fired
+        // and returned — guard 1 strictly subsumes guard 2. It was reachable only while
+        // `excluding:` existed and could empty `comparable` while `allRows` still held
+        // measurements. Kept anyway, deliberately: it costs nothing, and it is what would keep a
+        // future exclusion mechanism honest if one is ever reintroduced. Do not delete it on the
+        // grounds that it is unreachable today.
         XCTAssertFalse(
             comparable.isEmpty,
             "'\(name)': NOTHING was comparable — every element is absent on both backends. A gate "

@@ -716,9 +716,10 @@ extension ModalTokens {
     /// exclusion in the differential gate — the landscape comparison for the wide-banner shape was
     /// DELETED rather than narrowed, because `banner`, `card`, `title`, `subtitle` and
     /// `primaryButton` are exactly the elements that shape draws and all five diverge, so any
-    /// honest exclusion set would have left nothing to compare. `assertAgrees` now refuses that
-    /// shape structurally (its "nothing left to compare" guard). What remains in landscape is a
-    /// presence check, not agreement — see `BannerSlot`'s doc, which says the same thing.
+    /// honest exclusion set would have left nothing to compare. `assertAgrees` has no exclusion
+    /// mechanism at all, so this shape is simply not run through it in landscape — it is not
+    /// refused structurally, it is not called. What remains in landscape is a presence check, not
+    /// agreement — see `BannerSlot`'s doc, which says the same thing.
     ///
     /// Pinned against measured Auto Layout output in `BannerGeometryTruthTests`.
     struct BannerGeometry: Equatable {
