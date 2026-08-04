@@ -793,6 +793,28 @@ enum DifferentialGeometry {
         return window
     }
 
+    /// **The safe-area insets a `makeWindow(size:)` host actually reports — read, never assumed.**
+    ///
+    /// This is the number that bounds the card's height, and it is NOT `cardMarginV`: UIKit's
+    /// `adjustVwContainerConstraint` pins `vwContainer` against `safeAreaLayoutGuide`, and the
+    /// `UIHostingController` that carries `AlertModalScaffold` hands its `GeometryReader` the
+    /// safe-area-inset height too. So both backends lay out inside `host.height − top − bottom`
+    /// whatever the preset's vertical margin says — and `GeniePresets.margin` deliberately says
+    /// ZERO, which is exactly why a cap derived from `cardMarginV` alone is the whole host and
+    /// asserts nothing.
+    ///
+    /// Measured on this device in landscape it is 62 + 34, but that pair is deliberately NOT
+    /// written down in an assertion anywhere: it is a property of the simulator, so a test that
+    /// hardcoded it would go red on a different device for a reason that is not a defect. Reading
+    /// it back off the same window the measurements run in keeps the derived cap true on any host.
+    static func safeAreaInsets(size: CGSize = host) -> UIEdgeInsets {
+        let window = makeWindow(size: size)
+        defer { teardown(window) }
+        window.setNeedsLayout()
+        window.layoutIfNeeded()
+        return window.safeAreaInsets
+    }
+
     static func teardown(_ window: UIWindow) {
         window.isHidden = true
         window.rootViewController = nil

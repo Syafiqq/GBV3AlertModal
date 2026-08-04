@@ -797,56 +797,70 @@ final class DifferentialGeometryTests: XCTestCase {
         )
     }
 
-    /// **The card must fit inside its vertical margins — pinned where it currently holds.**
+    /// **The card must fit inside the SAFE AREA, minus whatever vertical margin the preset asks for.**
     ///
     /// `AlertModalScaffold.body` applies `.frame(maxHeight: proxy.size.height - cardMarginV * 2)` to
     /// the card, and that only PROPOSES a height: a rigid child can still report a larger ideal size,
     /// and SwiftUI centres the overflow rather than clamping it. That used to be exactly what the
-    /// banner shapes did in landscape, because `BannerSlot`'s frame was rigid.
+    /// banner shapes did in landscape, because `BannerSlot`'s frame was rigid. The slot yields now
+    /// (`.frame(maxHeight:)` over a greedy `Color.clear` — see `BannerSlot`'s doc), and measured at
+    /// 844x390 `banner-wide` went 374.6 -> 294.0 and `banner-comparable` 312.6 -> 294.0.
     ///
-    /// **The banner shapes are now IN this list, and they hold.** The slot yields
-    /// (`.frame(maxHeight:)` over a greedy `Color.clear` — see `BannerSlot`'s doc), so the card no
-    /// longer reports an ideal larger than its proposal: measured at 844x390, `banner-wide` went
-    /// 374.6 -> 294.0 and `banner-comparable` 312.6 -> 294.0, both landing on the real ceiling
-    /// exactly rather than bleeding past it.
-    ///
-    /// **READ THE BOUND THIS ACTUALLY ASSERTS — it is much looser than it sounds, and it would NOT
-    /// have caught the regression above.** `cap` is `host.height - cardMarginV * 2`, and
+    /// **This test's cap used to be `host.height − cardMarginV * 2`, and that was ~150pt of slack.**
     /// `GeniePresets.margin` deliberately zeroes the vertical margin (top/bottom 0, see its note —
-    /// UIKit pins to the SAFE AREA, so the card still clears the notch without a margin of its own).
-    /// So `cardMarginV` is **0** for every shape here and `cap` is the **full 390pt host**. The
-    /// pre-fix `banner-wide` card was 374.6pt — comfortably under 390 — so extending this list to the
-    /// banner shapes at any earlier point would have passed, silently, straight through the very
-    /// defect this test's doc used to claim it was waiting to catch. That claim was wrong and is
-    /// removed.
+    /// UIKit pins to the SAFE AREA, so the card still clears the notch without a margin of its own),
+    /// so `cardMarginV` is **0** for every shape here and the cap was the **full 390pt host**. The
+    /// pre-fix `banner-wide` card was 374.6pt, comfortably under 390 — verified by reverting
+    /// `BannerSlot` to its rigid `.frame(width:height:)`, under which the old assertion stayed GREEN
+    /// while the shipping card bled ~40pt past each margin. A test that passes through the defect it
+    /// names is not a backstop; it is a claim.
     ///
-    /// The REAL ceiling both backends honour in landscape is **294pt**, and it comes from the safe
-    /// area, not from `cardMarginV`: the test window's landscape insets are 62 top + 34 bottom, so
-    /// `GeometryReader` hands `AlertModalScaffold` 294pt of height and UIKit's
-    /// `adjustVwContainerConstraint` pins against `safeAreaLayoutGuide` for the same 294. This test
-    /// is deliberately NOT rewritten against that number — it asserts the invariant the SCAFFOLD
-    /// states (`maxHeight` from `cardMarginV`), and tightening it to 294 would be asserting a
-    /// property of the simulator's safe area instead. What pins the tight number is the differential
-    /// gate: `test_geometry_landscape_bannerWide_agreesOnEveryOriginAndHeight` compares SwiftUI's
-    /// card height against UIKit's MEASURED one at 0.5pt, which is strictly stronger than any
-    /// inequality here. Treat this test as the cheap structural backstop it is, not as the guarantee.
-    func test_landscape_cardFitsWithinItsVerticalMargins() throws {
+    /// **The real ceiling is the safe area**, and it is where both backends independently get their
+    /// height from: UIKit's `adjustVwContainerConstraint` pins `vwContainer` against
+    /// `safeAreaLayoutGuide`, and the `UIHostingController` hands `AlertModalScaffold`'s
+    /// `GeometryReader` the inset height. On this device in landscape that is 390 − 62 − 34 = **294**,
+    /// and both cards land on it exactly.
+    ///
+    /// The 62/34 are NOT written down here. They are a property of the simulator, so hardcoding them
+    /// would make this red on a different device for a reason that is not a defect —
+    /// `DifferentialGeometry.safeAreaInsets` reads them back off the same window class the
+    /// measurements run in, which keeps the cap true on any host and still leaves it TIGHT: under the
+    /// rigid slot this now goes red on both banner shapes, which is the mutation that proves it.
+    ///
+    /// Still strictly weaker than the differential gate —
+    /// `test_geometry_landscape_bannerWide_agreesOnEveryOriginAndHeight` compares SwiftUI's card
+    /// height against UIKit's MEASURED one at 0.5pt. This is the cheap structural backstop that now
+    /// actually backs something up.
+    func test_landscape_cardFitsWithinItsSafeArea() throws {
         let names = [
             "standard-one-button",
             "standard-two-button",
             "permission-denied-settings",
             "oblique-red-leave-confirm",
             "onboarding-welcome-nobanner",
-            // The banner shapes, added once the slot learned to yield. See the doc above for what
-            // this does and does not prove about them.
+            // The banner shapes, added once the slot learned to yield — and the two the tightened
+            // cap actually bites on.
             "banner-wide",
             "banner-comparable"
         ]
         let host = DifferentialGeometry.landscapeHost
+        let insets = DifferentialGeometry.safeAreaInsets(size: host)
+
+        // **The premise, because without it this test silently reverts to the loose one it replaced.**
+        // A host that reported no insets would put the cap back at the full 390pt, where the pre-fix
+        // 374.6pt card passed. If this fires the cap is not measuring the safe area any more and the
+        // assertions below prove nothing — find out why rather than deleting this.
+        XCTAssertGreaterThan(
+            insets.top + insets.bottom, 0,
+            "the landscape host reports NO vertical safe-area insets, so the cap below is the whole "
+                + "\(host.height)pt host again — the same ~150pt of slack this test was tightened to "
+                + "remove, and the pre-fix 374.6pt card passes under it"
+        )
+
         for name in names {
             let shape = try XCTUnwrap(DifferentialGeometry.shape(named: name))
             let cardMarginV = ModalTokens(from: shape.properties).cardMarginV
-            let cap = host.height - cardMarginV * 2
+            let cap = host.height - insets.top - insets.bottom - cardMarginV * 2
 
             let uiKit = DifferentialGeometry.uiKitFrames(shape, size: host)
             let swiftUI = DifferentialGeometry.swiftUIFrames(shape, size: host)
@@ -855,17 +869,17 @@ final class DifferentialGeometryTests: XCTestCase {
 
             XCTAssertLessThanOrEqual(
                 uiKitCard.height, cap + DifferentialGeometry.tolerance,
-                "'\(name)' UIKit: card height \(uiKitCard.height)pt exceeds the vertical-margin cap "
-                    + "\(cap)pt (host \(host.height)pt, cardMarginV \(cardMarginV)pt). If this fires "
-                    + "the SHIPPING dialog breaches its own margins in landscape — do not weaken this "
-                    + "assertion, report it."
+                "'\(name)' UIKit: card height \(uiKitCard.height)pt exceeds the safe-area cap "
+                    + "\(cap)pt (host \(host.height)pt, insets \(insets.top)/\(insets.bottom), "
+                    + "cardMarginV \(cardMarginV)pt). If this fires the SHIPPING dialog breaches the "
+                    + "safe area in landscape — do not weaken this assertion, report it."
             )
             XCTAssertLessThanOrEqual(
                 swiftUICard.height, cap + DifferentialGeometry.tolerance,
-                "'\(name)' SwiftUI: card height \(swiftUICard.height)pt exceeds the vertical-margin "
-                    + "cap \(cap)pt (host \(host.height)pt, cardMarginV \(cardMarginV)pt). "
-                    + "`.frame(maxHeight:)` only proposes a height; something in this shape's content "
-                    + "is refusing to yield to it."
+                "'\(name)' SwiftUI: card height \(swiftUICard.height)pt exceeds the safe-area cap "
+                    + "\(cap)pt (host \(host.height)pt, insets \(insets.top)/\(insets.bottom), "
+                    + "cardMarginV \(cardMarginV)pt). `.frame(maxHeight:)` only proposes a height; "
+                    + "something in this shape's content is refusing to yield to it."
             )
         }
     }

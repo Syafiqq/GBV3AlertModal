@@ -250,9 +250,10 @@ public struct AlertModalScaffold<Content: View>: View {
     /// That slot now applies its height as a `.frame(maxHeight:)` over a greedy `Color.clear`, so it
     /// yields the residual instead of insisting (see `BannerSlot`'s doc), and both banner shapes now
     /// land on the ceiling exactly: 374.6 -> 294.0 and 312.6 -> 294.0. They are consequently inside
-    /// `test_landscape_cardFitsWithinItsVerticalMargins` — read that test's doc before trusting it,
-    /// because the bound it asserts is looser than it looks and the tight guarantee is the
-    /// differential one.
+    /// `test_landscape_cardFitsWithinItsSafeArea`, whose cap is the SAFE AREA (the height both
+    /// backends are actually given) rather than `cardMarginV`, which the Genie presets zero. Under a
+    /// `cardMarginV` cap that test passed with the rigid slot still in place; under the safe-area cap
+    /// it does not. The tight guarantee is still the differential one.
     ///
     /// The general statement stands: ANY rigid vertical child added below here can reintroduce the
     /// overflow, because the cap is still only a proposal. It is not reachable in portrait, where
