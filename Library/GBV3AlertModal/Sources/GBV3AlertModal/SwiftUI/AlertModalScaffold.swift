@@ -239,15 +239,24 @@ public struct AlertModalScaffold<Content: View>: View {
     /// justified by a claim that stopped being true: that SwiftUI had no scroll container for the
     /// subtitle (it does — `ScrollableContent`, opt-in via `Properties.contentScrollable`).
     ///
-    /// **The card CAN still grow off-screen, and an earlier version of this comment denied it.** It
-    /// claimed the card "cannot" overflow because `body` caps it at its container's height. That
-    /// cap is `.frame(maxHeight:)`, which only PROPOSES a height; `BannerSlot`'s frame is rigid
-    /// (`.frame(height:)`), so a banner row reports a larger ideal than the proposal and SwiftUI
-    /// centres the overflow rather than compressing it. Measured on the wide-banner shape in
-    /// landscape: the card runs from ~11pt to ~375pt in a 390pt-tall host — ~364pt against a 310pt
-    /// cap, i.e. it breaches the 40pt vertical card margin at both ends. This is the landscape
-    /// regression §5 of the banner-height design spec covers, not a separate defect; it is not
-    /// reachable in portrait, where the card is free to grow and nothing is yielding.
+    /// **The card CAN still grow off-screen in principle, and the mechanism is worth keeping in
+    /// view — but the one shape that actually did has been fixed.** The cap this view is given in
+    /// `body` is `.frame(maxHeight:)`, which only PROPOSES a height: a RIGID child can report a
+    /// larger ideal than the proposal and SwiftUI centres the overflow rather than compressing it.
+    /// `BannerSlot`'s frame used to be exactly such a child (`.frame(width:height:)`), and the
+    /// wide-banner shape in landscape measured 374.6pt of card against a 294pt ceiling — bleeding
+    /// ~40pt past the vertical margin at both ends.
+    ///
+    /// That slot now applies its height as a `.frame(maxHeight:)` over a greedy `Color.clear`, so it
+    /// yields the residual instead of insisting (see `BannerSlot`'s doc), and both banner shapes now
+    /// land on the ceiling exactly: 374.6 -> 294.0 and 312.6 -> 294.0. They are consequently inside
+    /// `test_landscape_cardFitsWithinItsVerticalMargins` — read that test's doc before trusting it,
+    /// because the bound it asserts is looser than it looks and the tight guarantee is the
+    /// differential one.
+    ///
+    /// The general statement stands: ANY rigid vertical child added below here can reintroduce the
+    /// overflow, because the cap is still only a proposal. It is not reachable in portrait, where
+    /// the card is free to grow and nothing is yielding.
     ///
     /// Worth 16pt per edge on the real preset (24 against 16), and pinned by
     /// `test_theVerticalPadding_compressesTowardItsMinimum_underPressure`, which asserts the

@@ -710,16 +710,34 @@ extension ModalTokens {
     /// the asset, prior to and independent of the frame this returns, and `availableCardWidth`
     /// comes from the CONTAINER, not from the content it constrains.
     ///
-    /// PORTRAIT ONLY. In a height-constrained card UIKit distributes the remainder across four
-    /// sub-required priority tiers and the banner takes the residual (measured ~102.3 for every
-    /// real preset, regardless of ratio or cap). Nothing here reaches that. There is NO landscape
-    /// exclusion in the differential gate — the landscape comparison for the wide-banner shape was
-    /// DELETED rather than narrowed, because `banner`, `card`, `title`, `subtitle` and
-    /// `primaryButton` are exactly the elements that shape draws and all five diverge, so any
-    /// honest exclusion set would have left nothing to compare. `assertAgrees` has no exclusion
-    /// mechanism at all, so this shape is simply not run through it in landscape — it is not
-    /// refused structurally, it is not called. What remains in landscape is a presence check, not
-    /// agreement — see `BannerSlot`'s doc, which says the same thing.
+    /// **The HEIGHT this returns is a DESIRE, not a resolved height — and that distinction is what
+    /// makes landscape work.** In a height-constrained card UIKit distributes the remainder across
+    /// four sub-required priority tiers and the banner takes the residual (measured ~102.3 for every
+    /// real preset in landscape, regardless of ratio or cap: four different ratio/cap/artwork
+    /// combinations produce the identical number, which is what "it takes whatever is left" looks
+    /// like from outside). Nothing computed here reaches that number, and nothing needs to:
+    /// `BannerSlot` applies this height as a `.frame(maxHeight:)` over a greedy `Color.clear`, so
+    /// the SLOT resolves to `min(thisDesire, whateverIsLeft)` — UIKit's yield semantics, produced by
+    /// the layout engine rather than by arithmetic. Where the card is roomy the two are the same
+    /// number and portrait is untouched; where it is not, the slot yields. See `BannerSlot`'s doc.
+    ///
+    /// **The COLUMN, however, is still a PORTRAIT rule, and that is the live limitation.** UIKit's
+    /// landscape arbitration shrinks the banner's height, and the required
+    /// `ivBanner.width == ivBanner.height * ratio` tie shrinks the image's WIDTH DEMAND with it —
+    /// measured, `ivBanner` is 172pt wide inside a 256pt `vwBanner` — so the demand drops below
+    /// `contentMaxWidth` and UIKit's column never grows in landscape at all. This function cannot
+    /// see that: the column depends on the resolved height, which depends on the residual, which
+    /// depends on the text, whose wrapping depends on the column. Circular; it needs a measurement
+    /// pass, not a formula. The consequence is a 64pt-wide column overshoot on wide artwork in
+    /// landscape, which reaches the card and every row that matches the card's width.
+    ///
+    /// So the landscape gate is scoped to exactly that: `banner-wide` is compared on every ORIGIN
+    /// and every HEIGHT at the usual 0.5pt
+    /// (`test_geometry_landscape_bannerWide_agreesOnEveryOriginAndHeight`) and on no width, with the
+    /// exclusion's mechanism pinned by `test_bannerWide_landscape_theWidthGapIsTheColumnRule`.
+    /// `banner-comparable` is not gated in landscape, and the reason is NOT this function — its
+    /// widths already agree. It is the D-7 subtitle viewport, worth a measured 19.33pt
+    /// (`test_bannerComparable_landscape_divergesOnlyByTheSubtitleViewport`).
     ///
     /// Pinned against measured Auto Layout output in `BannerGeometryTruthTests`.
     struct BannerGeometry: Equatable {

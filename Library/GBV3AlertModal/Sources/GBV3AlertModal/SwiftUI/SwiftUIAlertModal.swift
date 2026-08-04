@@ -336,22 +336,55 @@ private struct BannerSlot: View {
         // content column and settled on whatever vertical scrap the VStack offered: 26.8pt
         // against UIKit's 160.
         //
-        // The frame is RIGID, knowingly. UIKit's banner yields under pressure (its drivers sit
-        // below the card's `.low` 250 hugging) and this cannot. In portrait, with the card free
-        // to grow, nothing is yielding and the two coincide — every row of
-        // `BannerGeometryTruthTests` is such a case. In landscape they do not, and there is no
-        // differential gate for banner shapes there at all (measured, not assumed —
-        // `DifferentialGeometryTests.swift`'s `test_bannerWide_landscape_stillDrawsABannerOnBothSides`
-        // only proves the shape still renders). `ModalTokens.bannerGeometry` is a PORTRAIT rule
-        // (see its doc) and the divergence is not just a taller banner: UIKit's height-constrained
-        // residual arbitration also changes the banner's WIDTH demand through the required
-        // `ivBanner.width == ivBanner.height * ratio` tie, so wide artwork's real landscape column
-        // is narrower than this formula computes — and that wrong column reaches the CARD
-        // (`AlertModalScaffold`'s cap) and every row that matches the card's width, not just this
-        // one. `.frame(maxHeight:)` does not work here: the height must be REACHED, not merely
-        // bounded.
+        // **The height frame is a `maxHeight`, and that is UIKit's yield semantics — not a
+        // weaker version of them.** This was `.frame(width:height:)`, rigid, on the stated
+        // reasoning that "the height must be REACHED, not merely bounded" and that
+        // `.frame(maxHeight:)` therefore could not work here. Measured, that is false, and the
+        // reason it is false is a property of THIS view specifically: `Color.clear` is GREEDY. It
+        // expands to fill whatever it is offered, up to its `maxHeight`. So:
+        //
+        // * where the card is free to grow (portrait, and any roomy landscape card), the slot is
+        //   offered at least `bannerGeometry.height` and takes exactly it — a `maxHeight` frame and
+        //   a rigid one are indistinguishable, and every portrait frame is bit-identical under the
+        //   two (`DifferentialGeometryTests`' portrait banner rows, unchanged across the switch);
+        // * where the card is against its ceiling (landscape, every banner shape), the slot is
+        //   offered only the residual and takes THAT.
+        //
+        // Which is `banner = min(itsOwnDesire, whateverIsLeft)` — exactly what UIKit's priority
+        // ladder produces by putting every banner driver (`bannerNaturalAspect` 245,
+        // `bannerFixedHeight` 243, `bannerImageIntrinsic` 241) below the card's `.low` 250 hugging.
+        // Measured against the real `GBAlertModal` at 844x390: `banner-wide` 102.0 against UIKit's
+        // 102.33, and the card lands on its cap (294.0) instead of reporting a 374.6pt ideal into a
+        // 294pt slot and bleeding ~40pt past each vertical margin.
+        //
+        // **`.layoutPriority(-1)` is deliberately NOT here** — it was tried and is inert, to the
+        // last decimal, on every probed shape in both orientations. The banner already yields
+        // first without it: `Color.clear.frame(maxHeight:)` is the only child in the column with a
+        // [0, h] range, and SwiftUI's `VStack` serves its stiffest children first. The evidence
+        // that the ordering is right is the TITLE — under the rigid frame it was squeezed to 21.5pt
+        // by `minimumScaleFactor`, and under `maxHeight` it returns to its natural 28.7 while the
+        // banner absorbs the whole squeeze. Adding an inert modifier that would also put the banner
+        // on the same rung as `CompressibleVerticalPadding`'s strips (which ARE at -1) is a change
+        // with no measurement behind it.
+        //
+        // **What this does NOT fix, and what is gated because of it.** `ModalTokens.bannerGeometry`
+        // is still a PORTRAIT rule for the COLUMN (see its doc). UIKit's height-constrained
+        // residual arbitration also shrinks the banner's WIDTH demand, through the required
+        // `ivBanner.width == ivBanner.height * ratio` tie: measured in landscape, `ivBanner` is
+        // 172pt wide inside a 256pt `vwBanner`, so the image never asks for more than
+        // `contentMaxWidth` and UIKit's column does not grow at all there. `bannerGeometry` cannot
+        // see that — the column depends on the resolved height, which depends on the residual,
+        // which depends on the text, whose wrapping depends on the column. It is circular, and
+        // closing it needs a measurement pass, not a formula. `banner-wide` is still gated in
+        // landscape on every ORIGIN and every HEIGHT
+        // (`test_geometry_landscape_bannerWide_agreesOnEveryOriginAndHeight`), with the width
+        // exclusion's mechanism pinned separately; `banner-comparable` is not gated there, and the
+        // reason is NOT the banner but the D-7 subtitle viewport — its residual is 19.33pt, exactly
+        // what UIKit's compressed `svSubtitleContainer` withholds, asserted in
+        // `test_bannerComparable_landscape_divergesOnlyByTheSubtitleViewport`.
         Color.clear
-            .frame(width: bannerGeometry.column, height: bannerGeometry.height)
+            .frame(width: bannerGeometry.column)
+            .frame(maxHeight: bannerGeometry.height)
             .overlay {
                 // `Image(_:bundle:)` with a nil bundle IS `Image(_:)`, so the default path is
                 // unchanged — this only adds the ability to name a non-main bundle.

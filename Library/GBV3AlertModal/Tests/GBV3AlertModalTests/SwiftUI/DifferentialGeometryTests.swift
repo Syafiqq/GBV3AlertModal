@@ -559,31 +559,232 @@ final class DifferentialGeometryTests: XCTestCase {
     func test_geometry_landscape_obliqueRedLeaveConfirm() { assertAgrees("oblique-red-leave-confirm", size: DifferentialGeometry.landscapeHost) }
     func test_geometry_landscape_onboardingWelcomeNoBanner() { assertAgrees("onboarding-welcome-nobanner", size: DifferentialGeometry.landscapeHost) }
 
+    /// **`banner-wide` in landscape — gated for the first time, on every origin and every height.**
+    ///
+    /// This shape used to have no landscape comparison at all. `BannerSlot`'s frame was RIGID, so the
+    /// banner could not do what UIKit's does under pressure — yield — and every one of the five rows
+    /// this shape draws diverged. The slot is now `Color.clear` under a `.frame(maxHeight:)`, which
+    /// IS the yield (see `BannerSlot`'s doc), and the vertical half of the comparison closed
+    /// completely: measured at 844x390, banner 102.0 against UIKit's 102.33, card 294.0 against
+    /// 294.0, title/subtitle/button origins all inside 0.5pt.
+    ///
+    /// **Deliberately not `assertAgrees`, and the reason is a WIDTH that is still wrong.** UIKit's
+    /// landscape column is 256 where `ModalTokens.bannerGeometry` computes 320, and that 64pt reaches
+    /// the card and every row that matches the card. `assertAgrees` has no exclusion mechanism — spec
+    /// §5 removed it on purpose — so gating this shape through it would fail, and the honest
+    /// alternative is a test that states exactly which coordinates it does and does not cover. This
+    /// one covers `minX`, `minY` and `height` on every comparable row, at the same 0.5pt tolerance,
+    /// and covers `width` on none of them. That is ten pinned numbers where there were zero.
+    ///
+    /// The width exclusion is not left to this comment to enforce —
+    /// `test_bannerWide_landscape_theWidthGapIsTheColumnRule` pins its MECHANISM, so that if UIKit
+    /// ever stops shrinking the image's width demand the justification fails loudly instead of
+    /// rotting here.
+    func test_geometry_landscape_bannerWide_agreesOnEveryOriginAndHeight() throws {
+        let shape = try XCTUnwrap(DifferentialGeometry.shape(named: "banner-wide"))
+        let rows = DifferentialGeometry.rows(for: shape, size: DifferentialGeometry.landscapeHost)
+        let table = DifferentialGeometry.table(name: "banner-wide [landscape]", rows: rows)
+
+        let comparable = rows.filter { $0.verdict != .absentOnBoth }
+        XCTAssertFalse(
+            comparable.isEmpty,
+            "'banner-wide': NOTHING was comparable in landscape — a gate that compares nothing is "
+                + "not a gate.\n" + table
+        )
+
+        for row in comparable {
+            let uiKit = try XCTUnwrap(row.uiKit, "'\(row.element.rawValue)': UIKit drew nothing")
+            let swiftUI = try XCTUnwrap(row.swiftUI, "'\(row.element.rawValue)': SwiftUI drew nothing")
+            let name = row.element.rawValue
+            XCTAssertEqual(
+                swiftUI.minX, uiKit.minX, accuracy: DifferentialGeometry.tolerance,
+                "'\(name)' minX diverges in landscape.\n" + table
+            )
+            XCTAssertEqual(
+                swiftUI.minY, uiKit.minY, accuracy: DifferentialGeometry.tolerance,
+                "'\(name)' minY diverges in landscape.\n" + table
+            )
+            XCTAssertEqual(
+                swiftUI.height, uiKit.height, accuracy: DifferentialGeometry.tolerance,
+                "'\(name)' HEIGHT diverges in landscape. This is the coordinate the banner's "
+                    + "`.frame(maxHeight:)` yield semantics buys — if it is red, the slot has "
+                    + "stopped yielding the residual.\n" + table
+            )
+        }
+    }
+
+    /// **Why the test above excludes `width`, asserted as a mechanism rather than trusted as prose.**
+    ///
+    /// UIKit's height-constrained arbitration shrinks the banner's HEIGHT, and the required
+    /// `ivBanner.width == ivBanner.height * ratio` tie shrinks the image's WIDTH DEMAND with it.
+    /// Measured in landscape: `ivBanner` is 172pt wide inside a 256pt `vwBanner`, i.e. the image asks
+    /// for less than the content column, so nothing pushes the column past `contentMaxWidth` and
+    /// UIKit's column simply stays there. `ModalTokens.bannerGeometry` cannot reach that number: the
+    /// column depends on the resolved height, the height depends on the residual, the residual
+    /// depends on the text, and the text's wrapping depends on the column. Closing it needs a
+    /// measurement pass, not a formula.
+    ///
+    /// So this asserts the two facts the exclusion rests on: that UIKit's image really is narrower
+    /// than its slot in landscape (the demand collapsed), and that it is NOT in portrait (where the
+    /// same shape's column growth is real and `test_geometry_bannerWide` gates it). If UIKit ever
+    /// stops doing this the exclusion above is unjustified, and this goes red to say so.
+    func test_bannerWide_landscape_theWidthGapIsTheColumnRule() throws {
+        let shape = try XCTUnwrap(DifferentialGeometry.shape(named: "banner-wide"))
+
+        func measure(_ size: CGSize) throws -> (slot: CGFloat, image: CGFloat) {
+            let modal = DifferentialGeometry.makeUIKitModal(shape)
+            let window = DifferentialGeometry.makeWindow(size: size)
+            defer { DifferentialGeometry.teardown(window) }
+            modal.show(parent: window, completion: {})
+            window.setNeedsLayout()
+            window.layoutIfNeeded()
+            let slot = try XCTUnwrap(modal.vwBanner, "UIKit built no banner slot")
+            let image = try XCTUnwrap(modal.ivBanner, "UIKit built no banner image")
+            return (slot.bounds.width, image.bounds.width)
+        }
+
+        let landscape = try measure(DifferentialGeometry.landscapeHost)
+        XCTAssertLessThan(
+            landscape.image, landscape.slot - DifferentialGeometry.tolerance,
+            "UIKit's landscape `ivBanner` (\(landscape.image)pt) is no longer NARROWER than its "
+                + "`vwBanner` (\(landscape.slot)pt). The height-driven collapse of the image's width "
+                + "demand is what makes UIKit's landscape column stay at `contentMaxWidth`, and it is "
+                + "the whole justification for "
+                + "`test_geometry_landscape_bannerWide_agreesOnEveryOriginAndHeight` not comparing "
+                + "widths. If this is red, either compare widths there or find the new reason not to."
+        )
+
+        let portrait = try measure(DifferentialGeometry.host)
+        XCTAssertEqual(
+            portrait.image, portrait.slot, accuracy: DifferentialGeometry.tolerance,
+            "UIKit's PORTRAIT `ivBanner` (\(portrait.image)pt) no longer fills its `vwBanner` "
+                + "(\(portrait.slot)pt). Portrait is the regime where the artwork's width demand "
+                + "survives and genuinely widens the column — if it has stopped, "
+                + "`ModalTokens.bannerGeometry`'s column rule is wrong in the orientation it WAS "
+                + "written for, not just in landscape."
+        )
+    }
+
+    /// **`banner-comparable` in landscape is NOT gated, and the reason is D-7 — not the banner.**
+    ///
+    /// This is the shape whose widths agree (its artwork never widens the column), so it isolates the
+    /// height story with nothing else in the way. After the `maxHeight` slot its card is exactly
+    /// UIKit's (294.0) and its primary button is exactly UIKit's (y 227.0). What is left is a single
+    /// displacement of **19.33pt**: SwiftUI's banner is 115.0 where UIKit's is 134.33.
+    ///
+    /// That 19.33 is not the banner's error. It is the SUBTITLE's, and this test proves it by
+    /// measuring both halves and asserting they are the SAME number:
+    ///
+    /// * UIKit's `svSubtitleContainer` is a `UIScrollView`. In landscape, with the card against its
+    ///   ceiling, it compresses to a **19.0pt viewport over a 38.33pt label** — UIKit is clipping half
+    ///   its own subtitle, and the differential harness probes the viewport.
+    /// * SwiftUI has no per-subtitle viewport (structural gap D-7 — its scroll, when enabled at all,
+    ///   wraps title AND subtitle together), so its subtitle renders at its natural 38.3 and refuses
+    ///   the 19.33pt UIKit's gave up.
+    /// * The residual is conserved, so whatever the subtitle keeps, the banner pays. The banner is
+    ///   short by exactly what the subtitle withheld.
+    ///
+    /// This is therefore the pre-existing D-7 divergence surfacing in a new place, not a banner
+    /// defect and not something a different modifier on `BannerSlot` could fix. Closing it needs a
+    /// SwiftUI subtitle container that clips and yields the way `svSubtitleContainer` does — at which
+    /// point this shape can go straight into `assertAgrees` in landscape and this test is replaced by
+    /// that. Asserted by MECHANISM (the two shortfalls must match) rather than by literal, so it
+    /// cannot rot into a stale exception: if the subtitle ever stops being the whole story, the
+    /// equality breaks and says so.
+    func test_bannerComparable_landscape_divergesOnlyByTheSubtitleViewport() throws {
+        let shape = try XCTUnwrap(DifferentialGeometry.shape(named: "banner-comparable"))
+        let host = DifferentialGeometry.landscapeHost
+        let rows = DifferentialGeometry.rows(for: shape, size: host)
+        let table = DifferentialGeometry.table(name: "banner-comparable [landscape]", rows: rows)
+
+        // (1) The rows that DO agree — a real guarantee, and the thing that says the banner's yield
+        //     is working. Both were wrong before the `maxHeight` slot (card 312.6, button y 245.6).
+        for element in [ModalGeometryElement.card, .primaryButton] {
+            let row = try XCTUnwrap(rows.first { $0.element == element })
+            XCTAssertFalse(
+                row.verdict.isDisagreement,
+                "'\(element.rawValue)' disagrees in landscape. The card and the button are supposed "
+                    + "to be exact once the banner yields the residual.\n" + table
+            )
+        }
+
+        // (2) The premise: UIKit really is compressing its subtitle viewport here. Without this the
+        //     equality below could hold for some unrelated reason.
+        let modal = DifferentialGeometry.makeUIKitModal(shape)
+        let window = DifferentialGeometry.makeWindow(size: host)
+        defer { DifferentialGeometry.teardown(window) }
+        modal.show(parent: window, completion: {})
+        window.setNeedsLayout()
+        window.layoutIfNeeded()
+        let viewport = try XCTUnwrap(modal.svSubtitleContainer, "UIKit built no subtitle container")
+        let label = try XCTUnwrap(modal.lbSubtitle, "UIKit built no subtitle label")
+        let withheld = label.bounds.height - viewport.bounds.height
+        XCTAssertGreaterThan(
+            withheld, DifferentialGeometry.tolerance,
+            "UIKit's landscape subtitle viewport (\(viewport.bounds.height)pt) is no longer smaller "
+                + "than its label (\(label.bounds.height)pt), so it has stopped compressing and this "
+                + "shape may finally be comparable. Try `assertAgrees(\"banner-comparable\", size: "
+                + "DifferentialGeometry.landscapeHost)` and delete this test if it passes."
+        )
+
+        // (3) The claim: the banner's shortfall IS the subtitle's withholding, to the point.
+        let banner = try XCTUnwrap(rows.first { $0.element == .banner })
+        let uiKitBanner = try XCTUnwrap(banner.uiKit, "UIKit drew no banner")
+        let swiftUIBanner = try XCTUnwrap(banner.swiftUI, "SwiftUI drew no banner")
+        let shortfall = uiKitBanner.height - swiftUIBanner.height
+        XCTAssertEqual(
+            shortfall, withheld, accuracy: DifferentialGeometry.tolerance,
+            "the banner's landscape shortfall (\(shortfall)pt) is no longer equal to what UIKit's "
+                + "subtitle viewport withholds (\(withheld)pt). These being the same number is the "
+                + "entire claim that this is D-7 and not a banner defect — if they have come apart, "
+                + "something ELSE is now also diverging and the banner is back in scope.\n" + table
+        )
+    }
+
     /// **The card must fit inside its vertical margins — pinned where it currently holds.**
     ///
     /// `AlertModalScaffold.body` applies `.frame(maxHeight: proxy.size.height - cardMarginV * 2)` to
     /// the card, and that only PROPOSES a height: a rigid child can still report a larger ideal size,
-    /// and SwiftUI centres the overflow rather than clamping it. That is exactly what happens to the
-    /// banner shapes in landscape — `BannerSlot`'s frame is rigid (see its doc in
-    /// `SwiftUIAlertModal.swift`), so the slot cannot yield, the card's ideal height exceeds the
-    /// proposal, and the excess bleeds past the vertical margin. That is the known regression
-    /// recorded in the design spec's §5, and nothing in this suite asserted the containment those five
-    /// non-banner shapes actually have.
+    /// and SwiftUI centres the overflow rather than clamping it. That used to be exactly what the
+    /// banner shapes did in landscape, because `BannerSlot`'s frame was rigid.
     ///
-    /// So this is scoped to exactly the five shapes already gated in landscape
-    /// (`assertAgrees(..., size: landscapeHost)` above) rather than all twelve: those five have no
-    /// rigid banner slot to refuse to yield, so the containment invariant is expected to hold for them
-    /// today, and this test PINS that. It deliberately does not extend to the banner shapes — doing so
-    /// would either fail on a known, already-recorded regression, or have to weaken the assertion to
-    /// dodge it, and this test exists precisely so the landscape banner work has a red test to turn
-    /// green when it extends this guarantee to them.
+    /// **The banner shapes are now IN this list, and they hold.** The slot yields
+    /// (`.frame(maxHeight:)` over a greedy `Color.clear` — see `BannerSlot`'s doc), so the card no
+    /// longer reports an ideal larger than its proposal: measured at 844x390, `banner-wide` went
+    /// 374.6 -> 294.0 and `banner-comparable` 312.6 -> 294.0, both landing on the real ceiling
+    /// exactly rather than bleeding past it.
+    ///
+    /// **READ THE BOUND THIS ACTUALLY ASSERTS — it is much looser than it sounds, and it would NOT
+    /// have caught the regression above.** `cap` is `host.height - cardMarginV * 2`, and
+    /// `GeniePresets.margin` deliberately zeroes the vertical margin (top/bottom 0, see its note —
+    /// UIKit pins to the SAFE AREA, so the card still clears the notch without a margin of its own).
+    /// So `cardMarginV` is **0** for every shape here and `cap` is the **full 390pt host**. The
+    /// pre-fix `banner-wide` card was 374.6pt — comfortably under 390 — so extending this list to the
+    /// banner shapes at any earlier point would have passed, silently, straight through the very
+    /// defect this test's doc used to claim it was waiting to catch. That claim was wrong and is
+    /// removed.
+    ///
+    /// The REAL ceiling both backends honour in landscape is **294pt**, and it comes from the safe
+    /// area, not from `cardMarginV`: the test window's landscape insets are 62 top + 34 bottom, so
+    /// `GeometryReader` hands `AlertModalScaffold` 294pt of height and UIKit's
+    /// `adjustVwContainerConstraint` pins against `safeAreaLayoutGuide` for the same 294. This test
+    /// is deliberately NOT rewritten against that number — it asserts the invariant the SCAFFOLD
+    /// states (`maxHeight` from `cardMarginV`), and tightening it to 294 would be asserting a
+    /// property of the simulator's safe area instead. What pins the tight number is the differential
+    /// gate: `test_geometry_landscape_bannerWide_agreesOnEveryOriginAndHeight` compares SwiftUI's
+    /// card height against UIKit's MEASURED one at 0.5pt, which is strictly stronger than any
+    /// inequality here. Treat this test as the cheap structural backstop it is, not as the guarantee.
     func test_landscape_cardFitsWithinItsVerticalMargins() throws {
         let names = [
             "standard-one-button",
             "standard-two-button",
             "permission-denied-settings",
             "oblique-red-leave-confirm",
-            "onboarding-welcome-nobanner"
+            "onboarding-welcome-nobanner",
+            // The banner shapes, added once the slot learned to yield. See the doc above for what
+            // this does and does not prove about them.
+            "banner-wide",
+            "banner-comparable"
         ]
         let host = DifferentialGeometry.landscapeHost
         for name in names {
@@ -613,19 +814,23 @@ final class DifferentialGeometryTests: XCTestCase {
         }
     }
 
-    /// **The landscape presence check — NOT a gate.**
+    /// **The landscape presence check — still NOT a gate, and no longer the only thing there is.**
     ///
-    /// There is no landscape comparison for `banner-wide`: `banner`, `card`, `title`, `subtitle`
-    /// and `primaryButton` are exactly the elements this shape draws, and all five diverge in
-    /// landscape (see `ModalTokens.bannerGeometry`'s doc — it is a PORTRAIT rule). Excluding
-    /// everything comparable is not a narrower gate, it is an assertion-free test wearing a gate's
-    /// clothes — which is why `assertAgrees` has no exclusion mechanism at all, and why this shape
-    /// is simply not run through it in landscape.
+    /// When this was written there was no landscape comparison for `banner-wide` at all: all five of
+    /// the elements it draws diverged, and excluding everything comparable is not a narrower gate but
+    /// an assertion-free test wearing a gate's clothes. That is still why `assertAgrees` has no
+    /// exclusion mechanism, and still why this shape does not go through it.
     ///
-    /// What is still worth asserting: that the shape renders SOMETHING real on both backends in
-    /// landscape, so a regression that made it vanish (a `nil` frame, a zero-size rect) is still
-    /// caught, even though a regression that changed its size or position is not. That is a
-    /// strictly weaker claim than agreement, and this test's name says so.
+    /// **What changed: four of those five coordinates now agree.** Once `BannerSlot` began yielding,
+    /// every origin and every height on this shape landed inside 0.5pt of UIKit, and
+    /// `test_geometry_landscape_bannerWide_agreesOnEveryOriginAndHeight` gates them. Only `width`
+    /// still diverges, for the column reason pinned in
+    /// `test_bannerWide_landscape_theWidthGapIsTheColumnRule`.
+    ///
+    /// So this test is now a PREMISE for that one rather than the only landscape claim about the
+    /// shape: it asserts that both backends render something real, so a regression that made the
+    /// shape vanish (a `nil` frame, a zero-size rect) cannot leave the gate above quietly comparing
+    /// fewer rows than it thinks. Strictly weaker than agreement, and the name still says so.
     func test_bannerWide_landscape_stillDrawsABannerOnBothSides() throws {
         let shape = try XCTUnwrap(DifferentialGeometry.shape(named: "banner-wide"))
         let rows = DifferentialGeometry.rows(for: shape, size: DifferentialGeometry.landscapeHost)

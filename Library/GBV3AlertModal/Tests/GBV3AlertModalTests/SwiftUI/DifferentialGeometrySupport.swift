@@ -79,6 +79,28 @@ import UIKit
 ///   The shape's premise is itself gated (`test_theScrollingShape_actuallyScrolls`) — at twenty
 ///   repetitions its subtitle came to 611pt and the portrait card, whose ceiling the zeroed vertical
 ///   margin raised, simply FIT it, making the row vacuous. Forty engages it.
+/// * **It is also the only thing standing between the BANNER shapes and a landscape gate, which was
+///   not known until the banner slot stopped hiding it.** While `BannerSlot`'s frame was rigid the
+///   banner could not yield, so every landscape banner row diverged and the subtitle's contribution
+///   was invisible underneath that. With the slot yielding (`.frame(maxHeight:)` over a greedy
+///   `Color.clear`), `banner-comparable`'s landscape card and primary button became EXACT and a
+///   single divergence was left: 19.33pt.
+///
+///   That 19.33 is this gap, measured. In landscape, with the card against its ceiling, UIKit's
+///   `svSubtitleContainer` compresses to a **19.0pt viewport over a 38.33pt label** — UIKit clips
+///   half its own subtitle and the harness probes the viewport. SwiftUI has no per-subtitle viewport
+///   to compress, so its `Text` keeps the full 38.3 and refuses the 19.33 UIKit gave up; the
+///   residual is conserved, so the banner pays it instead and comes out 19.33 short. Pinned by
+///   MECHANISM — the two shortfalls must be the same number — in
+///   `test_bannerComparable_landscape_divergesOnlyByTheSubtitleViewport`, so it cannot decay into a
+///   stale exception. Note this is NOT the same regime as `long-subtitle-scrolling`: there the
+///   subtitle is long enough to scroll at any size, here an ordinary one-line subtitle is clipped
+///   purely because landscape puts the card against its ceiling — which means every banner shape is
+///   in this regime in landscape, not just deliberately long ones.
+///
+///   Closing it would let `banner-comparable` go straight into `assertAgrees` at `landscapeHost` and
+///   that test be deleted. `banner-wide` needs it too, and separately needs the landscape column
+///   rule (see `ModalTokens.bannerGeometry`) — its width divergence currently MASKS this one.
 /// * It is also why `AlertModalScaffold.card` applies the VERTICAL content padding at its max with no
 ///   compression toward `topMin`/`bottomMin`, even though the horizontal padding does compress.
 ///

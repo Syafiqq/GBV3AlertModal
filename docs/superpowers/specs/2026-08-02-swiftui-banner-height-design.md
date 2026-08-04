@@ -185,6 +185,13 @@ tiers and the banner takes the residual — no closed form reaches 102.3, and §
 cannot yield at all, so landscape gets *worse* under this design before it gets better. That part
 still holds. What does not hold is treating this as a HEIGHT problem contained to one row.
 
+> **SUPERSEDED IN PART — read §5b before acting on this section.** The sentence above ("no closed
+> form reaches 102.3, and §4.3's rigid frame cannot yield at all") was the reasoning that kept the
+> slot rigid, and it is falsified: the frame does not have to *compute* the residual, only stop
+> insisting on more than it. `Color.clear` under a `.frame(maxHeight:)` yields it. The banner heights
+> and the vertical margin breach are FIXED and `banner-wide` is gated in landscape; the width cascade
+> this section describes is real and remains open. §5b has the measured before/after.
+
 **It is a width problem that starts at the banner and ends at the card.** In landscape, UIKit's
 residual arbitration shrinks the banner's height — and, because the artwork is WIDER than the
 content column on every real preset (§3), the required `ivBanner.width == ivBanner.height * ratio`
@@ -229,24 +236,91 @@ from a passing test that asserts nothing. So the landscape comparison test for `
    and never overflows it, and stays inside the card's required minimum padding. This is a bound on
    where the (wrong) numbers land, not an agreement check.
 
-**Landscape is not gated for banner shapes.** No test asserts that UIKit and SwiftUI agree on
-`banner`, `card`, `title`, `subtitle`, or `primaryButton` for a banner-carrying shape in landscape.
-The five portrait-only landscape shapes (`standard-one-button`, `standard-two-button`,
-`permission-denied-settings`, `oblique-red-leave-confirm`, `onboarding-welcome-nobanner`) are
-gated as before — none of them carries a banner.
+## 5b. Landscape, revisited — the residual DOES have a closed form, and it is not arithmetic
 
-**It also breaches the card's VERTICAL margins, which the width cascade above does not cover.** The
-card's height cap in `AlertModalScaffold.body` is a `.frame(maxHeight:)`, which only *proposes* a
-height; `BannerSlot`'s rigid `.frame(height:)` reports a larger ideal and SwiftUI centres the
-overflow rather than compressing it. Measured on `banner-wide` in landscape: the card runs from
-~11pt to ~375pt in a 390pt-tall host — ~364pt against a 310pt cap, i.e. past the 40pt card margin at
-both ends. Same root cause (the rigid slot cannot yield), second symptom.
+**Two claims in §5 above are now measurably wrong and are corrected here. The measured tables stay;
+they were never the problem.**
 
-**Consequence, stated plainly:** any preset that combines landscape with artwork wider than its
-content column — which is eight of the app's nine real banner assets (§3) — renders measurably
-differently between the two backends. Not "a taller banner": a WIDER CARD, with its title,
-subtitle and primary button all displaced to match the wrong width. Landscape banner parity is the
-next piece of work after this one, and it is the harder half.
+### What was wrong
+
+1. *"No closed form reaches 102.3."* False in the sense that matters. No formula **computes** the
+   residual — that part stands — but the layout engine **arrives** at it, which is exactly what Auto
+   Layout is doing on the UIKit side. `BannerSlot`'s frame was rigid on the stated reasoning that
+   "the height must be REACHED, not merely bounded", and that reasoning is falsified by a property of
+   the view it was applied to: **`Color.clear` is greedy.** Under `.frame(maxHeight: h)` it expands
+   to fill whatever it is offered, up to `h`. So the slot resolves to
+   **`min(itsOwnDesire, whateverIsLeft)`** — which is precisely the yield semantics UIKit's priority
+   ladder produces by placing every banner driver (`bannerNaturalAspect` 245, `bannerFixedHeight`
+   243, `bannerImageIntrinsic` 241) below the card's `.low` 250 hugging.
+2. *"Landscape is not gated for banner shapes."* No longer true — see below.
+
+The change is one line: `.frame(width: column, height: height)` becomes `.frame(width: column)` plus
+`.frame(maxHeight: height)`. **`.layoutPriority(-1)` was tried and is inert** — byte-identical
+results on every probed shape in both orientations. The banner already yields first without it,
+because `Color.clear.frame(maxHeight:)` is the only child in the column with a `[0, h]` range and
+SwiftUI serves its stiffest children first. The evidence that the ordering is correct is the title:
+under the rigid frame `minimumScaleFactor` squeezed it to 21.5pt; under `maxHeight` it returns to its
+natural 28.7 while the banner absorbs the entire squeeze.
+
+### Measured, at 844x390
+
+| shape | element | UIKit | SwiftUI (rigid) | SwiftUI (`maxHeight`) |
+|---|---|---|---|---|
+| `banner-wide` | card h | 294.0 | 374.6 | **294.0** |
+| `banner-wide` | banner h | 102.33 | 190.0 | **102.0** |
+| `banner-wide` | title y | 138.33 | 226.0 | **138.0** |
+| `banner-comparable` | card h | 294.0 | 312.6 | **294.0** |
+| `banner-comparable` | banner h | 134.33 | 160.0 | 115.0 |
+
+**Portrait did not move by so much as a rounding step** — every portrait frame is bit-identical
+across the switch, which is the point: where the card is free to grow, the slot is offered at least
+its desire and takes exactly it, so a `maxHeight` frame and a rigid one are indistinguishable.
+
+The vertical-margin breach §5 recorded is closed. Both banner shapes now land on the ceiling exactly
+instead of reporting a larger ideal and having SwiftUI centre the overflow.
+
+### What is gated now
+
+**`banner-wide` IS gated in landscape** — `test_geometry_landscape_bannerWide_agreesOnEveryOriginAndHeight`
+compares `minX`, `minY` and `height` on every comparable row at the usual 0.5pt. It deliberately does
+**not** compare `width`, and does not use `assertAgrees` (which still has no exclusion mechanism, per
+§5 point 1 — that decision stands). The exclusion is justified by a mechanism that is itself
+asserted, in `test_bannerWide_landscape_theWidthGapIsTheColumnRule`.
+
+**The width gap is real and unfixed.** UIKit's landscape arbitration shrinks the banner's height, and
+the required `ivBanner.width == ivBanner.height * ratio` tie shrinks the image's width demand with
+it: measured, `ivBanner` is **172pt wide inside a 256pt `vwBanner`**, so the image asks for less than
+the content column, nothing pushes the column past `contentMaxWidth`, and UIKit's column does not
+grow in landscape at all. `ModalTokens.bannerGeometry` computes 320 there. The 64pt difference
+reaches the card (384 vs 320) and every row that matches the card. It is not computable without a
+measurement pass: the column depends on the resolved height, the height on the residual, the residual
+on the text, and the text's wrapping on the column. §5's width-cascade analysis was therefore
+**correct**; only its attribution was one step short — the cascade starts at the height, not at the
+column.
+
+**`banner-comparable` is NOT gated in landscape, and the reason is not the banner.** Its widths
+already agree, its card and primary button are now exact, and what remains is a single **19.33pt**
+displacement. That number is the D-7 subtitle gap, measured: in landscape UIKit's
+`svSubtitleContainer` compresses to a **19.0pt viewport over a 38.33pt label** — it clips half its own
+subtitle — while SwiftUI, having no per-subtitle viewport, keeps the full 38.3. The residual is
+conserved, so the banner pays exactly what the subtitle withheld. Pinned by mechanism (the two
+shortfalls must be equal) in `test_bannerComparable_landscape_divergesOnlyByTheSubtitleViewport`, and
+recorded against D-7 in `DifferentialGeometrySupport`'s header rather than as a banner gap.
+
+### Consequence, restated
+
+Landscape banner parity is **no longer the harder half; it is two smaller halves with known owners.**
+
+1. **D-7's subtitle viewport** — worth a measured 19.33pt, blocks `banner-comparable` alone, and is a
+   prerequisite for `banner-wide` regardless of route. This is the load-bearing item.
+2. **The landscape column rule** — worth 64pt on wide artwork, needs a measurement pass rather than a
+   formula, and should wait behind (1), because `banner-wide`'s width divergence currently masks the
+   subtitle one and a second pass cannot be validated while a 19.33pt error is still in the residual
+   it would be measuring.
+
+Any preset combining landscape with artwork wider than its content column (eight of the app's nine
+real banner assets, §3) still renders a wider card than UIKit. What is no longer true is that it also
+renders a taller one, an overflowing one, or an ungated one.
 
 ## 6. Changes
 
