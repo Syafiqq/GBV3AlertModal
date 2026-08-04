@@ -142,8 +142,19 @@ public struct SwiftUIAlertModal: View {
         // reader does not run (a structural `inspect()`, a preview that never gets a size) the banner
         // vanished from the view tree altogether rather than merely being unsized. Existence is a
         // resolver decision; only SIZE is a layout decision, and the two are separated here.
-        let bannerArtworkSize = resolved.showsBanner ? (config.image?.pointSize ?? .zero) : .zero
-        let drawsBanner = bannerArtworkSize.width > 0 && bannerArtworkSize.height > 0
+        //
+        // `resolved.showsBanner` is the WHOLE answer, and this used to ask half of it twice. The
+        // shared resolver computes that flag from `holder.banner`, which
+        // `UIKitModalRenderer.AlertHolder.make` produces with
+        // `UIImage(named:in:compatibleWith:)` — the identical lookup `ModalImage.pointSize` runs —
+        // and it is already "non-nil AND non-degenerate". Re-deriving `drawsBanner` from the point
+        // size therefore recomputed a decision the resolver had made, from a second copy of the
+        // same fact.
+        let drawsBanner = resolved.showsBanner
+        // The SIZE is the one thing the flag cannot carry, and `ModalTokens.bannerGeometry` needs
+        // it before any layout runs (`.resizable()` discards it). Short-circuited on the flag, so a
+        // modal with no banner never pays for the lookup at all.
+        let bannerArtworkSize = drawsBanner ? (config.image?.pointSize ?? .zero) : .zero
         return AlertModalScaffold(
             tokens: tokens,
             primaryTitle: config.primary,
@@ -317,6 +328,22 @@ public struct SwiftUIAlertModal: View {
 /// zero-artwork collapse that guard was reaching for is served by the SAME call-site check, on the
 /// artwork's point size, which is known without measuring anything.
 ///
+/// **One behavioural difference that removal left behind, recorded because it is real and
+/// unreachable rather than because it needs fixing.** There is a narrow case where the artwork
+/// RESOLVES with a non-zero point size — so the call site says yes and this view is built — and
+/// `ModalTokens.bannerGeometry` still returns `.zero`: it does that when the ratio is not a usable
+/// number, i.e. when `Properties.bannerRatio` is explicitly zero, negative, NaN or infinite (a
+/// natural ratio derived from a non-zero size never is). The old `if bannerGeometry.height > 0`
+/// guard skipped the whole body there and published NO `.banner` probe; this version emits a
+/// zero-SIZE one instead. Downstream that is a `verdict: .onlySwiftUI` row in the differential
+/// harness rather than an `absent (both)` — a visible, honest disagreement, and the harness's own
+/// `assertNonDegenerate` would report the zero rect.
+///
+/// It is not reachable from any preset in the app: every one of them either omits `bannerRatio`
+/// (natural aspect) or spells it as a ratio of two positive asset dimensions. No guard is added for
+/// it — a branch nothing can reach is a branch nothing can test, and the honest zero-size probe is a
+/// better failure mode than a silently absent one.
+///
 /// **This row does NOT honour `contentChildrenFillWidth`** — it applies no `ContentRowWidth`, where
 /// the title and subtitle rows both do. Its width is the banner column, always, because that is
 /// what UIKit's `vwBanner` resolves to. Inert for every shipping preset (all of them set the flag
@@ -394,7 +421,15 @@ private struct BannerSlot: View {
                     .resizable()
                     .scaledToFit()   // preserve the artwork's aspect (no distortion)
             }
-            .clipped()
+            // NO `.clipped()`, and its removal is deliberate rather than an oversight. It was inert
+            // TWICE OVER: an `.overlay` is proposed its host's size and `scaledToFit` only ever
+            // shrinks inside that, so the picture cannot leave the slot at any resolved height; and
+            // UIKit's `vwBanner` — the view this slot IS — never sets `clipsToBounds` either. The
+            // only view that clips on either backend is the CARD (`vwContainer.clipsToBounds = true`
+            // in `GBAlertModal+Model.swift`, `clipShape` in `AlertModalScaffold.card`), and it still
+            // does. Keeping a no-op here would have read as a mirror of a UIKit property that does
+            // not exist.
+            //
             // Probed on the SLOT, the counterpart of UIKit's `vwBanner` — not of the picture
             // inside it, and not of `vwBannerAndBelowDivider`.
             .modalGeometryProbe(.banner)

@@ -128,6 +128,19 @@ enum DifferentialGeometry {
     /// measured numbers.
     static let landscapeHost = CGSize(width: 844, height: 390)
 
+    /// **An iPad-WIDTH host — named, because its two siblings above are.**
+    ///
+    /// It exists for one job: it is wider than `cardMaxWidth + 2·cardMarginH`, which is the regime
+    /// where `AlertModalScaffold`'s host-derived column ceiling names more room than a card pinned at
+    /// `cardMaxWidth` could hand over. Both phone hosts are narrower, so neither exercises that
+    /// branch (`test_bannerWide_theSlotNeverOverflowsTheCard_atAnyHostWidth`).
+    ///
+    /// **iPad-WIDTH, not an iPad.** It is a `UIWindow` of these dimensions on whatever simulator is
+    /// running, so the trait collection, the size classes, the display scale and
+    /// `UIDevice.current.userInterfaceIdiom` all remain the host device's. Nothing here is evidence
+    /// about iPad hardware; it is evidence about the width arithmetic.
+    static let iPadWidthHost = CGSize(width: 1024, height: 1366)
+
     /// Sub-pixel only. Auto Layout resolves to fractional points and SwiftUI rounds to the display
     /// scale, so a shared edge can legitimately land half a point apart; anything larger is a
     /// design difference. Deliberately NOT tunable per shape.

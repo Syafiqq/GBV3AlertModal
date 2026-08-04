@@ -88,7 +88,7 @@ final class ModalBannerGeometryRuleTests: XCTestCase {
         XCTAssertEqual(g.height, 0, accuracy: 0.01)
     }
 
-    /// **The rigid slot has NO yield term, and this is the number that says so.**
+    /// **The RULE has no yield term, and this is the number that says so.**
     ///
     /// A 200x2000pt artwork with no ratio and no cap is the one regime where UIKit has explicit
     /// machinery to make the banner give way: the natural-aspect driver sits at
@@ -98,16 +98,26 @@ final class ModalBannerGeometryRuleTests: XCTestCase {
     /// the text. `GBAlertModal+ViewGraph.swift` names this exact 200x2000 case by number as the
     /// reason those priorities are where they are.
     ///
-    /// `ModalTokens.bannerGeometry` has no equivalent term. It returns a **2000pt** slot height for
-    /// a card whose whole host is 844pt tall, and `BannerSlot`'s frame is rigid, so nothing
-    /// downstream shrinks it either. This test asserts what the rule ACTUALLY returns — it is not a
-    /// statement that 2000 is right. It is here so the divergence is a pinned number rather than a
-    /// rumour, and so that a future landscape/yield rule changes this assertion deliberately.
+    /// `ModalTokens.bannerGeometry` has no equivalent term: it returns a **2000pt** slot height for
+    /// a card whose whole host is 844pt tall. This test asserts what the rule ACTUALLY returns — it
+    /// is not a statement that 2000 is right. It is here so the divergence is a pinned number rather
+    /// than a rumour, and so that a future yield rule changes this assertion deliberately.
     ///
-    /// No shipping asset is in this regime: all eight real banner assets are landscape or square,
-    /// and all of them set a `bannerMaxHeight`, either of which alone keeps the height bounded.
-    /// This belongs with the landscape rule work (design spec §5), not with the portrait rules the
-    /// rest of this file pins.
+    /// **Two things this doc used to say that are no longer true.**
+    ///
+    /// * "`BannerSlot`'s frame is rigid, so nothing downstream shrinks it either" — it is not. The
+    ///   slot's HEIGHT is now `.frame(maxHeight:)` over a greedy `Color.clear`, so it resolves to
+    ///   `min(thisNumber, whateverIsLeft)` and the 2000 never reaches the screen. The overshoot is
+    ///   confined to this function's return value, which is where it stays until a measurement pass
+    ///   exists to remove it. (Only the WIDTH is still rigid.)
+    /// * "where UIKit WOULD yield" was a prediction, never measured. It is now:
+    ///   `BannerGeometryTruthTests.test_tallUncappedArtwork_UIKitYieldsTheResidual_whereTheRuleDoes
+    ///   Not` measures UIKit at **525.0pt** for this artwork on a 390x844 host, and 1047.0 on a
+    ///   1024x1366 one — the residual, host-dependent, exactly as in landscape. The name is kept
+    ///   because the claim held; the evidence now exists.
+    ///
+    /// No shipping asset is in this regime: all the real banner assets are landscape or square, and
+    /// all of them set a `bannerMaxHeight`, either of which alone keeps the height bounded.
     func test_tallUncappedArtwork_producesAnUnyieldingSlot_whereUIKitWouldYield() {
         let g = tokens(ratio: nil, cap: nil)
             .bannerGeometry(imageSize: CGSize(width: 200, height: 2000), availableCardWidth: available)

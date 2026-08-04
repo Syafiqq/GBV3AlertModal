@@ -534,7 +534,14 @@ final class DifferentialGeometryTests: XCTestCase {
     func test_bannerWide_actuallyExceedsTheColumn() throws {
         let shape = try XCTUnwrap(DifferentialGeometry.shape(named: "banner-wide"))
         let artwork = try XCTUnwrap(shape.dialog.image).pointSize
-        let column = try XCTUnwrap(shape.properties.contentProperty?.maxWidthPortrait)
+        // The TOKEN, not `contentProperty.maxWidthPortrait`. They are the same number for every
+        // preset in the app, and they are not the same QUANTITY: `ModalTokens.init(from:)` folds all
+        // four width fields into one cap as `min(fixed, max)` when both are set, and that resolved
+        // value is what `bannerGeometry` and `AlertModalScaffold` actually lay out with. Reading the
+        // raw `Properties` field here meant a premise about column growth was checked against a
+        // number the code under test does not use — inert today, wrong the moment a preset sets a
+        // fixed width below its max.
+        let column = ModalTokens(from: shape.properties).contentMaxWidth
         XCTAssertGreaterThan(
             artwork.width, column,
             "'banner-wide' artwork (\(artwork.width)pt) no longer exceeds the column (\(column)pt), "
@@ -555,9 +562,10 @@ final class DifferentialGeometryTests: XCTestCase {
     /// (`proxy.size.width − 2·cardMarginH`) and not from `tokens.cardMaxWidth`. On a host wider than
     /// `cardMaxWidth + 2·cardMarginH` — landscape, or any iPad — that is a larger number than a card
     /// pinned at `cardMaxWidth` could ever hand the column, and it was harmless only while `column`
-    /// could not exceed `contentMaxWidth`. It can now, and `BannerSlot`'s frame is RIGID
-    /// (`.frame(width:)`, not `maxWidth`), so a column wider than its container would be an overflow
-    /// that clips rather than a layout that compresses.
+    /// could not exceed `contentMaxWidth`. It can now, and `BannerSlot`'s WIDTH frame is RIGID
+    /// (`.frame(width:)`, not `maxWidth` — only its HEIGHT yields), so a column wider than its
+    /// container would be an overflow rather than a layout that compresses. Not even a clipped one:
+    /// the slot carries no `.clipped()`, and UIKit's `vwBanner` sets no `clipsToBounds` either.
     ///
     /// What makes it safe is the card cap growing by the SAME `column` (see `body`'s note): the card
     /// is `min(host − 2·cardMarginH, max(cardMaxWidth, column + leftMax + rightMax))`, so either the
@@ -568,12 +576,12 @@ final class DifferentialGeometryTests: XCTestCase {
     /// rather than restating the algebra.
     func test_bannerWide_theSlotNeverOverflowsTheCard_atAnyHostWidth() throws {
         let shape = try XCTUnwrap(DifferentialGeometry.shape(named: "banner-wide"))
-        // 390x844 clamps the card (350 < the 374 it asks for); 844x390 and 1024x1366 do not, and are
-        // the hosts on which the host-derived ceiling over-reports.
+        // 390x844 clamps the card (350 < the 374 it asks for); 844x390 and the iPad-width host do
+        // not, and are the hosts on which the host-derived ceiling over-reports.
         let hosts: [(String, CGSize)] = [
             ("portrait phone", DifferentialGeometry.host),
             ("landscape phone", DifferentialGeometry.landscapeHost),
-            ("iPad portrait", CGSize(width: 1024, height: 1366))
+            ("iPad-width", DifferentialGeometry.iPadWidthHost)
         ]
         for (label, size) in hosts {
             let frames = DifferentialGeometry.swiftUIFrames(shape, size: size)
@@ -581,29 +589,47 @@ final class DifferentialGeometryTests: XCTestCase {
             let banner = try XCTUnwrap(frames[.banner], "\(label): SwiftUI drew no banner")
             // Frames are normalised to the card's origin, so the card spans 0...card.width.
             XCTAssertGreaterThanOrEqual(
-                banner.minX, -DifferentialGeometry.tolerance,
+                banner.minX, -Self.containmentSlack,
                 "\(label) (\(size.width)pt): the banner slot starts \(-banner.minX)pt LEFT of the "
                     + "card. The column outgrew its container — `availableCardWidth`'s ceiling and "
                     + "the card's cap have stopped agreeing."
             )
             XCTAssertLessThanOrEqual(
-                banner.maxX, card.width + DifferentialGeometry.tolerance,
+                banner.maxX, card.width + Self.containmentSlack,
                 "\(label) (\(size.width)pt): the banner slot (\(banner.width)pt, ending at "
-                    + "\(banner.maxX)) overflows the card (\(card.width)pt). `BannerSlot`'s frame is "
-                    + "rigid, so this CLIPS — the column was allowed a width the card cannot give."
+                    + "\(banner.maxX)) overflows the card (\(card.width)pt) — the column was "
+                    + "allowed a width the card cannot give."
             )
-            // And the rigid slot must still be inside the card's RIGID minimum padding, which is the
+            // And the slot must still be inside the card's RIGID minimum padding, which is the
             // bound `bannerGeometry`'s ceiling is written against.
             let minima = ModalTokens(from: shape.properties).contentPadding
             XCTAssertLessThanOrEqual(
-                banner.width, card.width - minima.leftMin - minima.rightMin
-                    + DifferentialGeometry.tolerance,
+                banner.width, card.width - minima.leftMin - minima.rightMin + Self.containmentSlack,
                 "\(label) (\(size.width)pt): the banner slot (\(banner.width)pt) is wider than the "
                     + "card (\(card.width)pt) minus its required minimum padding — UIKit's "
                     + "`.required` leading/trailing inequalities would not permit this."
             )
         }
     }
+
+    /// **Slack for a SAME-BACKEND containment assertion, and deliberately not
+    /// `DifferentialGeometry.tolerance`.**
+    ///
+    /// The three assertions above compare SwiftUI frames against other SwiftUI frames from the same
+    /// measurement pass — the banner slot against the card that contains it. They used to borrow the
+    /// harness's 0.5pt `tolerance`, whose stated rationale is CROSS-backend: "Auto Layout resolves to
+    /// fractional points and SwiftUI rounds to the display scale, so a shared edge can legitimately
+    /// land half a point apart". Neither Auto Layout nor a second renderer is anywhere near these
+    /// numbers, so that argument does not reach them; borrowing the constant made the assertion look
+    /// as if it did.
+    ///
+    /// The real reason a containment check needs any slack at all is different and smaller: both
+    /// edges are rounded to the same display scale, so the residual is at most one device pixel —
+    /// 1/3pt at 3x, 1/2pt at 2x. `0.5` is that bound at the coarsest scale this library supports,
+    /// which is why the NUMBER is unchanged while the justification is not. It is a local constant so
+    /// that a future change to the cross-backend tolerance cannot silently move it, and so that
+    /// neither can be widened on the strength of the other's argument.
+    private static let containmentSlack: CGFloat = 0.5
 
     // MARK: - Landscape, gated for the first time
 
@@ -867,15 +893,18 @@ final class DifferentialGeometryTests: XCTestCase {
             let uiKitCard = try XCTUnwrap(uiKit[.card], "'\(name)': UIKit measured no card")
             let swiftUICard = try XCTUnwrap(swiftUI[.card], "'\(name)': SwiftUI measured no card")
 
+            // `containmentSlack`, not the cross-backend `tolerance` — see its doc. Both sides of
+            // each comparison come from ONE backend: a card height against a cap derived from the
+            // same window's insets.
             XCTAssertLessThanOrEqual(
-                uiKitCard.height, cap + DifferentialGeometry.tolerance,
+                uiKitCard.height, cap + Self.containmentSlack,
                 "'\(name)' UIKit: card height \(uiKitCard.height)pt exceeds the safe-area cap "
                     + "\(cap)pt (host \(host.height)pt, insets \(insets.top)/\(insets.bottom), "
                     + "cardMarginV \(cardMarginV)pt). If this fires the SHIPPING dialog breaches the "
                     + "safe area in landscape — do not weaken this assertion, report it."
             )
             XCTAssertLessThanOrEqual(
-                swiftUICard.height, cap + DifferentialGeometry.tolerance,
+                swiftUICard.height, cap + Self.containmentSlack,
                 "'\(name)' SwiftUI: card height \(swiftUICard.height)pt exceeds the safe-area cap "
                     + "\(cap)pt (host \(host.height)pt, insets \(insets.top)/\(insets.bottom), "
                     + "cardMarginV \(cardMarginV)pt). `.frame(maxHeight:)` only proposes a height; "

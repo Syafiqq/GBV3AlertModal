@@ -131,21 +131,42 @@ unaffected by construction. This is the change that closes §1b, and the one tha
 regression risk: it touches the ladder every element's width flows through
 (`AlertModalScaffold.swift:158, 219-220`).
 
-**4.3 — The banner row becomes a slot and an image**, mirroring `vwBanner` / `ivBanner`:
+**4.3 — The banner row becomes a slot and an image**, mirroring `vwBanner` / `ivBanner`.
+
+> **The sample below is the SHIPPED spelling, updated.** It originally read
+> `.frame(width: layout.column, height: layout.height)` over a `layout` local, and was followed by a
+> paragraph arguing that a rigid frame was a knowing trade because "the height must be *reached*, not
+> merely bounded". Task 6 measured that argument to be false and the code changed; the sample is
+> brought in line here rather than left describing an implementation that no longer exists. What the
+> row actually ships as (`SwiftUIAlertModal.BannerSlot`):
 
 ```swift
 Color.clear
-    .frame(width: layout.column, height: layout.height)
+    .frame(width: bannerGeometry.column)
+    .frame(maxHeight: bannerGeometry.height)
     .overlay { Image(image.assetName, bundle: image.bundle).resizable().scaledToFit() }
     .modalGeometryProbe(.banner)
-    .padding(.bottom, tokens.gapBelowBanner)
+    .padding(.bottom, bannerGeometry.height > 0 ? tokens.gapBelowBanner : 0)
 ```
 
-The height is computed, so the frame is rigid — and that is a knowing trade. UIKit's banner yields
-under pressure (its drivers sit below the card's `.low` 250 hugging), and a rigid frame does not.
-In portrait, with the card free to grow, the two coincide: every §2 row is a case where nothing was
-yielding. In landscape they do not — see §5. `.frame(maxHeight:)` was considered and does not work
-here: the height must be *reached*, not merely bounded.
+Three changes from the original sample, all of them measured rather than stylistic:
+
+* **the height is a `maxHeight` over a GREEDY `Color.clear`, not a rigid frame.** `Color.clear`
+  expands to fill whatever it is offered up to its cap, so the slot resolves to
+  `min(itsOwnDesire, whateverIsLeft)` — UIKit's yield semantics, produced by the layout engine
+  instead of by arithmetic. Where the card is free to grow the two spellings are bit-identical
+  (every portrait row is unchanged across the switch); where it is against its ceiling, only this
+  one yields. This is what closed the landscape banner heights and the vertical margin breach — see
+  §5b;
+* **the geometry comes from the environment** (`\.modalBannerGeometry`, published by
+  `AlertModalScaffold` on `card`), not from a `layout` local — a view cannot read an environment
+  value it publishes on its own descendant, which is why `BannerSlot` is a separate type at all;
+* **the gap below is paired with the slot**, so a `.zero` geometry occupies no vertical space rather
+  than leaving a `gapBelowBanner` hole under nothing, exactly as UIKit's `vwBanner` collapses.
+
+There is also no `.clipped()`: it was inert (an `.overlay` is proposed its host's size and
+`scaledToFit` only shrinks inside that) and had no UIKit counterpart — `vwBanner` never sets
+`clipsToBounds`; only the card does.
 
 **4.4 — Delete `height` from `BannerLayout`.** Inert in UIKit (§2.2), currently applied in SwiftUI
 on the ratio path (`ModalTokens.swift:724`) — a live divergence on every preset that sets both,

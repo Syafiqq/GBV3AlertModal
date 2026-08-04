@@ -140,7 +140,11 @@ public struct AlertModalScaffold<Content: View>: View {
                 // derived from the HOST (`proxy.size.width − 2·cardMarginH`), not from
                 // `cardMaxWidth`, so on a host wider than `cardMaxWidth + 2·cardMarginH` it names
                 // more room than a card pinned at `cardMaxWidth` could hand over — and `BannerSlot`'s
-                // frame is RIGID, so a column wider than its container clips rather than compresses.
+                // WIDTH frame is RIGID (`.frame(width:)`, not `maxWidth`; only its height yields), so
+                // a column wider than its container OVERFLOWS rather than compressing. It does not
+                // even clip: the slot carries no `.clipped()` and UIKit's `vwBanner` sets no
+                // `clipsToBounds` either, so the excess would be visible until the card's own
+                // `clipShape` cut it.
                 // Growing the card by the SAME `column` closes that: the card ends up
                 // `min(host − 2·cardMarginH, max(cardMaxWidth, column + leftMax + rightMax))`, so
                 // either the host clamps it — and then `column ≤ host − 2·cardMarginH − leftMin −

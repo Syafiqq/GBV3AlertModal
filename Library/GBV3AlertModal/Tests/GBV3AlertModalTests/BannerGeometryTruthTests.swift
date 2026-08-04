@@ -144,7 +144,20 @@ final class BannerGeometryTruthTests: XCTestCase {
                     imageSize: CGSize(width: 320, height: 229))
     }
 
-    func test_errorBannerShape_artworkJustUnderTheCeiling() {
+    /// **The artwork SETS the column: wider than `contentMaxWidth`, and clear of the ceiling.**
+    ///
+    /// Renamed from `test_errorBannerShape_artworkJustUnderTheCeiling`, which named the wrong bound.
+    /// `errorBannerProperties` is the popup preset, so `contentMaxWidth` is 256 and the ceiling is
+    /// 310 (350 of card minus the 20pt rigid minima). The artwork is 295 wide and the cap allows
+    /// `320 * 1.152 = 368.75`, so the demand is the artwork's own 295 — above the 256pt column and
+    /// 15pt clear of the ceiling. The CEILING IS INERT in this row; it is the `max(demand,
+    /// contentMaxWidth)` term that decides, and the resulting column is exactly the artwork width.
+    ///
+    /// That distinction matters because the ceiling branch is pinned by its own rows
+    /// (`test_gc2gsShape_artworkWiderThanColumn` at 310, `test_fasttrackShape_hugeArtworkClampsTo
+    /// TheCeiling` at 310). Naming this one after the ceiling implied a third clamped row where there
+    /// is none, and left the unclamped-demand case looking uncovered.
+    func test_errorBannerShape_artworkSetsTheColumn() {
         assertRules("295x256 r295:256 cap320",
                     properties: GeniePresets.errorBannerProperties(),
                     imageSize: CGSize(width: 295, height: 256))
@@ -190,6 +203,22 @@ final class BannerGeometryTruthTests: XCTestCase {
             GeniePresets.standardPropertiesNilBannerRatio().copy(bannerFixedHeight: 200),
             imageSize: CGSize(width: 64, height: 64)
         )
+        // The WITHOUT measurement, exactly as the ratio-path sibling above takes it. This test used
+        // to compare against a bare literal `64`, which asserts something weaker and different: that
+        // the slot is 64pt tall. "Inert" means "the field changed NOTHING", and only a paired
+        // measurement can say that — a literal would still pass if a future change moved both
+        // readings to some other shared number, which is the case the ratio-path test would catch
+        // and this one would not.
+        let without = measure(
+            GeniePresets.standardPropertiesNilBannerRatio(),
+            imageSize: CGSize(width: 64, height: 64)
+        )
+        XCTAssertEqual(withFixed.height, without.height, accuracy: 0.5,
+                       "bannerFixedHeight changed the slot height on the natural-aspect path "
+                           + "(\(withFixed.height) with it, \(without.height) without) — it is no "
+                           + "longer inert, and ModalTokens.bannerLayout must start applying it again")
+        // And the literal too, so the pair above is known to be pinned at the artwork's own size
+        // rather than merely agreeing with each other somewhere else.
         XCTAssertEqual(withFixed.height, 64, accuracy: 0.5,
                        "bannerFixedHeight is no longer inert on the natural-aspect path")
     }

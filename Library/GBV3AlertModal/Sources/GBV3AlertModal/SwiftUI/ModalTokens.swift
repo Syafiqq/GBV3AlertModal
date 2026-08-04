@@ -550,8 +550,14 @@ public struct ModalTokens: Sendable {
         // answer. For these three `nil` is a POSITIVE statement: the UIKit view graph installs a
         // ratio / cap / fixed-height constraint ONLY when the field is non-nil, so keeping
         // `standard`'s 160pt cap for a `Properties` that deliberately sets `bannerMaxHeight: nil`
-        // would apply a cap UIKit does not (the real `V3AlertModal` preset is exactly that case),
-        // and it would also silently clip a `bannerFixedHeight` taller than 160.
+        // would apply a cap UIKit does not (the real `V3AlertModal` preset is exactly that case).
+        //
+        // That reason used to carry a second clause — "and it would also silently clip a
+        // `bannerFixedHeight` taller than 160" — which is now moot and is removed rather than left
+        // to rot: NOTHING lays out with `bannerFixedHeight` any more. `BannerLayout` has no field
+        // for it (it is inert in UIKit on BOTH paths, measured by
+        // `BannerGeometryTruthTests.test_bannerFixedHeight_isInert_*`), so there is no height for a
+        // cap to clip. The field is still carried below, and only carried.
         bannerRatio = properties.bannerRatio
         bannerMaxHeight = properties.bannerMaxHeight
         bannerFixedHeight = properties.bannerFixedHeight
