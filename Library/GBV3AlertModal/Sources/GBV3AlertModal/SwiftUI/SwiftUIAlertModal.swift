@@ -245,38 +245,40 @@ public struct SwiftUIAlertModal: View {
         case .none:
             EmptyView()
         case let .plain(subtitle):
-            Text(subtitle)
-                .font(tokens.subtitleFont)
-                .foregroundColor(tokens.palette.subtitleText)
-                .multilineTextAlignment(.center)
-                .modifier(ContentRowWidth(fillsWidth: tokens.contentChildrenFillWidth))
-                // Same guarantee as the title, one rung lower: `layoutPriority` (below) makes this
-                // the row that is squeezed FIRST, and the scale factor means it answers by shrinking
-                // rather than by ellipsizing. UIKit's counterpart is the subtitle SLOT's scroll.
-                .modifier(NeverTruncates(minimumScaleFactor: tokens.titleMinimumScaleFactor))
-                // …and the floor on how far "lower rung" goes. Being the row that yields is the
-                // directive; being squeezed out of existence is not. UIKit's counterpart is the
-                // `>=` on the subtitle slot at `ModalLayout.Priority.subtitleSlotFloor`.
-                .frame(minHeight: tokens.subtitleFloorHeight)
-                .modalGeometryProbe(.subtitle)
-                .padding(.bottom, tokens.gapBelowSubtitle)
-                // The LOWER rung of the directive's ordering — see `subtitleLayoutPriority`.
-                .layoutPriority(Self.subtitleLayoutPriority)
+            SubtitleSlot(
+                floor: tokens.subtitleFloorHeight, fillsWidth: tokens.contentChildrenFillWidth
+            ) {
+                Text(subtitle)
+                    .font(tokens.subtitleFont)
+                    .foregroundColor(tokens.palette.subtitleText)
+                    .multilineTextAlignment(.center)
+                    .modifier(ContentRowWidth(fillsWidth: tokens.contentChildrenFillWidth))
+                    // Same guarantee as the title, one rung lower: `layoutPriority` (below) makes
+                    // this the row that is squeezed FIRST, and the scale factor means it answers by
+                    // shrinking rather than by ellipsizing.
+                    .modifier(NeverTruncates(minimumScaleFactor: tokens.titleMinimumScaleFactor))
+            }
+            .modalGeometryProbe(.subtitle)
+            .padding(.bottom, tokens.gapBelowSubtitle)
+            // The LOWER rung of the directive's ordering — see `subtitleLayoutPriority`.
+            .layoutPriority(Self.subtitleLayoutPriority)
         case let .attributed(attributed):
-            // The UIKit path stores an NSAttributedString on the holder. Bridged straight through,
-            // its runs stay on UIKIT's attribute scope and SwiftUI's `Text` — which reads its own —
-            // draws them completely unstyled. `AttributedTextBridge` re-scopes colour and font so the
-            // emphasis the caller asked for survives. Styling stays limited to the whitelisted
-            // bold/color/link subgrammar.
-            Text(AttributedTextBridge.swiftUIRenderable(attributed))
-                .multilineTextAlignment(.center)
-                .modifier(ContentRowWidth(fillsWidth: tokens.contentChildrenFillWidth))
-                .modifier(NeverTruncates(minimumScaleFactor: tokens.titleMinimumScaleFactor))
-                // Same floor as the `.plain` row above.
-                .frame(minHeight: tokens.subtitleFloorHeight)
-                .modalGeometryProbe(.subtitle)
-                .padding(.bottom, tokens.gapBelowSubtitle)
-                .layoutPriority(Self.subtitleLayoutPriority)
+            SubtitleSlot(
+                floor: tokens.subtitleFloorHeight, fillsWidth: tokens.contentChildrenFillWidth
+            ) {
+                // The UIKit path stores an NSAttributedString on the holder. Bridged straight
+                // through, its runs stay on UIKIT's attribute scope and SwiftUI's `Text` — which
+                // reads its own — draws them completely unstyled. `AttributedTextBridge` re-scopes
+                // colour and font so the emphasis the caller asked for survives. Styling stays
+                // limited to the whitelisted bold/color/link subgrammar.
+                Text(AttributedTextBridge.swiftUIRenderable(attributed))
+                    .multilineTextAlignment(.center)
+                    .modifier(ContentRowWidth(fillsWidth: tokens.contentChildrenFillWidth))
+                    .modifier(NeverTruncates(minimumScaleFactor: tokens.titleMinimumScaleFactor))
+            }
+            .modalGeometryProbe(.subtitle)
+            .padding(.bottom, tokens.gapBelowSubtitle)
+            .layoutPriority(Self.subtitleLayoutPriority)
         case .custom:
             // A plain `AlertDialog` never populates `subtitleCustomView` (that field doesn't exist
             // on this descriptor), so this case is unreachable from `SwiftUIAlertModal` in practice.
@@ -403,6 +405,95 @@ private struct BannerSlot: View {
     }
 }
 
+/// **UIKit's `svSubtitleContainer`, in SwiftUI — the slot that yields where a `Text` cannot.**
+///
+/// This is finding D-7, closed. UIKit gives the subtitle its own `UIScrollView`, whose height is tied
+/// to its content at `ModalLayout.Priority.subtitleSlotHeight` (`.defaultLow`, 250) and floored at
+/// `subtitleSlotFloor` (850). So the slot resolves to
+/// **`clamp(whatever the card can spare, floor, contentHeight)`** — measured on `banner-comparable` at
+/// 844x390, a 19.0pt viewport over a 38.33pt label, i.e. UIKit clips half its own ordinary one-line
+/// subtitle purely because landscape puts the card against its ceiling.
+///
+/// A bare `Text` cannot express that range and no modifier on it can. `.frame(minHeight:maxHeight:)`
+/// around a `Text` is RIGID at the text's own height, because a flexible frame reports
+/// `clamp(childHeight, min, max)` and `Text` answers every height proposal with the height its glyphs
+/// need: with `maxHeight` set to the ideal, the clamp is the identity and the row refuses to yield.
+/// That is exactly what the differential gate measured — SwiftUI kept the full 38.3 and the banner
+/// below it paid the 19.33 UIKit had taken out of the subtitle.
+///
+/// The fix is the mirror of `BannerSlot`'s: put a view with a genuinely FLEXIBLE height under the
+/// frame. A `ScrollView` reports `[0, ∞)`, so `.frame(minHeight: floor, maxHeight: contentHeight)`
+/// turns it into `[floor, contentHeight]` — the same interval Auto Layout arbitrates over, arrived at
+/// rather than computed. And it is a real scroll, so the clipped remainder stays reachable, which is
+/// what `svSubtitleContainer` does too.
+///
+/// ## Why it is inert when the content fits
+///
+/// `maxHeight` resolves to `min(ideal, offered)`. Every card with room offers at least the ideal, so
+/// the slot is exactly its content's height — the same frame the bare `Text` had. Measured: every
+/// portrait frame in `DifferentialGeometryTests` is unchanged to the last recorded decimal.
+///
+/// ## Unconditional, and that is the point
+///
+/// It does NOT read `Properties.contentScrollable`. UIKit builds `svSubtitleContainer` for every
+/// subtitle it draws, whatever that flag says, and compresses it whenever the card is short — so a
+/// SwiftUI counterpart gated on the flag would diverge on every un-flagged pressured shape, which is
+/// every banner shape in landscape. `contentScrollable`/`ScrollableContent` remains a separate,
+/// opt-in thing: it scrolls TITLE and subtitle TOGETHER, and UIKit has no counterpart for that.
+///
+/// The floor lives here rather than on the `Text` (where it used to be, as `.frame(minHeight:)`)
+/// because the floor UIKit installs is a `>=` on the CONTAINER, not on the label. On the `Text` it was
+/// inert by construction — a non-empty label is already at least one line tall.
+private struct SubtitleSlot<Content: View>: View {
+    /// `ModalTokens.subtitleFloorHeight` — one line, the same number UIKit's `>=` carries.
+    let floor: CGFloat
+    /// `ContentProperty.childShouldMatchParent`. A `ScrollView` is greedy ACROSS its scroll axis as
+    /// well as along it, so a hugging row needs its width clamped back to its content's; a filling
+    /// row wants exactly the greed it already has.
+    let fillsWidth: Bool
+    @ViewBuilder let content: () -> Content
+
+    /// The content's ideal size, measured from inside the scroll — where the height proposal is
+    /// unbounded and the content therefore reports what it WANTS. `nil` until the first measurement
+    /// lands, which is the one pass where the scroll is greedy; the preference is delivered in the
+    /// same layout cycle, so the settled layout is the capped one.
+    @State private var ideal: CGSize?
+
+    var body: some View {
+        ScrollView(.vertical, showsIndicators: true) {
+            content()
+                // A BACKGROUND reader, not a wrapping `GeometryReader`: a wrapping one would impose
+                // its own sizing on the very thing being measured.
+                .background(
+                    GeometryReader { proxy in
+                        Color.clear.preference(key: SubtitleIdealSizeKey.self, value: proxy.size)
+                    }
+                )
+        }
+        .frame(maxWidth: fillsWidth ? .infinity : ideal?.width)
+        .frame(minHeight: floor, maxHeight: ideal?.height)
+        .onPreferenceChange(SubtitleIdealSizeKey.self) { size in
+            // Guarded: an unconditional write re-renders with the same value on every pass, which is
+            // a layout loop rather than a settled layout.
+            if size.height > 0, ideal != size {
+                ideal = size
+            }
+        }
+    }
+}
+
+/// The subtitle content's ideal size, published from inside `SubtitleSlot`'s scroll.
+private struct SubtitleIdealSizeKey: PreferenceKey {
+    static var defaultValue: CGSize { .zero }
+
+    static func reduce(value: inout CGSize, nextValue: () -> CGSize) {
+        let next = nextValue()
+        value = CGSize(
+            width: Swift.max(value.width, next.width), height: Swift.max(value.height, next.height)
+        )
+    }
+}
+
 /// `ContentProperty.childShouldMatchParent`, expressed on ONE content row.
 ///
 /// UIKit says it once, on the stack (`svContentContainer.alignment = .fill` vs `.center`); SwiftUI has
@@ -454,14 +545,16 @@ private struct ContentRowWidth: ViewModifier {
 /// yielding at exactly the point the scale factor stops helping, while leaving every point ABOVE it
 /// yieldable — so rungs 1 and 2 keep working and rung 3 stays "never".
 ///
-/// The SUBTITLE deliberately gets no such floor: it is rung 1's yielder, and flooring it would stop it
-/// yielding. Under enough pressure a SwiftUI subtitle can still clip — the D-7 gap, unchanged, and the
-/// directive's priority is the title.
+/// The SUBTITLE's floor is not here but on its SLOT (`SubtitleSlot`, via `minHeight`), which is where
+/// UIKit puts it too — a `>=` on `svSubtitleContainer`, not on `lbSubtitle`. It is rung 1's yielder, so
+/// what bounds it has to be the thing that yields.
 ///
 /// Applied to the subtitle as well as the title. The two are ordered by `layoutPriority`, not by
-/// capability: the subtitle is squeezed FIRST (priority 0 against the title's 1) and shrinks rather
-/// than ellipsizing, which is the closest SwiftUI can come to UIKit's scrolling subtitle slot (the
-/// structural gap D-7 — SwiftUI has no `UIScrollView` counterpart and this does not close it).
+/// capability: the subtitle is squeezed FIRST and answers by shrinking rather than ellipsizing. This
+/// used to be described as "the closest SwiftUI can come to UIKit's scrolling subtitle slot", with the
+/// slot itself listed as the unclosable structural gap D-7. **That is out of date: the slot exists**
+/// (`SubtitleSlot`) and it clips-and-scrolls the way `svSubtitleContainer` does, so scaling is now the
+/// rung ABOVE clipping rather than a substitute for it.
 private struct NeverTruncates: ViewModifier {
     let minimumScaleFactor: CGFloat
 
@@ -481,9 +574,34 @@ extension SwiftUIAlertModal {
     /// named constants rather than bare literals in the body, so the ordering is one visible fact
     /// that a reader (and `TitleSubtitleTruncationTests`) can check instead of two magic numbers.
     static var titleLayoutPriority: Double { 1 }
-    /// SwiftUI's default. Stated explicitly because the ordering is the point: if this ever rises to
-    /// meet `titleLayoutPriority`, the directive is silently gone.
-    static var subtitleLayoutPriority: Double { 0 }
+    /// **Below SwiftUI's DEFAULT, which is what puts it below the BANNER too — and that is measured,
+    /// not stylistic.**
+    ///
+    /// It was `0` (the default) while the only ordering that mattered was title-over-subtitle. It has
+    /// to be negative now, because with `SubtitleSlot` the subtitle is finally able to yield and the
+    /// question becomes WHO yields first — and the answer has to be UIKit's answer.
+    ///
+    /// UIKit's, measured on `banner-comparable` across a 120pt sweep of host heights: **the subtitle
+    /// slot yields all the way to its floor before the banner gives up a single point.** At 844x430
+    /// the banner is still 160.0 and the viewport is already 19.33 of a 38.33pt label; only from
+    /// 844x415 down does the banner start to move, and from there the subtitle sits on its floor and
+    /// the banner absorbs every further point.
+    ///
+    /// That order looks backwards against `ModalLayout.Priority` — the banner's drivers are 245/243/241,
+    /// BELOW the subtitle slot's `.defaultLow` (250), and `TitleSubtitleTruncationTests` asserts
+    /// exactly that. It is not backwards: those three set the banner's height, but what DEFENDS the
+    /// banner's height under pressure is `ivBanner`'s WIDTH compression resistance (750) reaching the
+    /// height through the required `width == height * ratio` tie. So the effective ladder is subtitle
+    /// slot (250) → banner (750) → subtitle floor (850), and the subtitle really does go first.
+    ///
+    /// SwiftUI expresses that as a group ordering: the VStack serves higher `layoutPriority` first
+    /// and hands the lowest whatever is left, while still reserving every child's MINIMUM — so the
+    /// subtitle takes `clamp(residual, floor, contentHeight)` and the banner's greedy
+    /// `.frame(maxHeight:)` takes the rest. Measured against UIKit at every 10pt step from 844x450 to
+    /// 844x330: identical to within 0.09pt on every row.
+    ///
+    /// Only the ORDER carries over; the magnitude is on an unrelated scale to UIKit's 0…1000.
+    static var subtitleLayoutPriority: Double { -1 }
 }
 
 extension SwiftUIAlertModal {

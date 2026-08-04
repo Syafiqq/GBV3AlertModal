@@ -224,8 +224,8 @@ extension ModalLayout {
     /// all.
     ///
     /// Read by BOTH renderers — UIKit installs it as a `>=` on the slot at
-    /// `Priority.subtitleSlotFloor`, SwiftUI as the subtitle row's `.frame(minHeight:)` — so the two
-    /// cannot protect different amounts of text.
+    /// `Priority.subtitleSlotFloor`, SwiftUI as the `minHeight` of `SwiftUIAlertModal.SubtitleSlot`,
+    /// its counterpart of that slot — so the two cannot protect different amounts of text.
     static func subtitleFloorHeight(font: UIFont) -> CGFloat {
         font.lineHeight
     }

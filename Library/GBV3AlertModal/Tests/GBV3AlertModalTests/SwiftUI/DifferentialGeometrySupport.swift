@@ -49,71 +49,66 @@ import UIKit
 /// `test_discriminationGuard_theHuggedLabelExclusionIsNarrow` proves a whole point cannot get through
 /// it. Rows accepted this way print as `agree (label rounding)`, never as `agree`.
 ///
-/// ## The one STRUCTURAL gap, excluded by name rather than absorbed
+/// ## The one STRUCTURAL gap — D-7, now CLOSED, and what is left in its place
 ///
-/// **The subtitle SLOT has no SwiftUI counterpart** (task 17, finding D-7). UIKit's subtitle lives in
-/// a `UIScrollView` (`svSubtitleContainer`) whose visible height is tied to its content height at
-/// `.low` (250), so an over-long subtitle SHRINKS AND SCROLLS and the card stays inside its margins.
-/// `SwiftUIAlertModal` renders a bare `Text`, so it cannot shrink-and-scroll. Under the owner's
-/// no-truncation ladder both SwiftUI text rows answer pressure by SCALING instead
-/// (`SwiftUIAlertModal.NeverTruncates` = `lineLimit(nil)` + `minimumScaleFactor`, with the subtitle
-/// squeezed first by `layoutPriority`) — which keeps every glyph the way UIKit's scroll does, but
-/// through a different mechanism and with a floor rather than an unbounded scroll. The gap itself is
-/// unchanged. Two consequences, both stated rather than papered over:
+/// **This section used to describe a gap: UIKit's subtitle lives in a `UIScrollView`
+/// (`svSubtitleContainer`) that compresses under pressure, and `SwiftUIAlertModal` rendered a bare
+/// `Text`, which cannot. That is fixed.** `SwiftUIAlertModal.SubtitleSlot` is the counterpart — a
+/// `ScrollView` under `.frame(minHeight: floor, maxHeight: contentHeight)`, which is the same
+/// `[floor, content]` interval Auto Layout arbitrates over — and it is UNCONDITIONAL, because UIKit's
+/// is. What the old text got right and is worth keeping: the two backends must not merely arrive at
+/// the same number, they must clip the same way, and no tolerance may be widened to hide it.
 ///
-/// * The nine ORIGINAL shapes are all short enough that the scroll never engages, so their subtitle
-///   rows compare the `UIScrollView`'s frame against the `Text`'s frame legitimately — at those
-///   lengths the slot IS the label's height. That was the whole gap: the gate could only see the one
-///   case where the two happen to coincide.
+/// **The UIKit rule, measured** (`banner-comparable`, 844 wide, host height swept 450 → 330 in 10pt
+/// steps — the probe is deleted, the numbers are not):
 ///
-///   **`long-subtitle-scrolling` now closes most of it, and MEASURES the rest.** With both backends
-///   scrolling, card / title / primary button agree EXACTLY (778.0, 28.7, y 711.0), which is a real
-///   guarantee the gate never had. The `subtitle` row cannot agree, for a reason that is about the
-///   PROBES rather than the layout: UIKit's sits on `svSubtitleContainer`, the VIEWPORT (645.3),
-///   and SwiftUI's on the `Text`, the CONTENT (1222.0) — SwiftUI has no per-subtitle viewport,
-///   because its scroll wraps title and subtitle together. Pinned element-by-element in
-///   `test_geometry_longSubtitleScrolling_agreesExceptOnTheScrollViewport`, with the inequality
-///   asserted by mechanism so a future per-subtitle viewport turns the exception red instead of
-///   leaving it stale.
+/// | host | UIKit viewport | UIKit banner | note |
+/// |---|---|---|---|
+/// | 844x450 | 38.33 (= content) | 160.0 (= ideal) | nothing under pressure |
+/// | 844x430 | 19.33 | 160.0 | the SUBTITLE has yielded; the banner has not moved |
+/// | 844x415 | 19.0 (= floor) | 159.3 | subtitle on its floor, banner starts to pay |
+/// | 844x390 | 19.0 | 134.33 | landscape phone — half a one-line subtitle, clipped |
+/// | 844x330 | 19.0 | 74.33 | banner absorbs every further point |
 ///
-///   The shape's premise is itself gated (`test_theScrollingShape_actuallyScrolls`) — at twenty
-///   repetitions its subtitle came to 611pt and the portrait card, whose ceiling the zeroed vertical
-///   margin raised, simply FIT it, making the row vacuous. Forty engages it.
-/// * **It is also the only thing standing between the BANNER shapes and a landscape gate, which was
-///   not known until the banner slot stopped hiding it.** While `BannerSlot`'s frame was rigid the
-///   banner could not yield, so every landscape banner row diverged and the subtitle's contribution
-///   was invisible underneath that. With the slot yielding (`.frame(maxHeight:)` over a greedy
-///   `Color.clear`), `banner-comparable`'s landscape card and primary button became EXACT and a
-///   single divergence was left: 19.33pt.
+/// So `viewport == clamp(whatever is left, subtitleSlotFloorHeight, contentHeight)`, and **the
+/// subtitle yields BEFORE the banner** — which looks backwards against `ModalLayout.Priority` and is
+/// not; see `SwiftUIAlertModal.subtitleLayoutPriority` for the 750-through-the-aspect-tie mechanism.
+/// SwiftUI reproduces it to within **0.09pt on every row at every step of that sweep**.
 ///
-///   That 19.33 is this gap, measured. In landscape, with the card against its ceiling, UIKit's
-///   `svSubtitleContainer` compresses to a **19.0pt viewport over a 38.33pt label** — UIKit clips
-///   half its own subtitle and the harness probes the viewport. SwiftUI has no per-subtitle viewport
-///   to compress, so its `Text` keeps the full 38.3 and refuses the 19.33 UIKit gave up; the
-///   residual is conserved, so the banner pays it instead and comes out 19.33 short. Pinned by
-///   MECHANISM — the two shortfalls must be the same number — in
-///   `test_bannerComparable_landscape_divergesOnlyByTheSubtitleViewport`, so it cannot decay into a
-///   stale exception. Note this is NOT the same regime as `long-subtitle-scrolling`: there the
-///   subtitle is long enough to scroll at any size, here an ordinary one-line subtitle is clipped
-///   purely because landscape puts the card against its ceiling — which means every banner shape is
-///   in this regime in landscape, not just deliberately long ones.
+/// Note the regime: this is an ORDINARY one-line-per-38pt subtitle clipped purely because landscape
+/// puts the card on its ceiling. Every banner shape is in it in landscape — it was never about
+/// deliberately long text, which is why `long-subtitle-scrolling` alone could not have found it.
 ///
-///   Closing it would let `banner-comparable` go straight into `assertAgrees` at `landscapeHost` and
-///   that test be deleted. `banner-wide` needs it too, and separately needs the landscape column
-///   rule (see `ModalTokens.bannerGeometry`) — its width divergence currently MASKS this one.
-/// * It is also why `AlertModalScaffold.card` applies the VERTICAL content padding at its max with no
-///   compression toward `topMin`/`bottomMin`, even though the horizontal padding does compress.
+/// **What this bought, in gates:** `banner-comparable` is now gated in landscape through the ordinary
+/// `assertAgrees` (`test_geometry_landscape_bannerComparable`), and the 19.33pt mechanism pin that
+/// stood in for it is deleted. `long-subtitle-unscrolled` compares a 1222pt subtitle's viewport
+/// element-for-element in BOTH orientations (645.33 against 645.33 portrait, 161.33 against 161.33
+/// landscape). Both have explicit non-vacuity premises, because an agreement between two unpressured
+/// cards would prove nothing about any of this.
 ///
-///   **THAT SECOND POINT'S REASONING IS NOW OUT OF DATE, AND THE GAP IS SMALLER THAN IT SAYS.** It
-///   used to read that closing it "needs a scrolling subtitle slot … a real layout redesign, not a
-///   modifier". That slot now exists — `ScrollableContent`, opt-in via `Properties.contentScrollable`
-///   — and the card can no longer grow off-screen either, since it is capped at its container's
-///   height. So the two stated blockers are gone. What remains is that SwiftUI has no min/max padding
-///   primitive: a `Spacer` collapses to its minimum inside a hugging container, and deriving the give
-///   from a measured content height feeds that measurement back into the layout that produced it —
-///   the cycle that had to be removed from the banner ceiling. Unbuilt, not impossible.
+/// ## What genuinely remains — two items, neither of them D-7
 ///
-/// Do NOT "close" this by adding a shape that engages the scroll and widening the tolerance to fit.
+/// * **`contentScrollable`.** `long-subtitle-scrolling`'s `subtitle` row still cannot be compared,
+///   and the reason is now a SwiftUI-only feature rather than a missing one: `ScrollableContent`
+///   wraps title AND subtitle, so inside it the height proposal is unbounded and the subtitle slot is
+///   never pressured (it reports the full 1222 where UIKit's viewport is 645.3). UIKit has no
+///   counterpart wrapper. Still pinned by mechanism in
+///   `test_geometry_longSubtitleScrolling_agreesExceptOnTheScrollViewport`; and since the subtitle
+///   now scrolls without the flag, this is an input to whether the flag should exist at all
+///   (`docs/superpowers/specs/2026-08-02-content-scrollable-review.md`).
+/// * **Vertical content padding compression, in a ~15pt band.** `AlertModalScaffold.card` has no
+///   min/max padding primitive, so where UIKit trades padding against the subtitle it holds one
+///   value. Measured on `banner-comparable`: identical at every host height from 844x450 down to
+///   844x435 and from 844x415 down to 844x330, and divergent only in **844x420…430**, where UIKit
+///   re-expands its top inset 16 → 23 and pays for it by collapsing the subtitle a further 14pt
+///   (its `componentSpacing` is 800, far above the subtitle slot's 250, so spacing outranks body
+///   text — SwiftUI's padding yields first instead). That band was ALREADY divergent before this
+///   work, by more rows and larger amounts; it is narrowed, not introduced. SwiftUI has no min/max
+///   padding primitive, and deriving the give from a measured content height feeds that measurement
+///   back into the layout that produced it — the cycle that had to be removed from the banner
+///   ceiling. Unbuilt, not impossible.
+///
+/// Do NOT "close" either of them by widening the tolerance to fit.
 // @MainActor: builds `GBAlertModal`, `UIWindow` and `UIHostingController`, all main-actor-isolated
 // under Swift 6.
 @MainActor
@@ -152,7 +147,7 @@ enum DifferentialGeometry {
         let properties: GBAlertModal.Properties
     }
 
-    /// **Twelve shapes, chosen to vary the fields the two backends read differently.**
+    /// **Thirteen shapes, chosen to vary the fields the two backends read differently.**
     ///
     /// Covered: the standard 1-button and 2-button shapes; a nil-title shape; a close-button shape;
     /// the oblique-RED shape (a different `ObliqueBottomLeftTheme`); the permission-alert preset and
@@ -165,14 +160,21 @@ enum DifferentialGeometry {
     /// Plus the three added for the banner work: `banner-comparable` (an artwork NARROWER than the
     /// content column, so the column stays at `contentMaxWidth`), `banner-wide` (artwork wider than
     /// the column, the regime eight of the app's nine real banner assets are in), and
-    /// `long-subtitle-scrolling` (the only shape that actually engages UIKit's subtitle scroll).
+    /// `long-subtitle-scrolling` (a subtitle long enough to engage UIKit's slot at any size, with
+    /// SwiftUI's outer `ScrollableContent` switched on).
+    ///
+    /// Plus `long-subtitle-unscrolled` for D-7: the same 1222pt subtitle with `contentScrollable`
+    /// OFF, which is the configuration UIKit actually has a counterpart for and the one that made the
+    /// subtitle row comparable.
     ///
     /// NOT covered, and why: the three bespoke descriptors (`BadgeDialog`, `LoadingDialog`,
     /// `SatisfactionDialog`) and the two input descriptors (`TextInputDialog`,
     /// `DatePickerDialog`) — those render through `register(_:view:)` bodies that build their OWN
     /// scaffold and have no `GBAlertModal` counterpart view graph to measure against, so there is
-    /// nothing differential to do. Landscape is gated for the five non-banner shapes only
-    /// (`landscapeHost` below, and `DifferentialGeometryTests`' landscape section).
+    /// nothing differential to do. Landscape is gated for the five non-banner shapes, for
+    /// `long-subtitle-unscrolled` and for `banner-comparable` in full, and for `banner-wide` on
+    /// everything but width (`landscapeHost` below, and `DifferentialGeometryTests`' landscape
+    /// section).
     static var shapes: [Shape] {
         [
             Shape(
@@ -343,6 +345,33 @@ enum DifferentialGeometry {
                     closeOnTapOverlay: true
                 ),
                 properties: GeniePresets.standardProperties().copy(contentScrollable: true)
+            ),
+            /// **The same subtitle WITHOUT `contentScrollable` — the shape that closes D-7's last
+            /// exception, because it is the one UIKit actually has a counterpart for.**
+            ///
+            /// `long-subtitle-scrolling` above cannot compare its `subtitle` row, and the reason is
+            /// no longer the missing subtitle viewport: `SubtitleSlot` supplies that now,
+            /// unconditionally. The reason is the SwiftUI-ONLY outer scroll that `contentScrollable`
+            /// turns on — it wraps title AND subtitle, so inside it the height proposal is unbounded
+            /// and the subtitle slot is never pressured, while UIKit (which has no such wrapper)
+            /// compresses its `svSubtitleContainer` as usual.
+            ///
+            /// Drop the flag and the two are measurably the same layout: SwiftUI's slot lands on
+            /// UIKit's VIEWPORT to the point — **645.33 against 645.33** in portrait and **161.33
+            /// against 161.33** in landscape, on a subtitle whose content is 1222pt. So this shape
+            /// goes through the full `assertAgrees` in BOTH orientations, subtitle row included,
+            /// which is the real comparison the inequality above was a placeholder for.
+            Shape(
+                name: "long-subtitle-unscrolled",
+                dialog: AlertDialog(
+                    title: "Heads up",
+                    subtitle: String(
+                        repeating: "This subtitle keeps going so the slot has to engage. ", count: 40
+                    ).trimmingCharacters(in: .whitespaces),
+                    primary: "Okay",
+                    closeOnTapOverlay: true
+                ),
+                properties: GeniePresets.standardProperties()
             )
         ]
     }

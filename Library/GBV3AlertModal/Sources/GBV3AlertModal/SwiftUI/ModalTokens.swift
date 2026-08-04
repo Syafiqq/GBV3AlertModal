@@ -337,12 +337,14 @@ public struct ModalTokens: Sendable {
     /// **The subtitle row's floor: one line, the SwiftUI half of `ModalLayout.subtitleFloorHeight`.**
     ///
     /// UIKit holds this back with a `>=` on the scroll slot at `Priority.subtitleSlotFloor`; SwiftUI
-    /// has no slot to constrain, so the row carries it as a `.frame(minHeight:)`. Same function, same
-    /// number, so neither renderer can protect more of the body text than the other.
+    /// carries it as the `minHeight` of `SwiftUIAlertModal.SubtitleSlot`, which is the same slot in
+    /// the same place. Same function, same number, so neither renderer can protect more of the body
+    /// text than the other.
     ///
-    /// Unconditional and inert by the same argument as the title's floor: a non-empty `Text` already
-    /// reports at least one line, so this can only bind when the row was about to be given LESS than
-    /// one line — which is the case it exists for.
+    /// **It used to sit on the `Text` instead, where it was inert by construction** — a non-empty
+    /// label already reports at least one line, so a floor on the text could never bind. It binds on
+    /// the SLOT, whose whole job is to be given less than its content: measured in landscape, the
+    /// slot lands exactly here (19.09) while the text inside it is 38.33.
     var subtitleFloorHeight: CGFloat {
         ModalLayout.subtitleFloorHeight(font: subtitleUIFont)
     }

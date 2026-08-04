@@ -23,11 +23,19 @@ import SwiftUI
 /// property and its keyboard-avoidance anchor is a change every consumer inherits on the next version
 /// bump. The owner's call was to freeze UIKit and let the NEW renderer take the better structure.
 ///
-/// The cost is stated rather than hidden: `DifferentialGeometry` asserts the two backends agree
-/// element-for-element, and this is a structural difference between them. It is safe for that gate only
-/// because of the hugging behaviour below — the harness measures unpressured portrait shapes, where this
-/// wrapper is provably inert. A PRESSURED comparison would now legitimately differ, and would need a
-/// recorded divergence in `DifferentialGeometrySupport` rather than a "fix".
+/// **What has changed under this paragraph: SwiftUI now ALSO has the subtitle-only slot**
+/// (`SwiftUIAlertModal.SubtitleSlot`, unconditional, D-7). So this wrapper is no longer "the SwiftUI
+/// answer to `svSubtitleContainer`" — it is a strictly extra, opt-in scroll around title AND subtitle,
+/// and it is the ONLY structural difference left between the two content regions.
+///
+/// The cost is measured rather than hidden. `long-subtitle-unscrolled` — the same 1222pt subtitle with
+/// this wrapper OFF — agrees with UIKit element-for-element in both orientations, subtitle viewport
+/// included (645.33 portrait, 161.33 landscape). Turn the wrapper ON and the subtitle row stops being
+/// comparable, because inside a scroll the height proposal is unbounded and the slot is never
+/// pressured: it reports the full 1222 where UIKit's viewport is 645.3. That is pinned in
+/// `test_geometry_longSubtitleScrolling_agreesExceptOnTheScrollViewport`, and it is the whole of what
+/// this feature costs the differential gate — which makes it the deciding input for
+/// `docs/superpowers/specs/2026-08-02-content-scrollable-review.md`.
 ///
 /// ## Why it is inert when the content fits
 ///

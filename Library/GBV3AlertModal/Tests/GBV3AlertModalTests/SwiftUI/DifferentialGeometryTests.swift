@@ -396,11 +396,20 @@ final class DifferentialGeometryTests: XCTestCase {
     /// guarantee: two backends both scrolling produce the same card, the same title and the same
     /// button position. Measured — card 778.0 both, title 28.7 both, primary button y 711.0 both.
     ///
-    /// The `subtitle` row cannot agree, and not because either backend is wrong: the two probes are
-    /// on different things once a scroll exists. UIKit's `.subtitle` sits on `svSubtitleContainer` —
-    /// the VIEWPORT (645.3) — while SwiftUI's sits on the `Text` — the CONTENT (1222.0). SwiftUI has
-    /// no per-subtitle viewport to probe, because its scroll wraps title AND subtitle together.
-    /// That is the residue of D-7, now stated in numbers instead of prose.
+    /// The `subtitle` row cannot agree — and **the reason has changed, so read this rather than
+    /// remembering it.** It used to be D-7: SwiftUI had no per-subtitle viewport at all, so its probe
+    /// sat on a `Text` reporting CONTENT (1222.0) against UIKit's `svSubtitleContainer` reporting a
+    /// VIEWPORT (645.3). `SwiftUIAlertModal.SubtitleSlot` supplies that viewport now, unconditionally,
+    /// and `long-subtitle-unscrolled` — the identical dialog with `contentScrollable` OFF — measures
+    /// **645.33 against 645.33** and goes through the full `assertAgrees`, subtitle row included.
+    ///
+    /// What is left here is `contentScrollable` itself, which is a SwiftUI-ONLY feature: it wraps
+    /// title AND subtitle in an outer `ScrollableContent`, and inside that the height proposal is
+    /// unbounded, so the subtitle slot is never pressured and reports its full 1222. UIKit has no
+    /// wrapper to correspond to it and compresses its own slot as usual. So this row is not a missing
+    /// capability any more; it is the measured cost of a divergence the owner chose on purpose, and
+    /// it is an input to whether `contentScrollable` should exist at all
+    /// (`docs/superpowers/specs/2026-08-02-content-scrollable-review.md`).
     func test_geometry_longSubtitleScrolling_agreesExceptOnTheScrollViewport() throws {
         let shape = try XCTUnwrap(DifferentialGeometry.shape(named: "long-subtitle-scrolling"))
         let rows = DifferentialGeometry.rows(for: shape)
@@ -415,19 +424,74 @@ final class DifferentialGeometryTests: XCTestCase {
             )
         }
 
-        // And the one that cannot: pinned by its MECHANISM, so that if SwiftUI ever grows a real
-        // per-subtitle viewport this fails and says to compare the two properly rather than leaving
-        // a stale exception behind.
+        // And the one that cannot: pinned by its MECHANISM, so that if the outer scroll ever stops
+        // de-pressurising the subtitle slot this fails and says to compare the two properly rather
+        // than leaving a stale exception behind.
         let subtitle = try XCTUnwrap(rows.first { $0.element == .subtitle })
         let uiKit = try XCTUnwrap(subtitle.uiKit)
         let swiftUI = try XCTUnwrap(subtitle.swiftUI)
         XCTAssertLessThan(
             uiKit.height, swiftUI.height,
             "UIKit's subtitle probe is no longer smaller than SwiftUI's. It is supposed to be a "
-                + "scroll VIEWPORT measured against SwiftUI's CONTENT; if that is no longer true, "
-                + "the two are finally comparable and this exception should be replaced by a real "
-                + "row in the gate."
+                + "compressed VIEWPORT measured against a slot that `ScrollableContent` has removed "
+                + "all height pressure from; if that is no longer true, the two are finally "
+                + "comparable and this shape should join `long-subtitle-unscrolled` in "
+                + "`assertAgrees` instead of keeping an exception."
         )
+    }
+
+    /// **The same 1222pt subtitle with `contentScrollable` OFF — compared in full, subtitle included.**
+    ///
+    /// This is the real comparison the inequality above stood in for. UIKit compresses
+    /// `svSubtitleContainer` to a 645.33pt viewport; `SwiftUIAlertModal.SubtitleSlot` compresses to
+    /// 645.33pt; every other row was already exact. Nothing here is excluded and nothing is pinned by
+    /// mechanism — it is the ordinary gate at the ordinary 0.5pt.
+    ///
+    /// Its premise (that the slot is genuinely engaged at this length) is
+    /// `test_theUnscrolledShape_actuallyClipsOnBothBackends`.
+    func test_geometry_longSubtitleUnscrolled() { assertAgrees("long-subtitle-unscrolled") }
+
+    /// And in landscape, where the viewport falls to 161.33 on BOTH backends — a quarter of the
+    /// content, on a card against its ceiling. This is the same regime `banner-comparable` is in,
+    /// with the banner taken out of the picture.
+    func test_geometry_landscape_longSubtitleUnscrolled() {
+        assertAgrees("long-subtitle-unscrolled", size: DifferentialGeometry.landscapeHost)
+    }
+
+    /// **The premise for both of those: the FIXTURE is long enough to engage the slot at all.**
+    ///
+    /// Same failure mode `test_theScrollingShape_actuallyScrolls` exists for — a shape whose content
+    /// happens to fit makes its comparison vacuous, and the card's ceiling has moved once already on
+    /// this branch. Asserted in both orientations, against the content the slot is holding.
+    ///
+    /// **UIKit only, and that is deliberate rather than an omission.** The obvious SwiftUI half — "its
+    /// subtitle row is shorter than its content too" — was written, and it PASSES against a build with
+    /// no `SubtitleSlot` in it: a `Text` under `NeverTruncates` answers pressure by scaling its glyphs,
+    /// so it is also shorter than its unpressured height, for an entirely different reason. The probe
+    /// reports a rectangle and cannot tell a clipped viewport from shrunken type, so that assertion
+    /// would have read as a guarantee while being unable to fail. The SwiftUI side's non-vacuity is
+    /// carried instead by `test_bannerComparable_landscape_bothBackendsAreClippingTheSubtitle`, whose
+    /// subtitle is short enough that no scaling is in play and which does go red without the slot.
+    func test_theUnscrolledShape_actuallyClipsItsSubtitle() throws {
+        let shape = try XCTUnwrap(DifferentialGeometry.shape(named: "long-subtitle-unscrolled"))
+
+        for size in [DifferentialGeometry.host, DifferentialGeometry.landscapeHost] {
+            let modal = DifferentialGeometry.makeUIKitModal(shape)
+            let window = DifferentialGeometry.makeWindow(size: size)
+            defer { DifferentialGeometry.teardown(window) }
+            modal.show(parent: window, completion: {})
+            window.setNeedsLayout()
+            window.layoutIfNeeded()
+            let viewport = try XCTUnwrap(modal.svSubtitleContainer, "UIKit built no subtitle slot")
+            let content = try XCTUnwrap(modal.lbSubtitle, "UIKit built no subtitle label").bounds.height
+
+            XCTAssertLessThan(
+                viewport.bounds.height, content - DifferentialGeometry.tolerance,
+                "at \(size) UIKit's subtitle viewport (\(viewport.bounds.height)pt) is not smaller "
+                    + "than its \(content)pt of content, so the shape no longer engages the slot and "
+                    + "its comparison is vacuous. Lengthen the subtitle."
+            )
+        }
     }
 
     /// **The banner, compared element-for-element.**
@@ -665,51 +729,46 @@ final class DifferentialGeometryTests: XCTestCase {
         )
     }
 
-    /// **`banner-comparable` in landscape is NOT gated, and the reason is D-7 — not the banner.**
+    /// **`banner-comparable` in landscape — the shape D-7 used to block, now gated in full.**
     ///
     /// This is the shape whose widths agree (its artwork never widens the column), so it isolates the
-    /// height story with nothing else in the way. After the `maxHeight` slot its card is exactly
-    /// UIKit's (294.0) and its primary button is exactly UIKit's (y 227.0). What is left is a single
-    /// displacement of **19.33pt**: SwiftUI's banner is 115.0 where UIKit's is 134.33.
+    /// height story with nothing else in the way — which is why it was the last one left. After the
+    /// banner's `maxHeight` yield its card and primary button were already exact and a single
+    /// **19.33pt** displacement remained: SwiftUI's banner came out 115.0 against UIKit's 134.33,
+    /// because UIKit had compressed its subtitle viewport to 19.0 over a 38.33pt label and SwiftUI,
+    /// having no per-subtitle viewport, kept the whole 38.3 and made the banner pay for it.
     ///
-    /// That 19.33 is not the banner's error. It is the SUBTITLE's, and this test proves it by
-    /// measuring both halves and asserting they are the SAME number:
+    /// `SwiftUIAlertModal.SubtitleSlot` supplies that viewport, so there is nothing left to exclude:
+    /// this is the ordinary `assertAgrees`, every row, every coordinate, at the usual 0.5pt. It
+    /// replaces `test_bannerComparable_landscape_divergesOnlyByTheSubtitleViewport`, which pinned the
+    /// 19.33 by mechanism precisely so that closing it would come here.
     ///
-    /// * UIKit's `svSubtitleContainer` is a `UIScrollView`. In landscape, with the card against its
-    ///   ceiling, it compresses to a **19.0pt viewport over a 38.33pt label** — UIKit is clipping half
-    ///   its own subtitle, and the differential harness probes the viewport.
-    /// * SwiftUI has no per-subtitle viewport (structural gap D-7 — its scroll, when enabled at all,
-    ///   wraps title AND subtitle together), so its subtitle renders at its natural 38.3 and refuses
-    ///   the 19.33pt UIKit's gave up.
-    /// * The residual is conserved, so whatever the subtitle keeps, the banner pays. The banner is
-    ///   short by exactly what the subtitle withheld.
+    /// Its non-vacuity — that UIKit really is clipping here, so this agreement is SwiftUI reproducing
+    /// the clip rather than neither backend being under pressure — is asserted separately, below.
+    func test_geometry_landscape_bannerComparable() {
+        assertAgrees("banner-comparable", size: DifferentialGeometry.landscapeHost)
+    }
+
+    /// **The premise of the test above: this shape is genuinely in the CLIPPED regime.**
     ///
-    /// This is therefore the pre-existing D-7 divergence surfacing in a new place, not a banner
-    /// defect and not something a different modifier on `BannerSlot` could fix. Closing it needs a
-    /// SwiftUI subtitle container that clips and yields the way `svSubtitleContainer` does — at which
-    /// point this shape can go straight into `assertAgrees` in landscape and this test is replaced by
-    /// that. Asserted by MECHANISM (the two shortfalls must match) rather than by literal, so it
-    /// cannot rot into a stale exception: if the subtitle ever stops being the whole story, the
-    /// equality breaks and says so.
-    func test_bannerComparable_landscape_divergesOnlyByTheSubtitleViewport() throws {
+    /// `assertAgrees` at `landscapeHost` would also pass if neither backend were under any pressure —
+    /// and that is the one way it could be green while saying nothing about D-7. So both halves of
+    /// the mechanism are asserted here:
+    ///
+    /// * UIKit's `svSubtitleContainer` is strictly shorter than the `lbSubtitle` inside it (measured
+    ///   19.0 against 38.33) — it is showing half of an ordinary one-line-per-38pt subtitle because
+    ///   landscape puts the card on its ceiling. This is the D-7 regime, and note that it is NOT the
+    ///   `long-subtitle-scrolling` regime: nothing about this subtitle is long.
+    /// * SwiftUI's subtitle row is strictly shorter than the text inside IT, by the same amount —
+    ///   i.e. `SubtitleSlot` is clipping too, rather than the two agreeing because SwiftUI happened
+    ///   to find the same number some other way.
+    ///
+    /// If UIKit ever stops compressing here this goes red, and the gate above becomes a comparison of
+    /// two unpressured cards that no longer proves anything about the slot.
+    func test_bannerComparable_landscape_bothBackendsAreClippingTheSubtitle() throws {
         let shape = try XCTUnwrap(DifferentialGeometry.shape(named: "banner-comparable"))
         let host = DifferentialGeometry.landscapeHost
-        let rows = DifferentialGeometry.rows(for: shape, size: host)
-        let table = DifferentialGeometry.table(name: "banner-comparable [landscape]", rows: rows)
 
-        // (1) The rows that DO agree — a real guarantee, and the thing that says the banner's yield
-        //     is working. Both were wrong before the `maxHeight` slot (card 312.6, button y 245.6).
-        for element in [ModalGeometryElement.card, .primaryButton] {
-            let row = try XCTUnwrap(rows.first { $0.element == element })
-            XCTAssertFalse(
-                row.verdict.isDisagreement,
-                "'\(element.rawValue)' disagrees in landscape. The card and the button are supposed "
-                    + "to be exact once the banner yields the residual.\n" + table
-            )
-        }
-
-        // (2) The premise: UIKit really is compressing its subtitle viewport here. Without this the
-        //     equality below could hold for some unrelated reason.
         let modal = DifferentialGeometry.makeUIKitModal(shape)
         let window = DifferentialGeometry.makeWindow(size: host)
         defer { DifferentialGeometry.teardown(window) }
@@ -718,26 +777,23 @@ final class DifferentialGeometryTests: XCTestCase {
         window.layoutIfNeeded()
         let viewport = try XCTUnwrap(modal.svSubtitleContainer, "UIKit built no subtitle container")
         let label = try XCTUnwrap(modal.lbSubtitle, "UIKit built no subtitle label")
-        let withheld = label.bounds.height - viewport.bounds.height
-        XCTAssertGreaterThan(
-            withheld, DifferentialGeometry.tolerance,
+        XCTAssertLessThan(
+            viewport.bounds.height, label.bounds.height - DifferentialGeometry.tolerance,
             "UIKit's landscape subtitle viewport (\(viewport.bounds.height)pt) is no longer smaller "
-                + "than its label (\(label.bounds.height)pt), so it has stopped compressing and this "
-                + "shape may finally be comparable. Try `assertAgrees(\"banner-comparable\", size: "
-                + "DifferentialGeometry.landscapeHost)` and delete this test if it passes."
+                + "than its label (\(label.bounds.height)pt), so this shape has left the clipped "
+                + "regime and `test_geometry_landscape_bannerComparable` is now comparing two "
+                + "unpressured cards. Find a shape that IS clipped, or D-7 has no gate."
         )
 
-        // (3) The claim: the banner's shortfall IS the subtitle's withholding, to the point.
-        let banner = try XCTUnwrap(rows.first { $0.element == .banner })
-        let uiKitBanner = try XCTUnwrap(banner.uiKit, "UIKit drew no banner")
-        let swiftUIBanner = try XCTUnwrap(banner.swiftUI, "SwiftUI drew no banner")
-        let shortfall = uiKitBanner.height - swiftUIBanner.height
-        XCTAssertEqual(
-            shortfall, withheld, accuracy: DifferentialGeometry.tolerance,
-            "the banner's landscape shortfall (\(shortfall)pt) is no longer equal to what UIKit's "
-                + "subtitle viewport withholds (\(withheld)pt). These being the same number is the "
-                + "entire claim that this is D-7 and not a banner defect — if they have come apart, "
-                + "something ELSE is now also diverging and the banner is back in scope.\n" + table
+        // The SwiftUI half: the slot must be clipping too, not merely agreeing.
+        let rows = DifferentialGeometry.rows(for: shape, size: host)
+        let subtitle = try XCTUnwrap(rows.first { $0.element == .subtitle })
+        let swiftUISlot = try XCTUnwrap(subtitle.swiftUI, "SwiftUI drew no subtitle")
+        XCTAssertLessThan(
+            swiftUISlot.height, label.bounds.height - DifferentialGeometry.tolerance,
+            "SwiftUI's landscape subtitle slot (\(swiftUISlot.height)pt) is no longer smaller than "
+                + "the text it holds (\(label.bounds.height)pt of content). `SubtitleSlot` has "
+                + "stopped yielding, and the agreement next door is a coincidence."
         )
     }
 

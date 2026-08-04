@@ -307,20 +307,106 @@ conserved, so the banner pays exactly what the subtitle withheld. Pinned by mech
 shortfalls must be equal) in `test_bannerComparable_landscape_divergesOnlyByTheSubtitleViewport`, and
 recorded against D-7 in `DifferentialGeometrySupport`'s header rather than as a banner gap.
 
+> **SUPERSEDED — see §5c.** D-7 is closed and `banner-comparable` IS gated in landscape, through the
+> ordinary `assertAgrees`. The mechanism pin named above is deleted, replaced by
+> `test_geometry_landscape_bannerComparable` plus an explicit non-vacuity premise. The paragraph
+> stays because its measurements are the evidence §5c builds on.
+
 ### Consequence, restated
 
 Landscape banner parity is **no longer the harder half; it is two smaller halves with known owners.**
 
 1. **D-7's subtitle viewport** — worth a measured 19.33pt, blocks `banner-comparable` alone, and is a
-   prerequisite for `banner-wide` regardless of route. This is the load-bearing item.
+   prerequisite for `banner-wide` regardless of route. This is the load-bearing item. **DONE — §5c.**
 2. **The landscape column rule** — worth 64pt on wide artwork, needs a measurement pass rather than a
    formula, and should wait behind (1), because `banner-wide`'s width divergence currently masks the
    subtitle one and a second pass cannot be validated while a 19.33pt error is still in the residual
-   it would be measuring.
+   it would be measuring. **Still open, and now unblocked: (1) is out of the residual.**
 
 Any preset combining landscape with artwork wider than its content column (eight of the app's nine
 real banner assets, §3) still renders a wider card than UIKit. What is no longer true is that it also
 renders a taller one, an overflowing one, or an ungated one.
+
+## 5c. D-7 — the subtitle slot, measured and closed
+
+### The rule UIKit is following
+
+Swept on `banner-comparable` at 844 wide, host height 450 → 330 in 10pt steps, reading
+`svSubtitleContainer.bounds` (the viewport), `lbSubtitle.bounds` (the content) and `vwBanner`:
+
+| host | viewport | content | banner | what moved |
+|---|---|---|---|---|
+| 844x450 | 38.33 | 38.33 | 160.0 | nothing is under pressure |
+| 844x440 | 38.33 | 38.33 | 160.0 | — |
+| 844x430 | **19.33** | 38.33 | 160.0 | the SUBTITLE yields; the banner has not moved at all |
+| 844x415 | **19.0** | 38.33 | 159.3 | subtitle reaches its floor, banner begins to pay |
+| 844x390 | 19.0 | 38.33 | 134.33 | landscape phone |
+| 844x330 | 19.0 | 38.33 | 74.33 | banner absorbs every further point |
+
+`viewport == clamp(whatever is left, ModalLayout.subtitleFloorHeight, contentHeight)`, and **the
+subtitle yields BEFORE the banner.**
+
+That order looks backwards against `ModalLayout.Priority` — `bannerNaturalAspect` 245 / 243 / 241 all
+sit BELOW `subtitleSlotHeight` (`.defaultLow`, 250), and `TitleSubtitleTruncationTests` asserts it. It
+is not backwards. Those three set the banner's height; what DEFENDS it under pressure is `ivBanner`'s
+WIDTH compression resistance (**750**) reaching the height through the required
+`width == height * ratio` tie. The effective ladder is therefore **subtitle slot (250) → banner (750)
+→ subtitle floor (850)**, which is exactly the order measured, and the floor is what stops the
+subtitle before the banner starts.
+
+### The SwiftUI answer — two changes, both in `SwiftUIAlertModal`
+
+1. **`SubtitleSlot`**, the counterpart of `svSubtitleContainer`: a `ScrollView` under
+   `.frame(minHeight: floor, maxHeight: contentHeight)`. That is the mirror of `BannerSlot`'s greedy
+   `Color.clear` — a `Text` cannot express the `[floor, content]` range, because a flexible frame
+   reports `clamp(childHeight, min, max)` and `Text` answers every height proposal with the height its
+   glyphs need, so with `maxHeight` at the ideal the clamp is the identity and the row is rigid. A
+   `ScrollView` reports `[0, ∞)`, and the frame turns that into the interval Auto Layout arbitrates
+   over. **Unconditional**, because UIKit's is: it does not read `contentScrollable`.
+2. **`subtitleLayoutPriority` 0 → −1**, which puts the subtitle below the BANNER as well as below the
+   title. Without it the slot exists and never engages: SwiftUI's VStack hands a same-priority
+   subtitle its ideal and lets the banner absorb everything, which is precisely the pre-fix numbers.
+   With it, the VStack serves the banner first, reserves the subtitle's `minHeight`, and gives the
+   subtitle `clamp(residual, floor, content)` — UIKit's rule, arrived at rather than computed.
+
+### Measured after
+
+| host | element | UIKit | SwiftUI |
+|---|---|---|---|
+| 844x390 | banner h | 134.33 | 134.24 |
+| 844x390 | subtitle h | 19.0 | 19.09 |
+| 844x390 | card h | 294.0 | 294.0 |
+| 390x844 | every row | — | **bit-identical to before this change** |
+
+Every row at every 10pt step from 844x450 to 844x330 agrees to within **0.09pt**, except the band
+described below. Portrait did not move.
+
+### What is gated now
+
+* **`banner-comparable` in landscape**: the ordinary `assertAgrees`
+  (`test_geometry_landscape_bannerComparable`), every row, every coordinate, 0.5pt. The 19.33pt
+  mechanism pin is deleted. Non-vacuity is asserted separately
+  (`test_bannerComparable_landscape_bothBackendsAreClippingTheSubtitle`): both backends must be
+  clipping, or the agreement is between two unpressured cards and proves nothing.
+* **`long-subtitle-unscrolled`**, a new shape — the 1222pt subtitle with `contentScrollable` OFF —
+  through `assertAgrees` in BOTH orientations. UIKit's viewport 645.33 against SwiftUI's 645.33
+  portrait; 161.33 against 161.33 landscape. This is the real comparison that the
+  `long-subtitle-scrolling` inequality was standing in for.
+
+### What is left, and it is not D-7
+
+* **`contentScrollable`.** `long-subtitle-scrolling` still cannot compare its subtitle row, but the
+  cause has inverted: it is a SwiftUI-only feature, not a missing one. `ScrollableContent` wraps title
+  AND subtitle, so inside it the height proposal is unbounded, the subtitle slot is never pressured,
+  and it reports 1222 where UIKit's viewport is 645.3. Since the subtitle now scrolls without the
+  flag, this is the deciding input for `2026-08-02-content-scrollable-review.md`.
+* **Vertical padding compression, in a 15pt band.** `banner-comparable` agrees at every host height
+  from 844x450 to 844x435 and from 844x415 to 844x330, and diverges only in **844x420…430**: UIKit
+  re-expands its top inset 16 → 23 and pays for it by collapsing the subtitle a further 14pt, because
+  its `componentSpacing` is 800 and the subtitle slot's tie is 250 — spacing outranks body text.
+  SwiftUI's padding yields first instead, having no min/max padding primitive. **The band was already
+  divergent before this work, on more rows and by more points**; it is narrowed, not introduced. It
+  falls on no gated host size.
 
 ## 6. Changes
 
