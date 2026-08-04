@@ -74,6 +74,11 @@ final class ModalBannerGeometryRuleTests: XCTestCase {
         let g = tokens(ratio: 1, cap: 40)
             .bannerGeometry(imageSize: CGSize(width: 160, height: 90), availableCardWidth: available)
         XCTAssertEqual(g.height, 40, accuracy: 0.01)
+        // The COLUMN too, like every sibling above. A cap that low collapses the demand to
+        // `cap * ratio` = 40, which is far under `contentMaxWidth`, so the column must stay at 256 —
+        // the cap bounds the banner, it does not narrow the card. Asserting height alone left the
+        // one shape where the cap dominates as the only row in this file with no column claim.
+        XCTAssertEqual(g.column, 256, accuracy: 0.01)
     }
 
     func test_zeroArtwork_collapses() {
@@ -113,6 +118,45 @@ final class ModalBannerGeometryRuleTests: XCTestCase {
         // min(column/r = 2560, max(2000, 200/r = 2000) = 2000) = 2000. No cap to bring it down, and
         // no term anywhere that lets the text push back.
         XCTAssertEqual(g.height, 2000, accuracy: 0.01)
+    }
+
+    // MARK: - The 300pt column (the app's iPad width)
+
+    /// **The app states 256 on iPhone and 300 on iPad** (`V3AlertModal+GBV3AlertModal.swift`), and
+    /// every rule test above runs at 256. These two run the same rules at 300.
+    ///
+    /// **What they prove and what they do not.** `bannerGeometry` is a pure function of the tokens
+    /// and two `CGFloat`s, so exercising it at 300 proves the ARITHMETIC — that
+    /// `max(demand, contentMaxWidth)` and the ceiling compose the same way at the wider column. They
+    /// prove nothing about iPad hardware, and nothing about the app choosing 300 in the first place:
+    /// no device, no trait collection and no idiom is involved anywhere in this file. The measured
+    /// half — the same column against real Auto Layout output, on a 1024x1366 host — is
+    /// `BannerGeometryTruthTests`' `test_column300_*`, and its own doc states the same limit.
+    private func iPadTokens(ratio: CGFloat?, cap: CGFloat?) -> ModalTokens {
+        var t = tokens(ratio: ratio, cap: cap)
+        t.contentMaxWidth = 300
+        return t
+    }
+
+    func test_column300_artworkNarrowerThanColumn_columnStaysAtContentMaxWidth() {
+        // On a 1024pt host: 984pt of card, 944pt of column ceiling — nothing is clamped here.
+        let g = iPadTokens(ratio: nil, cap: nil)
+            .bannerGeometry(imageSize: CGSize(width: 160, height: 160), availableCardWidth: 984)
+        XCTAssertEqual(g.column, 300, accuracy: 0.01)
+        XCTAssertEqual(g.height, 160, accuracy: 0.01)   // r = 1; max(160, 160) = 160
+    }
+
+    func test_column300_artworkWiderThanColumn_columnGrowsPastThe300() {
+        let g = iPadTokens(ratio: 400.0 / 250.0, cap: 256)
+            .bannerGeometry(imageSize: CGSize(width: 400, height: 250), availableCardWidth: 984)
+        // demand = min(400, 256 * 1.6 = 409.6) = 400, above the 300pt column and under the ceiling.
+        XCTAssertEqual(g.column, 400, accuracy: 0.01)
+        XCTAssertEqual(g.height, 250, accuracy: 0.01)   // min(256, 400/1.6 = 250, max(250, 250))
+        // And the SAME artwork on a 390pt phone host clamps to that host's 310pt ceiling instead —
+        // the branch the 300pt column shares with the 256pt one.
+        let onAPhone = iPadTokens(ratio: 400.0 / 250.0, cap: 256)
+            .bannerGeometry(imageSize: CGSize(width: 400, height: 250), availableCardWidth: available)
+        XCTAssertEqual(onAPhone.column, 310, accuracy: 0.01)
     }
 
     func test_infiniteContentMaxWidth_doesNotProduceAnInfiniteColumn() {

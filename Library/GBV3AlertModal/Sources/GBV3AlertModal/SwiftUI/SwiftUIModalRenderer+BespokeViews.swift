@@ -83,16 +83,6 @@ public struct BadgeModalView: View {
     }
 
     public var body: some View {
-        // NO `bannerArtworkSize:` — a KNOWN, pre-existing asymmetry, recorded rather than fixed.
-        // Without it the scaffold's `bannerGeometry` stays `.zero`, so a badge banner can never
-        // widen the content column or the card, however wide its artwork is. UIKit's counterpart
-        // DOES widen both (`ivBanner`'s compression resistance, 750, outranks
-        // `svContentContainer`'s `width == fixedWidth` at `.medium`, 500 — see
-        // `ModalTokens.bannerGeometry`). `BadgeDialog` sits outside the differential gate (it has
-        // no `GBAlertModal` view graph to measure against), so nothing catches this; the row below
-        // instead applies `bannerLayout`'s ratio/cap directly to the `Image`, which bounds the
-        // banner but never grows the column. Passing the size here would change badge layout, which
-        // is outside this pass's remit.
         AlertModalScaffold(
             tokens: tokens,
             primaryTitle: descriptor.primary,
@@ -103,7 +93,28 @@ public struct BadgeModalView: View {
             onClose: { resolve(Self.result(for: .close)) },
             // Same guard-inside-the-closure spelling `SwiftUIAlertModal` uses, so the scrim stays
             // interactive-but-inert rather than needing an optional closure at the call site.
-            onOverlayTap: { if descriptor.closeOnTapOverlay { resolve(Self.result(for: .close)) } }
+            onOverlayTap: { if descriptor.closeOnTapOverlay { resolve(Self.result(for: .close)) } },
+            // **The badge banner can widen its column now, as its UIKit counterpart always could.**
+            //
+            // This argument used to be omitted, and the omission was recorded in a comment rather
+            // than fixed: without it `bannerGeometry` stayed `.zero`, so a badge banner could never
+            // widen the content column or the card however wide its artwork was. UIKit's
+            // counterpart DOES widen both — `BadgeDialog` has a real view graph
+            // (`UIKitModalRenderer.BadgeHolder.make` builds a genuine `banner: UIImage` and
+            // `GBAlertModal` renders it through the same `vwBanner`/`ivBanner` constraints as every
+            // other shape), and there `ivBanner`'s compression resistance (750) outranks
+            // `svContentContainer`'s `width == fixedWidth` at `.medium` (500).
+            //
+            // **Why this is safe on a path the differential gate cannot reach.** `bannerGeometry`'s
+            // column is `min(max(demand, contentMaxWidth), ceiling)`, so it is `contentMaxWidth`
+            // itself for any artwork narrower than the column — and both places the value lands
+            // (`AlertModalScaffold`'s card cap and its content-container frame) take a `max` against
+            // the number they already used. The change is therefore the IDENTITY for every shape
+            // whose artwork fits, which is every badge shape that ships: the one real banner asset,
+            // `img_badge_multi_achievement`, is 160x160pt inside a 256pt column, and
+            // `badge-unlock-single` carries no banner at all. `.zero` in, `.zero` out, for the
+            // no-banner shapes. What changes is only the case that was WRONG.
+            bannerArtworkSize: descriptor.banner?.pointSize ?? .zero
         ) {
             bannerView
             titleView
@@ -115,7 +126,13 @@ public struct BadgeModalView: View {
     @ViewBuilder
     private var bannerView: some View {
         if let banner = descriptor.banner {
-            Image(banner.assetName)
+            // `bundle:` so the DRAWN image and the artwork size the scaffold was handed above
+            // resolve through the same lookup — `ModalImage.pointSize` is bundle-aware, and a row
+            // that measured a bundle-scoped asset while drawing from `Bundle.main` would size a
+            // column for a picture it never renders. `Image(_:bundle:)` with a nil bundle IS
+            // `Image(_:)`, so this is byte-identical for every asset that names no bundle, which is
+            // every asset the app ships.
+            Image(banner.assetName, bundle: banner.bundle)
                 .resizable()
                 .scaledToFit()                       // natural aspect, same as `SwiftUIAlertModal`
                 // `ModalBannerGeometry` (the `ViewModifier`) is gone — Task 3 dropped it, and
@@ -137,8 +154,13 @@ public struct BadgeModalView: View {
                 // This banner also lost its `.frame(height: bannerFixedHeight)` pin along with every
                 // other banner in this module (Task 3): UIKit ignores that field on both paths
                 // (`BannerGeometryTruthTests.test_bannerFixedHeight_isInert_*`), so dropping it here
-                // is correct — but it is a real behavioural change to a path NO test covers, since
-                // `BadgeModalView` sits outside the differential gate for the reason above.
+                // is correct — but it is a real behavioural change to a path the differential gate
+                // does not reach, for the reason above.
+                //
+                // The COLUMN, though, is no longer part of that gap: the scaffold above is handed
+                // `descriptor.banner?.pointSize`, so wide artwork widens this card exactly as it
+                // widens `SwiftUIAlertModal`'s. Covered by `BespokeBannerColumnTests`, which hosts
+                // this view and measures the card probe rather than trusting the wiring.
                 .modifier(BespokeBannerLayout(layout: tokens.bannerLayout))
                 .padding(.bottom, tokens.gapBelowBanner)
         }
