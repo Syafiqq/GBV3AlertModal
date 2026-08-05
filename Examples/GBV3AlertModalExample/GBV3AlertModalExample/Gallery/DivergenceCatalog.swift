@@ -4,7 +4,7 @@
 //
 //  **The UIKit half of the divergence section.**
 //
-//  Five shapes, one per KNOWN difference between the UIKit and the SwiftUI
+//  Six shapes, one per KNOWN difference between the UIKit and the SwiftUI
 //  backend. Each has a twin of the same `name` in `SwiftUICatalog+Divergences.swift`,
 //  built from the same `Properties` and the same content — because a divergence
 //  entry with nothing to compare against is a screenshot, not a comparison.
@@ -15,6 +15,12 @@
 //   * `docs/superpowers/specs/2026-08-02-swiftui-banner-height-design.md` §5, §5b–§5e
 //   * `Library/GBV3AlertModal/Tests/GBV3AlertModalTests/SwiftUI/DifferentialGeometrySupport.swift`
 //   * `.superpowers/sdd/2026-08-02-swiftui-banner-geometry/progress.md` (D-A, D-B)
+//   * `SwiftUIAlertModal`'s own doc comment (the `showsPrimary` obedience gap)
+//
+//  FIVE of the six are GEOMETRY — the two engines arbitrate the same constraints
+//  differently. The sixth (`divergence-shows-primary-not-obeyed`) is a different
+//  kind of thing: a RENDERER-OBEDIENCE gap, where the shared resolver's answer is
+//  correct and one backend simply does not read it.
 //
 //  The captions live on the SwiftUI side (that gallery renders them under each
 //  row); this file carries the shapes and the provenance.
@@ -32,7 +38,8 @@ enum DivergenceCatalog {
         ratioNotArtworkAspect,
         bannerWideLandscapeWidth,
         insetBand,
-        subtitleViewportScrollable
+        subtitleViewportScrollable,
+        showsPrimaryNotObeyed
     ]
 }
 
@@ -207,6 +214,80 @@ extension DivergenceCatalog {
             properties: scrollableProperties,
             title: "Heads up",
             subtitle: longSubtitle
+        )
+    }
+}
+
+// MARK: - `showsPrimary` is resolved but not obeyed
+
+extension DivergenceCatalog {
+    /// **`primaryActionStyle` NIL, with the primary action STRING still present.**
+    ///
+    /// That pair is the whole shape. `GBAlertModal.resolve` computes
+    /// `showsPrimary = holder.primaryAction != nil && properties?.primaryActionStyle != nil`,
+    /// so it answers FALSE here — correctly, and identically for both backends, since both
+    /// run the same resolver over the same holder. `GBAlertModal+ViewGraph`'s
+    /// `buildActionComponents` obeys it and builds no primary button, no button slot and no
+    /// main-action stack at all; `AlertModalScaffold` cannot obey it, because its
+    /// `primaryTitle` is a non-optional `String` and `card` draws `primaryButton`
+    /// unconditionally. So the divergence is not two engines arbitrating differently — it is
+    /// one renderer not reading a flag. See `SwiftUIAlertModal`'s doc comment, which records it.
+    ///
+    /// Keeping the primary STRING is what makes the shape reachable: drop it and
+    /// `showsPrimary` is false for the ordinary reason (no action) and the SwiftUI scaffold
+    /// still has nothing sensible to draw. This is the one input where the resolver says "no
+    /// button" while a button title is sitting right there.
+    ///
+    /// No SECONDARY action, deliberately: with one absent it is the button RUN that vanishes
+    /// on the UIKit side, which is the clearest thing to look at. A secondary would leave a
+    /// button on both sides and turn a presence difference into a counting exercise.
+    ///
+    /// Rebuilt through the full initializer rather than `.copy(...)` for exactly the reason
+    /// `tallUncappedProperties` above is: `Properties.copy` reads an explicit `nil` as "not
+    /// provided" (`primaryActionStyle ?? self.primaryActionStyle`), so it can never clear
+    /// `GalleryPresets.properties`'s `.obliqueBottomLeft(...)` back to nil. Every other field
+    /// is read off the base, so this cannot drift from the preset.
+    ///
+    /// One thing this shape does NOT show, and it is worth knowing before looking for it:
+    /// `ModalTokens.init(from:)` only reads button colours out of an `.obliqueBottomLeft`
+    /// style, so with no style at all the SwiftUI button keeps `ModalTokens.standard`'s
+    /// literal accent — `0xF7941E`, which is exactly
+    /// `GalleryColor.accentSecondaryDark`, the colour this preset's theme supplies anyway. The
+    /// phantom button is therefore fully styled and indistinguishable from a legitimate one.
+    /// Its PRESENCE is the entire tell.
+    static var nilPrimaryStyleProperties: GBAlertModal.Properties {
+        let base = GalleryPresets.properties
+        return GBAlertModal.Properties(
+            baseTint: base.baseTint,
+            overlayColor: base.overlayColor,
+            contentProperty: base.contentProperty,
+            margin: base.margin,
+            padding: base.padding,
+            bannerRatio: base.bannerRatio,
+            bannerMaxHeight: base.bannerMaxHeight,
+            bannerFixedHeight: base.bannerFixedHeight,
+            titleFont: base.titleFont,
+            titleColor: base.titleColor,
+            subtitleFont: base.subtitleFont,
+            subtitleColor: base.subtitleColor,
+            buttonActionShouldMatchParent: base.buttonActionShouldMatchParent,
+            buttonActionOrientation: base.buttonActionOrientation,
+            primaryActionStyle: nil,
+            secondaryActionStyle: base.secondaryActionStyle,
+            closeButtonTint: base.closeButtonTint,
+            space: base.space,
+            contentScrollable: base.contentScrollable
+        )
+    }
+
+    /// No banner: the divergence is in the button run, and artwork would only add a second
+    /// variable to a card whose whole point is what is missing from the bottom of it.
+    static var showsPrimaryNotObeyed: DialogEntry {
+        entry(
+            "divergence-shows-primary-not-obeyed",
+            properties: nilPrimaryStyleProperties,
+            title: "No primary style",
+            subtitle: comparableSubtitle
         )
     }
 }

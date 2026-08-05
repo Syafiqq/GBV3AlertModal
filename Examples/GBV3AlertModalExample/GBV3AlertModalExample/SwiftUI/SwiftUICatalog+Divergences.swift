@@ -19,10 +19,18 @@
 //     `ModalTokens.bannerGeometry`'s doc
 //   * the vertical-compression band — design spec §5e
 //   * the D-7 residual — design spec §5c and `DifferentialGeometrySupport`'s header
+//   * `showsPrimary` not obeyed — `SwiftUIAlertModal`'s own doc comment
 //
-//  **Two of the five cannot show their divergence at this gallery's host size,
+//  **Two of the six cannot show their divergence at this gallery's host size,
 //  and their captions say so** rather than shipping an entry that looks identical
 //  to its twin and reads as agreement.
+//
+//  **Five of the six are GEOMETRY; the sixth is not.**
+//  `divergence-shows-primary-not-obeyed` is a renderer-OBEDIENCE gap — the shared
+//  resolver's answer is right and this backend does not read it — so it is a
+//  plain DEFECT rather than an accepted difference in arbitration. Its caption
+//  says so, because a reader stepping the section should not have to infer which
+//  kind of thing they are looking at.
 //
 
 import Foundation
@@ -40,6 +48,7 @@ extension ModalStyle {
     static let divergenceTallUncapped = ModalStyle("divergence.tallUncapped")
     static let divergenceBannerWide = ModalStyle("divergence.bannerWide")
     static let divergenceScrollable = ModalStyle("divergence.scrollable")
+    static let divergenceNilPrimaryStyle = ModalStyle("divergence.nilPrimaryStyle")
 }
 
 extension SwiftUICatalogPresets {
@@ -49,7 +58,8 @@ extension SwiftUICatalogPresets {
         [
             (.divergenceTallUncapped, DivergenceCatalog.tallUncappedProperties),
             (.divergenceBannerWide, DivergenceCatalog.bannerWideProperties),
-            (.divergenceScrollable, DivergenceCatalog.scrollableProperties)
+            (.divergenceScrollable, DivergenceCatalog.scrollableProperties),
+            (.divergenceNilPrimaryStyle, DivergenceCatalog.nilPrimaryStyleProperties)
         ]
     }
 }
@@ -132,12 +142,34 @@ extension SwiftUIDivergence {
             + "UIKit's viewport falls to 161.33pt and SwiftUI's stays unpressured. Deciding input "
             + "for 2026-08-02-content-scrollable-review.md."
     )
+
+    static let showsPrimaryNotObeyed = SwiftUIDivergence(
+        caption: "showsPrimary not obeyed · DEFECT — and NOT a geometry divergence like the other "
+            + "five. This is a RENDERER-OBEDIENCE gap: the shared resolver gets the answer right "
+            + "and this backend does not read it. WHAT TO LOOK FOR: the UIKit twin has NO BUTTON AT "
+            + "ALL below the subtitle; this card still draws a full-width orange primary. Measured "
+            + "at 390x844 on the library's mirror of this preset: the UIKit card is 320x123.0 and "
+            + "builds no btPrimaryAction, no vwPrimaryAction and no svMainActionContainer; the "
+            + "SwiftUI card is 320x187.0 with a 256x48 button at (35, 112) — 64.0pt of extra card "
+            + "height, and that SwiftUI card is bit-identical to a control that DOES supply a "
+            + "primaryActionStyle, so the flag changes nothing here whatsoever. Cause: a "
+            + "primaryActionStyle of nil with the action STRING still present makes "
+            + "resolve() report showsPrimary false (it requires BOTH), which "
+            + "GBAlertModal+ViewGraph obeys — but AlertModalScaffold's primaryTitle is a "
+            + "non-optional String and card draws primaryButton unconditionally, so it CANNOT "
+            + "obey it. The phantom button is not even off-colour: with no style to read, "
+            + "ModalTokens keeps standard's literal 0xF7941E accent, which is the same orange "
+            + "this preset's theme supplies. Presence is the entire tell. Recorded on "
+            + "SwiftUIAlertModal's own doc comment; fixing it needs an optional primaryTitle on "
+            + "the scaffold, which is a public API change and out of scope for a frozen UIKit."
+    )
 }
 
 // MARK: - The entries
 
 extension SwiftUICatalog {
-    /// Five shapes, one per recorded divergence, in the order the design spec discusses them.
+    /// Six shapes, one per recorded divergence, in the order the design spec discusses them —
+    /// the obedience gap last, because it is the one that is not geometry.
     static var divergenceEntries: [SwiftUICatalogEntry] {
         let category = DivergenceCatalog.category
         return [
@@ -215,6 +247,22 @@ extension SwiftUICatalog {
                     primary: "Okay",
                     closeOnTapOverlay: true,
                     style: .divergenceScrollable
+                )
+            },
+            // `showsPrimary` resolved false and drawn anyway. The `primary` string is
+            // deliberately still here — it is what makes the resolver's "no button"
+            // answer disagree with what this backend puts on screen.
+            SwiftUICatalogEntry.renderable(
+                "divergence-shows-primary-not-obeyed",
+                category: category,
+                divergences: [.showsPrimaryNotObeyed]
+            ) {
+                AlertDialog(
+                    title: "No primary style",
+                    subtitle: DivergenceCatalog.comparableSubtitle,
+                    primary: "Okay",
+                    closeOnTapOverlay: true,
+                    style: .divergenceNilPrimaryStyle
                 )
             }
         ]
