@@ -1,5 +1,77 @@
 # Brief — Backend independence, Pass 1
 
+**Status: DONE.** Landed as `23412bd` + `633cd13`. **Library suite:** 522 / 0.
+
+> **This brief was wrong in four places and its headline task could not be built as written.**
+> The corrections are in §0. Everything below §0 is the original brief, kept because its trap list
+> and its "where the code is" table were accurate and load-bearing. Read §0 first.
+
+---
+
+## 0. What this brief got wrong, and what shipped instead
+
+Four factual errors, each verified against the source:
+
+| the brief said | actually |
+|---|---|
+| "Five files in `SwiftUI/` import UIKit" | **Four.** `SwiftUIAlertModal.swift` imports only Foundation and SwiftUI — while calling `UIKitModalRenderer.AlertHolder.make` at line 65. Same-module references need no import, so the fifth row was inferred from what the file *uses*: exactly the "reading a signature is not reading the code" trap in §7. |
+| `ModalTokens` uses `UIMinMaxEdgeInsets`, a UIKit dependency | It is `Components/UIMinMaxEdgeInsets.swift:25`, `import Foundation`. **This module's own type**, classified by its "UI" prefix. |
+| The shrink floors are "pinned by the differential gate" | The gate **cannot see them.** `ModalLayout.swift:184-185` says so itself: the floor is inert on "every shape the differential harness compares." `titleFloorHeight` has one production caller and it is SwiftUI's — UIKit never calls it. |
+| "CoreText can measure without UIKit" — so swap `UIFont` for `CTFont` | `textHeight` measures via `NSAttributedString.boundingRect`, declared in `UIKit.framework/Headers/NSStringDrawing.h`. It is an **engine**, not a type. |
+
+**The CoreText plan was measured and abandoned.** On-device, against the real `longTitle` at the real
+256pt column:
+
+| | boundingRect (UIKit/TextKit) | CoreText | delta |
+|---|---|---|---|
+| `UIFont.lineHeight` vs `CTFont` asc+desc+leading | 19.09375 | 19.09375 | **0.0** |
+| `longTitle` @ 24pt bold | 171.84375 | 174.0 | −2.16pt |
+| `longTitle` @ floored 18pt | 85.921875 | 85.0 | **+0.92pt** |
+
+Module tolerance is 0.5pt. CoreText *under*-measures at floor scale — the one direction that
+reintroduces the clipping the floor exists to prevent. The single-value case is free; the multi-line
+case is not, and no amount of care makes two different line-breaking engines agree.
+
+**The owner then settled it by direction, not by measurement:** parallel config types sharing field
+names, `UIFont` on the UIKit side and `Font` on the SwiftUI side, no derivation between them, field
+sets allowed to differ, behavior the contract. Under that rule the twins were never vocabulary —
+they are internal measurement machinery, and measuring with `UIFont` is what *guarantees* the same
+behavior. CoreText would have bought an import-count win by breaking the actual contract.
+
+### What actually shipped
+
+1. **Golden absolute pins.** The differential gate is common-mode blind: `textHeight`,
+   `subtitleFloorHeight` and `titleMinimumScaleFactor` are called by both backends, so a change
+   inside any of them moves both arms equally and the difference stays zero. **Measured:** flipping
+   the shrink floor 0.75 → 0.70 against the suite as it stood gave **518 tests, ONE failure** — the
+   assertion on the literal `0.75`. A 5.7pt move in the pressured title's floor passed everything
+   else, including the whole gate. The pins are absolute, at 0.01, and outlive the gate's deletion.
+2. **The title floor measures styled text.** The real find of this pass, and it came from a question
+   the brief never asked: *why does it take a `String`?* Because the call site flattened the title
+   with `String(title.characters)`, discarding per-run fonts that `Text` nonetheless draws. UIKit
+   never had the bug. Fixed by taking the `NSAttributedString` plus a fallback for unstyled runs.
+3. **The `UIScreen` read deleted, not rehomed.** "→ environment" was unbuildable: `makePresentation`
+   runs from an imperative `ObservableObject` method with no view to read from. And the value never
+   reached a renderer — `ModalHost` never passes `Presentation.resolved` to the view. Replaced with
+   a constant plus a tripwire test on the premise.
+4. **The twins dropped `public`** and are documented as fallbacks. Zero external readers in this
+   repo, the example app, or either `geniebook-student-ios` checkout.
+
+**`ModalLayout` was changed, and that is not a violation of "UIKit stays frozen."** `titleFloorHeight`
+is SwiftUI's function that happens to live in a shared file — one production caller, and it is
+`ModalTokens`. UIKit's behavior is untouched: `scaled` is called, never modified.
+
+### What §3 below asked for and did NOT ship
+
+The CoreText measurement. It is not deferred to Pass 3 either — under the owner's rule it is not
+wanted at all. §3's framing of the twins as "the real work" was wrong twice over: they needed no
+CoreText treatment, and the actual defect in that code was the flattened call site, which §3 does
+not mention.
+
+---
+
+## Original brief follows
+
 **Status:** open, nothing started. **Branch:** `feat/modal-executor-capability` @ `ef7db2b`, clean.
 **Library suite:** 518 / 0. **Example app:** green.
 
