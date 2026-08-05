@@ -168,7 +168,12 @@ public struct SwiftUIAlertModal: View {
             // `resolved.closeOnTapOverlay` mirrors `holder.closeOnTapOverlay` / `config.closeOnTapOverlay`
             // — reading it off the resolver keeps this decision flowing through the shared chain too.
             onOverlayTap: { if resolved.closeOnTapOverlay { onAction(.dismissed) } },
-            buttonAxis: resolved.buttonAxis,
+            // The one place UIKit's axis vocabulary becomes SwiftUI's. The RESOLVER keeps speaking
+            // `NSLayoutConstraint.Axis` — it must, because `UIStackView.axis` takes exactly that
+            // type and the UIKit renderer is frozen — but `AlertModalScaffold` is a public SwiftUI
+            // view and should not make its callers import UIKit for a two-case enum. Total mapping,
+            // no failure case; `ModalAxisBridgeTests` pins both directions.
+            buttonAxis: resolved.buttonAxis.swiftUIAxis,
             // `Properties.buttonActionShouldMatchParent`, via the shared resolver — the same field
             // UIKit turns into `svMainActionContainer.alignment`. Resolved AND obeyed now; it used to
             // be resolved and dropped (task 17, finding D-4).

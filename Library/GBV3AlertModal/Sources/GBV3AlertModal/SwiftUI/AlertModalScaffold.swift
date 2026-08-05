@@ -1,5 +1,5 @@
 import SwiftUI
-import UIKit // for `NSLayoutConstraint.Axis` — the vocabulary `ResolvedModal.buttonAxis` speaks.
+import UIKit
 
 /// How the banner row — which lives inside the caller's `content` closure — learns the geometry the
 /// scaffold computed from its `GeometryReader`. An environment value rather than a `PreferenceKey`
@@ -37,11 +37,17 @@ public struct AlertModalScaffold<Content: View>: View {
     /// SwiftUI card obeys the SAME resolver decision the UIKit main-action stack does. Defaults to
     /// `.vertical`, which is also what `resolve` returns when `Properties` sets no orientation.
     ///
-    /// Yes, this puts a UIKit type (`NSLayoutConstraint.Axis`) in a SwiftUI public API. Deliberate:
-    /// it is the exact type `ResolvedModal.buttonAxis` and `Properties.buttonActionOrientation`
-    /// speak, and translating it to a SwiftUI-native enum here would add a second vocabulary to
-    /// keep in sync for no behavioural gain.
-    public var buttonAxis: NSLayoutConstraint.Axis = .vertical
+    /// **`SwiftUI.Axis`, not `NSLayoutConstraint.Axis`** — this used to be the latter, and the
+    /// comment here defended it: the UIKit enum is "the exact type `ResolvedModal.buttonAxis` and
+    /// `Properties.buttonActionOrientation` speak", so translating it would add "a second
+    /// vocabulary to keep in sync for no behavioural gain."
+    ///
+    /// That weighed the wrong thing. The gain was never behavioural — it is that constructing this
+    /// PUBLIC SwiftUI view no longer requires the caller to `import UIKit` for a two-case enum.
+    /// The resolver keeps speaking UIKit's vocabulary (it must: `UIStackView.axis` takes exactly
+    /// that type and the UIKit renderer is frozen); the translation happens once, at this
+    /// boundary, in `init(resolved:)`'s caller. The mapping is total and cannot fail.
+    public var buttonAxis: Axis = .vertical
     /// `GBAlertModal.ResolvedModal.buttonsMatchParent` verbatim — `Properties`'
     /// `buttonActionShouldMatchParent`, which UIKit applies as
     /// `svMainActionContainer.alignment = .fill` vs `.center` (`GBAlertModal+Style.swift`).
@@ -72,7 +78,7 @@ public struct AlertModalScaffold<Content: View>: View {
         showClose: Bool = false,
         onClose: @escaping () -> Void = {},
         onOverlayTap: (() -> Void)? = nil,
-        buttonAxis: NSLayoutConstraint.Axis = .vertical,
+        buttonAxis: Axis = .vertical,
         buttonsMatchParent: Bool = true,
         bannerArtworkSize: CGSize = .zero,
         @ViewBuilder content: @escaping () -> Content
@@ -433,6 +439,26 @@ private struct CompressibleVerticalPadding: ViewModifier {
             Color.clear.frame(maxHeight: top).layoutPriority(-1)
             content
             Color.clear.frame(maxHeight: bottom).layoutPriority(-1)
+        }
+    }
+}
+
+// MARK: - Axis bridge
+
+extension NSLayoutConstraint.Axis {
+    /// UIKit's axis as SwiftUI's. The resolver speaks `NSLayoutConstraint.Axis` because
+    /// `UIStackView.axis` does and the UIKit renderer is frozen; `AlertModalScaffold` speaks
+    /// `SwiftUI.Axis` because it is a public SwiftUI view. This is the single crossing point.
+    ///
+    /// `NSLayoutConstraint.Axis` is an `@objc` enum, so it is NOT exhaustively switchable from
+    /// Swift's point of view — a `default` is required. It maps to `.vertical`, matching what
+    /// `GBAlertModal.resolve` returns when `Properties` states no orientation, so an unknown
+    /// future case degrades to the documented default rather than trapping.
+    var swiftUIAxis: Axis {
+        switch self {
+        case .horizontal: return .horizontal
+        case .vertical: return .vertical
+        @unknown default: return .vertical
         }
     }
 }
