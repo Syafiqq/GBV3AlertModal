@@ -151,5 +151,9 @@ Every one of these cost real time in the session that produced the current state
 - **The SwiftUI-native config type and resolver** (Pass 3). Its shape is decided — same field names
   as `Properties`, SwiftUI types, `bannerFixedHeight` deliberately dropped. See §3a of the direction
   spec.
-- **Native bespoke views** (Pass 4) and **retiring UIKit** (Pass 5).
+- **Native bespoke views** (Pass 4), and **being ready to retire UIKit** (Pass 5).
+- **The app.** `geniebook-student-ios` is READ-ONLY to this work — a reference for facts (real
+  preset values, real artwork point sizes), never a target. `Properties` therefore stays public and
+  working indefinitely; the SwiftUI-native config lands alongside it, not instead of it. "Ready" is
+  the finish line, not "deleted."
 - **Changing UIKit.** Still frozen.

@@ -117,18 +117,37 @@ two together — so it lands *after* the gate is at its strongest.
 
 **Pass 4 — bespoke views.** Native SwiftUI text input, date picker, badge, loading.
 
-**Pass 5 — retire UIKit.** The app migrates off `Properties`; the differential gate is deleted with
-the backend it was measuring.
+**Pass 5 — be READY to retire UIKit.** Not "delete UIKit": this repo cannot do that on its own, and
+the app is out of scope (§6a). The deliverable is a library where the SwiftUI path touches no UIKit
+and the UIKit half is inert — deletable the day the app stops importing it, by someone else, on
+someone else's schedule.
 
 ## 6. Consequences to accept
 
 - **"By construction" becomes an empirical claim at Pass 3.** Every test doc using that phrase needs
   re-checking then, not now.
-- **The app has a migration.** `Properties` is public and UIKit-typed. Pass 5 cannot happen without
-  `geniebook-student-ios` moving to the SwiftUI-native configuration.
 - **The differential gate has an end date.** It is the safety net for Passes 3–4 and is deleted at
   Pass 5. Its measurements — the geometry rules, the truth table, the divergence catalogue — outlive
   it as documentation of what the shipping dialog did.
+
+## 6a. The app is READ-ONLY to this work
+
+`geniebook-student-ios` is a **reference, never a target.** Read it to establish facts — what
+`Properties` values the real presets use, what point sizes the real artwork is, which fields are
+actually set. Never plan or make a change to it.
+
+Two consequences:
+
+- **`Properties` stays, working, indefinitely.** It is the app's live API. The SwiftUI-native config
+  (§3a) lands *alongside* it, not instead of it. Nothing is removed from `Properties` on a schedule
+  this repo controls — including `bannerFixedHeight`, which is dead but stays public because
+  removing it is a source break for a consumer that is not ours to edit.
+- **"Ready" is the finish line, not "deleted."** Success is: SwiftUI complete, independent, and
+  proven; UIKit present but untouched by it. Whether and when UIKit is actually removed is a
+  decision made elsewhere, with the app's migration.
+
+This is also why the geometry measurements matter beyond this branch: they are the evidence an app
+team needs to trust the swap, and they were taken against the real presets and the real artwork.
 
 ## 7. What is NOT in scope
 
