@@ -29,18 +29,15 @@ extension GBAlertModal {
 
         public let space: ComponentSpace?
 
-        /// **Whether the content region (banner + title + subtitle) SCROLLS when it does not fit.**
-        ///
-        /// `nil`/`false` is today's behaviour and the default, deliberately: a card that fits needs no
-        /// scroll, and every shape in the app that already renders correctly must keep rendering
-        /// byte-for-byte the same. Opt in per preset, where the caller knows the copy can be long.
-        ///
-        /// **SwiftUI only, for now.** UIKit's `GBAlertModal` keeps its subtitle-only
-        /// `svSubtitleContainer`: this module ships to the production app as an SPM dependency, so
-        /// restructuring its view tree, its public `svSubtitleContainer` and its keyboard-avoidance
-        /// anchor is a change every consumer inherits on the next version bump. The flag is read by
-        /// `ModalTokens` and honoured by `AlertModalScaffold`; the UIKit renderer ignores it.
-        public let contentScrollable: Bool?
+        // `contentScrollable` lived here and is DELETED. It opted the SwiftUI backend into an outer
+        // `ScrollableContent` around title AND subtitle; the UIKit renderer never read it at all.
+        // `SwiftUIAlertModal.SubtitleSlot` — a `ScrollView` under `.frame(minHeight:maxHeight:)`
+        // mirroring UIKit's `svSubtitleContainer` — now compresses and scrolls the subtitle
+        // UNCONDITIONALLY, which is the behaviour the flag existed to reach. Measured on a 1222pt
+        // subtitle: with the flag off, SwiftUI's viewport lands on UIKit's to the point (645.33 vs
+        // 645.33 portrait, 161.33 vs 161.33 landscape); with it ON the subtitle slot was never
+        // pressured and reported the full 1222, i.e. the flag's only remaining effect was to make
+        // one row of the differential gate incomparable. It never appeared in a released tag.
 
         public init(
                 baseTint: UIColor? = nil,
@@ -60,8 +57,7 @@ extension GBAlertModal {
                 primaryActionStyle: ActionStyle? = nil,
                 secondaryActionStyle: ActionStyle? = nil,
                 closeButtonTint: UIColor? = nil,
-                space: ComponentSpace? = nil,
-                contentScrollable: Bool? = nil
+                space: ComponentSpace? = nil
         ) {
             self.baseTint = baseTint
             self.overlayColor = overlayColor
@@ -81,7 +77,6 @@ extension GBAlertModal {
             self.secondaryActionStyle = secondaryActionStyle
             self.closeButtonTint = closeButtonTint
             self.space = space
-            self.contentScrollable = contentScrollable
         }
 
         public func copy(
@@ -102,8 +97,7 @@ extension GBAlertModal {
                 primaryActionStyle: ActionStyle? = nil,
                 secondaryActionStyle: ActionStyle? = nil,
                 closeButtonTint: UIColor? = nil,
-                space: ComponentSpace? = nil,
-                contentScrollable: Bool? = nil
+                space: ComponentSpace? = nil
         ) -> Self {
             Self(
                     baseTint: baseTint ?? self.baseTint,
@@ -123,8 +117,7 @@ extension GBAlertModal {
                     primaryActionStyle: primaryActionStyle ?? self.primaryActionStyle,
                     secondaryActionStyle: secondaryActionStyle ?? self.secondaryActionStyle,
                     closeButtonTint: closeButtonTint ?? self.closeButtonTint,
-                    space: space ?? self.space,
-                    contentScrollable: contentScrollable ?? self.contentScrollable
+                    space: space ?? self.space
             )
         }
     }

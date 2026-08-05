@@ -18,14 +18,19 @@
 //   * `banner-wide`'s landscape column — design spec §5, §5b, §5d, and
 //     `ModalTokens.bannerGeometry`'s doc
 //   * the vertical-compression band — design spec §5e
-//   * the D-7 residual — design spec §5c and `DifferentialGeometrySupport`'s header
 //   * `showsPrimary` not obeyed — `SwiftUIAlertModal`'s own doc comment
 //
-//  **Two of the six cannot show their divergence at this gallery's host size,
+//  **Two of the five cannot show their divergence at this gallery's host size,
 //  and their captions say so** rather than shipping an entry that looks identical
 //  to its twin and reads as agreement.
 //
-//  **Five of the six are GEOMETRY; the sixth is not.**
+//  A sixth entry, `divergence-d7-subtitle-viewport`, is DELETED along with the
+//  `Properties.contentScrollable` flag that caused it. D-7 is now closed outright:
+//  `SubtitleSlot` mirrors UIKit's `svSubtitleContainer` unconditionally, and the
+//  1222pt subtitle measures 645.33 against 645.33 in portrait, 161.33 against
+//  161.33 in landscape. There is nothing left to display.
+//
+//  **Four of the five are GEOMETRY; the fifth is not.**
 //  `divergence-shows-primary-not-obeyed` is a renderer-OBEDIENCE gap — the shared
 //  resolver's answer is right and this backend does not read it — so it is a
 //  plain DEFECT rather than an accepted difference in arbitration. Its caption
@@ -47,7 +52,6 @@ import GBV3AlertModal
 extension ModalStyle {
     static let divergenceTallUncapped = ModalStyle("divergence.tallUncapped")
     static let divergenceBannerWide = ModalStyle("divergence.bannerWide")
-    static let divergenceScrollable = ModalStyle("divergence.scrollable")
     static let divergenceNilPrimaryStyle = ModalStyle("divergence.nilPrimaryStyle")
 }
 
@@ -58,7 +62,6 @@ extension SwiftUICatalogPresets {
         [
             (.divergenceTallUncapped, DivergenceCatalog.tallUncappedProperties),
             (.divergenceBannerWide, DivergenceCatalog.bannerWideProperties),
-            (.divergenceScrollable, DivergenceCatalog.scrollableProperties),
             (.divergenceNilPrimaryStyle, DivergenceCatalog.nilPrimaryStyleProperties)
         ]
     }
@@ -128,20 +131,8 @@ extension SwiftUIDivergence {
             + "not reproduce by eye."
     )
 
-    static let d7Residual = SwiftUIDivergence(
-        caption: "D-7 residual · ACCEPTED. D-7 itself is CLOSED: SubtitleSlot mirrors UIKit's "
-            + "svSubtitleContainer, and with contentScrollable OFF this 1222pt subtitle measures "
-            + "645.33 against 645.33 in portrait and 161.33 against 161.33 in landscape. This entry "
-            + "turns the flag ON, which is the residual — contentScrollable is SwiftUI-ONLY "
-            + "(UIKit's renderer ignores it), and ScrollableContent wraps title AND subtitle, so "
-            + "inside it the height proposal is unbounded and the subtitle slot is never pressured: "
-            + "it reports the full 1222pt where UIKit's viewport is 645.3. WHAT TO LOOK FOR: HOW "
-            + "MUCH subtitle each backend shows before it clips, and what scrolls — UIKit clips to "
-            + "svSubtitleContainer with the title pinned above it, SwiftUI's outer ScrollableContent "
-            + "carries the title too. In PORTRAIT the two look close; rotate to LANDSCAPE, where "
-            + "UIKit's viewport falls to 161.33pt and SwiftUI's stays unpressured. Deciding input "
-            + "for 2026-08-02-content-scrollable-review.md."
-    )
+    // `d7Residual` sat here and is DELETED with `Properties.contentScrollable`, which was the
+    // whole of what it captioned. With the flag gone the two backends agree on that shape.
 
     static let showsPrimaryNotObeyed = SwiftUIDivergence(
         caption: "showsPrimary not obeyed · DEFECT — and NOT a geometry divergence like the other "
@@ -168,7 +159,7 @@ extension SwiftUIDivergence {
 // MARK: - The entries
 
 extension SwiftUICatalog {
-    /// Six shapes, one per recorded divergence, in the order the design spec discusses them —
+    /// Five shapes, one per recorded divergence, in the order the design spec discusses them —
     /// the obedience gap last, because it is the one that is not geometry.
     static var divergenceEntries: [SwiftUICatalogEntry] {
         let category = DivergenceCatalog.category
@@ -233,20 +224,6 @@ extension SwiftUICatalog {
                     subtitle: DivergenceCatalog.comparableSubtitle,
                     primary: "Okay",
                     closeOnTapOverlay: true
-                )
-            },
-            // The D-7 residual: `contentScrollable`, which only this backend honours.
-            SwiftUICatalogEntry.renderable(
-                "divergence-d7-subtitle-viewport",
-                category: category,
-                divergences: [.d7Residual]
-            ) {
-                AlertDialog(
-                    title: "Heads up",
-                    subtitle: DivergenceCatalog.longSubtitle,
-                    primary: "Okay",
-                    closeOnTapOverlay: true,
-                    style: .divergenceScrollable
                 )
             },
             // `showsPrimary` resolved false and drawn anyway. The `primary` string is

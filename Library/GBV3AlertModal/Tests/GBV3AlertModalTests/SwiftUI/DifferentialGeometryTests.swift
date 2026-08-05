@@ -390,67 +390,21 @@ final class DifferentialGeometryTests: XCTestCase {
     func test_geometry_streakPopupBanner() { assertAgrees("streak-popup-banner") }
     func test_geometry_databaseErrorBanner() { assertAgrees("database-error-banner") }
 
-    /// The scrolling path, gated for the first time — see the shape's note in
-    /// `DifferentialGeometrySupport`. Every other shape here is short enough that UIKit's subtitle
-    /// scroll slot IS its label's height, so this is the only one that compares the two backends
-    /// while both are actually scrolling.
-    /// **The scrolling path, gated element by element — because one element is not comparable.**
+    /// **The 1222pt subtitle, compared in full — subtitle row included.**
     ///
-    /// Deliberately NOT `assertAgrees`, which would demand every row agree and would have to be
-    /// silenced wholesale. Three of the four rows DO agree, exactly, and that is a real new
-    /// guarantee: two backends both scrolling produce the same card, the same title and the same
-    /// button position. Measured — card 778.0 both, title 28.7 both, primary button y 711.0 both.
-    ///
-    /// The `subtitle` row cannot agree — and **the reason has changed, so read this rather than
-    /// remembering it.** It used to be D-7: SwiftUI had no per-subtitle viewport at all, so its probe
-    /// sat on a `Text` reporting CONTENT (1222.0) against UIKit's `svSubtitleContainer` reporting a
-    /// VIEWPORT (645.3). `SwiftUIAlertModal.SubtitleSlot` supplies that viewport now, unconditionally,
-    /// and `long-subtitle-unscrolled` — the identical dialog with `contentScrollable` OFF — measures
-    /// **645.33 against 645.33** and goes through the full `assertAgrees`, subtitle row included.
-    ///
-    /// What is left here is `contentScrollable` itself, which is a SwiftUI-ONLY feature: it wraps
-    /// title AND subtitle in an outer `ScrollableContent`, and inside that the height proposal is
-    /// unbounded, so the subtitle slot is never pressured and reports its full 1222. UIKit has no
-    /// wrapper to correspond to it and compresses its own slot as usual. So this row is not a missing
-    /// capability any more; it is the measured cost of a divergence the owner chose on purpose, and
-    /// it is an input to whether `contentScrollable` should exist at all
-    /// (`docs/superpowers/specs/2026-08-02-content-scrollable-review.md`).
-    func test_geometry_longSubtitleScrolling_agreesExceptOnTheScrollViewport() throws {
-        let shape = try XCTUnwrap(DifferentialGeometry.shape(named: "long-subtitle-scrolling"))
-        let rows = DifferentialGeometry.rows(for: shape)
-
-        for element in [ModalGeometryElement.card, .title, .primaryButton] {
-            let row = try XCTUnwrap(rows.first { $0.element == element })
-            XCTAssertFalse(
-                row.verdict.isDisagreement,
-                "'\(element)' disagrees under scrolling — the outer geometry of the two scrolling "
-                    + "backends is supposed to be identical. Full table:\n"
-                    + DifferentialGeometry.table(name: shape.name, rows: rows)
-            )
-        }
-
-        // And the one that cannot: pinned by its MECHANISM, so that if the outer scroll ever stops
-        // de-pressurising the subtitle slot this fails and says to compare the two properly rather
-        // than leaving a stale exception behind.
-        let subtitle = try XCTUnwrap(rows.first { $0.element == .subtitle })
-        let uiKit = try XCTUnwrap(subtitle.uiKit)
-        let swiftUI = try XCTUnwrap(subtitle.swiftUI)
-        XCTAssertLessThan(
-            uiKit.height, swiftUI.height,
-            "UIKit's subtitle probe is no longer smaller than SwiftUI's. It is supposed to be a "
-                + "compressed VIEWPORT measured against a slot that `ScrollableContent` has removed "
-                + "all height pressure from; if that is no longer true, the two are finally "
-                + "comparable and this shape should join `long-subtitle-unscrolled` in "
-                + "`assertAgrees` instead of keeping an exception."
-        )
-    }
-
-    /// **The same 1222pt subtitle with `contentScrollable` OFF — compared in full, subtitle included.**
-    ///
-    /// This is the real comparison the inequality above stood in for. UIKit compresses
-    /// `svSubtitleContainer` to a 645.33pt viewport; `SwiftUIAlertModal.SubtitleSlot` compresses to
-    /// 645.33pt; every other row was already exact. Nothing here is excluded and nothing is pinned by
+    /// Every other shape here is short enough that UIKit's `svSubtitleContainer` is exactly its
+    /// label's height, so the gate was comparing a scroll slot against a `Text` in the one case where
+    /// the two coincide. This is the shape where UIKit's slot genuinely shrinks-and-scrolls: it
+    /// compresses to a 645.33pt viewport, `SwiftUIAlertModal.SubtitleSlot` compresses to 645.33pt,
+    /// and every other row was already exact. Nothing is excluded and nothing is pinned by
     /// mechanism — it is the ordinary gate at the ordinary 0.5pt.
+    ///
+    /// **What used to sit above this, and why it is gone.** A twin shape
+    /// (`long-subtitle-scrolling` — this same dialog with `Properties.contentScrollable` ON) had a
+    /// hand-rolled gate that compared card/title/primaryButton and then pinned the `subtitle` row by
+    /// INEQUALITY, because the flag's outer `ScrollableContent` left the slot unpressured at 1222pt
+    /// against UIKit's 645.3. The flag is deleted, so the twin is character-for-character this shape
+    /// and the inequality has nothing left to except: both are removed rather than left stale.
     ///
     /// Its premise (that the slot is genuinely engaged at this length) is
     /// `test_theUnscrolledShape_actuallyClipsOnBothBackends`.
@@ -1232,40 +1186,12 @@ final class DifferentialGeometryTests: XCTestCase {
         }
     }
 
-    /// **The premise behind the row above — without this it is another vacuous agreement.**
-    ///
-    /// The whole reason D-7 stayed open is that every shape in the gate is short enough for UIKit's
-    /// `svSubtitleContainer` to be exactly its label's height, so "the slot agrees with the `Text`"
-    /// was true for a reason that had nothing to do with scrolling. A new shape that ALSO fails to
-    /// engage the scroll would extend that mistake rather than fix it.
-    ///
-    /// So: the UIKit slot must be strictly shorter than its content (it is scrolling), and the
-    /// SwiftUI side must have `contentScrollable` on. Then the agreement above is a statement about
-    /// two scrolling backends.
-    @MainActor
-    func test_theScrollingShape_actuallyScrolls() throws {
-        let shape = try XCTUnwrap(DifferentialGeometry.shape(named: "long-subtitle-scrolling"))
-
-        XCTAssertTrue(
-            ModalTokens(from: shape.properties).contentScrollable,
-            "the SwiftUI side of this shape is not scrolling, so the row compares a scroll against a "
-                + "plain column"
-        )
-
-        let modal = GBAlertModal(
-            properties: shape.properties,
-            holder: UIKitModalRenderer.AlertHolder.make(for: shape.dialog, resolve: { _ in })
-        )
-        renderForSnapshot(modal, size: DifferentialGeometry.host)
-        let slot = try XCTUnwrap(modal.svSubtitleContainer)
-
-        XCTAssertLessThan(
-            slot.bounds.height, slot.contentSize.height - 0.5,
-            "UIKit's subtitle slot (\(slot.bounds.height)pt) is not shorter than its content "
-                + "(\(slot.contentSize.height)pt) — this shape does not engage the scroll, so the "
-                + "differential row it feeds proves nothing about the scrolling path"
-        )
-    }
+    // `test_theScrollingShape_actuallyScrolls` sat here and is DELETED with its subject. It was the
+    // non-vacuity premise for `long-subtitle-scrolling`, and half of what it asserted was
+    // `ModalTokens(from:).contentScrollable == true` — a field that no longer exists. The surviving
+    // half (UIKit's slot is strictly shorter than its content, so the shape really does engage the
+    // scroll) is asserted for the surviving shape, in BOTH orientations, by
+    // `test_theUnscrolledShape_actuallyClipsItsSubtitle` above.
 
     /// **This compares EVERY element, and there is deliberately no way to exclude one.**
     ///

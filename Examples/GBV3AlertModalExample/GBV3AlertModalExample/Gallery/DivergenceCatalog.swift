@@ -4,7 +4,7 @@
 //
 //  **The UIKit half of the divergence section.**
 //
-//  Six shapes, one per KNOWN difference between the UIKit and the SwiftUI
+//  Five shapes, one per KNOWN difference between the UIKit and the SwiftUI
 //  backend. Each has a twin of the same `name` in `SwiftUICatalog+Divergences.swift`,
 //  built from the same `Properties` and the same content — because a divergence
 //  entry with nothing to compare against is a screenshot, not a comparison.
@@ -17,10 +17,15 @@
 //   * `.superpowers/sdd/2026-08-02-swiftui-banner-geometry/progress.md` (D-A, D-B)
 //   * `SwiftUIAlertModal`'s own doc comment (the `showsPrimary` obedience gap)
 //
-//  FIVE of the six are GEOMETRY — the two engines arbitrate the same constraints
-//  differently. The sixth (`divergence-shows-primary-not-obeyed`) is a different
+//  FOUR of the five are GEOMETRY — the two engines arbitrate the same constraints
+//  differently. The fifth (`divergence-shows-primary-not-obeyed`) is a different
 //  kind of thing: a RENDERER-OBEDIENCE gap, where the shared resolver's answer is
 //  correct and one backend simply does not read it.
+//
+//  A sixth, `divergence-d7-subtitle-viewport`, is DELETED along with the
+//  `Properties.contentScrollable` flag that was its entire cause. With the flag
+//  gone the two backends agree on that shape (645.33 vs 645.33 portrait, 161.33 vs
+//  161.33 landscape), so there is no divergence left to display.
 //
 //  The captions live on the SwiftUI side (that gallery renders them under each
 //  row); this file carries the shapes and the provenance.
@@ -38,7 +43,6 @@ enum DivergenceCatalog {
         ratioNotArtworkAspect,
         bannerWideLandscapeWidth,
         insetBand,
-        subtitleViewportScrollable,
         showsPrimaryNotObeyed
     ]
 }
@@ -50,11 +54,9 @@ extension DivergenceCatalog {
     /// which is what makes its 38.33pt content / 19.0pt floor the interesting pair.
     static let comparableSubtitle = "A banner the gate can actually measure."
 
-    /// `DifferentialGeometry`'s `long-subtitle-{scrolling,unscrolled}` subtitle, verbatim:
-    /// 40 repeats, 1222pt tall in the portrait card.
-    static let longSubtitle = String(
-        repeating: "This subtitle keeps going so the slot has to engage. ", count: 40
-    ).trimmingCharacters(in: .whitespaces)
+    // `longSubtitle` (40 repeats, 1222pt in the portrait card) lived here and is DELETED with its
+    // only reader, `divergence-d7-subtitle-viewport`. The fixture itself survives where it is still
+    // measured: `DifferentialGeometry`'s `long-subtitle-unscrolled` shape.
 
     static func entry(
         _ name: String,
@@ -123,8 +125,7 @@ extension DivergenceCatalog {
             primaryActionStyle: base.primaryActionStyle,
             secondaryActionStyle: base.secondaryActionStyle,
             closeButtonTint: base.closeButtonTint,
-            space: base.space,
-            contentScrollable: base.contentScrollable
+            space: base.space
         )
     }
 
@@ -195,28 +196,11 @@ extension DivergenceCatalog {
     }
 }
 
-// MARK: - The D-7 residual: `contentScrollable`
-
-extension DivergenceCatalog {
-    /// `long-subtitle-scrolling`: the 1222pt subtitle with `contentScrollable` ON.
-    ///
-    /// D-7 itself is closed — with the flag OFF the two backends land on the same viewport to
-    /// the point. The flag is the residual, and it is SwiftUI-only: UIKit's renderer ignores it
-    /// (see `Properties.contentScrollable`), so this UIKit twin is the NON-scrolling render the
-    /// SwiftUI one is compared against.
-    static var scrollableProperties: GBAlertModal.Properties {
-        GalleryPresets.properties.copy(contentScrollable: true)
-    }
-
-    static var subtitleViewportScrollable: DialogEntry {
-        entry(
-            "divergence-d7-subtitle-viewport",
-            properties: scrollableProperties,
-            title: "Heads up",
-            subtitle: longSubtitle
-        )
-    }
-}
+// The D-7 residual section lived here — `scrollableProperties` (the gallery preset with
+// `contentScrollable: true`) and the `divergence-d7-subtitle-viewport` entry it fed. Both are
+// DELETED with the flag. D-7 is closed outright now rather than closed-with-a-residual: the
+// SwiftUI `SubtitleSlot` mirrors `svSubtitleContainer` unconditionally, and the 1222pt subtitle
+// measures 645.33 against 645.33 in portrait and 161.33 against 161.33 in landscape.
 
 // MARK: - `showsPrimary` is resolved but not obeyed
 
@@ -275,8 +259,7 @@ extension DivergenceCatalog {
             primaryActionStyle: nil,
             secondaryActionStyle: base.secondaryActionStyle,
             closeButtonTint: base.closeButtonTint,
-            space: base.space,
-            contentScrollable: base.contentScrollable
+            space: base.space
         )
     }
 

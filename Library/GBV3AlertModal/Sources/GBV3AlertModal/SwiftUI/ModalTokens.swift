@@ -110,12 +110,9 @@ public struct ModalTokens: Sendable {
     /// `Properties` counterpart: the 48 is hardcoded on the UIKit side too.
     public var closeButtonSize: CGFloat = 48
 
-    /// **Does the content region scroll when it overflows?** `Properties.contentScrollable`, verbatim.
-    ///
-    /// `false` by default so every shape that fits today renders exactly as it does today — the scroll
-    /// is opt-in per preset, for the ones whose copy is known to run long.
-    public var contentScrollable: Bool = false
-
+    // `contentScrollable` mirrored `Properties.contentScrollable` here and is DELETED with it. The
+    // subtitle now scrolls unconditionally through `SwiftUIAlertModal.SubtitleSlot`, so there is no
+    // longer anything for a token to gate.
 
     // Card→screen margin — real preset: UIEdgeInsets(vertical: 40, horizontal: 20). `top`/`left`
     // read off `UIEdgeInsets` (same convention `ModalLayout.resolveContainerOffsets` uses).
@@ -580,8 +577,6 @@ public struct ModalTokens: Sendable {
             // The measurement twin, from the SAME `UIFont` — see `subtitleUIFont`.
             subtitleUIFont = subtitleFont
         }
-        // Opt-in, so a `Properties` that says nothing keeps the non-scrolling layout it has today.
-        contentScrollable = properties.contentScrollable ?? false
         if let titleColor = properties.titleColor {
             palette.titleText = Color(uiColor: titleColor)
         }

@@ -291,32 +291,13 @@ final class SwiftUIAlertModalSnapshotTests: XCTestCase {
     }
 
     // Wrapping / overflow extremes (mirror UIKit LayerC longTitle / longSubtitle).
-    /// **The real landscape case: no banner, long copy, scrolling text rows.**
-    ///
-    /// The banner shapes are excluded by design — a 184pt banner in a 214pt card leaves no room for
-    /// text with or without a scroll, and those dialogs simply do not carry a banner in landscape.
-    /// This is what the scroll actually has to get right.
-    func test_snapshot_scrollable_landscape_noBanner() {
-        let dialog = AlertDialog(
-            title: "This is a deliberately very long title that must wrap across several lines "
-                + "inside the fixed-width card without truncating",
-            subtitle: "This subtitle keeps going and going so the scroll has to engage. "
-                + "It carries several sentences of body copy so the region genuinely overflows.",
-            primary: "Okay",
-            secondary: "Cancel"
-        )
-        // A REAL preset, not a bare `Properties`. `resolve` gates each button on BOTH the title and
-        // its ActionStyle (`showsSecondary = holder.secondaryAction != nil && properties?
-        // .secondaryActionStyle != nil`), so a bare `Properties` silently drops the secondary button —
-        // which is what made three earlier renders look like the scroll had eaten it.
-        let view = alert(
-            dialog, properties: GalleryPresets.popupProperties.copy(contentScrollable: true)
-        )
-        assertSnapshot(
-            of: render(view, size: landscape), as: .image(precision: 0.98),
-            named: "scrollable-landscape-no-banner"
-        )
-    }
+    // `test_snapshot_scrollable_landscape_noBanner` and its recorded image are DELETED. Its subject
+    // was `Properties.contentScrollable` — the flag is gone, so the render it baselined exists on no
+    // code path, and keeping the case would have meant re-recording a snapshot to photograph
+    // different behaviour under the same name. The landscape long-copy regime it stood for is
+    // measured rather than photographed now, by the library's
+    // `test_geometry_landscape_longSubtitleUnscrolled` (a 161.33pt subtitle viewport over 1222pt of
+    // content, matching UIKit to the point).
 
     func test_snapshot_longTitle() {
         let v = render(alert(AlertDialog(

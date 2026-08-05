@@ -387,7 +387,9 @@ subtitle before the banner starts.
    reports `clamp(childHeight, min, max)` and `Text` answers every height proposal with the height its
    glyphs need, so with `maxHeight` at the ideal the clamp is the identity and the row is rigid. A
    `ScrollView` reports `[0, ∞)`, and the frame turns that into the interval Auto Layout arbitrates
-   over. **Unconditional**, because UIKit's is: it does not read `contentScrollable`.
+   over. **Unconditional**, because UIKit's is. (It used to be phrased as "it does not read
+   `contentScrollable`"; that flag has since been DELETED outright — see the resolution note on
+   `2026-08-02-content-scrollable-review.md` — so there is nothing left for it not to read.)
 2. **`subtitleLayoutPriority` 0 → −1**, which puts the subtitle below the BANNER as well as below the
    title. Without it the slot exists and never engages: SwiftUI's VStack hands a same-priority
    subtitle its ideal and lets the banner absorb everything, which is precisely the pre-fix numbers.
@@ -413,18 +415,24 @@ described below. Portrait did not move.
   mechanism pin is deleted. Non-vacuity is asserted separately
   (`test_bannerComparable_landscape_bothBackendsAreClippingTheSubtitle`): both backends must be
   clipping, or the agreement is between two unpressured cards and proves nothing.
-* **`long-subtitle-unscrolled`**, a new shape — the 1222pt subtitle with `contentScrollable` OFF —
-  through `assertAgrees` in BOTH orientations. UIKit's viewport 645.33 against SwiftUI's 645.33
-  portrait; 161.33 against 161.33 landscape. This is the real comparison that the
-  `long-subtitle-scrolling` inequality was standing in for.
+* **`long-subtitle-unscrolled`**, a new shape — the 1222pt subtitle — through `assertAgrees` in BOTH
+  orientations. UIKit's viewport 645.33 against SwiftUI's 645.33 portrait; 161.33 against 161.33
+  landscape. This is the real comparison that the `long-subtitle-scrolling` inequality was standing
+  in for. (It was originally described here as "with `contentScrollable` OFF"; with the flag deleted
+  there is no longer an "on" to distinguish it from, and the twin shape is gone.)
 
 ### What is left, and it is not D-7
 
-* **`contentScrollable`.** `long-subtitle-scrolling` still cannot compare its subtitle row, but the
-  cause has inverted: it is a SwiftUI-only feature, not a missing one. `ScrollableContent` wraps title
-  AND subtitle, so inside it the height proposal is unbounded, the subtitle slot is never pressured,
-  and it reports 1222 where UIKit's viewport is 645.3. Since the subtitle now scrolls without the
-  flag, this is the deciding input for `2026-08-02-content-scrollable-review.md`.
+* **`contentScrollable` was the second item here, and it is now RESOLVED BY DELETION.** The flag's
+  only remaining measured effect was to remove one row from the comparison: its outer
+  `ScrollableContent` wrapped title AND subtitle, so inside it the height proposal was unbounded, the
+  subtitle slot was never pressured, and it reported 1222 where UIKit's viewport was 645.3. The
+  subtitle scrolls without it — that is what `SubtitleSlot` above is — so the field, the wrapper, the
+  `long-subtitle-scrolling` shape and its inequality exception are all deleted. Measured before
+  removing: UIKit's rendering is byte-identical with the flag on and off, on every probed element in
+  both orientations, so this cost the frozen backend nothing. See
+  `2026-08-02-content-scrollable-review.md` for the decision and
+  `.superpowers/sdd/2026-08-02-swiftui-banner-geometry/scroll-removal-report.md` for the removal.
 * **Vertical padding compression, in a 15pt band.** `banner-comparable` agrees at every host height
   from 844x450 to 844x435 and from 844x415 to 844x330, and diverges only in **844x420…430**: UIKit
   re-expands its top inset 16 → 23 and pays for it by collapsing the subtitle a further 14pt.

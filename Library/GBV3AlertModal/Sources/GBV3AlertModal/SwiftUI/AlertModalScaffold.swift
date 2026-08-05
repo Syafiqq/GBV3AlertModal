@@ -241,7 +241,8 @@ public struct AlertModalScaffold<Content: View>: View {
     /// **The vertical insets now COMPRESS from max toward min, as UIKit's do** — see
     /// `CompressibleVerticalPadding`. This used to be a stated limit ("applied rigidly at the max"),
     /// justified by a claim that stopped being true: that SwiftUI had no scroll container for the
-    /// subtitle (it does — `ScrollableContent`, opt-in via `Properties.contentScrollable`).
+    /// subtitle (it does — `SwiftUIAlertModal.SubtitleSlot`, unconditionally, mirroring UIKit's
+    /// `svSubtitleContainer`).
     ///
     /// **The card CAN still grow off-screen in principle, and the mechanism is worth keeping in
     /// view — but the one shape that actually did has been fixed.** The cap this view is given in

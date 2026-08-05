@@ -77,7 +77,7 @@ import UIKit
 ///
 /// Note the regime: this is an ORDINARY one-line-per-38pt subtitle clipped purely because landscape
 /// puts the card on its ceiling. Every banner shape is in it in landscape — it was never about
-/// deliberately long text, which is why `long-subtitle-scrolling` alone could not have found it.
+/// deliberately long text, which is why the long-subtitle shape alone could not have found it.
 ///
 /// **What this bought, in gates:** `banner-comparable` is now gated in landscape through the ordinary
 /// `assertAgrees` (`test_geometry_landscape_bannerComparable`), and the 19.33pt mechanism pin that
@@ -86,16 +86,16 @@ import UIKit
 /// landscape). Both have explicit non-vacuity premises, because an agreement between two unpressured
 /// cards would prove nothing about any of this.
 ///
-/// ## What genuinely remains — two items, neither of them D-7
+/// ## What genuinely remains — ONE item, and it is not D-7
 ///
-/// * **`contentScrollable`.** `long-subtitle-scrolling`'s `subtitle` row still cannot be compared,
-///   and the reason is now a SwiftUI-only feature rather than a missing one: `ScrollableContent`
-///   wraps title AND subtitle, so inside it the height proposal is unbounded and the subtitle slot is
-///   never pressured (it reports the full 1222 where UIKit's viewport is 645.3). UIKit has no
-///   counterpart wrapper. Still pinned by mechanism in
-///   `test_geometry_longSubtitleScrolling_agreesExceptOnTheScrollViewport`; and since the subtitle
-///   now scrolls without the flag, this is an input to whether the flag should exist at all
-///   (`docs/superpowers/specs/2026-08-02-content-scrollable-review.md`).
+/// `contentScrollable` used to be the other one: `long-subtitle-scrolling`'s `subtitle` row could not
+/// be compared, because the flag's outer `ScrollableContent` wrapped title AND subtitle and left the
+/// subtitle slot unpressured (reporting 1222 where UIKit's viewport was 645.3). **The flag is now
+/// DELETED** — the subtitle scrolls unconditionally through `SubtitleSlot` — so that shape, the
+/// inequality exception it needed, and its scroll-premise test are all gone, and the one remaining
+/// long-subtitle shape (`long-subtitle-unscrolled`) goes through the ordinary `assertAgrees` in both
+/// orientations with its subtitle row included.
+///
 /// * **Vertical content padding compression, in a 15pt band — and it is UNMATCHABLE, not unbuilt.**
 ///   Measured on `banner-comparable` at 844 wide in 1pt steps: identical at every host height from
 ///   844x455 down to 844x432 and from 844x416 down to 844x330, divergent in **844x417…431**, where
@@ -122,7 +122,7 @@ import UIKit
 ///   `DifferentialGeometryTests`' `test_theTwoCompressionRungs_areTheSamePriority_soTheOptimumIsATiedFace`
 ///   and `test_uiKitVerticalCompression_isPathDependent_soTheBandHasNoTargetToMatch`.
 ///
-/// Do NOT "close" either of them by widening the tolerance to fit.
+/// Do NOT "close" it by widening the tolerance to fit.
 // @MainActor: builds `GBAlertModal`, `UIWindow` and `UIHostingController`, all main-actor-isolated
 // under Swift 6.
 @MainActor
@@ -174,7 +174,7 @@ enum DifferentialGeometry {
         let properties: GBAlertModal.Properties
     }
 
-    /// **Thirteen shapes, chosen to vary the fields the two backends read differently.**
+    /// **Twelve shapes, chosen to vary the fields the two backends read differently.**
     ///
     /// Covered: the standard 1-button and 2-button shapes; a nil-title shape; a close-button shape;
     /// the oblique-RED shape (a different `ObliqueBottomLeftTheme`); the permission-alert preset and
@@ -184,15 +184,11 @@ enum DifferentialGeometry {
     /// preset (32pt uniform padding, different
     /// `ComponentSpace`); and the error-banner preset (popup + banner ratio/cap/fixed height).
     ///
-    /// Plus the three added for the banner work: `banner-comparable` (an artwork NARROWER than the
-    /// content column, so the column stays at `contentMaxWidth`), `banner-wide` (artwork wider than
-    /// the column, the regime eight of the app's nine real banner assets are in), and
-    /// `long-subtitle-scrolling` (a subtitle long enough to engage UIKit's slot at any size, with
-    /// SwiftUI's outer `ScrollableContent` switched on).
-    ///
-    /// Plus `long-subtitle-unscrolled` for D-7: the same 1222pt subtitle with `contentScrollable`
-    /// OFF, which is the configuration UIKit actually has a counterpart for and the one that made the
-    /// subtitle row comparable.
+    /// Plus the three added for the banner and D-7 work: `banner-comparable` (an artwork NARROWER
+    /// than the content column, so the column stays at `contentMaxWidth`), `banner-wide` (artwork
+    /// wider than the column, the regime eight of the app's nine real banner assets are in), and
+    /// `long-subtitle-unscrolled` (a 1222pt subtitle, long enough to engage the subtitle slot on
+    /// BOTH backends at any size — the shape that made the subtitle row comparable).
     ///
     /// NOT covered, and why: the three bespoke descriptors (`BadgeDialog`, `LoadingDialog`,
     /// `SatisfactionDialog`) and the two input descriptors (`TextInputDialog`,
@@ -345,7 +341,8 @@ enum DifferentialGeometry {
                 properties: GeniePresets.popupProperties()
                     .copy(bannerRatio: 320.0 / 190.0, bannerMaxHeight: 256)
             ),
-            /// **The shape that ENGAGES the scroll — the half of D-7 the gate could not see.**
+            /// **The shape that ENGAGES the subtitle scroll — the half of D-7 the gate could not see,
+            /// and now the one that CLOSES it.**
             ///
             /// Every shape above is short enough that UIKit's `svSubtitleContainer` is exactly its
             /// label's height, so the gate was comparing a scroll slot against a `Text` in the one
@@ -353,46 +350,27 @@ enum DifferentialGeometry {
             /// the portrait card, so UIKit's slot genuinely shrinks-and-scrolls and the comparison
             /// is finally against the mechanism rather than around it.
             ///
-            /// `contentScrollable` is ON so BOTH backends scroll. With it off, SwiftUI would render
-            /// the whole subtitle and the two would differ for a reason already recorded — this
-            /// shape exists to measure the SCROLLING paths against each other.
+            /// The two backends are measurably the same layout: SwiftUI's `SubtitleSlot` lands on
+            /// UIKit's VIEWPORT to the point — **645.33 against 645.33** in portrait and **161.33
+            /// against 161.33** in landscape, on a subtitle whose content is 1222pt. So this shape
+            /// goes through the full `assertAgrees` in BOTH orientations, subtitle row included.
+            ///
+            /// **It used to have a twin.** `long-subtitle-scrolling` was this exact dialog with
+            /// `Properties.contentScrollable` ON, and it could not compare its `subtitle` row: the
+            /// flag's outer `ScrollableContent` wrapped title AND subtitle, so inside it the height
+            /// proposal was unbounded, the slot was never pressured, and it reported the full 1222.
+            /// The flag is deleted and the twin with it — with the field gone the two shapes were
+            /// character-for-character identical, so keeping both would have been the same
+            /// measurement run twice under two names.
             Shape(
-                name: "long-subtitle-scrolling",
+                name: "long-subtitle-unscrolled",
                 dialog: AlertDialog(
                     title: "Heads up",
                     subtitle: String(
                         // FORTY, not twenty. At twenty the subtitle came to 611pt and the portrait
                         // card — whose ceiling the zeroed vertical margin raised — simply FIT it, so
                         // the slot equalled its content and the row was vacuous. The premise test
-                        // `test_theScrollingShape_actuallyScrolls` caught that, which is the whole
-                        // reason it exists.
-                        repeating: "This subtitle keeps going so the slot has to engage. ", count: 40
-                    ).trimmingCharacters(in: .whitespaces),
-                    primary: "Okay",
-                    closeOnTapOverlay: true
-                ),
-                properties: GeniePresets.standardProperties().copy(contentScrollable: true)
-            ),
-            /// **The same subtitle WITHOUT `contentScrollable` — the shape that closes D-7's last
-            /// exception, because it is the one UIKit actually has a counterpart for.**
-            ///
-            /// `long-subtitle-scrolling` above cannot compare its `subtitle` row, and the reason is
-            /// no longer the missing subtitle viewport: `SubtitleSlot` supplies that now,
-            /// unconditionally. The reason is the SwiftUI-ONLY outer scroll that `contentScrollable`
-            /// turns on — it wraps title AND subtitle, so inside it the height proposal is unbounded
-            /// and the subtitle slot is never pressured, while UIKit (which has no such wrapper)
-            /// compresses its `svSubtitleContainer` as usual.
-            ///
-            /// Drop the flag and the two are measurably the same layout: SwiftUI's slot lands on
-            /// UIKit's VIEWPORT to the point — **645.33 against 645.33** in portrait and **161.33
-            /// against 161.33** in landscape, on a subtitle whose content is 1222pt. So this shape
-            /// goes through the full `assertAgrees` in BOTH orientations, subtitle row included,
-            /// which is the real comparison the inequality above was a placeholder for.
-            Shape(
-                name: "long-subtitle-unscrolled",
-                dialog: AlertDialog(
-                    title: "Heads up",
-                    subtitle: String(
+                        // `test_theUnscrolledShape_actuallyClipsItsSubtitle` is what catches that.
                         repeating: "This subtitle keeps going so the slot has to engage. ", count: 40
                     ).trimmingCharacters(in: .whitespaces),
                     primary: "Okay",

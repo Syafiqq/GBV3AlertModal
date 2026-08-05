@@ -1,5 +1,34 @@
 # Brief — `contentScrollable`: keep, remove, or rework?
 
+> ## RESOLVED, 2026-08-05: **option A — REMOVED.**
+>
+> Hard removal, not deprecation. The field never appeared in a released tag (`3.0.6-beta.1`, the
+> exact pin in the app's `Tuist/Package.swift`, does not contain it — it was added on this unmerged
+> branch), and `geniebook-student-ios` has zero references to it, so there is no compatibility to
+> preserve and a deprecated no-op would only mislead a future caller into setting a flag that does
+> nothing.
+>
+> The decisive measurement, taken before touching anything: **UIKit's rendering is byte-identical
+> with the flag on and off** — every probed element (card, banner, title, subtitle, both buttons,
+> close) in both orientations, plus `svSubtitleContainer`'s `bounds`, `contentSize` and
+> `isScrollEnabled`. The frozen backend never read it, so removing the field is not a UIKit
+> behavioural change. On SwiftUI the flag moved exactly one number: the `subtitle` probe, 1222.0 with
+> it ON against 645.3 portrait / 161.3 landscape with it OFF — i.e. §3's "the `.subtitle` element
+> cannot be compared" was the whole of its remaining effect, and turning it off is what makes the row
+> comparable.
+>
+> §2's case for removal held: `SubtitleSlot` (D-7) now scrolls the subtitle unconditionally, which is
+> the behaviour the owner asked for — *"as long as it can hold subtitle long enough by scrolling it
+> without contentScrollable, I'm okay."* §5's outstanding list is void; nothing in it was done.
+>
+> What went with it: `ScrollableContent.swift`, the `textRows` branch, both mirrored fields, the
+> `long-subtitle-scrolling` shape and its inequality exception, 5 library tests, 1 example snapshot,
+> and the `divergence-d7-subtitle-viewport` gallery entry on both backends. Details and mutation
+> outcomes in `.superpowers/sdd/2026-08-02-swiftui-banner-geometry/scroll-removal-report.md`.
+>
+> **Everything below is the brief as written on 2026-08-02 and is kept for its reasoning, not as a
+> description of the code. The code it describes no longer exists.**
+
 **Status:** shipped but INERT. Nothing opts in.
 **This is a decision brief, not an implementation plan.** The first question is whether the feature
 should exist in its current form; only then does "finish it" make sense.

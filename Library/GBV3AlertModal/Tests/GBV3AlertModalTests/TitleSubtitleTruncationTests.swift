@@ -495,8 +495,9 @@ final class TitleSubtitleTruncationTests: XCTestCase {
         )
     }
 
-    /// The SwiftUI half of the same floor. No scroll slot exists there (structural gap D-7), so the
-    /// claim is on the ROW: pressured or not, it is never given less than one line.
+    /// The SwiftUI half of the same floor. Stated on the ROW rather than on a container, because that
+    /// is where `SubtitleSlot` carries it (`.frame(minHeight: floor, maxHeight: ideal)`): pressured or
+    /// not, the subtitle is never given less than one line.
     ///
     /// Same SHORT-title fixture as the UIKit test, and for the same reason — this is the avoidable
     /// case, which is the one both renderers must agree on. In the IMPOSSIBLE case they diverge by
@@ -523,110 +524,24 @@ final class TitleSubtitleTruncationTests: XCTestCase {
         )
     }
 
-    /// **The SwiftUI content region scrolls instead of giving anything up.**
-    ///
-    /// `ScrollableContent` wraps banner/title/subtitle (buttons stay outside, always tappable), so a
-    /// card too short for its copy shrinks the VIEWPORT and leaves the content at its natural size.
-    /// The claim here is exactly that: the pressured title occupies the SAME height as the
-    /// unpressured one. Nothing is scaled, nothing is sliced, nothing is dropped.
-    ///
-    /// **This is a UIKit/SwiftUI divergence, and a deliberate one.** UIKit keeps its subtitle-only
-    /// `svSubtitleContainer` and its rung-2 font shrink, because this module ships to the production
-    /// app as an SPM dependency and restructuring its view tree is a change every consumer inherits.
-    /// A consequence worth stating plainly: inside a scroll the content is offered unbounded height,
-    /// so SwiftUI's `minimumScaleFactor` never fires — the shrink rung is INERT on this backend, and
-    /// scrolling is the whole mechanism rather than the last resort.
-    ///
-    /// `DifferentialGeometry` is unaffected because it compares unpressured portrait shapes, where
-    /// `ScrollableContent` is provably inert (its `maxHeight` cap equals the content's ideal height,
-    /// so the region is exactly the frame it had before the scroll existed — all eight shapes green).
-    func test_swiftUIContent_scrollsRatherThanShrinking_underPressure() throws {
-        let shape = DifferentialGeometry.Shape(
-            name: "directive-scrollable-content",
-            dialog: dialog(title: Self.longTitle, subtitle: Self.longSubtitle),
-            properties: GeniePresets.standardProperties().copy(contentScrollable: true)
-        )
-        let font = try XCTUnwrap(shape.properties.titleFont)
-
-        let roomy = try XCTUnwrap(swiftUIFrame(shape, element: .title, size: portrait), "no roomy probe")
-        let squeezed = try XCTUnwrap(
-            swiftUIFrame(shape, element: .title, size: pressured), "no pressured probe"
-        )
-
-        XCTAssertGreaterThan(
-            roomy.height, font.lineHeight * 2.5,
-            "premise: the roomy title must already be multi-line, or this proves nothing"
-        )
-        XCTAssertEqual(
-            squeezed.height, roomy.height, accuracy: DifferentialGeometry.tolerance,
-            "the pressured title is \(squeezed.height)pt against \(roomy.height)pt roomy — the "
-                + "content region is supposed to SCROLL, leaving its content at natural size. A "
-                + "shorter pressured title means something is compressing or clipping it instead."
-        )
-    }
-
-    /// **Opting in is what turns the scroll on — nothing else changes behind a preset's back.**
-    ///
-    /// The same fixture at the same pressured size, with and without `contentScrollable`. Without it
-    /// the title is compressed (rung 2 scales it toward the 0.75 floor); with it the title keeps its
-    /// full natural height and the viewport scrolls instead. Both are legitimate; the point is that
-    /// the DEFAULT is the old one, so every shape already in the app is untouched by this feature.
-    func test_theScroll_isOptInPerPreset() throws {
-        let dialog = self.dialog(title: Self.longTitle, subtitle: Self.longSubtitle)
-        let plain = DifferentialGeometry.Shape(
-            name: "opt-in-off", dialog: dialog, properties: GeniePresets.standardProperties()
-        )
-        let scrolling = DifferentialGeometry.Shape(
-            name: "opt-in-on", dialog: dialog,
-            properties: GeniePresets.standardProperties().copy(contentScrollable: true)
-        )
-
-        let plainTitle = try XCTUnwrap(swiftUIFrame(plain, element: .title, size: pressured))
-        let scrollingTitle = try XCTUnwrap(swiftUIFrame(scrolling, element: .title, size: pressured))
-
-        XCTAssertGreaterThan(
-            scrollingTitle.height, plainTitle.height + DifferentialGeometry.tolerance,
-            "the scrolling preset's title (\(scrollingTitle.height)pt) should be TALLER than the "
-                + "non-scrolling one's (\(plainTitle.height)pt) — it keeps its natural size while the "
-                + "viewport shrinks. Equal heights mean the flag did nothing."
-        )
-    }
-
-    /// **The banner stays OUTSIDE the scroll, so the ladder still governs it.**
-    ///
-    /// The first attempt wrapped banner + title + subtitle together. Inside a scroll nothing competes
-    /// for space — each row takes its natural size in order — so the banner went first and claimed the
-    /// entire viewport, pushing the title and subtitle out of sight on the landscape survey card. That
-    /// inverts the owner's ordering ("banner never be a winner, it is just cosmetic, not information")
-    /// exactly where it matters most.
-    ///
-    /// Scoping the scroll to the TEXT rows restores it structurally: the banner is a sibling of the
-    /// scroll, governed by `Priority.bannerNaturalAspect` and friends, all of which sit below every
-    /// text rung. This asserts the observable consequence — turning the scroll on does not change the
-    /// banner's geometry, because the banner is not inside it.
-    func test_theBanner_isNotInsideTheScroll() throws {
-        let dialog = self.dialog(title: Self.longTitle, subtitle: Self.longSubtitle)
-        let plain = DifferentialGeometry.Shape(
-            name: "banner-outside-off", dialog: dialog, properties: GeniePresets.standardProperties()
-        )
-        let scrolling = DifferentialGeometry.Shape(
-            name: "banner-outside-on", dialog: dialog,
-            properties: GeniePresets.standardProperties().copy(contentScrollable: true)
-        )
-
-        // The card is the stand-in the library bundle CAN measure: the banner asset itself does not
-        // resolve here (see `DifferentialGeometry.bannerIsUnresolvableInTheLibraryBundle`), but the
-        // claim "the scroll does not change what sits outside it" is observable on the card's width,
-        // which no scrolling of the text rows may alter.
-        let plainCard = try XCTUnwrap(swiftUIFrame(plain, element: .card, size: pressured))
-        let scrollingCard = try XCTUnwrap(swiftUIFrame(scrolling, element: .card, size: pressured))
-
-        XCTAssertEqual(
-            scrollingCard.width, plainCard.width, accuracy: DifferentialGeometry.tolerance,
-            "turning the scroll on changed the card's WIDTH — the scroll is supposed to affect the "
-                + "vertical extent of the text rows and nothing else"
-        )
-    }
+    // Three tests sat here and are DELETED, because their subject —
+    // `Properties.contentScrollable` and the outer `ScrollableContent` it gated — no longer exists:
+    //
+    // * `test_swiftUIContent_scrollsRatherThanShrinking_underPressure` asserted that a PRESSURED
+    //   title keeps its unpressured height. That was only true INSIDE the outer scroll, which is
+    //   what removed the height pressure from it. With the wrapper gone the title compresses, as
+    //   UIKit's does, so the claim is not merely untested — it is no longer the behaviour.
+    // * `test_theScroll_isOptInPerPreset` compared the flag on against the flag off. There is no
+    //   flag to be opt-in about.
+    // * `test_theBanner_isNotInsideTheScroll` pinned the outer scroll's SCOPE (text rows, not the
+    //   banner). With no outer scroll there is no scope to pin.
+    //
+    // What survives and covers the behaviour the owner actually asked for — a subtitle that scrolls
+    // rather than being sliced — is `test_swiftUISubtitle_underHeightPressure_keepsAtLeastOneLine`
+    // above, plus `DifferentialGeometryTests`' `test_geometry_longSubtitleUnscrolled` /
+    // `test_geometry_landscape_longSubtitleUnscrolled` (645.33 and 161.33 viewports over 1222pt of
+    // content, matching UIKit to the point) and their non-vacuity premise
+    // `test_theUnscrolledShape_actuallyClipsItsSubtitle`.
 
     /// **The vertical content padding compresses from max toward min, as UIKit's does.**
     ///

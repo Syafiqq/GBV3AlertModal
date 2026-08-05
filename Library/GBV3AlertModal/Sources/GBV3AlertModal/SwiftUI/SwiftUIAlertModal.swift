@@ -182,7 +182,7 @@ public struct SwiftUIAlertModal: View {
             if drawsBanner, let image = config.image {
                 BannerSlot(image: image, tokens: tokens)
             }
-            textRows(resolved: resolved, holder: holder)
+            titleAndSubtitle(resolved: resolved, holder: holder)
         }
     }
 
@@ -225,25 +225,13 @@ public struct SwiftUIAlertModal: View {
             subtitleView(resolved: resolved, holder: holder)
     }
 
-    /// **The TEXT rows, optionally scrollable — the banner deliberately stays outside.**
-    ///
-    /// Scoped to title + subtitle on purpose. Wrapping the banner too was tried and abandoned: inside
-    /// a scroll nothing competes for space, so each row simply takes its natural size in order, and
-    /// the banner — being first and being large — claimed the whole viewport and pushed the words out
-    /// of sight. That is the opposite of the ladder, where every banner driver sits BELOW every text
-    /// rung. Left outside, the banner is still governed by that ladder and needs no special ceiling.
-    ///
-    /// Off by default (`Properties.contentScrollable`), so every shape that fits today is untouched.
-    @ViewBuilder
-    private func textRows(resolved: GBAlertModal.ResolvedModal, holder: GBAlertModal.DataHolder) -> some View {
-        if tokens.contentScrollable {
-            ScrollableContent {
-                titleAndSubtitle(resolved: resolved, holder: holder)
-            }
-        } else {
-            titleAndSubtitle(resolved: resolved, holder: holder)
-        }
-    }
+    // `textRows` sat here: a `Properties.contentScrollable` branch that wrapped `titleAndSubtitle`
+    // in an outer `ScrollableContent` (title AND subtitle together) or passed it straight through.
+    // Both the branch and the wrapper are DELETED. `SubtitleSlot` below scrolls the subtitle
+    // unconditionally, which is what the flag was reaching for, and the outer wrapper's only
+    // measurable remaining effect was to de-pressurise that slot so it reported content (1222pt)
+    // where UIKit reported a viewport (645.3) — one row of the differential gate lost, nothing
+    // gained. `card` now calls `titleAndSubtitle` directly.
 
     /// Renders whatever `subtitlePayload` selected. All the DECISION + PAYLOAD SELECTION logic
     /// lives in that pure function (testable without a view); this just switches on its result.
@@ -472,11 +460,12 @@ private struct BannerSlot: View {
 ///
 /// ## Unconditional, and that is the point
 ///
-/// It does NOT read `Properties.contentScrollable`. UIKit builds `svSubtitleContainer` for every
-/// subtitle it draws, whatever that flag says, and compresses it whenever the card is short — so a
-/// SwiftUI counterpart gated on the flag would diverge on every un-flagged pressured shape, which is
-/// every banner shape in landscape. `contentScrollable`/`ScrollableContent` remains a separate,
-/// opt-in thing: it scrolls TITLE and subtitle TOGETHER, and UIKit has no counterpart for that.
+/// There is no flag on it, and there is no longer one to read. UIKit builds `svSubtitleContainer` for
+/// every subtitle it draws and compresses it whenever the card is short, so a SwiftUI counterpart
+/// gated on anything would diverge on every ungated pressured shape — which is every banner shape in
+/// landscape. `Properties.contentScrollable` used to gate a SEPARATE outer scroll around title and
+/// subtitle together; it is deleted, because this slot already delivers the scrolling subtitle it was
+/// asked for and UIKit never had a counterpart for the outer wrapper.
 ///
 /// The floor lives here rather than on the `Text` (where it used to be, as `.frame(minHeight:)`)
 /// because the floor UIKit installs is a `>=` on the CONTAINER, not on the label. On the `Text` it was
