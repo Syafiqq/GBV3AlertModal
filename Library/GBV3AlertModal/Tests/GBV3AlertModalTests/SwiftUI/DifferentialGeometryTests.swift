@@ -1,6 +1,11 @@
 import XCTest
 import SwiftUI
 import UIKit
+// For `ConstraintPriority` — `test_theTwoCompressionRungs_areTheSamePriority_soTheOptimumIsATiedFace`
+// asserts that SnapKit's `.low`, the priority `adjustSvContentContainerConstraint` gives the padding's
+// max-equalities, really is `UILayoutPriority.defaultLow`. Reading it from SnapKit rather than
+// restating 250 is the point: the tie is between two libraries' constants, not between two literals.
+import SnapKit
 @testable import GBV3AlertModal
 
 // MARK: - The harness's own honesty
@@ -863,6 +868,173 @@ final class DifferentialGeometryTests: XCTestCase {
                 + "`contentMaxWidth` and the portrait rule. Without one, 'the column collapses to "
                 + "contentMaxWidth whenever the card is height-constrained' explains every reading "
                 + "here, and this test cannot tell that cheaper (and false) rule from the real one."
+        )
+    }
+
+    /// **The vertical compression band, and why it has no target to match — the two rungs are the
+    /// SAME PRIORITY, so Auto Layout's objective cannot order them.**
+    ///
+    /// `svContentContainer`'s `top == topMax` is installed at SnapKit's `.low`, and
+    /// `svSubtitleContainer`'s `height == frameLayoutGuide` tie at
+    /// `ModalLayout.Priority.subtitleSlotHeight`. Both are `UILayoutPriority.defaultLow` (250).
+    /// Auto Layout minimises `Σ priority × |error|`, so **every** split of a given deficit between
+    /// "shed padding" and "clip the subtitle" costs exactly the same. The optimum is not a point, it
+    /// is a face — and which vertex of that face the solver returns is an implementation detail of
+    /// its simplex, not a layout rule.
+    ///
+    /// That is the real obstruction behind the 15pt band, and it is NOT what the band was previously
+    /// blamed on. The old explanation — "`componentSpacing` (800) outranks the subtitle slot (250),
+    /// so spacing wins over body text" — is measurably wrong: the three gap dividers hold their full
+    /// 8/8/16 through the entire band and never contribute a point. Nor is the fix "a min/max padding
+    /// primitive"; `AlertModalScaffold.CompressibleVerticalPadding` already IS one, and it already
+    /// reproduces UIKit exactly wherever the answer is single-valued.
+    ///
+    /// This test pins the tie in OUR OWN frozen code, where it is a stable fact rather than a
+    /// property of Apple's solver. If it goes red somebody has separated the two rungs — at which
+    /// point the optimum becomes a point,
+    /// `test_uiKitVerticalCompression_isPathDependent_soTheBandHasNoTargetToMatch` should be
+    /// re-measured, and the band may finally have something to match.
+    func test_theTwoCompressionRungs_areTheSamePriority_soTheOptimumIsATiedFace() {
+        XCTAssertEqual(
+            ModalLayout.Priority.subtitleSlotHeight, .defaultLow,
+            "the subtitle slot's `height == frameLayoutGuide` tie moved off `.defaultLow`"
+        )
+        // SnapKit's `.low` — the priority `adjustSvContentContainerConstraint` gives every
+        // `== padding.topMax` / `== padding.bottomMax` equality — is `UILayoutPriority.defaultLow`.
+        XCTAssertEqual(
+            ConstraintPriority.low.value, UILayoutPriority.defaultLow.rawValue,
+            "SnapKit's `.low` is no longer `defaultLow`, so the padding's max-equality and the "
+                + "subtitle slot's tie may no longer be cost-tied"
+        )
+        XCTAssertEqual(
+            ModalLayout.Priority.subtitleSlotHeight.rawValue, ConstraintPriority.low.value,
+            "the padding's `== topMax` (SnapKit `.low`) and the subtitle slot's height tie are no "
+                + "longer the SAME priority. They were, and that tie is the whole reason UIKit's "
+                + "vertical compression split has no single value for SwiftUI to reproduce. If they "
+                + "have been separated, re-open the band: the optimum is now a point."
+        )
+        // …and the rung that WAS blamed is strictly above both, which is why it never yields here.
+        XCTAssertGreaterThan(
+            ModalLayout.Priority.componentSpacing.rawValue,
+            ModalLayout.Priority.subtitleSlotHeight.rawValue,
+            "premise for the correction recorded above: `componentSpacing` outranks the subtitle "
+                + "slot, which is exactly why the gap dividers never compress inside the band and "
+                + "cannot be the mechanism that produces it"
+        )
+    }
+
+    /// **The demonstration that the band is unmatchable: UIKit returns two different layouts for the
+    /// same modal at the same size, depending on the size it was laid out at BEFORE.**
+    ///
+    /// A consequence of the tied face pinned above. Measured on `banner-comparable` at 844 wide, over
+    /// every host height from 432 to 450 — nineteen consecutive rows, so this is systematic and not a
+    /// knife edge:
+    ///
+    /// | 844×h | laid out fresh | after a pass at 844×300 |
+    /// |---|---|---|
+    /// | 440 | top inset 18.67, subtitle viewport 38.33 | top inset **24.00**, viewport **27.33** |
+    /// | 435 | 16.00 / 38.33 | **24.00** / **22.33** |
+    /// | 434 | 16.00 / 37.33 | **24.00** / **21.33** |
+    ///
+    /// Up to **8pt** of top inset and **16pt** of subtitle viewport, from identical inputs — sixteen
+    /// and thirty-two times the harness's 0.5pt tolerance. Both readings cost Auto Layout exactly the
+    /// same (`250 × deficit` either way), which is why both are returned.
+    ///
+    /// **SwiftUI's layout is a pure function of (view tree, proposed size).** It has no previous pass
+    /// to depend on, so there is no expression of `AlertModalScaffold` that agrees with UIKit here —
+    /// not because SwiftUI is missing a primitive, but because UIKit is not returning a value to
+    /// match. SwiftUI currently reproduces the FRESH branch, which is why 844×432…455 reads as
+    /// agreement in the differential gate.
+    ///
+    /// Deeper into the compression (844×417…431, where the deficit exceeds the subtitle's whole
+    /// 19.33pt of give) all three probed paths do converge on one answer — the subtitle pinned to its
+    /// floor with the padding re-expanded to `topMax − (deficit − subtitleGive) / 2`, good to 0.17pt.
+    /// SwiftUI's ladder sheds padding FIRST and so reads 16.00 there instead. Matching it would mean
+    /// inverting the ladder, which would break 844×432…455 — where UIKit's fresh branch needs exactly
+    /// the ordering SwiftUI has. **Two contradictory orderings at two different deficits**, with the
+    /// crossover a function of the natural content height: a bottom-up measurement, i.e. the feedback
+    /// cycle already rejected for the banner ceiling.
+    ///
+    /// **This test is GREEN while UIKit disagrees with itself.** If it ever goes RED on the
+    /// `disagreedSomewhere` assertion, UIKit has become self-consistent here — which is news, not a
+    /// regression: it would mean the band finally has a single value to match and is worth
+    /// re-attempting. Read this doc before deleting the test.
+    func test_uiKitVerticalCompression_isPathDependent_soTheBandHasNoTargetToMatch() throws {
+        let shape = try XCTUnwrap(DifferentialGeometry.shape(named: "banner-comparable"))
+
+        /// Lays the SAME modal out at `warmUp` (when given) and then at `size`, returning what the
+        /// second pass produced. `nil` is the fresh case: one pass, at `size`, and nothing before it.
+        func measure(warmUp: CGSize?, then size: CGSize) throws -> (top: CGFloat, viewport: CGFloat) {
+            let modal = DifferentialGeometry.makeUIKitModal(shape)
+            let window = DifferentialGeometry.makeWindow(size: warmUp ?? size)
+            defer { DifferentialGeometry.teardown(window) }
+            modal.show(parent: window, completion: {})
+            window.setNeedsLayout()
+            window.layoutIfNeeded()
+            if warmUp != nil {
+                window.frame = CGRect(origin: .zero, size: size)
+                window.setNeedsLayout()
+                window.layoutIfNeeded()
+            }
+            let card = try XCTUnwrap(modal.vwContainer, "UIKit built no card")
+            let stack = try XCTUnwrap(modal.svContentContainer, "UIKit built no content column")
+            let viewport = try XCTUnwrap(modal.svSubtitleContainer, "UIKit built no subtitle slot")
+            // `svContentContainer` is a direct subview of `vwContainer`, so its origin IS the inset.
+            return (stack.frame.minY - card.bounds.minY, viewport.bounds.height)
+        }
+
+        let padding = ModalLayout.resolveContentPadding(padding: shape.properties.padding)
+        let tight = CGSize(width: 844, height: 300)
+        var disagreedSomewhere = false
+        var worstDelta: CGFloat = 0
+        var reachedFullCompression = false
+
+        // Four hosts, not the whole 432…450 range: the divergence was measured on all nineteen and is
+        // recorded in the table above, but re-running nineteen costs the suite minutes to re-establish
+        // a fact these four already carry — the shallow end (450, a third of a point of compression),
+        // the middle, and a host where the fresh padding has bottomed out (434).
+        for height in [CGFloat(450), 442, 436, 434] {
+            let size = CGSize(width: 844, height: height)
+            let fresh = try measure(warmUp: nil, then: size)
+            let warmed = try measure(warmUp: tight, then: size)
+
+            let delta = max(abs(fresh.top - warmed.top), abs(fresh.viewport - warmed.viewport))
+            worstDelta = max(worstDelta, delta)
+            if delta > DifferentialGeometry.tolerance { disagreedSomewhere = true }
+            // The sweep's own premise, asserted below rather than per row: it must REACH a host where
+            // the fresh layout has spent its padding down to `topMin`. The shallow end of this range
+            // is compressed by a third of a point, and a sweep that only ever saw those would be
+            // comparing two barely-pressured cards.
+            if fresh.top <= padding.topMin + DifferentialGeometry.tolerance {
+                reachedFullCompression = true
+            }
+        }
+
+        XCTAssertTrue(
+            reachedFullCompression,
+            "the sweep never reached a host where UIKit's FRESH layout had shed its padding all the "
+                + "way to topMin (\(padding.topMin)pt). Without one, every row compared is barely "
+                + "pressured and the path-dependence claim rests on rounding rather than on the "
+                + "compression split."
+        )
+        XCTAssertTrue(
+            disagreedSomewhere,
+            "UIKit produced the SAME vertical split from both arrival paths at every host height in "
+                + "844x432...450. That contradicts the measurement this exclusion rests on: the two "
+                + "compression rungs are cost-tied (see "
+                + "`test_theTwoCompressionRungs_areTheSamePriority_soTheOptimumIsATiedFace`), and the "
+                + "band was excluded BECAUSE UIKit returns two different vertices of that tied face "
+                + "for identical inputs. If UIKit is now single-valued here, the 844x417...431 band "
+                + "is worth re-attempting and this test should be replaced by a gate, not deleted."
+        )
+        // Recorded as a number, not just a boolean: the divergence measured when this was written is
+        // 16pt of subtitle viewport, i.e. thirty-two tolerances. A future run that still disagrees but
+        // only by a hair would be a different (and far weaker) fact, and would say so here.
+        XCTAssertGreaterThan(
+            worstDelta, 4 * DifferentialGeometry.tolerance,
+            "UIKit's two arrival paths still disagree, but by only \(worstDelta)pt — far less than "
+                + "the 16pt measured when this exclusion was written. Re-measure the band before "
+                + "relying on this as the reason it cannot be matched."
         )
     }
 

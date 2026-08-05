@@ -96,17 +96,31 @@ import UIKit
 ///   `test_geometry_longSubtitleScrolling_agreesExceptOnTheScrollViewport`; and since the subtitle
 ///   now scrolls without the flag, this is an input to whether the flag should exist at all
 ///   (`docs/superpowers/specs/2026-08-02-content-scrollable-review.md`).
-/// * **Vertical content padding compression, in a ~15pt band.** `AlertModalScaffold.card` has no
-///   min/max padding primitive, so where UIKit trades padding against the subtitle it holds one
-///   value. Measured on `banner-comparable`: identical at every host height from 844x450 down to
-///   844x435 and from 844x415 down to 844x330, and divergent only in **844x420…430**, where UIKit
-///   re-expands its top inset 16 → 23 and pays for it by collapsing the subtitle a further 14pt
-///   (its `componentSpacing` is 800, far above the subtitle slot's 250, so spacing outranks body
-///   text — SwiftUI's padding yields first instead). That band was ALREADY divergent before this
-///   work, by more rows and larger amounts; it is narrowed, not introduced. SwiftUI has no min/max
-///   padding primitive, and deriving the give from a measured content height feeds that measurement
-///   back into the layout that produced it — the cycle that had to be removed from the banner
-///   ceiling. Unbuilt, not impossible.
+/// * **Vertical content padding compression, in a 15pt band — and it is UNMATCHABLE, not unbuilt.**
+///   Measured on `banner-comparable` at 844 wide in 1pt steps: identical at every host height from
+///   844x455 down to 844x432 and from 844x416 down to 844x330, divergent in **844x417…431**, where
+///   UIKit pins its subtitle viewport to its 19pt floor and re-expands the top inset to
+///   `topMax − (deficit − subtitleGive) / 2` (16 → up to 23.67), while SwiftUI sheds padding first
+///   and holds 16.
+///
+///   **Two earlier explanations of this were wrong and are corrected here.** It is NOT
+///   `componentSpacing` (800) outranking the subtitle slot (250): the three gap dividers hold their
+///   full 8/8/16 through the entire band and never yield a point. And it is NOT a missing min/max
+///   padding primitive: `AlertModalScaffold.CompressibleVerticalPadding` is one, and it matches
+///   UIKit exactly wherever UIKit's answer is single-valued.
+///
+///   The real obstruction is that **UIKit has no single answer to match.** `svContentContainer`'s
+///   `top == topMax` (SnapKit `.low`) and `svSubtitleContainer`'s height tie
+///   (`Priority.subtitleSlotHeight`) are BOTH `defaultLow` (250), so every split of a given deficit
+///   between "shed padding" and "clip the subtitle" costs Auto Layout exactly the same and the
+///   optimum is a face rather than a point. Demonstrated, not argued: the same modal at 844x440
+///   reports a 18.67pt top inset over a 38.33pt viewport laid out fresh, and 24.00 over 27.33 after
+///   a pass at 844x300 — 16pt apart from identical inputs, on nineteen consecutive host heights.
+///   SwiftUI's layout is a pure function of (tree, proposed size) and reproduces the FRESH branch;
+///   matching the band instead would mean inverting the ladder, which breaks 844x432…455, where
+///   UIKit's fresh branch needs the ordering SwiftUI already has. Both pinned by
+///   `DifferentialGeometryTests`' `test_theTwoCompressionRungs_areTheSamePriority_soTheOptimumIsATiedFace`
+///   and `test_uiKitVerticalCompression_isPathDependent_soTheBandHasNoTargetToMatch`.
 ///
 /// Do NOT "close" either of them by widening the tolerance to fit.
 // @MainActor: builds `GBAlertModal`, `UIWindow` and `UIHostingController`, all main-actor-isolated

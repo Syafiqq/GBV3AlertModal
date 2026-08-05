@@ -427,9 +427,11 @@ described below. Portrait did not move.
   flag, this is the deciding input for `2026-08-02-content-scrollable-review.md`.
 * **Vertical padding compression, in a 15pt band.** `banner-comparable` agrees at every host height
   from 844x450 to 844x435 and from 844x415 to 844x330, and diverges only in **844x420…430**: UIKit
-  re-expands its top inset 16 → 23 and pays for it by collapsing the subtitle a further 14pt, because
-  its `componentSpacing` is 800 and the subtitle slot's tie is 250 — spacing outranks body text.
-  SwiftUI's padding yields first instead, having no min/max padding primitive. **The band was already
+  re-expands its top inset 16 → 23 and pays for it by collapsing the subtitle a further 14pt.
+  **The mechanism stated here — "its `componentSpacing` is 800 and the subtitle slot's tie is 250, so
+  spacing outranks body text" — is wrong, and so is "SwiftUI has no min/max padding primitive". Both
+  are superseded by §5e**, which measures the band in 1pt steps (it is 844x417…431), shows the gap
+  dividers never yield a point inside it, and identifies the real obstruction. **The band was already
   divergent before this work, on more rows and by more points**; it is narrowed, not introduced. It
   falls on no gated host size.
 
@@ -508,6 +510,103 @@ the height would describe different layouts.
 
 Neither is worth 64pt on one orientation of one shape while every origin and every height already
 agree. **`banner-wide`'s landscape width exclusion stands, with a sharper justification than it had.**
+
+## 5e. The vertical compression BAND — there is no rule, because there is no single answer
+
+**This supersedes §5c's last bullet.** Two claims are retracted, both measured false; the exclusion
+they were defending survives, with a completely different and much stronger reason.
+
+### The band, measured in 1pt steps
+
+`banner-comparable`, 844 wide, host height swept 455 → 295 at 1pt, reading UIKit's
+`svContentContainer.frame.minY` (which IS the top inset — it is a direct subview of `vwContainer`)
+and `svSubtitleContainer.bounds.height` against the SwiftUI probes.
+
+Write `deficit = naturalContent + topMax + bottomMax − cardHeight` (355 − cardHeight here:
+307pt of content, 24 + 24 of max padding), `padGive = 16` (2 × (24 − 16)),
+`subGive = 19.33` (38.33pt label − 19.0pt floor).
+
+| cardH | deficit | UIKit top / subtitle VP | SwiftUI top / subtitle VP | |
+|---|---|---|---|---|
+| 355…339 | ≤ 16 | 24.00 → 16.00 / 38.33 | same | agree |
+| 338…336 | 17…19 | 16.00 / 37.33 → 35.33 | same | agree |
+| **335…321** | **20…34** | **23.67 → 16.67 / 19.00** | **16.00 / 34.33 → 20.33** | **DIFFER** |
+| 320 and below | > 35.33 | 16.00 / 19.00, banner pays | same | agree |
+
+So the band is **844x417…431** (cardH 321…335), not 844x420…430, and it is 15 rows wide. Inside it
+UIKit pins the subtitle to its floor and hands the remainder back to the padding:
+`top = topMax − (deficit − subGive) / 2`, which reproduces all fifteen rows to **0.17pt** (the
+1/3-point grid). `standard-two-button` shows the identical band shape at 844x305…319 — same rule,
+different natural content height.
+
+### Retraction 1 — it is not `componentSpacing`
+
+The three gap dividers hold **8 / 8 / 16 exactly** at every host height across the whole band. They
+never contribute a point. `componentSpacing` (800) does outrank the subtitle slot (250), which is
+precisely why the gaps are *not* the thing that yields here — the claim had the consequence
+backwards.
+
+### Retraction 2 — the min/max padding primitive already exists
+
+`AlertModalScaffold.CompressibleVerticalPadding` is exactly that primitive: a `maxHeight` strip at
+`layoutPriority(-1)` above and below the content, which reads `topMax` when there is room and
+compresses to `topMin` when there is not. It reproduces UIKit **to the point** at every host height
+outside the band. Nothing was missing.
+
+### The real obstruction — a TIED optimum, so UIKit returns two different layouts
+
+`svContentContainer`'s `top == padding.topMax` is installed at SnapKit's `.low`;
+`svSubtitleContainer`'s `height == frameLayoutGuide` tie at `ModalLayout.Priority.subtitleSlotHeight`.
+**Both are `UILayoutPriority.defaultLow` (250).** Auto Layout minimises `Σ priority × |error|`, so
+shedding one point of padding and clipping one point of subtitle cost the same: every split of a
+given deficit costs `250 × deficit`. The optimum is not a point, it is a face, and which vertex the
+solver returns is a property of its simplex.
+
+Demonstrated rather than asserted — the same modal, the same final size, two arrival paths:
+
+| 844×h | laid out fresh | after a pass at 844×300 |
+|---|---|---|
+| 450 | top 23.67, viewport 38.33 | top **24.00**, viewport **37.33** |
+| 440 | top 18.67, viewport 38.33 | top **24.00**, viewport **27.33** |
+| 435 | top 16.00, viewport 38.33 | top **24.00**, viewport **22.33** |
+| 434 | top 16.00, viewport 37.33 | top **24.00**, viewport **21.33** |
+
+Nineteen consecutive host heights (844x432…450) behave this way: up to **8pt** of top inset and
+**16pt** of subtitle viewport from identical inputs, i.e. sixteen and thirty-two times the harness's
+0.5pt tolerance. Deeper in (the band itself) all three probed paths converge, because the deficit
+exceeds `subGive` and the subtitle must bottom out either way — but that vertex is still a point on
+the same tied face, reproducible on this OS rather than derived from a rule.
+
+### Why SwiftUI cannot express it
+
+1. **There is no value to match over 844x432…455.** SwiftUI's layout is a pure function of
+   (view tree, proposed size); it has no previous pass to depend on. It currently reproduces UIKit's
+   FRESH branch, which is why that range reads as agreement in the gate.
+2. **The band needs the opposite ordering to the range above it.** The band is "subtitle to floor,
+   then padding"; 844x432…455 fresh is "padding first, then subtitle". SwiftUI has the second. Moving
+   the strips inside the content `VStack` above the subtitle would buy the first and lose the second —
+   a strictly worse trade (15 rows won, 24 lost).
+3. **Selecting between them needs the deficit as a scalar**, hence the natural content height —
+   wrapped title + wrapped subtitle + resolved banner, all bottom-up results. That is the same
+   measurement-feedback cycle §5d rejects for the column, arrived at from the other side.
+
+### What was landed
+
+Nothing in production; **no behaviour changed, so no snapshot could move.** Two characterisation
+tests in `DifferentialGeometryTests`:
+
+* `test_theTwoCompressionRungs_areTheSamePriority_soTheOptimumIsATiedFace` — the root cause, asserted
+  in our own frozen code (SnapKit `.low` and `Priority.subtitleSlotHeight` are the same value) plus
+  the premise that `componentSpacing` sits strictly above both. Stable: it depends on no Apple
+  internals. If it goes red the rungs have been separated, the optimum becomes a point, and the band
+  is worth re-attempting.
+* `test_uiKitVerticalCompression_isPathDependent_soTheBandHasNoTargetToMatch` — the demonstration, at
+  four hosts, with two non-vacuity premises (the sweep must reach a fully compressed row, and the
+  disagreement must exceed four tolerances rather than a hair). **A GREEN-turning failure here is
+  news, not a regression**: it would mean UIKit had become self-consistent and the band matchable.
+
+Plus doc corrections in `AlertModalScaffold.CompressibleVerticalPadding`, `DifferentialGeometry`, and
+§5c above. UIKit untouched.
 
 ## 6. Changes
 

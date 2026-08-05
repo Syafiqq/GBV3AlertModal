@@ -408,6 +408,21 @@ public struct AlertModalScaffold<Content: View>: View {
 /// kept their full height under pressure and nothing compressed — the test caught it, reporting a
 /// pressured inset still sitting at the full 24.0. A fixed frame does not become compressible by
 /// being given a low priority.
+///
+/// **What this deliberately does NOT reproduce, and why nothing can.** These strips are OUTSIDE the
+/// card's content `VStack`, so they are spent BEFORE the rows inside it: padding yields first, then
+/// the subtitle. That is UIKit's answer wherever UIKit has one answer. In the 15pt landscape band
+/// (`banner-comparable` at 844x417…431) UIKit does the opposite — subtitle to its floor, padding
+/// re-expanded — and the two orderings cannot both be expressed, because the choice between them is
+/// not a rule. `svContentContainer`'s `top == topMax` (SnapKit `.low`) and `svSubtitleContainer`'s
+/// height tie (`ModalLayout.Priority.subtitleSlotHeight`) are BOTH `defaultLow` (250), so every split
+/// of a given deficit costs Auto Layout the same and it returns whichever vertex of that tied face its
+/// simplex reaches: measured, the same modal at 844x440 gives a 18.67pt inset over a 38.33pt subtitle
+/// viewport laid out fresh, and 24.00 over 27.33 after a pass at a smaller size. SwiftUI's layout has
+/// no previous pass to depend on, so there is nothing single-valued to match. Reversing the ordering
+/// here to win the band would lose 844x432…455, which is the wider range and the one every real
+/// landscape phone size sits nearer. Pinned by `DifferentialGeometryTests`'
+/// `test_uiKitVerticalCompression_isPathDependent_soTheBandHasNoTargetToMatch`.
 private struct CompressibleVerticalPadding: ViewModifier {
     let top: CGFloat
     let bottom: CGFloat
