@@ -219,7 +219,21 @@ final class SwiftUIAlertModalSnapshotTests: XCTestCase {
     private let landscape = CGSize(width: 844, height: 390)
 
     private func render(_ view: some View, size: CGSize) -> UIView {
-        let host = UIHostingController(rootView: view)
+        // Pin to light: a snapshot host with no colour-scheme pin inherits whatever appearance the
+        // simulator happens to be in. The 8 references below were recorded in light; left unpinned,
+        // a machine whose simulator is in dark mode fails all 8 on the scrim colour alone
+        // (`AlertModalScaffold`'s scrim is a translucent grey composited over the hosting
+        // controller's implicit background, which flips light/dark with the environment), with the
+        // card/text/button content pixel-identical either way. That's a snapshot test reporting the
+        // environment, not the code — pinning makes the suite deterministic.
+        //
+        // `.preferredColorScheme` (not `window.overrideUserInterfaceStyle`) is what actually
+        // sticks: `assertSnapshot(of:as:.image)` re-hosts the rendered `UIView` inside its OWN
+        // internal window with an unspecified trait collection (see swift-snapshot-testing's
+        // `prepareView`/`Window`), which discards any override made on THIS window and falls back
+        // to the simulator's real appearance. `.preferredColorScheme` is baked into the SwiftUI
+        // view tree itself, so it survives that re-parenting.
+        let host = UIHostingController(rootView: view.preferredColorScheme(.light))
         let window = UIWindow(frame: CGRect(origin: .zero, size: size))
         window.rootViewController = host
         window.isHidden = false
