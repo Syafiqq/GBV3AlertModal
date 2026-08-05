@@ -57,8 +57,13 @@ public enum ModalText {
     /// **COLOUR ONLY, and the asymmetry is not an oversight.** `UIColor(_: Color)` exists (iOS 14+),
     /// so SwiftUI colour converts exactly. There is no `Font -> UIFont` direction — the bridge runs
     /// `UIFont -> Font` via `CTFont` and not back — which is the same wall that makes
-    /// `ModalTokens.titleUIFont` a hand-carried measurement twin. A SwiftUI-scoped FONT therefore
+    /// `ModalTokens.titleUIFont` a hand-carried measurement fallback. A SwiftUI-scoped FONT therefore
     /// still degrades to plain, and that is the honest outcome rather than a guess at a point size.
+    ///
+    /// **Note the consequence for the title floor.** A SwiftUI-scoped font degrading to plain here
+    /// means the UIKit renderer draws it unstyled, while `SwiftUIAlertModal`'s `Text` honours it — so
+    /// the two backends genuinely differ for such a run, and the SwiftUI floor measures what SwiftUI
+    /// draws (`ModalLayout.titleFloorHeight`). That is a real divergence, not a measurement bug.
     ///
     /// Runs already carrying a UIKit-scoped colour are left alone: an explicit `.uiKit.` scope is a
     /// stronger statement than the ambient one and must not be overwritten by it.

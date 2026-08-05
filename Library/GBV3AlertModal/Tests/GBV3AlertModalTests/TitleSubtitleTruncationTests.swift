@@ -603,7 +603,9 @@ final class TitleSubtitleTruncationTests: XCTestCase {
         let font = try XCTUnwrap(properties.subtitleFont)
         let tokens = ModalTokens(from: properties)
 
-        XCTAssertEqual(tokens.subtitleUIFont, font, "the measurement twin is not the rendered font")
+        XCTAssertEqual(
+            tokens.subtitleUIFont, font, "the measurement fallback is not the rendered font"
+        )
         XCTAssertEqual(tokens.subtitleFont, Font(font))
         XCTAssertEqual(tokens.subtitleFloorHeight, ModalLayout.subtitleFloorHeight(font: font))
 
@@ -1072,10 +1074,15 @@ final class TitleSubtitleTruncationTests: XCTestCase {
         XCTAssertEqual(ModalTokens.standard.titleFloorHeight(for: Self.longTitle), 0)
     }
 
-    /// `titleUIFont` is `titleFont`'s measurement twin: `Font` cannot be measured and cannot be
-    /// converted back to a `UIFont`, so the two must be assigned from ONE source. On the derived path
-    /// they are; `standard` carries a literal, and this pins that literal to the `Font` beside it.
-    func test_theStandardTitleFontAndItsMeasurementTwin_agree() {
+    /// `titleUIFont` is what the floor measures with when a title run states no font of its own:
+    /// `Font` cannot be measured and cannot be converted back to a `UIFont`, so the drawn font and the
+    /// measurement fallback must come from ONE source. On the derived path they do; `standard` carries
+    /// a literal, and this pins that literal to the `Font` beside it.
+    ///
+    /// **Not a "twin"** — that framing implied the two always agree, which is what let the flattened
+    /// call site hide: a title whose runs DO state a font is drawn at those and must be measured at
+    /// those. See `test_theTitleFloor_readsTheFontsTheTitleCarries`.
+    func test_theStandardTitleFontAndItsMeasurementFallback_agree() {
         XCTAssertEqual(ModalTokens.standard.titleUIFont.pointSize, 24)
         XCTAssertEqual(ModalTokens.standard.titleFont, .system(size: 24, weight: .bold))
 

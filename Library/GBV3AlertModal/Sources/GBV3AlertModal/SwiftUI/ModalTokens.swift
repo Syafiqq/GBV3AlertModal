@@ -437,7 +437,7 @@ public struct ModalTokens: Sendable {
     /// | `bannerRatio` | (a) | `bannerRatio` — `test_bannerRatio_comesFromProperties` |
     /// | `bannerMaxHeight` | (a) | `bannerMaxHeight` — `test_bannerMaxHeight_comesFromProperties`, `test_bannerMaxHeight_isNilWhenPropertiesSetsNoCap` |
     /// | `bannerFixedHeight` | (a) | `bannerFixedHeight` — `test_bannerFixedHeight_comesFromProperties` |
-    /// | `titleFont` | (a) | `titleFont` AND its measurement twin `titleUIFont`, both from this one field — `test_titleFont_comesFromProperties_viaFontBridge`, `test_theStandardTitleFontAndItsMeasurementTwin_agree`. The twin exists because `Font` can be rendered but not measured, and rung 2's SwiftUI floor needs a measurement. |
+    /// | `titleFont` | (a) | `titleFont` to draw with AND `titleUIFont` to measure with, both from this one field — `test_titleFont_comesFromProperties_viaFontBridge`, `test_theStandardTitleFontAndItsMeasurementFallback_agree`. `titleUIFont` exists because `Font` can be rendered but not measured; it is the FALLBACK for title runs stating no font, not a second way to state one. |
     /// | `titleColor` | (a) | `palette.titleText` — `test_titleColor_comesFromProperties` |
     /// | `subtitleFont` | (a) | `subtitleFont` — `test_subtitleFont_comesFromProperties_viaFontBridge` |
     /// | `subtitleColor` | (a) | `palette.subtitleText` — `test_subtitleColor_comesFromProperties` |
@@ -585,13 +585,13 @@ public struct ModalTokens: Sendable {
 
         if let titleFont = properties.titleFont {
             self.titleFont = Font(titleFont)
-            // The measurement twin, from the SAME `UIFont` — see `titleUIFont`. Assigned here and
+            // The measurement fallback, from the SAME `UIFont` — see `titleUIFont`. Assigned here and
             // nowhere else, so the rendered font and the measured font cannot be different fonts.
             titleUIFont = titleFont
         }
         if let subtitleFont = properties.subtitleFont {
             self.subtitleFont = Font(subtitleFont)
-            // The measurement twin, from the SAME `UIFont` — see `subtitleUIFont`.
+            // The measurement fallback, from the SAME `UIFont` — see `subtitleUIFont`.
             subtitleUIFont = subtitleFont
         }
         if let titleColor = properties.titleColor {
