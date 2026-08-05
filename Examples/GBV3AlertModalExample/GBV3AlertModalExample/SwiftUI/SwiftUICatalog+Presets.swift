@@ -46,8 +46,38 @@ enum SwiftUICatalogPresets {
             (.genieDatePickerInput, datePickerInput),
             (.genieBadgeUnlock, GalleryPresets.badgeProperties),
             (.genieBadgeMulti, badgeMulti),
-            (.genieBadgeDetail, badgeDetail)
+            (.genieBadgeDetail, badgeDetail),
+            (.variantCapsule, variantCapsule),
+            (.variantCapsuleOutlined, variantCapsuleOutlined),
+            (.variantPlain, variantPlain),
+            (.variantOblique, variantOblique)
         ]
+    }
+
+    // MARK: - Variants (button styles)
+
+    /// The four `ActionStyle` cases the Variants section demonstrates. Each is
+    /// `GalleryPresets.properties` with ONLY `primaryActionStyle` changed, exactly as the
+    /// UIKit twin spells it at its call site — so a difference on screen is the action style
+    /// and nothing else.
+    static var variantCapsule: GBAlertModal.Properties {
+        GalleryPresets.properties.copy(primaryActionStyle: .capsule(GalleryPresets.capsuleTheme))
+    }
+
+    static var variantCapsuleOutlined: GBAlertModal.Properties {
+        GalleryPresets.properties.copy(
+            primaryActionStyle: .capsuleOutlined(GalleryPresets.capsuleOutlinedTheme)
+        )
+    }
+
+    static var variantPlain: GBAlertModal.Properties {
+        GalleryPresets.properties.copy(primaryActionStyle: .plain(GalleryPresets.plainTheme))
+    }
+
+    static var variantOblique: GBAlertModal.Properties {
+        GalleryPresets.properties.copy(
+            primaryActionStyle: .obliqueBottomLeft(GalleryPresets.obliqueBottomLeftTheme)
+        )
     }
 
     // MARK: - Cross-cutting

@@ -61,6 +61,15 @@ extension ModalStyle {
     static let genieBadgeUnlock = ModalStyle("genie.badgeUnlock")
     static let genieBadgeMulti = ModalStyle("genie.badgeMulti")
     static let genieBadgeDetail = ModalStyle("genie.badgeDetail")
+
+    // The four `GBAlertModal.ActionStyle` cases, as styles the Variants section asks for by
+    // name. The UIKit twins pass `properties.copy(primaryActionStyle:)` directly at the call
+    // site; a descriptor cannot carry a `Properties`, so each case is registered as its own
+    // style instead. Same four themes either way — see `SwiftUICatalogPresets`.
+    static let variantCapsule = ModalStyle("variant.capsule")
+    static let variantCapsuleOutlined = ModalStyle("variant.capsuleOutlined")
+    static let variantPlain = ModalStyle("variant.plain")
+    static let variantOblique = ModalStyle("variant.oblique")
 }
 
 // MARK: - Divergences
@@ -239,7 +248,7 @@ enum SwiftUICatalog {
     /// `DialogCatalog`, and appending stress/divergence rows to one flat list would have
     /// silently turned that gate into a prefix check.
     static let entries: [SwiftUICatalogEntry] =
-        dialogEntries + stressEntries + divergenceEntries
+        dialogEntries + stressEntries + variantEntries + divergenceEntries
 
     static func index(ofEntryNamed name: String) -> Int? {
         entries.firstIndex { $0.name == name }
