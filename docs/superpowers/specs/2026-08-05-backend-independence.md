@@ -58,6 +58,39 @@ Everything else splits. For the SwiftUI half to contain no UIKit it needs its ow
 | orientation source | `UIScreen.main` — also wrong on iPad multitasking, where it is the screen and not the window |
 | four bespoke views | text input, date picker, badge, loading all delegate to `UIKitModalRenderer` because descriptors cannot carry a `UIView` |
 
+## 3a. The SwiftUI config mirrors `Properties`' VOCABULARY, not its types
+
+**Decided with §1.** The SwiftUI-native configuration keeps the same field names and the same
+concepts as `GBAlertModal.Properties`, so a call site moving from UIKit to SwiftUI recognises every
+line and only the types change. It is a **parallel type, not a translation layer** — nothing
+converts at runtime, and neither side imports the other.
+
+"More or less" is accepted: where the two worlds genuinely differ, the SwiftUI type is allowed to
+differ, and where a UIKit field is dead it is **not** carried over.
+
+Of the 29 public fields, roughly half need no change at all — `CGFloat` is CoreGraphics and `Bool`
+is `Bool`. Only these actually move:
+
+| `Properties` (UIKit) | SwiftUI mirror | note |
+|---|---|---|
+| `baseTint`, `overlayColor`, `titleColor`, `subtitleColor`, `closeButtonTint`, `backgroundColor` — `UIColor?` | `Color?` | direct |
+| `titleFont`, `subtitleFont` — `UIFont?` | `Font?` | measurement moves inside, via CoreText — the caller never sees a `UIFont` |
+| `margin` — `UIEdgeInsets?` | `EdgeInsets?` | direct |
+| `padding` — `UIMinMaxEdgeInsets?` | own `MinMaxEdgeInsets` | SwiftUI has no min/max inset type; this one is genuinely ours either way |
+| `buttonActionOrientation` — `NSLayoutConstraint.Axis?` | `Axis?` | already bridged at one call site today |
+| `primaryActionStyle`, `secondaryActionStyle` — `ActionStyle?` | own `ActionStyle` | same four cases, `Color`-based themes |
+| `contentProperty` — `ContentProperty?` | same shape, `Color` inside | nested, same field names |
+| `bannerRatio`, `bannerMaxHeight`, `cornerRadius`, the four width fields, `space`, the `Bool`s | **unchanged** | `CGFloat`/`Bool`/own types |
+
+**Deliberately NOT carried over:**
+
+- **`bannerFixedHeight`.** Measured inert on both UIKit paths at every size tried — it loses to
+  hugging (250) going up and to compression resistance (750) coming down. Dead vocabulary; the
+  SwiftUI type should never have it. This is the model case for "more or less."
+
+Any further omission needs the same standard: a measurement showing the field does nothing, not an
+opinion that it looks redundant.
+
 ## 4. The descriptor gap is the keystone
 
 Nine `notRenderable` gallery entries, the `showsPrimary` divergence, and the four bespoke
