@@ -287,4 +287,64 @@ final class SwiftUIModalRendererTests: XCTestCase {
         // Executor invariant Task 8 leans on: re-rendering is not a resolution.
         XCTAssertEqual(resolvedCount, 0, "update must never resolve the token")
     }
+
+    // MARK: - Orientation
+
+    /// **The premise that lets `makePresentation` pass `isLandscape: false` instead of reading one.**
+    ///
+    /// `contentWidth` is the ONLY orientation-sensitive output the shared resolver produces. Every
+    /// shipped preset states it identically for both orientations, so the constant is inert — which is
+    /// what makes it honest rather than a guess, since there is no view to read a real orientation from
+    /// at presentation-build time (see `makePresentation`'s doc).
+    ///
+    /// This test is the tripwire on that premise. The day a preset distinguishes
+    /// `fixedWidthPortrait` from `fixedWidthLandscape`, this goes RED — instead of that preset
+    /// silently resolving to the portrait width forever, which is exactly what the deleted
+    /// `UIScreen.main` read did under iPad multitasking.
+    func test_everyPreset_statesTheSameContentWidthForBothOrientations() {
+        let presets: [(String, GBAlertModal.Properties)] = [
+            ("standard", GeniePresets.standardProperties()),
+            ("popup", GeniePresets.popupProperties()),
+            ("badge", GeniePresets.badgeProperties()),
+            ("permissionAlert", GeniePresets.permissionAlertProperties()),
+            ("obliqueRed", GeniePresets.obliqueRedProperties()),
+            ("errorBanner", GeniePresets.errorBannerProperties()),
+            ("forceUpdateBanner", GeniePresets.forceUpdateBannerProperties()),
+            ("capBanner", GeniePresets.capBannerProperties()),
+            ("quizBanner", GeniePresets.quizBannerProperties()),
+            ("aiNotesBanner", GeniePresets.aiNotesBannerProperties()),
+            ("creditDeduction", GeniePresets.creditDeductionProperties()),
+            ("streak", GeniePresets.streakProperties()),
+            ("timerBanner", GeniePresets.timerBannerProperties()),
+            ("exitWorksheetBanner", GeniePresets.exitWorksheetBannerProperties()),
+            ("renameInput", GeniePresets.renameInputProperties()),
+            ("datePickerInput", GeniePresets.datePickerInputProperties()),
+            ("badgeUnlock", GeniePresets.badgeUnlockProperties()),
+            ("badgeMulti", GeniePresets.badgeMultiProperties()),
+            ("badgeDetail", GeniePresets.badgeDetailProperties())
+        ]
+        let holder = GBAlertModal.DataHolder(
+            closeOnTapOverlay: true,
+            title: "Title",
+            subtitle: "This is the subtitle text for the alert modal.",
+            primaryAction: "Okay",
+            dismissOnAction: true
+        )
+
+        for (name, properties) in presets {
+            let portrait = GBAlertModal.resolve(
+                properties: properties, holder: holder, isLandscape: false
+            ).contentWidth
+            let landscape = GBAlertModal.resolve(
+                properties: properties, holder: holder, isLandscape: true
+            ).contentWidth
+            XCTAssertEqual(
+                portrait, landscape,
+                "`\(name)` states different content widths per orientation, so "
+                    + "`makePresentation`'s `isLandscape: false` is no longer inert — it now silently "
+                    + "resolves the portrait width. Defer resolution to a view context instead of "
+                    + "reintroducing a global orientation read."
+            )
+        }
+    }
 }

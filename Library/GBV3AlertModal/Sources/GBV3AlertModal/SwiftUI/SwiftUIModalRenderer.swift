@@ -523,27 +523,33 @@ public final class SwiftUIModalRenderer: ObservableObject, ModalRenderer {
 
     // MARK: - Internals
 
-    /// The presenting screen's orientation.
-    ///
-    /// Unlike `SwiftUIAlertModal`, which reads its own container, a `Presentation` is built BEFORE
-    /// any view exists — there is nothing to measure yet. `UIScreen.main` is the honest answer at
-    /// that moment, and the value is only consumed for `contentWidth`, which every Genie preset
-    /// states identically for both orientations.
-    @MainActor
-    static var isLandscape: Bool {
-        let bounds = UIScreen.main.bounds
-        return bounds.width > bounds.height
-    }
-
     /// Builds a `Presentation` by running the SHARED chain: `GBAlertModal.resolve` for structure and
     /// `ModalTokens(from:)` for styling, both over the EFFECTIVE properties.
     ///
-    /// Orientation is READ, not assumed. This used to pass `isLandscape: false` unconditionally, on
-    /// the grounds that the SwiftUI card is width-adaptive — true of the card, but `contentWidth` is a
-    /// resolver output that `ContentProperty` states per orientation, so a preset distinguishing
-    /// `fixedWidthPortrait` from `fixedWidthLandscape` was silently given the portrait one. Every Genie
-    /// preset sets them equal, so this was inert; it was also the reason landscape could not be
-    /// compared against UIKit at all.
+    /// **Orientation is PORTRAIT here, and that is not an assumption — it is the absence of one.**
+    ///
+    /// This used to read `UIScreen.main.bounds`. Three things were wrong with that, in increasing
+    /// order of seriousness:
+    ///
+    /// 1. `UIScreen.main` is the SCREEN, not the window, so it is simply wrong under iPad
+    ///    multitasking — a modal in a half-width slide-over got the screen's orientation.
+    /// 2. There is nothing here to read a real orientation FROM. `makePresentation` runs from
+    ///    `present(_:)`, an imperative method on an `ObservableObject`: no view, no `GeometryReader`,
+    ///    no environment. Reaching for a global singleton was reaching past the missing input.
+    /// 3. **The value never reaches a renderer.** It feeds `Presentation.resolved`, and
+    ///    `ModalPresentationBody.view(for:)` hands the view `properties` and `tokens` — never
+    ///    `resolved`. `SwiftUIAlertModal.body` re-resolves from its OWN `GeometryReader`
+    ///    (`SwiftUIAlertModal.swift:121-124`), which is the orientation that actually lays out, and
+    ///    `ModalTokens(from:)` takes no orientation at all. Outside the tests that read
+    ///    `Presentation.resolved` directly, this field is inert.
+    ///
+    /// So the honest value is the one that claims nothing. The single orientation-sensitive resolver
+    /// output is `contentWidth`, and every shipped preset states it identically for both orientations
+    /// — pinned by `test_everyPreset_statesTheSameContentWidthForBothOrientations`, so the day one
+    /// stops doing that, this goes red instead of silently resolving the wrong width.
+    ///
+    /// When a preset does need real orientation, the fix is to defer resolution until a view exists,
+    /// not to reintroduce a global read here.
     private func makePresentation(
         id: ModalID,
         properties: GBAlertModal.Properties?,
@@ -557,7 +563,7 @@ public final class SwiftUIModalRenderer: ObservableObject, ModalRenderer {
         return Presentation(
             id: id,
             resolved: GBAlertModal.resolve(
-                properties: effective, holder: holder, isLandscape: Self.isLandscape
+                properties: effective, holder: holder, isLandscape: false
             ),
             holder: holder,
             properties: effective,
