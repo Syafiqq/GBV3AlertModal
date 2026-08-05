@@ -401,16 +401,18 @@ private struct BannerSlot: View {
         // residual arbitration also shrinks the banner's WIDTH demand, through the required
         // `ivBanner.width == ivBanner.height * ratio` tie: measured in landscape, `ivBanner` is
         // 172pt wide inside a 256pt `vwBanner`, so the image never asks for more than
-        // `contentMaxWidth` and UIKit's column does not grow at all there. `bannerGeometry` cannot
-        // see that — the column depends on the resolved height, which depends on the residual,
-        // which depends on the text, whose wrapping depends on the column. It is circular, and
-        // closing it needs a measurement pass, not a formula. `banner-wide` is still gated in
-        // landscape on every ORIGIN and every HEIGHT
+        // `contentMaxWidth` and UIKit's column does not grow at all there.
+        //
+        // The rule for that IS known — `column = clamp(max(contentMaxWidth, resolvedHeight * ratio))`,
+        // measured to 0.17pt over 264 configurations — and it is unreachable HERE for an ordering
+        // reason rather than an arithmetic one: `resolvedHeight` is the number the frame below
+        // yields to, produced bottom-up during layout, while the column is proposed top-down by
+        // `AlertModalScaffold` on `card`, this view's ANCESTOR. The full argument, and the two
+        // measurements that close off the escapes, are in `ModalTokens.bannerGeometry`'s doc.
+        //
+        // `banner-wide` is gated in landscape on every ORIGIN and every HEIGHT
         // (`test_geometry_landscape_bannerWide_agreesOnEveryOriginAndHeight`), with the width
-        // exclusion's mechanism pinned separately; `banner-comparable` is not gated there, and the
-        // reason is NOT the banner but the D-7 subtitle viewport — its residual is 19.33pt, exactly
-        // what UIKit's compressed `svSubtitleContainer` withholds, asserted in
-        // `test_bannerComparable_landscape_divergesOnlyByTheSubtitleViewport`.
+        // exclusion's mechanism pinned separately; `banner-comparable` is gated there in full.
         Color.clear
             .frame(width: bannerGeometry.column)
             .frame(maxHeight: bannerGeometry.height)

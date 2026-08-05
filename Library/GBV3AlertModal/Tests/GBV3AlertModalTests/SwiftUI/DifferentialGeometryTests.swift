@@ -709,10 +709,10 @@ final class DifferentialGeometryTests: XCTestCase {
     /// `ivBanner.width == ivBanner.height * ratio` tie shrinks the image's WIDTH DEMAND with it.
     /// Measured in landscape: `ivBanner` is 172pt wide inside a 256pt `vwBanner`, i.e. the image asks
     /// for less than the content column, so nothing pushes the column past `contentMaxWidth` and
-    /// UIKit's column simply stays there. `ModalTokens.bannerGeometry` cannot reach that number: the
-    /// column depends on the resolved height, the height depends on the residual, the residual
-    /// depends on the text, and the text's wrapping depends on the column. Closing it needs a
-    /// measurement pass, not a formula.
+    /// UIKit's column simply stays there. `ModalTokens.bannerGeometry` cannot reach that number
+    /// because the one operand it would need — the RESOLVED banner height — does not exist until
+    /// after the width has been committed; the rule itself is now known and pinned next door, in
+    /// `test_uiKitColumn_isTheResolvedBannerHeightTimesTheRatio`.
     ///
     /// So this asserts the two facts the exclusion rests on: that UIKit's image really is narrower
     /// than its slot in landscape (the demand collapsed), and that it is NOT in portrait (where the
@@ -752,6 +752,117 @@ final class DifferentialGeometryTests: XCTestCase {
                 + "survives and genuinely widens the column — if it has stopped, "
                 + "`ModalTokens.bannerGeometry`'s column rule is wrong in the orientation it WAS "
                 + "written for, not just in landscape."
+        )
+    }
+
+    /// **UIKit's content column, in ONE closed form that covers both orientations.**
+    ///
+    /// The width exclusion above used to rest on a claim that the landscape column was "not
+    /// computable without a measurement pass". That was two statements welded together, and only one
+    /// of them is true. The RULE is computable, and this is it — swept and measured, never guessed:
+    ///
+    /// ```
+    /// column = min(ceiling, max(contentMaxWidth, min(imageW, cap * ratio, resolvedBannerHeight * ratio)))
+    /// ```
+    ///
+    /// i.e. exactly `ModalTokens.bannerGeometry`'s rule with ONE extra operand in the demand:
+    /// `resolvedBannerHeight * ratio`, which is the required `ivBanner.width == ivBanner.height *
+    /// ratio` tie read forwards. Where the card is roomy the resolved height IS the desire and the
+    /// extra operand is inert, which is why portrait was always right; where the card is against its
+    /// ceiling the banner takes the residual instead, and its width demand collapses with it.
+    ///
+    /// Verified against measured Auto Layout output at 264 configurations (two fixtures x four
+    /// ratios x three caps x eleven host heights, 844 wide) with a worst-case error of **0.17pt** —
+    /// this test re-runs a representative five of them.
+    ///
+    /// **What this does NOT do is close the gap**, and the reason is the operand's provenance rather
+    /// than the arithmetic: `resolvedBannerHeight` is `min(desire, residual)`, and `residual` is what
+    /// UIKit's vertical arbitration leaves over. SwiftUI's layout engine computes the same residual
+    /// (its banner heights match UIKit's to within 0.5pt on every row this suite gates), but it does
+    /// so BOTTOM-UP, strictly after `AlertModalScaffold` has already committed a width proposal
+    /// top-down — the column is applied by an ANCESTOR of `BannerSlot`. See `ModalTokens.bannerGeometry`
+    /// for the full argument and for the two measurements that close it off.
+    ///
+    /// **Its non-vacuity is asserted, not assumed**, and in two directions: the sweep must contain a
+    /// host where the shipped portrait-only rule is WRONG by more than the tolerance (otherwise the
+    /// new operand is doing nothing and this passes for the same reason the old formula would), and a
+    /// host where the column lands STRICTLY BETWEEN `contentMaxWidth` and that portrait rule
+    /// (otherwise "the column collapses to `contentMaxWidth` under pressure" would explain the data
+    /// just as well, and it does not — measured 273.33 at 844x450).
+    func test_uiKitColumn_isTheResolvedBannerHeightTimesTheRatio() throws {
+        let hosts: [CGSize] = [
+            DifferentialGeometry.host,            // portrait, column ceiling-clamped to 310
+            DifferentialGeometry.landscapeHost,   // 844x390, column collapsed to contentMaxWidth
+            CGSize(width: 844, height: 450),      // the INTERMEDIATE regime: 273.33
+            CGSize(width: 926, height: 428),
+            CGSize(width: 1024, height: 768)      // roomy: the desire survives, column 320
+        ]
+        var portraitRuleWasWrongSomewhere = false
+        var landedStrictlyBetweenSomewhere = false
+
+        for name in ["banner-wide", "banner-comparable"] {
+            let shape = try XCTUnwrap(DifferentialGeometry.shape(named: name))
+            let tokens = ModalTokens(from: shape.properties)
+            let artwork = try XCTUnwrap(shape.dialog.image).pointSize
+            let ratio = tokens.bannerRatio ?? (artwork.width / artwork.height)
+            let cap = tokens.bannerMaxHeight ?? .greatestFiniteMagnitude
+
+            for host in hosts {
+                let modal = DifferentialGeometry.makeUIKitModal(shape)
+                let window = DifferentialGeometry.makeWindow(size: host)
+                defer { DifferentialGeometry.teardown(window) }
+                modal.show(parent: window, completion: {})
+                window.setNeedsLayout()
+                window.layoutIfNeeded()
+
+                let column = try XCTUnwrap(modal.svContentContainer, "UIKit built no content column")
+                    .bounds.width
+                let resolvedBannerHeight = try XCTUnwrap(modal.vwBanner, "UIKit built no banner slot")
+                    .bounds.height
+
+                let availableCardWidth = host.width - tokens.cardMarginH * 2
+                let ceiling = max(
+                    0,
+                    availableCardWidth - tokens.contentPadding.leftMin - tokens.contentPadding.rightMin
+                )
+                let demand = min(min(artwork.width, cap * ratio), resolvedBannerHeight * ratio)
+                let predicted = min(max(tokens.contentMaxWidth, demand), ceiling)
+
+                XCTAssertEqual(
+                    predicted, column, accuracy: DifferentialGeometry.tolerance,
+                    "'\(name)' at \(host): UIKit's content column is \(column)pt, but the rule "
+                        + "predicts \(predicted)pt from a resolved banner height of "
+                        + "\(resolvedBannerHeight)pt at ratio \(ratio). If this is red, the closed "
+                        + "form recorded in `ModalTokens.bannerGeometry` no longer describes UIKit "
+                        + "and the width exclusion's justification has to be re-derived, not patched."
+                )
+
+                // The shipped, portrait-only rule — the one SwiftUI actually lays out with.
+                let portraitRule = tokens.bannerGeometry(
+                    imageSize: artwork, availableCardWidth: availableCardWidth
+                ).column
+                if abs(portraitRule - column) > DifferentialGeometry.tolerance {
+                    portraitRuleWasWrongSomewhere = true
+                }
+                if column > tokens.contentMaxWidth + DifferentialGeometry.tolerance,
+                   column < portraitRule - DifferentialGeometry.tolerance {
+                    landedStrictlyBetweenSomewhere = true
+                }
+            }
+        }
+
+        XCTAssertTrue(
+            portraitRuleWasWrongSomewhere,
+            "the sweep never reached a host where `bannerGeometry`'s portrait-only column disagrees "
+                + "with UIKit, so the `resolvedBannerHeight * ratio` operand this test exists to pin "
+                + "is inert everywhere it was measured and the test proves nothing new"
+        )
+        XCTAssertTrue(
+            landedStrictlyBetweenSomewhere,
+            "the sweep never reached a host where UIKit's column lands STRICTLY BETWEEN "
+                + "`contentMaxWidth` and the portrait rule. Without one, 'the column collapses to "
+                + "contentMaxWidth whenever the card is height-constrained' explains every reading "
+                + "here, and this test cannot tell that cheaper (and false) rule from the real one."
         )
     }
 

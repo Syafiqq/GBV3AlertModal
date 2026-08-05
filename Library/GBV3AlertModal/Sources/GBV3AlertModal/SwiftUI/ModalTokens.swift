@@ -733,19 +733,66 @@ extension ModalTokens {
     /// landscape arbitration shrinks the banner's height, and the required
     /// `ivBanner.width == ivBanner.height * ratio` tie shrinks the image's WIDTH DEMAND with it —
     /// measured, `ivBanner` is 172pt wide inside a 256pt `vwBanner` — so the demand drops below
-    /// `contentMaxWidth` and UIKit's column never grows in landscape at all. This function cannot
-    /// see that: the column depends on the resolved height, which depends on the residual, which
-    /// depends on the text, whose wrapping depends on the column. Circular; it needs a measurement
-    /// pass, not a formula. The consequence is a 64pt-wide column overshoot on wide artwork in
-    /// landscape, which reaches the card and every row that matches the card's width.
+    /// `contentMaxWidth` and UIKit's column does not grow there. The consequence is a 64pt-wide
+    /// column overshoot on wide artwork in landscape, which reaches the card and every row that
+    /// matches the card's width.
+    ///
+    /// **The RULE behind that is known, and it is one operand away from the code below** — this used
+    /// to read "circular; it needs a measurement pass, not a formula", which conflated a rule that
+    /// does exist with an operand that is not available. Measured, at 264 configurations (two
+    /// fixtures x four ratios x three caps x eleven host heights) with a worst-case error of 0.17pt:
+    ///
+    /// ```
+    /// column = min(ceiling, max(contentMaxWidth, min(imageW, cap * ratio, RESOLVED_HEIGHT * ratio)))
+    /// ```
+    ///
+    /// — i.e. exactly the code below plus `RESOLVED_HEIGHT * ratio` in the demand, which is the
+    /// `width == height * ratio` tie read forwards. It is a genuinely three-valued rule and not a
+    /// landscape special case: at 844x450 `banner-wide`'s column is **273.33**, strictly between
+    /// `contentMaxWidth` (256) and the portrait answer (320). Pinned against measured Auto Layout in
+    /// `DifferentialGeometryTests.test_uiKitColumn_isTheResolvedBannerHeightTimesTheRatio`, whose own
+    /// non-vacuity guards require the sweep to reach both regimes.
+    ///
+    /// **What is unavailable is `RESOLVED_HEIGHT`, and the obstruction is ORDER, not arithmetic.**
+    /// `RESOLVED_HEIGHT` is `min(desire, residual)`; `desire` is the value this function returns, and
+    /// `residual` is what UIKit's vertical arbitration leaves over. SwiftUI's layout engine does
+    /// compute that residual — `BannerSlot`'s `.frame(maxHeight:)` yield reproduces UIKit's landscape
+    /// banner height to within 0.5pt — but it produces it BOTTOM-UP, during the layout pass, whereas
+    /// the column is applied TOP-DOWN by `AlertModalScaffold` on `card`, an ANCESTOR of `BannerSlot`.
+    /// A parent's width proposal is committed before the child's height is resolved, so no
+    /// single-pass expression of this view tree can spend the height on the width.
+    ///
+    /// Two measurements close off the obvious escapes rather than leaving them to argument:
+    ///
+    /// * **Letting the stack size to the banner instead does not work.** The column is the width the
+    ///   title, subtitle and buttons all fill, and they fill it because they are
+    ///   `.frame(maxWidth: .infinity)` — which returns the PROPOSED width, so the stack's width is
+    ///   whatever the ancestor proposed, banner or no banner. Capping those rows at
+    ///   `contentMaxWidth` instead does let the stack follow an aspect-ratio-shaped banner, and was
+    ///   measured doing exactly that: the banner reports 310 and the rows stay at 256, where UIKit
+    ///   stretches every row to the full 310. That trades a landscape width divergence for a portrait
+    ///   one.
+    /// * **The residual is not a constant that could be tabulated per preset.** For
+    ///   `banner-comparable` the non-banner content is 127.67pt tall in landscape and 147pt in
+    ///   portrait — the difference is exactly the 19.33pt the subtitle viewport gives up under
+    ///   pressure. And the coupling runs the other way too: `banner-wide`'s subtitle is 38.33pt tall
+    ///   at a 256pt column and 19.33pt at a 320pt one. So the residual is an output of the
+    ///   compression ladder, and the ladder's input includes the column this function is trying to
+    ///   compute. That is the circularity — it is real, but it lives in `residual`, not in the rule.
+    ///
+    /// Reaching it therefore needs either a feedback pass (measure, re-propose) or an arithmetic
+    /// re-implementation of UIKit's four-tier vertical arbitration in SwiftUI — a second model of the
+    /// ladder that would have to agree with the one SwiftUI's own `VStack` is already running.
+    /// Neither is worth 64pt on one orientation of one shape; see the report at
+    /// `.superpowers/sdd/2026-08-02-swiftui-banner-geometry/landscape-width-report.md`.
     ///
     /// So the landscape gate is scoped to exactly that: `banner-wide` is compared on every ORIGIN
     /// and every HEIGHT at the usual 0.5pt
     /// (`test_geometry_landscape_bannerWide_agreesOnEveryOriginAndHeight`) and on no width, with the
-    /// exclusion's mechanism pinned by `test_bannerWide_landscape_theWidthGapIsTheColumnRule`.
-    /// `banner-comparable` is not gated in landscape, and the reason is NOT this function — its
-    /// widths already agree. It is the D-7 subtitle viewport, worth a measured 19.33pt
-    /// (`test_bannerComparable_landscape_divergesOnlyByTheSubtitleViewport`).
+    /// exclusion's mechanism pinned by `test_bannerWide_landscape_theWidthGapIsTheColumnRule` and its
+    /// rule by `test_uiKitColumn_isTheResolvedBannerHeightTimesTheRatio`. `banner-comparable` IS
+    /// gated in landscape, in full, through the ordinary `assertAgrees` — its widths already agree,
+    /// and the D-7 subtitle viewport that used to hold it back is closed.
     ///
     /// Pinned against measured Auto Layout output in `BannerGeometryTruthTests`.
     struct BannerGeometry: Equatable {

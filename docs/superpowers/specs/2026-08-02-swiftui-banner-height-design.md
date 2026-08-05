@@ -343,6 +343,10 @@ Landscape banner parity is **no longer the harder half; it is two smaller halves
    formula, and should wait behind (1), because `banner-wide`'s width divergence currently masks the
    subtitle one and a second pass cannot be validated while a 19.33pt error is still in the residual
    it would be measuring. **Still open, and now unblocked: (1) is out of the residual.**
+   > **AMENDED — see §5d.** "Needs a measurement pass rather than a formula" is now measured rather
+   > than assumed, and it is half wrong: the rule is a formula, and a short one. What needs the
+   > measurement is one of its operands, the RESOLVED banner height, which SwiftUI produces
+   > bottom-up strictly after the column has been proposed top-down. Item 2 stays open, deliberately.
 
 Any preset combining landscape with artwork wider than its content column (eight of the app's nine
 real banner assets, §3) still renders a wider card than UIKit. What is no longer true is that it also
@@ -428,6 +432,82 @@ described below. Portrait did not move.
   SwiftUI's padding yields first instead, having no min/max padding primitive. **The band was already
   divergent before this work, on more rows and by more points**; it is narrowed, not introduced. It
   falls on no gated host size.
+
+## 5d. The landscape COLUMN — the rule exists; the operand does not
+
+**This supersedes §5b's "it is not computable without a measurement pass" and the identical claim in
+§5's *Consequence, restated* item 2.** Both were half right, and the half that was wrong was the
+expensive half: they treated "no formula" and "no rule" as the same statement. They are not.
+
+### The rule, measured
+
+Swept on two fixtures × four ratios × three caps × eleven host heights (264 UIKit layouts), reading
+`svContentContainer.bounds.width` against `vwBanner.bounds.height`:
+
+```
+column = min(ceiling, max(contentMaxWidth, min(imageW, cap * ratio, RESOLVED_HEIGHT * ratio)))
+```
+
+Worst-case error **0.17pt**. That is exactly `ModalTokens.bannerGeometry`'s shipped rule with one
+extra operand in the demand — `RESOLVED_HEIGHT * ratio`, the required
+`ivBanner.width == ivBanner.height * ratio` tie read forwards. Where the card is roomy the resolved
+height IS the desire and the operand is inert, which is why portrait was always right.
+
+It is genuinely three-valued, not a landscape special case. `banner-wide` at 844 wide:
+
+| host | resolved banner h | UIKit column | shipped (portrait) rule |
+|---|---|---|---|
+| 390×844 | 184.00 | 310.00 (ceiling-clamped) | 310.00 ✓ |
+| 844×390 | 102.33 | **256.00** | 320.00 ✗ (64pt) |
+| 844×450 | 162.33 | **273.33** | 320.00 ✗ (46.7pt) |
+| 926×428 | 140.33 | **256.00** | 320.00 ✗ (64pt) |
+| 844×500 | 190.00 | 320.00 | 320.00 ✓ |
+| 1024×768 | 190.00 | 320.00 | 320.00 ✓ |
+
+The 273.33 row is the one that matters for the *shape* of the rule: "the column collapses to
+`contentMaxWidth` whenever the card is height-constrained" would have explained 844×390 and 926×428,
+and it is false.
+
+Pinned by `DifferentialGeometryTests.test_uiKitColumn_isTheResolvedBannerHeightTimesTheRatio`, whose
+own non-vacuity guards require the sweep to reach both regimes.
+
+### Why it still cannot be spent — ORDER, not arithmetic
+
+`RESOLVED_HEIGHT = min(desire, residual)`. `desire` is what `bannerGeometry` already returns.
+`residual` is what UIKit's vertical arbitration leaves over — and **SwiftUI computes it correctly
+already**: `BannerSlot`'s `.frame(maxHeight:)` yield lands within 0.5pt of UIKit's banner height on
+every gated row. The number exists. It is produced *bottom-up, during the layout pass*, while the
+column is proposed *top-down* by `AlertModalScaffold` on `card` — an **ancestor** of `BannerSlot`. A
+parent commits its width proposal before a child resolves its height, so no single-pass expression of
+this view tree can spend the height on the width.
+
+Two escapes were measured rather than argued away:
+
+1. **Let the content stack size to the banner instead.** The column is the width the title, subtitle
+   and buttons fill, and they fill it *because* they are `.frame(maxWidth: .infinity)` — which returns
+   the PROPOSED width, so the stack's width is whatever the ancestor proposed, banner or no banner.
+   Capping those rows at `contentMaxWidth` does let a stack follow an aspect-ratio-shaped banner, and
+   was measured doing so: banner 310, rows 256, where UIKit stretches every row to 310. That trades a
+   landscape width divergence for a portrait one, which fails the first success criterion.
+2. **Tabulate the residual per preset.** It is not a constant. `banner-comparable`'s non-banner
+   content is 127.67pt in landscape and 147pt in portrait — the difference is exactly the 19.33pt the
+   subtitle viewport gives up under pressure. And the coupling runs both ways: `banner-wide`'s
+   subtitle is 38.33pt tall at a 256pt column and 19.33pt at a 320pt one. The residual is an *output*
+   of the compression ladder whose *input* includes the column. **That is where the circularity
+   actually lives** — in `residual`, not in the rule.
+
+### What would close it, and why it was not done
+
+Either (a) a feedback pass — read the resolved height with a `GeometryReader`, publish it, re-propose
+the column — which makes the card's width a two-phase quantity and would move every landscape banner
+snapshot; or (b) an arithmetic re-implementation of UIKit's four-tier vertical arbitration
+(padding minima, the subtitle floor, the whitespace rung, button heights, title wrapping at the very
+column being solved for) inside `ModalTokens`. (b) is a second model of a ladder that SwiftUI's own
+`VStack` is already running correctly, and the two would have to agree everywhere or the column and
+the height would describe different layouts.
+
+Neither is worth 64pt on one orientation of one shape while every origin and every height already
+agree. **`banner-wide`'s landscape width exclusion stands, with a sharper justification than it had.**
 
 ## 6. Changes
 
