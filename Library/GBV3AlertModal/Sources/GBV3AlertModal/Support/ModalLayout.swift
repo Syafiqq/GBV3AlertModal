@@ -188,12 +188,64 @@ extension ModalLayout {
     /// (`ModalTokens.standard` has no `Properties` to derive a content width from, so
     /// `contentMaxWidth` is `.infinity`): there is no width to wrap against, so there is no honest
     /// floor to compute, and previews/demos keep exactly today's layout.
-    static func titleFloorHeight(_ text: String, font: UIFont, width: CGFloat) -> CGFloat {
-        guard !text.isEmpty, width > 0, width.isFinite else {
+    /// **Takes the STYLED text, not bare characters — because the title is an `AttributedString` whose
+    /// runs may carry their own fonts, and those are what get drawn.**
+    ///
+    /// This used to take a `String`, and the SwiftUI call site reached it as
+    /// `String(title.characters)` — every per-run attribute discarded, the whole title then measured
+    /// at one ambient font. But `SwiftUIAlertModal`'s `Text(title)` RENDERS those runs: `.font(...)`
+    /// sets only the ambient default, which a per-run font overrides. So a title carrying a larger run
+    /// rendered at that size and was measured at the smaller one, and the floor came out too short —
+    /// re-opening the clipping this whole function exists to prevent, through the attribute channel
+    /// instead of the layout one.
+    ///
+    /// UIKit never had the bug: its rung-2 search measures `scaled(nominal, by:)`, which enumerates
+    /// `.font` per run. This now reuses that exact function, so the two cannot scale text differently.
+    ///
+    /// `fallback` fills runs that carry NO font of their own — the ambient case, which is every title
+    /// the presets ship. Same role `renderedFont(_:fallback:)` plays for the subtitle, and the reason
+    /// the SwiftUI token still holds a `UIFont`: not as a copy of the render font, but as the default
+    /// for text that does not state one.
+    ///
+    /// Returns 0 (no floor) for a non-finite width — the property-less caller
+    /// (`ModalTokens.standard`'s `contentMaxWidth` is `.infinity`): no width to wrap against means no
+    /// honest floor, and previews keep exactly today's layout.
+    static func titleFloorHeight(
+        _ text: NSAttributedString, fallback: UIFont, width: CGFloat
+    ) -> CGFloat {
+        guard text.length > 0, width > 0, width.isFinite else {
             return 0
         }
-        let flooredFont = font.withSize(font.pointSize * titleMinimumScaleFactor)
-        return textHeight(NSAttributedString(string: text, attributes: [.font: flooredFont]), width: width)
+        return textHeight(flooring(text, fallback: fallback), width: width)
+    }
+
+    /// **Every run at its own font, scaled to the shrink floor.**
+    ///
+    /// Deliberately NOT `GBAlertModal.scaled(_:by:)`, which does the same arithmetic: that lives on a
+    /// `UIView` subclass and is therefore `@MainActor`, and binding this file's pure geometry to the
+    /// main actor to borrow twelve lines is the wrong trade — `ModalLayout` is unit-testable without a
+    /// label, a window or a layout pass, and that is worth more than the duplication. The two are
+    /// pinned to agree by `test_theFloorScaling_agreesWithUIKitsOwn`.
+    ///
+    /// Runs stating no font get `fallback` FIRST, then everything scales. Order matters: scaling only
+    /// what already carries a font would leave an ambient-font title at full size, making the floor too
+    /// TALL — the opposite error, equally wrong.
+    static func flooring(_ text: NSAttributedString, fallback: UIFont) -> NSAttributedString {
+        let whole = NSRange(location: 0, length: text.length)
+        var fonts: [(NSRange, UIFont)] = []
+        text.enumerateAttribute(.font, in: whole, options: []) { value, range, _ in
+            fonts.append((range, value as? UIFont ?? fallback))
+        }
+
+        let floored = NSMutableAttributedString(attributedString: text)
+        floored.beginEditing()
+        for (range, font) in fonts {
+            floored.addAttribute(
+                .font, value: font.withSize(font.pointSize * titleMinimumScaleFactor), range: range
+            )
+        }
+        floored.endEditing()
+        return floored
     }
 }
 

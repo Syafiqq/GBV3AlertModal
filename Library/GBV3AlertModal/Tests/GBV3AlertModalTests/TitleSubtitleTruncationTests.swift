@@ -703,7 +703,8 @@ final class TitleSubtitleTruncationTests: XCTestCase {
         // The floor-scaled layout of the whole string at the same width — the shortest the ladder
         // permits while still drawing every glyph.
         let floorHeight = ModalLayout.titleFloorHeight(
-            Self.longTitle, font: font, width: contentWidth
+            NSAttributedString(string: Self.longTitle, attributes: [.font: font]),
+            fallback: font, width: contentWidth
         )
         XCTAssertGreaterThanOrEqual(
             squeezed.height, floorHeight - DifferentialGeometry.tolerance,
@@ -849,6 +850,155 @@ final class TitleSubtitleTruncationTests: XCTestCase {
         XCTAssertGreaterThan(
             SwiftUIAlertModal.titleLayoutPriority, SwiftUIAlertModal.subtitleLayoutPriority,
             "the SwiftUI title must out-rank the subtitle in its VStack, mirroring the UIKit ladder"
+        )
+    }
+
+    // MARK: - Golden pins: absolute measurements, because the differential gate cannot see these
+
+    /// **The measured values themselves, as literals — the only guard against COMMON-MODE drift.**
+    ///
+    /// Everything else in this module compares SwiftUI against UIKit. That is a *differential*, and
+    /// `ModalLayout.textHeight` / `subtitleFloorHeight` / `titleMinimumScaleFactor` are called by
+    /// BOTH backends — so a change inside any of them moves both sides by the same amount, the
+    /// difference stays zero, and every comparison stays green through a real regression. A
+    /// differential cannot detect drift that is common to both arms; no number of extra shapes fixes
+    /// that, because it is structural.
+    ///
+    /// **This was measured, not reasoned.** Flipping `titleMinimumScaleFactor` from 0.75 to 0.70 — a
+    /// 6.7% change to the shrink floor, which moves every floor height this module computes — was run
+    /// against the whole suite. **518 tests, ONE failure**, and that one was the assertion on the
+    /// literal `0.75` at `test_theShrinkFloor_isOneSharedNumber`. Every geometry test, every floor
+    /// test and the entire differential gate passed. `test_theHeightFloor_isNeverTallerThanTheNominalText`
+    /// passed with 7pt of slack; `test_theSubtitleFloor_isOneSharedNumber` passed because its
+    /// SwiftUI-vs-`ModalLayout` assertion compares the implementation to itself and its
+    /// SwiftUI-vs-UIKit assertion routes both arms through the same shared function.
+    ///
+    /// So these are absolute, at `accuracy: 0.01` rather than the differential harness's 0.5pt — the
+    /// point is to catch sub-point drift, and 0.5 is wider than the drift worth catching.
+    ///
+    /// **These outlive the gate.** The differential harness is deleted when UIKit is (direction spec
+    /// §6); it is a migration tool with an end date. These pins are backend-independent and survive it,
+    /// which is what makes them the durable record of what the shipping dialog measured.
+    ///
+    /// **Known cost, accepted:** these encode system-font metrics, so an OS change to San Francisco
+    /// turns them red without a regression having occurred. That is the standard golden-test tradeoff.
+    /// A red suite you can diagnose beats a green one that means nothing — which is what the mutation
+    /// run above proved we had.
+    func test_theMeasurementsThemselves_arePinnedAbsolutely() throws {
+        let properties = GeniePresets.standardProperties()
+        let tokens = ModalTokens(from: properties)
+        let titleFont = try XCTUnwrap(properties.titleFont)
+        let subtitleFont = try XCTUnwrap(properties.subtitleFont)
+
+        // The width every other number here is measured against. Not a font metric — ours, derived
+        // from the preset — so this one is a genuine invariant rather than an OS-version hostage.
+        XCTAssertEqual(tokens.contentMaxWidth, 256.0, accuracy: 0.01, "the content column moved")
+
+        // The shrink floor, as a number and not just as "the same on both sides". This is the exact
+        // assertion the mutation run showed was the ONLY thing standing.
+        XCTAssertEqual(ModalLayout.titleMinimumScaleFactor, 0.75, accuracy: 0.0001)
+
+        // One line of the subtitle font — UIKit installs it as a `>=` on the scroll slot, SwiftUI as
+        // the slot's `minHeight`. Shared, therefore invisible to the gate, therefore pinned here.
+        XCTAssertEqual(
+            ModalLayout.subtitleFloorHeight(font: subtitleFont), 19.09375, accuracy: 0.01,
+            "the subtitle floor moved — both renderers protect a different amount of body text"
+        )
+
+        // `textHeight` itself, at one and two lines. UIKit's rung-2 fit search walks this function;
+        // if it drifts, the search picks different scales and the gate still sees zero difference.
+        XCTAssertEqual(
+            ModalLayout.textHeight(
+                NSAttributedString(string: "Failed", attributes: [.font: titleFont]),
+                width: tokens.contentMaxWidth
+            ),
+            28.640625, accuracy: 0.01, "single-line title measurement moved"
+        )
+        XCTAssertEqual(
+            ModalLayout.textHeight(
+                NSAttributedString(string: "You missed your streak!", attributes: [.font: titleFont]),
+                width: tokens.contentMaxWidth
+            ),
+            57.28125, accuracy: 0.01, "two-line title measurement moved"
+        )
+
+        // The floor for a title under real pressure — the `longTitle` fixture, whose floor-scaled
+        // height is the 85.9pt cited in `ModalLayout.titleFloorHeight`'s own doc as the number that
+        // was being silently dropped. If this moves, the protection moves.
+        XCTAssertEqual(
+            tokens.titleFloorHeight(for: Self.longTitle), 85.921875, accuracy: 0.01,
+            "the pressured title's floor moved — this is the number that stops the title clipping"
+        )
+
+        // …and a short title, where the floor is one line of the floor-scaled font. Both cases pinned
+        // because they exercise different halves of `titleFloorHeight` (wrapped vs. single-line).
+        XCTAssertEqual(
+            tokens.titleFloorHeight(for: "Failed"), 21.48046875, accuracy: 0.01,
+            "the unpressured title's floor moved"
+        )
+    }
+
+    /// **The one duplication in the floor path, pinned rather than shared.**
+    ///
+    /// `ModalLayout.flooring` and `GBAlertModal.scaled` do the same arithmetic — enumerate `.font` per
+    /// run, multiply each point size. They are separate because `scaled` lives on a `UIView` subclass
+    /// and is `@MainActor`, while `ModalLayout` is deliberately pure and callable from anywhere.
+    /// Two implementations can drift; this is what stops them, and it is the ONLY thing that does,
+    /// because both feed shared measurement and the differential gate is common-mode blind (see
+    /// `test_theMeasurementsThemselves_arePinnedAbsolutely`).
+    ///
+    /// Asserted on a MULTI-RUN string, since single-run agreement would hold even if one of them
+    /// ignored runs entirely — which is precisely the bug this pass fixed on the SwiftUI side.
+    @MainActor
+    func test_theFloorScaling_agreesWithUIKitsOwn() {
+        let big = UIFont.boldSystemFont(ofSize: 40)
+        let small = UIFont.systemFont(ofSize: 12)
+        let styled = NSMutableAttributedString(
+            string: "Big headline ", attributes: [.font: big]
+        )
+        styled.append(NSAttributedString(string: "and a small tail", attributes: [.font: small]))
+
+        let mine = ModalLayout.flooring(styled, fallback: .systemFont(ofSize: 99))
+        let uiKit = GBAlertModal.scaled(styled, by: ModalLayout.titleMinimumScaleFactor)
+
+        XCTAssertEqual(mine, uiKit, "the two floor-scalers disagree on a multi-run string")
+
+        // …and the fallback half, which `scaled` has no counterpart for: a run with NO font must be
+        // filled BEFORE scaling, or it stays at full size and the floor comes out too tall.
+        let ambient = NSAttributedString(string: "No font stated")
+        let filled = ModalLayout.flooring(ambient, fallback: big)
+        let fontAtZero = filled.attribute(.font, at: 0, effectiveRange: nil) as? UIFont
+        XCTAssertEqual(
+            fontAtZero?.pointSize, big.pointSize * ModalLayout.titleMinimumScaleFactor,
+            "an unstyled run was not filled with the fallback before scaling"
+        )
+    }
+
+    /// **The bug this pass fixed: a title whose runs carry their own font was measured as if they did
+    /// not.**
+    ///
+    /// `SwiftUIAlertModal` draws `Text(title)`, and a per-run font overrides the ambient
+    /// `.font(tokens.titleFont)`. The floor used to be computed from `String(title.characters)` — bare
+    /// characters at the ambient font — so a title with a LARGER run was measured short, and the row
+    /// was given less height than the text it was protecting needs.
+    ///
+    /// Mutation-verified: reverting `titleFloorHeight` to the `String` overload makes this fail.
+    func test_theTitleFloor_readsTheFontsTheTitleCarries() {
+        let tokens = ModalTokens(from: GeniePresets.standardProperties())
+        let text = "A title that has to wrap across more than one line inside the content column"
+
+        let ambient = tokens.titleFloorHeight(for: text)
+
+        // The same characters, but drawn much larger — which `Text` would honour.
+        let enlarged = NSAttributedString(
+            string: text, attributes: [.font: UIFont.boldSystemFont(ofSize: 48)]
+        )
+        let styled = tokens.titleFloorHeight(for: enlarged)
+
+        XCTAssertGreaterThan(
+            styled, ambient,
+            "the floor ignored the title's own font — a run drawn at 48pt was measured at the "
+                + "preset's 24pt, so the row is allocated less height than the glyphs need and clips"
         )
     }
 

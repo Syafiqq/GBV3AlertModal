@@ -83,7 +83,7 @@ public struct ModalTokens: Sendable {
     /// No `Properties` counterpart: UIKit hardcodes the floor too.
     public var titleMinimumScaleFactor: CGFloat = ModalLayout.titleMinimumScaleFactor
 
-    /// **`titleFont`'s measurement twin.**
+    /// **The FALLBACK font the title floor measures with — not a second way to state the title's font.**
     ///
     /// `SwiftUI.Font` is opaque: it can be rendered but not measured, and there is no `Font -> UIFont`
     /// direction to recover one from (the bridge only runs `UIFont -> Font`, via `CTFont`). Rung 2's
@@ -91,17 +91,23 @@ public struct ModalTokens: Sendable {
     /// `titleMinimumScaleFactor` — so the `UIFont` that `titleFont` was BUILT FROM is kept here rather
     /// than reconstructed by guesswork.
     ///
-    /// `init(from:)` assigns both from the one `Properties.titleFont`, so on every real presentation
-    /// they are the same font by construction. `standard` has no `Properties`, so it carries the
-    /// literal twin of its own `.system(size: 24, weight: .bold)` — pinned by
-    /// `test_theStandardTitleFontAndItsMeasurementTwin_agree`. A caller who reassigns `titleFont`
-    /// alone would only weaken the floor measurement, never the rendering.
-    public var titleUIFont: UIFont = .systemFont(ofSize: 24, weight: .bold)
+    /// **It used to be described as `titleFont`'s "measurement twin", and that framing was wrong in a
+    /// way that hid a bug.** A twin implies the two always say the same thing, so the floor measured
+    /// `String(title.characters)` at this font and ignored the title's own runs — which `Text` draws.
+    /// A title carrying a larger run rendered large and measured small, and the row was allocated less
+    /// height than its glyphs need. `ModalLayout.titleFloorHeight` now takes the styled string and
+    /// uses this only for runs that state NO font of their own. That is a fallback, not a twin.
+    ///
+    /// **Internal, not public — it never was API.** No caller in this repo, the example app, or either
+    /// `geniebook-student-ios` checkout has ever read or written it; it was `public` only because the
+    /// whole struct was declared that way. The font a caller states is `Properties.titleFont`, from
+    /// which `init(from:)` derives both this and `titleFont`.
+    var titleUIFont: UIFont = .systemFont(ofSize: 24, weight: .bold)
 
-    /// `subtitleFont`'s measurement twin, for the same reason `titleUIFont` is `titleFont`'s: the
-    /// subtitle's floor is ONE LINE of the font it renders in, and a `Font` cannot report a line
-    /// height. Assigned from the one `Properties.subtitleFont` in `init(from:)`.
-    public var subtitleUIFont: UIFont = .systemFont(ofSize: 16, weight: .regular)
+    /// The subtitle's fallback, for the same reason: its floor is ONE LINE of the font it renders in,
+    /// and a `Font` cannot report a line height. Assigned from the one `Properties.subtitleFont` in
+    /// `init(from:)`. Internal for the same reason as `titleUIFont` — never a public contract.
+    var subtitleUIFont: UIFont = .systemFont(ofSize: 16, weight: .regular)
 
     /// The close button's tap target, 48×48. UIKit pins `btCloseAction` to `vwContainer`'s
     /// top-trailing with `size == 48` (`GBAlertModal+ViewGraph.swift`'s `installConstraints`); the
@@ -327,8 +333,19 @@ public struct ModalTokens: Sendable {
     /// (`contentChildrenFillWidth == false`) the real width is narrower, so the floor comes out
     /// slightly small; that errs toward less protection and never toward a too-tall row, which is the
     /// only direction that could disturb a passing shape.
+    ///
+    /// **Takes the STYLED title.** It used to take a `String`, and the call site flattened the
+    /// `AttributedString` with `String(title.characters)` — discarding any per-run font, which `Text`
+    /// nonetheless draws. `titleUIFont` is the fallback for runs stating no font of their own, not a
+    /// replacement for the ones that do.
+    func titleFloorHeight(for text: NSAttributedString) -> CGFloat {
+        ModalLayout.titleFloorHeight(text, fallback: titleUIFont, width: contentMaxWidth)
+    }
+
+    /// Convenience for an unstyled title: every glyph in `titleUIFont`. Same answer the `String`
+    /// overload used to give, kept because most callers (and every test fixture) have a plain string.
     func titleFloorHeight(for text: String) -> CGFloat {
-        ModalLayout.titleFloorHeight(text, font: titleUIFont, width: contentMaxWidth)
+        titleFloorHeight(for: NSAttributedString(string: text, attributes: [.font: titleUIFont]))
     }
 
     /// **The subtitle row's floor: one line, the SwiftUI half of `ModalLayout.subtitleFloorHeight`.**
