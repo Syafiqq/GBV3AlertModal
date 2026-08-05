@@ -64,9 +64,9 @@ final class SwiftUIDemoScreenSmokeTests: XCTestCase {
     /// that quietly lists 23 of 26 is worse than one that shows 26 with 3 marked
     /// broken, so both halves are asserted here.
     func test_swiftui_catalog_mirrors_the_dialog_catalog_entry_for_entry() {
-        XCTAssertEqual(SwiftUICatalog.entries.count, 26, "the catalog defines exactly 26 dialog shapes")
+        XCTAssertEqual(SwiftUICatalog.dialogEntries.count, 26, "the catalog defines exactly 26 dialog shapes")
         XCTAssertEqual(
-            SwiftUICatalog.entries.map(\.name),
+            SwiftUICatalog.dialogEntries.map(\.name),
             DialogCatalog.entries.map(\.name),
             "the SwiftUI gallery must mirror the UIKit gallery name-for-name, in catalog order"
         )
@@ -80,7 +80,7 @@ final class SwiftUIDemoScreenSmokeTests: XCTestCase {
         }
 
         XCTAssertEqual(
-            SwiftUICatalog.entries.filter { $0.present != nil }.count, 26,
+            SwiftUICatalog.dialogEntries.filter { $0.present != nil }.count, 26,
             "all 26 shapes present on the SwiftUI backend today — if that ever drops, the gallery must SHOW "
                 + "the gap (notRenderableReason), never omit the row"
         )

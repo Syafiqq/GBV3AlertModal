@@ -13,6 +13,13 @@
 //  entry-for-entry — that is the whole point of the screen: the owner steps the
 //  same shape on both backends and looks at them.
 //
+//  TWO MORE SECTIONS follow the 26, on the same terms:
+//   * `SwiftUICatalog+Stress.swift` — the 28 `StressCatalog` shapes, same names,
+//     same categories, same strings, same `Properties`.
+//   * `SwiftUICatalog+Divergences.swift` — one dialog per RECORDED difference
+//     between the two backends, each captioned with what to look for and whether
+//     it is accepted or a defect. Twins live in `Gallery/DivergenceCatalog.swift`.
+//
 //  CONTENT is transcribed from `DialogCatalog+*.swift` (which is itself mined
 //  from `docs/superpowers/specs/2026-07-21-dialog-catalog.md`); `[API]`
 //  placeholders are kept verbatim. STYLING comes from `GalleryPresets` — the
@@ -210,11 +217,11 @@ struct SwiftUICatalogEntry: Identifiable {
 
 @MainActor
 enum SwiftUICatalog {
-    /// All 26 shapes, in `DialogCatalog.entries` order (cross-cutting, worksheet,
-    /// GenieClass, campaign, working-space, badges) so the two galleries step in
-    /// lockstep. `SwiftUIDemoScreenSmokeTests` pins this list against
+    /// The 26 real Geniebook shapes, in `DialogCatalog.entries` order (cross-cutting,
+    /// worksheet, GenieClass, campaign, working-space, badges) so the two galleries step
+    /// in lockstep. `SwiftUIDemoScreenSmokeTests` pins THIS list against
     /// `DialogCatalog.entries` name-for-name and order-for-order.
-    static let entries: [SwiftUICatalogEntry] =
+    static let dialogEntries: [SwiftUICatalogEntry] =
         crossCuttingEntries
             + worksheetEntries
             + genieClassEntries
@@ -222,15 +229,28 @@ enum SwiftUICatalog {
             + workingSpaceEntries
             + badgeEntries
 
+    /// Everything the gallery lists, in the same three-group order the UIKit gallery uses
+    /// (`DialogCatalog + StressCatalog + …`): the 26 real shapes, then the 28 stress
+    /// shapes (`SwiftUICatalog+Stress.swift`, twin of `StressCatalog`), then the five
+    /// recorded divergences (`SwiftUICatalog+Divergences.swift`, twin of
+    /// `DivergenceCatalog`).
+    ///
+    /// The `dialogEntries` split is deliberate: the mirror gate compares the 26 against
+    /// `DialogCatalog`, and appending stress/divergence rows to one flat list would have
+    /// silently turned that gate into a prefix check.
+    static let entries: [SwiftUICatalogEntry] =
+        dialogEntries + stressEntries + divergenceEntries
+
     static func index(ofEntryNamed name: String) -> Int? {
         entries.firstIndex { $0.name == name }
     }
 
     // MARK: Renderer
 
-    /// A renderer carrying every preset, factory and SwiftUI body the 26 shapes
-    /// need — the app-side equivalent of the modal setup a real screen would do
-    /// once at composition time.
+    /// A renderer carrying every preset, factory and SwiftUI body the catalog's
+    /// shapes need — the app-side equivalent of the modal setup a real screen would
+    /// do once at composition time. Three preset tables: the 26 real shapes', the
+    /// stress matrix's, and the divergence section's.
     ///
     /// Structurally identical to `GalleryViewController.openTier0Demo`'s UIKit
     /// registration, which is the point: a consumer's preset table and holder
@@ -240,7 +260,10 @@ enum SwiftUICatalog {
             alertProperties: GalleryPresets.properties,
             popupProperties: GalleryPresets.popupProperties
         )
-        for (style, properties) in SwiftUICatalogPresets.stylePresets {
+        let presets = SwiftUICatalogPresets.stylePresets
+            + SwiftUICatalogPresets.stressPresets
+            + SwiftUICatalogPresets.divergencePresets
+        for (style, properties) in presets {
             renderer.register(style: style, properties: properties)
         }
         registerInputDialogs(on: renderer)

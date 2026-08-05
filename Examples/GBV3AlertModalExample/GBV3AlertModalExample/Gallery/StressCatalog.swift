@@ -4,7 +4,8 @@
 //
 //  A sampled (NOT full-cartesian) stress matrix over the axes that most
 //  commonly break alert-modal layouts in the wild: banner aspect ratio,
-//  title/subtitle length, button label length, and button orientation.
+//  title/subtitle length, title/subtitle BREAKABILITY, button label length,
+//  and button orientation.
 //  Every entry's `category` starts with `"Stress · "` so it forms its own
 //  section(s) in `GalleryViewController`, appended after `DialogCatalog.entries`.
 //
@@ -15,6 +16,12 @@
 //  looked like obvious gaps once the sweep was laid out (a fully buttonless
 //  dialog, a vertical pair of wrapped buttons, and wide-banner/close-button
 //  crosses).
+//
+//  `SwiftUICatalog+Stress.swift` is this file's SwiftUI twin: the same names,
+//  categories and strings, entry-for-entry, so the two galleries can be stepped
+//  side by side. The shared content block below is therefore INTERNAL rather
+//  than private — the twin reads the SAME string constants instead of carrying
+//  a second copy that can drift.
 //
 
 import UIKit
@@ -32,8 +39,12 @@ enum StressCatalog {
 }
 
 // MARK: - Shared content
+//
+// INTERNAL, not private: `SwiftUICatalog+Stress.swift` builds its twin entries
+// from these exact constants. "Same strings" is the whole basis of the
+// comparison, so there is one copy of each.
 
-private extension StressCatalog {
+extension StressCatalog {
     /// A single unbroken string (no `\n`) long enough to wrap to ~10 lines at
     /// the 24pt bold title font inside the gallery's 256pt-wide card.
     static let title10Line =
@@ -64,6 +75,23 @@ private extension StressCatalog {
     /// 256pt card — enough that the slot has something to yield, which the artifact needs.
     static let subtitleOneLine = "This is the subtitle text for the alert modal."
 
+    /// **A single token with NO break opportunity** — no spaces, no hyphens, no soft hyphens.
+    ///
+    /// Every other long string in this file wraps: the layout engine is free to choose where.
+    /// This one takes that freedom away. At the 24pt bold title font it is far wider than the
+    /// 256pt content column, so wrapping is IMPOSSIBLE and the engine has to fall back on
+    /// something else — glyph shrinking (rung 2), mid-word character wrapping, truncation, or
+    /// simply overflowing the card. Which one it picks, and whether the two backends pick the
+    /// same one, is the point of the entry.
+    static let titleUnbreakable =
+        "Pneumonoultramicroscopicsilicovolcanoconiosisantidisestablishmentarianism"
+
+    /// The same idea for the subtitle. Longer, because 16pt regular fits more glyphs per line —
+    /// this has to overflow a 256pt column just as decisively as the title above does.
+    static let subtitleUnbreakable =
+        "Floccinaucinihilipilificationhippopotomonstrosesquippedaliophobiapseudopseudohypoparathyroidism"
+        + "Thyroparathyroidectomizedradioimmunoelectrophoresisspectrophotofluorometrically"
+
     static let primaryFull = "Continue"
     static let secondaryFull = "Not Now"
 
@@ -74,7 +102,22 @@ private extension StressCatalog {
         "This Equally Long Secondary Action Button Label Also Forces The Button To Wrap Across " +
         "Several Lines"
 
+    // The six section names. INTERNAL and gathered here for the same reason the strings above
+    // are: `SwiftUICatalog+Stress.swift` files its twin entries under the SAME categories, and
+    // two copies of "Stress · Axis Sweep" is two things to keep spelled identically.
+    static let sweepCategory = "Stress · Axis Sweep"
+    static let maxedCategory = "Stress · Everything Maxed"
+    static let degenerateCategory = "Stress · Degenerate"
+    static let nastyCategory = "Stress · Nasty Interactions"
+    static let closeButtonCategory = "Stress · Close Button"
+    static let extraCategory = "Stress · Extra"
+
     /// The two ultra-aspect banner assets added for this stress matrix.
+    ///
+    /// Both resolve against `Assets.xcassets` (`banner_ultrawide` = 2000x200px,
+    /// `banner_ultratall` = 200x2000px, both single-scale, so their POINT size is
+    /// their pixel size) — an asset name that does not resolve renders nothing and
+    /// reads as a pass, which is the one failure mode these entries must not have.
     enum BannerKind {
         case none
         case wide
@@ -110,7 +153,10 @@ private extension StressCatalog {
 
 // MARK: - Entry builder
 
-private extension StressCatalog {
+extension StressCatalog {
+    /// INTERNAL for the same reason the strings are: `SwiftUICatalogPresets.stressPresets`
+    /// registers the SwiftUI twin's `ModalStyle` tokens from THIS function, so both galleries
+    /// draw the same shape with one `Properties` value rather than two transcriptions of it.
     static func properties(banner: BannerKind, orientation: NSLayoutConstraint.Axis) -> GBAlertModal.Properties {
         let base = orientation == .horizontal
             ? GalleryPresets.properties.copy(buttonActionOrientation: .horizontal)
@@ -120,7 +166,9 @@ private extension StressCatalog {
         }
         return base.copy(bannerRatio: ratio)
     }
+}
 
+private extension StressCatalog {
     static func entry(
         _ name: String,
         category: String,
@@ -161,7 +209,6 @@ private extension StressCatalog {
 // MARK: - A. Per-axis sweep
 
 private extension StressCatalog {
-    static let sweepCategory = "Stress · Axis Sweep"
 
     /// Baseline every sweep entry varies exactly one axis away from: no
     /// banner, 10-line title, 10-line subtitle, full primary, full
@@ -217,6 +264,18 @@ private extension StressCatalog {
                 "stress-buttons-horizontal", category: sweepCategory,
                 title: title10Line, subtitle: subtitle10Line,
                 primary: primaryFull, secondary: secondaryFull, orientation: .horizontal
+            ),
+            // The UNBREAKABLE axis: every string above wraps, so the layout
+            // engine always has somewhere to break. These two take that away.
+            entry(
+                "stress-title-unbreakable", category: sweepCategory,
+                title: titleUnbreakable, subtitle: subtitle10Line,
+                primary: primaryFull, secondary: secondaryFull
+            ),
+            entry(
+                "stress-subtitle-unbreakable", category: sweepCategory,
+                title: title10Line, subtitle: subtitleUnbreakable,
+                primary: primaryFull, secondary: secondaryFull
             )
         ]
     }
@@ -225,7 +284,6 @@ private extension StressCatalog {
 // MARK: - B. Everything maxed
 
 private extension StressCatalog {
-    static let maxedCategory = "Stress · Everything Maxed"
 
     static var maxedEntries: [DialogEntry] {
         [
@@ -246,7 +304,6 @@ private extension StressCatalog {
 // MARK: - C. Degenerate
 
 private extension StressCatalog {
-    static let degenerateCategory = "Stress · Degenerate"
 
     static var degenerateEntries: [DialogEntry] {
         [
@@ -268,7 +325,6 @@ private extension StressCatalog {
 // MARK: - D. Nasty interactions
 
 private extension StressCatalog {
-    static let nastyCategory = "Stress · Nasty Interactions"
 
     static var nastyInteractionEntries: [DialogEntry] {
         [
@@ -291,7 +347,6 @@ private extension StressCatalog {
 // MARK: - E. Close button
 
 private extension StressCatalog {
-    static let closeButtonCategory = "Stress · Close Button"
 
     static var closeButtonEntries: [DialogEntry] {
         [
@@ -306,8 +361,6 @@ private extension StressCatalog {
 // MARK: - F. Extra combos spotted while building the sweep
 
 private extension StressCatalog {
-    static let extraCategory = "Stress · Extra"
-
     static var extraEntries: [DialogEntry] {
         [
             // **The landscape subtitle-slicing artifact, reproducible on device.**

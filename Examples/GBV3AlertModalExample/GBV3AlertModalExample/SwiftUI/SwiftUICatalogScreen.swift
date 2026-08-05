@@ -2,8 +2,10 @@
 //  SwiftUICatalogScreen.swift
 //  GBV3AlertModalExample
 //
-//  The SwiftUI Dialog Gallery: all 26 catalog shapes, on the SwiftUI backend,
-//  in front of a human's eyes.
+//  The SwiftUI Dialog Gallery: every catalog shape on the SwiftUI backend, in
+//  front of a human's eyes — the 26 real Geniebook dialogs, the 28-entry stress
+//  matrix, and the divergence section (one dialog per recorded UIKit-vs-SwiftUI
+//  difference, each captioned with what to look for).
 //
 //  Wiring, end to end:
 //      SwiftUICatalog.entries[i].present(executor)
@@ -150,6 +152,12 @@ struct SwiftUICatalogScreen: View {
             VStack(alignment: .leading, spacing: 0) {
                 header
                 ForEach(SwiftUICatalog.entries.indices, id: \.self) { index in
+                    // The list is three groups (26 real shapes, 28 stress shapes, the
+                    // divergence section) and ~59 rows; without a break at each category
+                    // change it is one undifferentiated scroll.
+                    if isFirstRowOfCategory(index) {
+                        categoryHeader(SwiftUICatalog.entries[index].category)
+                    }
                     row(at: index)
                     Divider()
                 }
@@ -160,11 +168,30 @@ struct SwiftUICatalogScreen: View {
         }
     }
 
+    /// True when `index` opens a new `category` run — the list is already grouped by
+    /// construction (catalog order), so this is a neighbour comparison, not a sort.
+    private func isFirstRowOfCategory(_ index: Int) -> Bool {
+        guard index > 0 else {
+            return true
+        }
+        return SwiftUICatalog.entries[index].category != SwiftUICatalog.entries[index - 1].category
+    }
+
+    private func categoryHeader(_ category: String) -> some View {
+        Text(category.uppercased())
+            .font(.caption2.bold())
+            .foregroundColor(.secondary)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.top, 18)
+            .padding(.bottom, 2)
+    }
+
     private var header: some View {
         VStack(alignment: .leading, spacing: 6) {
             Text("\(SwiftUICatalog.entries.count) shapes, SwiftUI backend")
                 .font(.headline)
-            Text("Same entry names as the UIKit Dialog Gallery. Tap a row to present it here; "
+            Text("Same entry names as the UIKit Dialog Gallery — the 26 real shapes, then the "
+                + "stress matrix, then the divergence section. Tap a row to present it here; "
                 + "step with the pill. Compare each one against the UIKit gallery entry of the same name.")
                 .font(.caption)
                 .foregroundColor(.secondary)

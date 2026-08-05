@@ -26,9 +26,14 @@ final class GalleryViewController: UITableViewController {
 
     /// The full traversal order: the 26 Geniebook shapes, followed by the
     /// sampled stress matrix, followed by the title/subtitle/button-style/
-    /// button-state variants — combined into one list so `step(by:)` wraps
-    /// across all three groups uniformly.
-    private static let allEntries: [DialogEntry] = DialogCatalog.entries + StressCatalog.entries + VariantsCatalog.entries
+    /// button-state variants, followed by the divergence shapes (the UIKit
+    /// halves of the recorded UIKit-vs-SwiftUI differences) — combined into one
+    /// list so `step(by:)` wraps across all four groups uniformly.
+    private static let allEntries: [DialogEntry] =
+        DialogCatalog.entries
+            + StressCatalog.entries
+            + VariantsCatalog.entries
+            + DivergenceCatalog.entries
 
     private let sections: [Section]
 
