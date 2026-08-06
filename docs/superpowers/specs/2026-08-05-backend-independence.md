@@ -375,10 +375,18 @@ That check immediately found `AlertModalScaffold.swift` importing UIKit and usin
 now been measured false, and every one was a description of the boundary that nothing re-checked. The
 allow-list is the first version of that description which cannot rot.
 
-**Pass 5 — be READY to retire UIKit.** *Gained a dependency from Pass 3c: `SwiftUIModalRenderer`'s
-configuration vocabulary cannot move until the differential gate retires, because `Factory`'s
-source-identity with the UIKit renderer is a parity-tested invariant. Sequence the gate's deletion
-BEFORE the renderer's config change, not after.* Not "delete UIKit": this repo cannot do that on its own, and
+**Pass 5 — be READY to retire UIKit.** **Briefed: `2026-08-07-uikit-retirement.md`.** *Gained a
+dependency from Pass 3c: `SwiftUIModalRenderer`'s configuration vocabulary cannot move until the
+differential gate retires, because `Factory`'s source-identity with the UIKit renderer is a
+parity-tested invariant. Sequence the gate's deletion BEFORE the renderer's config change, not after.*
+
+*The brief adds two things this entry did not anticipate. (a) The shared `DataHolder` — 17 call sites
+in `SwiftUI/`, carrying `UIImage?`/`UIView?` — has to go in the SAME pass, because its justification
+(both backends must resolve identically) expires with the gate and never becomes retractable again;
+without that, "a module split is a manifest edit" is unreachable. (b) The acceptance test is a
+COMPILE-TIME one: `GBAlertModal.resolve` is `nonisolated` but currently unreachable off the main actor
+from the SwiftUI half, because every holder factory is `@MainActor`. If a SwiftUI presentation can be
+resolved off the main actor afterwards, the coupling is genuinely gone.* Not "delete UIKit": this repo cannot do that on its own, and
 the app is out of scope (§6a). The deliverable is a library where the SwiftUI path touches no UIKit
 **in its vocabulary** — no `UIColor`, `UIFont`, `UIEdgeInsets` or `NSLayoutConstraint.Axis` in any
 type a caller names — and the UIKit half is inert, deletable the day the app stops importing it, by
