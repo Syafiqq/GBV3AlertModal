@@ -83,6 +83,23 @@ a capability nothing currently consumes. §6a covers it: "ready is the finish li
 `resolve` + `ModalTokens`, run inside `Task.detached` to prove it genuinely compiles and runs off the
 main actor. 545/0.
 
+**The 5 bespoke holders — done, commits `13b842f`/`6fd917e`/`1b6a2f8`/`2456389`/`3bcc527`.** The
+follow-up scoped out of step 6 above, per its own brief
+(`docs/superpowers/specs/2026-08-07-bespoke-holders.md`). Five new `ModalContent.make(for:)`
+overloads (TextInputDialog, DatePickerDialog, BadgeDialog, LoadingDialog, SatisfactionDialog) in
+`SwiftUI/ModalContent.swift`, and `registerBuiltInDescriptors()`'s five factories rewritten to
+construct `Registration<D>` directly — same move `registerStandard` already made — instead of going
+through the public `DataHolder`-typed `register(_:factory:)`. `grep -n "Holder.make"
+SwiftUIModalRenderer.swift` now turns up only doc comments and the standard family's own doc, no
+live bespoke call sites. One commit per descriptor, 545/0 after each. `register(_:factory:)` itself
+untouched (public API, still `Factory<D>`-typed) — a consumer's custom factory for one of these five
+kinds keeps working unchanged, exactly as the brief promised.
+
+**Pass 5 is now fully closed.** Steps 1-6 done, §2's acceptance test done, the 5 bespoke holders
+done. Step 5 (entry points 1-4 gaining a `ModalProperties`-typed path) remains the one deliberately
+deferred piece — owner decision, no dual-tracking machinery built for a capability nothing consumes
+(§6a: "ready is the finish line, not deleted").
+
 **D6 re-checked, no action needed.** `RendererParityTests` ran clean through step 6 unmodified,
 because `SwiftUIModalRenderer`'s PUBLIC `Factory` type never changed (the whole point of the additive
 design at step 6) — `RendererFixtures`' "literally the same expression" trick is still exactly true.

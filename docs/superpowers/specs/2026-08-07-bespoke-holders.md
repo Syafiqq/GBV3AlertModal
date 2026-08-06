@@ -1,9 +1,13 @@
 # Brief — the 5 bespoke holders: finishing Pass 5 step 6
 
-**Status: NOT STARTED.** Written 2026-08-07 at the end of the Pass 5 session, to be picked up next
-session. Parent brief: `2026-08-07-uikit-retirement.md` (§3 step 6, "Give the SwiftUI half its own
-holder" — scoped down mid-session to the standard family only; this is the deferred remainder).
-Direction doc: `2026-08-05-backend-independence.md`.
+**Status: DONE.** Written 2026-08-07 at the end of the Pass 5 session, picked up and closed the same
+day. Commits `13b842f`/`6fd917e`/`1b6a2f8`/`2456389`/`3bcc527`, one per descriptor
+(TextInputDialog/DatePickerDialog/BadgeDialog/LoadingDialog/SatisfactionDialog), 545/0 after each.
+No deviations from the plan below — §0's measurements held, `SatisfactionDialog`'s missing
+`secondary` field was the one trap and it was avoided. See `2026-08-07-uikit-retirement.md`'s
+Progress section for the closing summary. Parent brief: `2026-08-07-uikit-retirement.md` (§3 step 6,
+"Give the SwiftUI half its own holder" — scoped down mid-session to the standard family only; this
+was the deferred remainder). Direction doc: `2026-08-05-backend-independence.md`.
 
 This is a SMALL, MECHANICAL follow-up, not a new design. Everything this needs already exists and
 is proven: `ModalContentInputs` (protocol), `ModalContent` (Sendable holder), the generalized
