@@ -158,4 +158,19 @@ extension ModalContent {
             dismissOnAction: false
         )
     }
+
+    /// The mirror of `UIKitModalRenderer.SatisfactionHolder.make`. `SatisfactionDialog` has NO
+    /// `secondary` field — `secondaryAction` stays `nil`, don't pattern-match the other four here.
+    /// `hasSubtitleCustomView: true` mirrors the `UISegmentedControl` in the subtitle slot.
+    public static func make(for descriptor: SatisfactionDialog) -> ModalContent {
+        let (titlePlain, titleAttr) = ModalText.split(descriptor.title)
+        return ModalContent(
+            closeOnTapOverlay: descriptor.closeOnTapOverlay,
+            title: titlePlain,
+            hasAttributedTitle: (titleAttr?.length ?? 0) > 0,
+            hasSubtitleCustomView: true,
+            primaryAction: descriptor.primary,
+            dismissOnAction: false
+        )
+    }
 }

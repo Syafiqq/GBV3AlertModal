@@ -387,10 +387,12 @@ public final class SwiftUIModalRenderer: ObservableObject, ModalRenderer {
             )
         })
 
-        register(SatisfactionDialog.self) { [weak self] descriptor, resolve in
-            (self?.properties(for: descriptor.style),
-             UIKitModalRenderer.SatisfactionHolder.make(for: descriptor, resolve: resolve))
-        }
+        registrations[ObjectIdentifier(SatisfactionDialog.self)] = Registration<SatisfactionDialog>(
+            factory: { [weak self] descriptor, _ in
+                (self?.properties(for: descriptor.style), ModalContent.make(for: descriptor))
+            },
+            route: nil, content: nil, view: nil
+        )
         register(SatisfactionDialog.self, view: { [weak self] descriptor, resolve in
             SatisfactionContent.make(
                 for: descriptor,
