@@ -29,11 +29,20 @@ final class SwiftUIPurityTests: XCTestCase {
     ///   API and stays indefinitely (§6a).
     /// - `AttributedTextBridge`: **permanent while `Properties` is.** It re-scopes attributes
     ///   between SwiftUI's and UIKit's attribute scopes; naming both is its entire job.
-    /// - `SwiftUIModalRenderer`: **Pass 5, and blocked on the differential gate retiring.** Its
-    ///   `Factory` returns `(GBAlertModal.Properties?, DataHolder)` and is deliberately
-    ///   source-identical to `UIKitModalRenderer.Factory` — a property the parity suite asserts
-    ///   structurally, so widening it to carry `ModalProperties` breaks a tested invariant that
-    ///   exists to serve a gate §6 already schedules for deletion.
+    /// - `SwiftUIModalRenderer`: **PUBLIC API, permanent while it is.** Pass 5 step 6 generalized the
+    ///   INTERNAL registry past `DataHolder` (`Registration.factory` now returns
+    ///   `any ModalContentInputs`), but the PUBLIC `Factory` typealias and
+    ///   `register(_:factory:)`/`register(_:route:factory:)` stay `(GBAlertModal.Properties?,
+    ///   DataHolder)` on purpose — an owner decision to keep them non-breaking for existing callers
+    ///   (the example app, `register(_:factory:)`'s documented extension point) rather than replace
+    ///   them. The import stays for as long as that public surface does.
+    /// - `DataHolder+ModalContentInputs.swift`: **permanent while `DataHolder` is.** Bridges
+    ///   `GBAlertModal.DataHolder` (a UIKit-region type) to `ModalContentInputs` — reads
+    ///   `UIImage.size` to decide `hasBanner`. The conformance's whole job is naming the UIKit type.
+    /// - `ModalContent.swift`: **permanent.** `hasBanner` still asks `UIImage(named:in:)` whether the
+    ///   asset resolves — the SAME probe `AlertHolder.make` ran, moved here rather than removed
+    ///   (Pass 5 step 6). `ModalImage`'s bundle-relative asset resolution is inherently a UIKit-region
+    ///   question as long as banners are loaded by name.
     ///
     /// `AlertModalScaffold.swift` was on this list and is NOT any more: it imported UIKit and used
     /// zero UIKit symbols. A dead import is how an allow-list becomes a fiction.
@@ -41,7 +50,9 @@ final class SwiftUIPurityTests: XCTestCase {
         "ModalFont.swift",
         "ModalTokens.swift",
         "AttributedTextBridge.swift",
-        "SwiftUIModalRenderer.swift"
+        "SwiftUIModalRenderer.swift",
+        "DataHolder+ModalContentInputs.swift",
+        "ModalContent.swift"
     ]
 
     private var swiftUISwiftFiles: [URL] {

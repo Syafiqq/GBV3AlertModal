@@ -3,9 +3,11 @@ import SwiftUI
 
 /// Pure-SwiftUI mirror of `GBAlertModal`'s content: `AlertModalScaffold` (shared chrome) with a
 /// built-in standard body (banner/title/subtitle). Holds NO hand-rolled slot logic — it runs the
-/// SAME `GBAlertModal.resolve` resolver `GBAlertModal` (UIKit) itself runs, over the SAME
-/// `AlertHolder.make` mapping (spec C-1). Never dismisses itself; the caller reacts to `onAction`
-/// (matches the executor teardown contract). Styling is fixed design (`ModalTokens`).
+/// SAME `GBAlertModal.resolve` resolver `GBAlertModal` (UIKit) itself runs, over `ModalContent.make`'s
+/// mapping (spec C-1; UIKit-typed until Pass 5 step 6, now the SwiftUI-native mirror of
+/// `UIKitModalRenderer.AlertHolder.make` — same decisions, no `DataHolder`). Never dismisses itself;
+/// the caller reacts to `onAction` (matches the executor teardown contract). Styling is fixed design
+/// (`ModalTokens`).
 ///
 /// **Equivalence scope**: `properties` is the resolver's other input, and `SwiftUIModalRenderer`
 /// supplies the REAL caller-supplied `alertProperties`/`popupProperties` for every presentation it
@@ -67,13 +69,13 @@ public struct SwiftUIAlertModal: View {
         self.onAction = onAction
     }
 
-    // MARK: - Slot resolution (shared with UIKit — spec C-1)
+    // MARK: - Slot resolution (spec C-1)
     //
-    // `holder` is the same descriptor→`DataHolder` mapping the executor's UIKit renderer uses
-    // (`UIKitModalRenderer.AlertHolder.make`); `resolved(from:)` is the library's own 11-field
-    // `GBAlertModal.resolve`, run over that holder. Neither is duplicated here.
-    private var holder: GBAlertModal.DataHolder {
-        UIKitModalRenderer.AlertHolder.make(for: config, resolve: { _ in })
+    // `modalContent` is `ModalContent.make(for:)` — the SwiftUI-native mirror of
+    // `UIKitModalRenderer.AlertHolder.make`'s mapping (Pass 5 step 6); `resolved(from:)` is the
+    // library's own 11-field `GBAlertModal.resolve`, run over it. Neither is duplicated here.
+    private var modalContent: ModalContent {
+        ModalContent.make(for: config)
     }
 
     /// Fallback for callers with no real `Properties` (previews, SwiftUI-only demos, tests). It
@@ -99,14 +101,14 @@ public struct SwiftUIAlertModal: View {
         )
     }
 
-    /// Takes `holder` as a parameter (rather than reaching for `self.holder` again) so `body`
-    /// can compute it exactly once per render and hand it to both this and `subtitleView` — the
-    /// resolver call itself is cheap, but `self.holder` re-runs `UIImage(named:)` and
-    /// `ModalText.split`, which isn't free to repeat.
-    private func resolved(from holder: GBAlertModal.DataHolder, isLandscape: Bool) -> GBAlertModal.ResolvedModal {
+    /// Takes `content` as a parameter (rather than reaching for `self.modalContent` again) so `body`
+    /// can compute it exactly once per render — the resolver call itself is cheap, but
+    /// `self.modalContent` re-runs `UIImage(named:)` and `ModalText.split`, which isn't free to
+    /// repeat.
+    private func resolved(from content: ModalContent, isLandscape: Bool) -> GBAlertModal.ResolvedModal {
         GBAlertModal.resolve(
             inputs: properties ?? Self.sentinelProperties,
-            holder: holder,
+            content: content,
             isLandscape: isLandscape
         )
     }
@@ -136,10 +138,10 @@ public struct SwiftUIAlertModal: View {
     }
 
     private func content(isLandscape: Bool) -> some View {
-        // Computed exactly once per render: both `holder` and `resolved` are otherwise re-derived
-        // (re-running `UIImage(named:)` / `ModalText.split` / the resolver) on every access.
-        let holder = self.holder
-        let resolved = self.resolved(from: holder, isLandscape: isLandscape)
+        // Computed exactly once per render: both `modalContent` and `resolved` are otherwise
+        // re-derived (re-running `UIImage(named:)` / `ModalText.split` / the resolver) on every access.
+        let content = self.modalContent
+        let resolved = self.resolved(from: content, isLandscape: isLandscape)
         // **The banner's EXISTENCE, decided here and only here.**
         //
         // Two facts, both known before any layout runs: the resolver said this modal shows a banner,
@@ -155,12 +157,10 @@ public struct SwiftUIAlertModal: View {
         // resolver decision; only SIZE is a layout decision, and the two are separated here.
         //
         // `resolved.showsBanner` is the WHOLE answer, and this used to ask half of it twice. The
-        // shared resolver computes that flag from `holder.banner`, which
-        // `UIKitModalRenderer.AlertHolder.make` produces with
-        // `UIImage(named:in:compatibleWith:)` — the identical lookup `ModalImage.pointSize` runs —
-        // and it is already "non-nil AND non-degenerate". Re-deriving `drawsBanner` from the point
-        // size therefore recomputed a decision the resolver had made, from a second copy of the
-        // same fact.
+        // shared resolver computes that flag from `content.hasBanner`, which `ModalContent.make`
+        // produces with the SAME `UIImage(named:in:compatibleWith:)` probe `ModalImage.pointSize`
+        // runs — non-nil AND non-degenerate. Re-deriving `drawsBanner` from the point size therefore
+        // recomputed a decision the resolver had made, from a second copy of the same fact.
         let drawsBanner = resolved.showsBanner
         // The SIZE is the one thing the flag cannot carry, and `ModalTokens.bannerGeometry` needs
         // it before any layout runs (`.resizable()` discards it). Short-circuited on the flag, so a
@@ -173,7 +173,7 @@ public struct SwiftUIAlertModal: View {
         // ALWAYS existed, so every "is anything below me" test was trivially true and an
         // unconditional `.padding(.bottom, …)` matched. Making the button run absentable is what
         // makes the condition observable, so it is spelled out here.
-        let payload = Self.subtitlePayload(resolved: resolved, config: config, holder: holder)
+        let payload = Self.subtitlePayload(resolved: resolved, config: config)
         let hasButtons = resolved.showsPrimary || resolved.showsSecondary
         let hasSubtitle = payload.rendersARow
         let hasTitle = resolved.showsTitle && config.title != nil
@@ -198,7 +198,7 @@ public struct SwiftUIAlertModal: View {
             onSecondary: { onAction(.secondary) },
             showClose: resolved.showsCloseButton,
             onClose: { onAction(.dismissed) },
-            // `resolved.closeOnTapOverlay` mirrors `holder.closeOnTapOverlay` / `config.closeOnTapOverlay`
+            // `resolved.closeOnTapOverlay` mirrors `content.closeOnTapOverlay` / `config.closeOnTapOverlay`
             // — reading it off the resolver keeps this decision flowing through the shared chain too.
             onOverlayTap: { if resolved.closeOnTapOverlay { onAction(.dismissed) } },
             // The one place UIKit's axis vocabulary becomes SwiftUI's. The RESOLVER keeps speaking
@@ -732,15 +732,16 @@ extension SwiftUIAlertModal {
     /// `.plain` here returns `config.subtitle` — the descriptor's own `AttributedString` — as-is,
     /// exactly like the `showsTitle`/`title` pairing in `body` above.
     ///
-    /// `.attributed` is the one case that DOES read its payload off `holder`: the resolver only
-    /// records THAT the subtitle is attributed, the `NSAttributedString` itself lives on
-    /// `holder.subtitleAttributed`, and UIKit renders that bridged value as-is — so returning it
-    /// here (rather than the descriptor's `AttributedString`) is the correct equivalence, not a
-    /// shortcut.
+    /// `.attributed` is the one case that DOES need a payload beyond `resolved`/`config`: the
+    /// resolver only records THAT the subtitle is attributed, never the runs themselves —
+    /// `ModalContent` doesn't carry them (Pass 5 step 6: nothing `Sendable` stores an
+    /// `NSAttributedString` here) — so this re-derives the SAME `NSAttributedString`
+    /// `ModalContent.make` used to decide `hasAttributedSubtitle`, from the SAME pure
+    /// `ModalText.split(config.subtitle)`. Cheap and deterministic; computing it twice from
+    /// identical input is not a second decision, just a second call.
     static func subtitlePayload(
         resolved: GBAlertModal.ResolvedModal,
-        config: AlertDialog,
-        holder: GBAlertModal.DataHolder
+        config: AlertDialog
     ) -> SubtitlePayload {
         switch resolved.subtitle {
         case .none:
@@ -749,7 +750,7 @@ extension SwiftUIAlertModal {
             guard let subtitle = config.subtitle else { return .none }
             return .plain(subtitle)
         case .attributed:
-            return .attributed(holder.subtitleAttributed ?? NSAttributedString())
+            return .attributed(ModalText.split(config.subtitle).attributed ?? NSAttributedString())
         case .custom:
             return .custom
         }

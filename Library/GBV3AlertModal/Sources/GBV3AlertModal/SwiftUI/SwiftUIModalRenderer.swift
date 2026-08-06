@@ -71,9 +71,11 @@ public final class SwiftUIModalRenderer: ObservableObject, ModalRenderer {
         /// (`ResolvedModal` is a verbatim mirror of the UIKit view's inline render decisions; its
         /// shape is an implementation detail.)
         let resolved: GBAlertModal.ResolvedModal
-        /// INTERNAL, for the same reason as `resolved`: the descriptor→`DataHolder` mapping is what
-        /// the resolver consumed, not something a host renders from.
-        let holder: GBAlertModal.DataHolder
+        /// INTERNAL, for the same reason as `resolved`: the descriptor→content mapping is what
+        /// the resolver consumed, not something a host renders from. `any ModalContentInputs` since
+        /// Pass 5 step 6 — a `DataHolder` (legacy `Factory<D>` callers) or a `ModalContent`
+        /// (`registerStandard`), never read here beyond feeding `resolve`.
+        let holder: any ModalContentInputs
         /// The EFFECTIVE `Properties` this presentation was resolved and tokenised with — the ones
         /// the factory returned, i.e. the caller's real `alertProperties`/`popupProperties`.
         public let properties: GBAlertModal.Properties
@@ -106,7 +108,15 @@ public final class SwiftUIModalRenderer: ObservableObject, ModalRenderer {
     /// by casting a function type — `gate as? (AlertDialog.Result) -> Void` is unreliable in Swift
     /// and fails silently in release builds.
     private struct Registration<D: ModalDescriptor> {
-        let factory: Factory<D>
+        /// **Internal shape, generalized past `Factory<D>` — Pass 5 step 6.**
+        ///
+        /// The PUBLIC `Factory<D>` typealias (and `register(_:factory:)`/`register(_:route:factory:)`)
+        /// are UNCHANGED and still return a concrete `GBAlertModal.DataHolder`; this field's second
+        /// element is `any ModalContentInputs` instead, so `registerStandard` (below) can hand it a
+        /// `ModalContent` — no `UIImage`/`UIView` — while every existing `Factory<D>`-typed caller
+        /// still compiles verbatim: `DataHolder: ModalContentInputs` upcasts at the return point, the
+        /// same covariant-return conversion Swift already does for any protocol-typed context.
+        let factory: (D, @escaping (D.Result) -> Void) -> (GBAlertModal.Properties?, any ModalContentInputs)
         /// `ActionType -> D.Result`. Supplied by `registerStandard` for the standard family (where
         /// the same-type constraint `D.Result == AlertDialog.Result` makes the mapping type-check
         /// at compile time), or by the consumer via `register(_:route:factory:)`.
@@ -215,7 +225,10 @@ public final class SwiftUIModalRenderer: ObservableObject, ModalRenderer {
     public func register<D: ModalDescriptor>(_ type: D.Type, factory: @escaping Factory<D>) {
         let previous = registrations[ObjectIdentifier(type)] as? Registration<D>
         registrations[ObjectIdentifier(type)] = Registration<D>(
-            factory: factory,
+            // Adapts the public, `DataHolder`-returning `Factory<D>` into the internal, generalized
+            // shape (see `Registration.factory`'s doc) — `DataHolder: ModalContentInputs` upcasts
+            // for free at the `return`, so this is not a conversion, just a wider return type.
+            factory: { descriptor, resolve in factory(descriptor, resolve) },
             route: previous?.route,
             content: previous?.content,
             view: previous?.view
@@ -245,7 +258,8 @@ public final class SwiftUIModalRenderer: ObservableObject, ModalRenderer {
     ) {
         let previous = registrations[ObjectIdentifier(type)] as? Registration<D>
         registrations[ObjectIdentifier(type)] = Registration<D>(
-            factory: factory,
+            // Same adapter as `register(_:factory:)` above.
+            factory: { descriptor, resolve in factory(descriptor, resolve) },
             route: route,
             content: previous?.content,
             view: previous?.view
@@ -282,8 +296,11 @@ public final class SwiftUIModalRenderer: ObservableObject, ModalRenderer {
     ) {
         let previous = registrations[ObjectIdentifier(type)] as? Registration<D>
         // Spelled as a typed local, not inline after `??`: the tuple's `nil` has no contextual type
-        // inside a `??` operand, and this keeps the inference trivially local.
-        let neutralFactory: Factory<D> = { _, _ in (nil, GBAlertModal.DataHolder()) }
+        // inside a `??` operand, and this keeps the inference trivially local. `ModalContent()`, not
+        // `GBAlertModal.DataHolder()` — this is the internal shape now, and its all-default init is
+        // exactly as neutral (every field absent/false).
+        let neutralFactory: (D, @escaping (D.Result) -> Void) -> (GBAlertModal.Properties?, any ModalContentInputs) =
+            { _, _ in (nil, ModalContent()) }
         registrations[ObjectIdentifier(type)] = Registration<D>(
             factory: previous?.factory ?? neutralFactory,
             route: previous?.route,
@@ -398,12 +415,15 @@ public final class SwiftUIModalRenderer: ObservableObject, ModalRenderer {
     ) where D: ModalDescriptor & StandardAlertContent, D.Result == AlertDialog.Result {
         // `[weak self]`: the closure is stored in `self.registrations`, so a strong capture would
         // be a retain cycle. It only ever runs from `present`/`rebuild`, i.e. while `self` is alive.
-        let factory: Factory<D> = { [weak self] descriptor, resolve in
-            (
-                self?.properties(for: descriptor.style),
-                UIKitModalRenderer.AlertHolder.make(for: descriptor, resolve: resolve)
-            )
-        }
+        //
+        // `ModalContent.make`, not `UIKitModalRenderer.AlertHolder.make` — Pass 5 step 6. Same
+        // mapping, no `DataHolder`; `resolve` is unused here exactly as it always was
+        // (`AlertHolder.make`'s `completion` field was never reachable from this renderer either,
+        // see the type doc), so the new mapping simply has nowhere to put it.
+        let factory: (D, @escaping (D.Result) -> Void) -> (GBAlertModal.Properties?, any ModalContentInputs) =
+            { [weak self] descriptor, _ in
+                (self?.properties(for: descriptor.style), ModalContent.make(for: descriptor))
+            }
         let route: (GBAlertModal.ActionType) -> AlertDialog.Result = { action in
             switch action {
             case .primary: return AlertDialog.Result.primary
@@ -561,7 +581,7 @@ public final class SwiftUIModalRenderer: ObservableObject, ModalRenderer {
     private func makePresentation(
         id: ModalID,
         properties: GBAlertModal.Properties?,
-        holder: GBAlertModal.DataHolder,
+        holder: any ModalContentInputs,
         content: AlertDialog?,
         customContent: AnyView?,
         isHidden: Bool,
@@ -571,7 +591,7 @@ public final class SwiftUIModalRenderer: ObservableObject, ModalRenderer {
         return Presentation(
             id: id,
             resolved: GBAlertModal.resolve(
-                properties: effective, holder: holder, isLandscape: false
+                inputs: effective, content: holder, isLandscape: false
             ),
             holder: holder,
             properties: effective,
@@ -589,7 +609,7 @@ public final class SwiftUIModalRenderer: ObservableObject, ModalRenderer {
     private func refresh(
         _ id: ModalID,
         properties: GBAlertModal.Properties?,
-        holder: GBAlertModal.DataHolder,
+        holder: any ModalContentInputs,
         content: AlertDialog?,
         customContent: AnyView?
     ) {

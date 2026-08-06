@@ -67,43 +67,60 @@ extension GBAlertModal {
     ///
     /// This is what keeps both backends deciding identically once a SwiftUI-native config exists.
     /// §5 expected Pass 3 to give that up; it did not have to.
+    ///
+    /// Forwards to the `content:`-generalized overload below now that `DataHolder` conforms to
+    /// `ModalContentInputs` — same relationship as the `Properties`-typed `resolve` above has to
+    /// this one, one level down.
     nonisolated public static func resolve(
             inputs: (any ModalStructureInputs)?,
             holder: DataHolder,
             isLandscape: Bool
     ) -> ResolvedModal {
+        resolve(inputs: inputs, content: holder, isLandscape: isLandscape)
+    }
+
+    /// **The same resolver, over whichever CONTENT vocabulary the caller has.**
+    ///
+    /// `ModalContentInputs` is the ELEVEN things this function reads off a `DataHolder` — see that
+    /// protocol for the measurement. Added at Pass 5 step 6
+    /// (`2026-08-07-uikit-retirement.md` §3) for the same reason `ModalStructureInputs` was added at
+    /// Pass 3: a second, independent resolver for the SwiftUI-native holder would be able to drift
+    /// from this one, and nothing here needed to fork to accept it.
+    nonisolated public static func resolve(
+            inputs: (any ModalStructureInputs)?,
+            content: any ModalContentInputs,
+            isLandscape: Bool
+    ) -> ResolvedModal {
         // Banner — `registerDialogView`: `if let banner = dataHolder?.banner`. A degenerate
         // (nil OR zero-size) image reserves no banner slot: a zero-size `UIImage()` has no
-        // pixels to render and would otherwise leave an empty gap above the title.
-        let showsBanner: Bool = {
-            guard let banner = holder.banner else { return false }
-            return banner.size.width > 0 && banner.size.height > 0
-        }()
+        // pixels to render and would otherwise leave an empty gap above the title. Folded into
+        // `hasBanner` itself now that the holder may carry no `UIImage` at all to measure.
+        let showsBanner = content.hasBanner
 
         // Title — `registerDialogView`: non-empty plain title, else non-empty attributed title.
-        let hasPlainTitle = (holder.title?.isEmpty == false)
-        let hasAttributedTitle = ((holder.titleAttributed?.length ?? 0) > 0)
+        let hasPlainTitle = (content.title?.isEmpty == false)
+        let hasAttributedTitle = content.hasAttributedTitle
         let showsTitle = hasPlainTitle || hasAttributedTitle
 
         // Subtitle — `registerDialogView`: plain (non-empty) > attributed (length > 0) > custom.
         let subtitle: ResolvedModal.SubtitleKind
-        if let plain = holder.subtitle, !plain.isEmpty {
+        if let plain = content.subtitle, !plain.isEmpty {
             subtitle = .plain(plain)
-        } else if let attributed = holder.subtitleAttributed, attributed.length > 0 {
+        } else if content.hasAttributedSubtitle {
             subtitle = .attributed
-        } else if holder.subtitleCustomView != nil {
+        } else if content.hasSubtitleCustomView {
             subtitle = .custom
         } else {
             subtitle = .none
         }
 
         // Actions — `registerDialogView`: requires BOTH the action string and its style.
-        let showsPrimary = holder.primaryAction != nil && inputs?.hasPrimaryActionStyle == true
-        let showsSecondary = holder.secondaryAction != nil && inputs?.hasSecondaryActionStyle == true
+        let showsPrimary = content.primaryAction != nil && inputs?.hasPrimaryActionStyle == true
+        let showsSecondary = content.secondaryAction != nil && inputs?.hasSecondaryActionStyle == true
 
         // Close — `registerDialogView`: `dataHolder?.showCloseButton == true` (vwContainer is
         // always present once the base design is built).
-        let showsCloseButton = holder.showCloseButton == true
+        let showsCloseButton = content.showCloseButton == true
 
         // Button axis / alignment — `adjustDialogViewStyle`. When no orientation is set the
         // main-action stack keeps its generated default of `.vertical`.
@@ -117,8 +134,8 @@ extension GBAlertModal {
         let buttonsMatchParent = inputs?.buttonsMatchParent == true
 
         // Runtime flags — consumed by the overlay-tap / dismiss callbacks.
-        let dismissOnAction = holder.dismissOnAction
-        let closeOnTapOverlay = holder.closeOnTapOverlay
+        let dismissOnAction = content.dismissOnAction
+        let closeOnTapOverlay = content.closeOnTapOverlay
 
         // Content width — `adjustSvContentContainerConstraint`: fixed and max are independent,
         // each preferring the current orientation and falling back to the other.

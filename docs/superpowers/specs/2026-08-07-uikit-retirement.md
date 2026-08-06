@@ -41,6 +41,33 @@ full pass, not either cheaper alternative.
   deleting — `GeometryPinsTests` depends on them and isn't part of the gate.
   `bannerIsUnresolvableInTheLibraryBundle` is mentioned only in a doc comment outside the gate
   (`TestBundleAssetTests.swift`), never called — confirmed by grep, died clean. 590 → 544/0.
+- **Steps 5 & 6 REORDERED — doing 6 first.** Found while starting step 5: entry points 1-4 aren't
+  separable from entry point 6 (`Factory`). `Presentation.properties`/`registerStandard`'s factory
+  read/write the SAME registry `Factory` writes into, and there is NO conversion between
+  `GBAlertModal.Properties` and `ModalProperties` by design (`ModalProperties`'s own doc: "nothing
+  converts at runtime"). So a `ModalProperties`-typed `init`/`register(style:)` would have nowhere
+  honest to put its values until Factory's `DataHolder` half is gone. Confirmed with the owner:
+  swap the order.
+  - Owner decision (additive, not breaking): `SwiftUIModalRenderer`'s public `Factory<D>`,
+    `register(_:factory:)`, `register(_:route:factory:)` stay UNCHANGED — the example app and every
+    existing test keep compiling untouched. Internally, `Registration<D>.factory` generalized to
+    `any ModalContentInputs` (was concrete `DataHolder`); the public methods adapt into it for free
+    (`DataHolder: ModalContentInputs` upcasts at the return point).
+  - Owner decision (Components/ precedent): added `GBAlertModal.resolve(inputs:content:isLandscape:)`
+    to the frozen `Components/GBAlertModal+ResolvedModal.swift` — purely additive, same shape as
+    Pass 3's own `ModalStructureInputs` addition there. The alternative (duplicate the decision logic
+    in SwiftUI/ to keep Components/ byte-for-byte untouched) was rejected as the exact "second
+    resolver, can drift" risk the codebase's docs already argue against.
+  - New: `Core/ModalContentInputs.swift` (protocol, mirrors `ModalStructureInputs`),
+    `SwiftUI/DataHolder+ModalContentInputs.swift` (conformance, since `Components/` is frozen),
+    `SwiftUI/ModalContent.swift` (`Sendable` struct + `.make(for:)` for the standard family).
+    `SwiftUIAlertModal` and `registerStandard` (AlertDialog/PopupDialog) switched to it.
+  - **Scoped down from "all 17 calls":** the 5 bespoke descriptors' holders
+    (TextInputDialog/DatePickerDialog/BadgeDialog/LoadingDialog/SatisfactionDialog, in
+    `registerBuiltInDescriptors()`) still call `UIKitModalRenderer.*Holder.make` via the
+    now-legacy-but-still-fully-supported `Factory<D>` path — deliberately left for a follow-up, not
+    forgotten. They still work; nothing regresses by leaving them.
+  - Verify in progress as of this note.
 
 ---
 

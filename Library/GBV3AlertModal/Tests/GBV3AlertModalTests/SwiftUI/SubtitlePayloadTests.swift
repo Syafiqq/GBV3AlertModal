@@ -50,9 +50,9 @@ final class SubtitlePayloadTests: XCTestCase {
         var subtitle = AttributedString("Body")
         subtitle.swiftUI.font = .largeTitle
         let dialog = AlertDialog(title: "T", subtitle: subtitle, primary: "OK")
-        let (resolved, holder) = resolvedAndHolder(for: dialog)
+        let (resolved, _) = resolvedAndHolder(for: dialog)
 
-        let payload = SwiftUIAlertModal.subtitlePayload(resolved: resolved, config: dialog, holder: holder)
+        let payload = SwiftUIAlertModal.subtitlePayload(resolved: resolved, config: dialog)
         guard case let .plain(text) = payload else {
             XCTFail("expected .plain, got \(payload)")
             return
@@ -65,9 +65,9 @@ final class SubtitlePayloadTests: XCTestCase {
 
     func test_plainPayload_unstyledSubtitle_carriesSameText() {
         let d = dialog(subtitle: "Body")
-        let (resolved, holder) = resolvedAndHolder(for: d)
+        let (resolved, _) = resolvedAndHolder(for: d)
 
-        let payload = SwiftUIAlertModal.subtitlePayload(resolved: resolved, config: d, holder: holder)
+        let payload = SwiftUIAlertModal.subtitlePayload(resolved: resolved, config: d)
         guard case let .plain(text) = payload else {
             XCTFail("expected .plain, got \(payload)")
             return
@@ -78,29 +78,35 @@ final class SubtitlePayloadTests: XCTestCase {
     // MARK: (c) UIKit-scoped styling -> .attributed, sourced from the holder
 
     /// UIKit-scoped styling is the one case that legitimately bridges to `NSAttributedString` —
-    /// the resolver classifies it `.attributed`, and the payload must be `holder.subtitleAttributed`
-    /// itself (the exact instance UIKit would draw), not re-derived from the descriptor.
-    func test_attributedPayload_comesFromHolder() {
+    /// the resolver classifies it `.attributed`, and the payload must be VALUE-equal to
+    /// `holder.subtitleAttributed` (the exact bridged string UIKit would draw).
+    ///
+    /// **Not `===` any more, and that is deliberate (Pass 5 step 6).** `subtitlePayload` used to
+    /// read `holder.subtitleAttributed` directly; it now re-derives the SAME string via
+    /// `ModalText.split(config.subtitle)` — a `ModalContent` carries no `NSAttributedString` to
+    /// read (see `ModalContent`'s doc) — so the result is a distinct instance with identical
+    /// content, not the same object.
+    func test_attributedPayload_matchesTheUIKitBridgedString() {
         var subtitle = AttributedString("Bold")
         subtitle.uiKit.foregroundColor = UIColor.red
         let dialog = AlertDialog(title: "T", subtitle: subtitle, primary: "OK")
         let (resolved, holder) = resolvedAndHolder(for: dialog)
 
-        let payload = SwiftUIAlertModal.subtitlePayload(resolved: resolved, config: dialog, holder: holder)
+        let payload = SwiftUIAlertModal.subtitlePayload(resolved: resolved, config: dialog)
         guard case let .attributed(attributed) = payload else {
             XCTFail("expected .attributed, got \(payload)")
             return
         }
-        XCTAssertTrue(attributed === holder.subtitleAttributed,
-                       "attributed payload must be holder.subtitleAttributed itself, not re-derived")
+        XCTAssertEqual(attributed, holder.subtitleAttributed,
+                        "attributed payload must match holder.subtitleAttributed's content")
     }
 
     // MARK: (d) nil / empty subtitle -> .none
 
     func test_nonePayload_whenSubtitleNil() {
         let d = dialog(subtitle: nil)
-        let (resolved, holder) = resolvedAndHolder(for: d)
-        let payload = SwiftUIAlertModal.subtitlePayload(resolved: resolved, config: d, holder: holder)
+        let (resolved, _) = resolvedAndHolder(for: d)
+        let payload = SwiftUIAlertModal.subtitlePayload(resolved: resolved, config: d)
         guard case .none = payload else {
             XCTFail("expected .none, got \(payload)")
             return
@@ -109,8 +115,8 @@ final class SubtitlePayloadTests: XCTestCase {
 
     func test_nonePayload_whenSubtitleEmpty() {
         let d = dialog(subtitle: "")
-        let (resolved, holder) = resolvedAndHolder(for: d)
-        let payload = SwiftUIAlertModal.subtitlePayload(resolved: resolved, config: d, holder: holder)
+        let (resolved, _) = resolvedAndHolder(for: d)
+        let payload = SwiftUIAlertModal.subtitlePayload(resolved: resolved, config: d)
         guard case .none = payload else {
             XCTFail("expected .none, got \(payload)")
             return
