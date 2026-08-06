@@ -22,7 +22,7 @@ import Foundation
 /// added: this is a `public` type in a shipping library, so a precondition would turn a latent
 /// layout oddity into a crash in a consumer app, and a clamp would silently rewrite a caller's
 /// stated intent. Recorded so the next reader knows it was considered rather than missed.
-public struct UIMinMaxEdgeInsets: Sendable {
+public struct UIMinMaxEdgeInsets: Sendable, Equatable {
     public static var zero: Self {
         Self()
     }

@@ -19,7 +19,7 @@ import UIKit
 /// DELIBERATELY NOT DERIVED (with the reason). There is no third category: a field that is neither
 /// is a silent drift channel — a value UIKit honours and SwiftUI ignores, correct only for as long
 /// as the preset happens to make the ignored value equal the hardcoded one.
-public struct ModalTokens: Sendable {
+public struct ModalTokens: Sendable, Equatable {
     // Card geometry. Width MAXIMIZES to fill (screen − 2·horizontal margin), capped at
     // `cardMaxWidth` — which is DERIVED from `contentMaxWidth`, never given directly. `standard`
     // has no `Properties` to derive a cap from, so it ships `.infinity` (no cap — deliberately NOT
@@ -195,7 +195,7 @@ public struct ModalTokens: Sendable {
 
     public var palette: Palette
 
-    public struct Palette: Sendable {
+    public struct Palette: Sendable, Equatable {
         // Real Geniebook values, transcribed from `UIColor.Genie.*` / `Colors.*` in the distribution
         // app for `standard`; derived from the primary `ActionStyle`'s `obliqueBottomLeft` theme
         // (the only `ActionStyle` case this fixed SwiftUI style has colours for) when `Properties`
@@ -901,5 +901,140 @@ extension Color {
             green: Double((hex >> 8) & 0xFF) / 255,
             blue: Double(hex & 0xFF) / 255
         )
+    }
+}
+
+// MARK: - The SwiftUI-native derivation
+
+extension ModalTokens {
+    /// **The same derivation as `init(from: GBAlertModal.Properties)`, over the SwiftUI-native
+    /// config — step for step, in the same order, with the same conditions.**
+    ///
+    /// It is a deliberate transcription rather than a shared implementation, because the two inputs
+    /// share no type: that is what §3a's "parallel type, not a translation layer" costs, and the
+    /// price of it is exactly the failure mode a transcription has — a field read into the wrong
+    /// token, or dropped. `ModalPropertiesEquivalenceTests` is the gate for that, and it is not a
+    /// field-by-field re-transcription of this function: it builds ONE preset both ways and asserts
+    /// the two `ModalTokens` are equal, so a mistake here has to be made identically in the test to
+    /// survive.
+    ///
+    /// **Every difference from the UIKit derivation is a difference in the INPUT, never in the
+    /// rule.** There are only three, and each is `ModalProperties`' doc:
+    ///
+    /// 1. No colour conversion. The UIKit path wraps every colour in `Color(uiColor:)`; here the
+    ///    caller already stated a `Color`.
+    /// 2. No `bannerFixedHeight` — the field does not exist on this type. `standard`'s value (nil)
+    ///    stands, which is what a `Properties` that omits it produces too, and nothing lays out
+    ///    with it on either backend regardless.
+    /// 3. `margin.leading` where the UIKit path reads `margin.left`. `EdgeInsets` is
+    ///    direction-aware and `UIEdgeInsets` is not; both presets are horizontally symmetric, and
+    ///    `cardMarginH` is applied to both sides anyway.
+    // swiftlint:disable:next function_body_length
+    public init(from properties: ModalProperties) {
+        self = .standard
+
+        if let contentProperty = properties.contentProperty {
+            cornerRadius = contentProperty.cornerRadius
+            // Portrait-first with a landscape fallback, and a FIXED width folded in as a cap rather
+            // than a `.frame(width:)` — the reasoning is on the UIKit derivation above and is not
+            // repeated, because it is the same rule reading the same four fields.
+            let fixedWidth = contentProperty.fixedWidthPortrait ?? contentProperty.fixedWidthLandscape
+            let maxWidth = contentProperty.maxWidthPortrait ?? contentProperty.maxWidthLandscape
+            switch (fixedWidth, maxWidth) {
+            case let (fixed?, max?):
+                contentMaxWidth = min(fixed, max)
+            case let (fixed?, nil):
+                contentMaxWidth = fixed
+            case let (nil, max?):
+                contentMaxWidth = max
+            case (nil, nil):
+                break
+            }
+            contentChildrenFillWidth = contentProperty.childShouldMatchParent
+            if let backgroundColor = contentProperty.backgroundColor {
+                palette.cardBackground = backgroundColor
+            }
+        }
+
+        if let margin = properties.margin {
+            cardMarginV = margin.top
+            cardMarginH = margin.leading
+        }
+
+        if let padding = properties.padding {
+            contentPadding = padding
+        }
+
+        // Unconditional, for the reason spelled out on the UIKit derivation: `nil` here is a
+        // POSITIVE statement (install no such constraint), not "this config has no opinion".
+        bannerRatio = properties.bannerRatio
+        bannerMaxHeight = properties.bannerMaxHeight
+
+        if let space = properties.space {
+            gapBelowBanner = space.banner
+            gapBelowTitle = space.title
+            gapBelowSubtitle = space.subtitle
+            interButton = space.interButton
+        }
+
+        if let titleFont = properties.titleFont {
+            self.titleFont = titleFont
+        }
+        if let subtitleFont = properties.subtitleFont {
+            self.subtitleFont = subtitleFont
+        }
+        if let titleColor = properties.titleColor {
+            palette.titleText = titleColor
+        }
+        if let subtitleColor = properties.subtitleColor {
+            palette.subtitleText = subtitleColor
+        }
+        if let overlayColor = properties.overlayColor {
+            palette.scrim = overlayColor
+        }
+        if let closeButtonTint = properties.closeButtonTint {
+            palette.closeButton = closeButtonTint
+        }
+
+        // `.obliqueBottomLeft` for the primary and `.plain` for the secondary, same as the UIKit
+        // derivation — any other case keeps `standard`'s literals rather than guessing a mapping
+        // onto a shape this backend does not draw.
+        if case let .obliqueBottomLeft(theme)? = properties.primaryActionStyle {
+            if let unPressedColor = theme.unPressedColor {
+                palette.accent = unPressedColor
+            }
+            if let pressedColor = theme.pressedColor {
+                palette.accentPressed = pressedColor
+            }
+            if let disabledColor = theme.disabledColor {
+                palette.disabled = disabledColor
+            }
+            if let shadowColor = theme.shadowColor {
+                palette.shadow = shadowColor
+            }
+            if let titleColor = theme.titleColor {
+                palette.onAccent = titleColor
+            }
+            if let titleDisableColor = theme.titleDisableColor {
+                palette.onAccentDisabled = titleDisableColor
+            }
+            if let titleFont = theme.titleFont {
+                primaryButtonFont = titleFont.font
+            }
+        }
+
+        // The secondary's colours come from the SECONDARY theme and must never be re-pointed at
+        // `palette.accent` — see the UIKit derivation for the shape that caught it.
+        if case let .plain(theme)? = properties.secondaryActionStyle {
+            if let titleColor = theme.titleColor {
+                palette.secondaryLabel = titleColor
+            }
+            if let titleDisableColor = theme.titleDisableColor {
+                palette.secondaryDisabled = titleDisableColor
+            }
+            if let titleFont = theme.titleFont {
+                secondaryButtonFont = titleFont.font
+            }
+        }
     }
 }

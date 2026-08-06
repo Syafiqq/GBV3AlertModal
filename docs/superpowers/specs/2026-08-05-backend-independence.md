@@ -91,6 +91,16 @@ is `Bool`. Only these actually move:
 Any further omission needs the same standard: a measurement showing the field does nothing, not an
 opinion that it looks redundant.
 
+**That standard was applied once more in Pass 3b and the answer came out the other way.** Two of
+`ActionStyle`'s four cases — `.capsule` and `.capsuleOutlined` — are never read by the SwiftUI
+backend: `ModalTokens` derives colours from `.obliqueBottomLeft` (primary) and `.plain` (secondary)
+only, and a consumer shipping `.capsule` already gets the oblique look
+(`test_accentColors_keepStandardLiterals_whenActionStyleIsNotOblique`). Dropping them from
+`ModalProperties` was considered and **rejected**: `bannerFixedHeight` earned its omission by doing
+nothing *on UIKit's own path*, whereas `.capsule` is inert only because the SwiftUI RENDERER has not
+implemented it. Carrying two cases would bake a renderer gap into the vocabulary and narrow what a
+migrating call site can say — the opposite of what this type is for. All four are carried.
+
 ## 3b. Measurement stays on `UIFont`. CoreText was measured and rejected
 
 **Decided 2026-08-05, after Pass 1 measured it.** The rule in §3a is *same vocabulary, own language* —
@@ -253,9 +263,28 @@ question deserved to be decided on its own evidence rather than inside a 600-lin
 
 - **3a — `ModalFont`. DONE.** The §3b open question, answered above. Self-contained, and it paid for
   itself immediately by collapsing a real hand-maintained coincidence in `ModalTokens`.
-- **3b — `ModalProperties`** (the §3a vocabulary mirror) **and `ModalTokens.init(from:)` beside it.**
-  The bulk. Gated by: the same preset expressed both ways must produce an IDENTICAL `ModalTokens` —
-  the failure mode for a large parallel type is a mistranscribed field, and that is the test for it.
+- **3b — `ModalProperties`** (the §3a vocabulary mirror) **and `ModalTokens.init(from:)` beside it.
+  DONE.** Gated exactly as planned: `ModalPropertiesEquivalenceTests` builds ONE preset both ways,
+  every field set to a DISTINCT value, and asserts the two derived `ModalTokens` are equal.
+  Mutation-verified against both real failure modes — a field read into the wrong token, and a
+  dropped field — each killed by that one test and nothing else.
+
+  Four things worth carrying forward:
+
+  - **`ModalTokens` is now `Equatable`** (with `Palette` and `UIMinMaxEdgeInsets`). That is what
+    makes the gate one assertion instead of twenty-five field checks — and a field-by-field test
+    would have been a THIRD copy of the same list, wrong the same way if its author misread the
+    source.
+  - **The gate cannot speak to colour identity, and says so.** `Color(uiColor: .red) != Color.red`
+    (different providers), so the SwiftUI preset states its colours as `Color(uiColor:)` of the very
+    `UIColor` the UIKit preset gets. It proves both derivations route the same colour to the same
+    token; it does not prove the two spellings render alike, which is a platform question.
+  - **`bannerFixedHeight` is the only permitted difference**, pinned by its own test so the equality
+    can be unqualified.
+  - **"An empty config derives `standard`" is FALSE**, and asserting it was my first version of that
+    test. `standard` ships a 160pt `bannerMaxHeight`, and both derivations assign the banner fields
+    unconditionally because `nil` there means "install no such constraint". An empty config derives
+    `standard` MINUS the banner fields.
 - **3c — feeding the shared resolver.**
 
 **"and resolver" is struck, and this pass no longer costs "by construction".** The original plan
