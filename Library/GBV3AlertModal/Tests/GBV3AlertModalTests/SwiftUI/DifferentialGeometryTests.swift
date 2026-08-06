@@ -410,6 +410,35 @@ final class DifferentialGeometryTests: XCTestCase {
     /// `test_theUnscrolledShape_actuallyClipsOnBothBackends`.
     func test_geometry_longSubtitleUnscrolled() { assertAgrees("long-subtitle-unscrolled") }
 
+    /// **A LONE SECONDARY BUTTON — the shape `primary: String?` made expressible (Pass 2).**
+    ///
+    /// The SwiftUI vertical button run hand-rolls what `UIStackView.spacing` does, as a
+    /// `.padding(.top, interButton)` on the secondary, because the run is inline in the card's
+    /// `VStack(spacing: 0)` rather than a nested stack. Stack spacing applies only BETWEEN arranged
+    /// subviews, so with the primary gone that padding has to go too — an unconditional one leaves
+    /// an 8pt hole above the secondary that UIKit does not have.
+    ///
+    /// Verified to bite: making the padding unconditional moves the secondary button and the card,
+    /// and this test reports both. Nothing else in the suite does — the shape lists in
+    /// `test_harness_measuresEveryElementBothBackendsDraw` and `test_layerVisuals_agreeOnEveryShape`
+    /// iterate every shape but compare only probe PRESENCE and layer identity, neither of which
+    /// moves by 8pt.
+    func test_geometry_noPrimarySecondaryOnly() { assertAgrees("no-primary-secondary-only") }
+
+    /// **NO BUTTON RUN AT ALL — the second shape Pass 2 made expressible.**
+    ///
+    /// With the buttons gone the subtitle is the card's last row, and UIKit builds
+    /// `vwSubtitleAndBelowDivider` only when `svMainActionContainer != nil` — so the subtitle's
+    /// 12pt trailing gap has to vanish with them. Same for the title's gap when there is no subtitle
+    /// either, and for the banner's; all three conditions were vacuously true while every descriptor
+    /// carried a primary button, and `SwiftUIAlertModal` applied the gaps unconditionally.
+    func test_geometry_noButtonsTitleSubtitle() { assertAgrees("no-buttons-title-subtitle") }
+
+    /// **A card that is a title and nothing else** — the only shape here that can see the TITLE's
+    /// trailing gap. `no-buttons-title-subtitle` has a subtitle below the title, so its
+    /// `hasSubtitle || hasButtons` test passes either way; this one has neither.
+    func test_geometry_noButtonsTitleOnly() { assertAgrees("no-buttons-title-only") }
+
     /// And in landscape, where the viewport falls to 161.33 on BOTH backends — a quarter of the
     /// content, on a card against its ceiling. This is the same regime `banner-comparable` is in,
     /// with the banner taken out of the picture.

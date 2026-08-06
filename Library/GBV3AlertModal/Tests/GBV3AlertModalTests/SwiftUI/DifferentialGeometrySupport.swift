@@ -174,7 +174,7 @@ enum DifferentialGeometry {
         let properties: GBAlertModal.Properties
     }
 
-    /// **Twelve shapes, chosen to vary the fields the two backends read differently.**
+    /// **Fifteen shapes, chosen to vary the fields the two backends read differently.**
     ///
     /// Covered: the standard 1-button and 2-button shapes; a nil-title shape; a close-button shape;
     /// the oblique-RED shape (a different `ObliqueBottomLeftTheme`); the permission-alert preset and
@@ -189,6 +189,11 @@ enum DifferentialGeometry {
     /// wider than the column, the regime eight of the app's nine real banner assets are in), and
     /// `long-subtitle-unscrolled` (a 1222pt subtitle, long enough to engage the subtitle slot on
     /// BOTH backends at any size — the shape that made the subtitle row comparable).
+    ///
+    /// Plus the three Pass 2 added, once `StandardAlertContent.primary` became optional:
+    /// `no-primary-secondary-only`, `no-buttons-title-subtitle` and `no-buttons-title-only`. See their
+    /// own comments below — each pins a spacing rule that was vacuously true while every descriptor
+    /// carried a primary button.
     ///
     /// NOT covered, and why: the three bespoke descriptors (`BadgeDialog`, `LoadingDialog`,
     /// `SatisfactionDialog`) and the two input descriptors (`TextInputDialog`,
@@ -374,6 +379,57 @@ enum DifferentialGeometry {
                         repeating: "This subtitle keeps going so the slot has to engage. ", count: 40
                     ).trimmingCharacters(in: .whitespaces),
                     primary: "Okay",
+                    closeOnTapOverlay: true
+                ),
+                properties: GeniePresets.standardProperties()
+            ),
+            // MARK: The two shapes `primary: String?` made expressible (Pass 2)
+            //
+            // Both were UNREACHABLE from a descriptor before `StandardAlertContent.primary` became
+            // optional — the UIKit stress gallery had to hand-build a `DataHolder` with
+            // `primaryAction: nil` to show them at all, which is precisely why they were never
+            // gated. They are here rather than only in the example gallery because the gap they
+            // expose is arithmetic, not visual: with the button run absent or half-absent, the
+            // SPACING rules stop being trivially satisfied.
+            Shape(
+                // A LONE SECONDARY. The vertical button run hand-rolls `UIStackView.spacing` as a
+                // `.padding(.top, interButton)` on the secondary, and stack spacing applies only
+                // BETWEEN arranged subviews — so an unconditional padding here would leave an 8pt
+                // hole above the secondary that UIKit does not have.
+                name: "no-primary-secondary-only",
+                dialog: AlertDialog(
+                    title: "Leave without saving?",
+                    subtitle: "[API] Your changes will be lost.",
+                    primary: nil,
+                    secondary: "Cancel",
+                    closeOnTapOverlay: true
+                ),
+                properties: GeniePresets.standardProperties()
+            ),
+            Shape(
+                // NO BUTTON RUN AT ALL, which makes the subtitle the last row in the card. UIKit
+                // builds `vwSubtitleAndBelowDivider` only when `svMainActionContainer != nil`, so
+                // the subtitle's trailing gap has to disappear with the buttons.
+                name: "no-buttons-title-subtitle",
+                dialog: AlertDialog(
+                    title: "Syncing",
+                    subtitle: "[API] This will close on its own when the upload finishes.",
+                    primary: nil,
+                    closeOnTapOverlay: true
+                ),
+                properties: GeniePresets.standardProperties()
+            ),
+            Shape(
+                // TITLE ALONE. `no-buttons-title-subtitle` above satisfies the title's
+                // "is anything below me" test through its SUBTITLE, so it cannot tell a correct
+                // `hasSubtitle || hasButtons` from an unconditional gap. This shape has neither,
+                // and is the only one that fails when the title's trailing gap is left
+                // unconditional. `vwTitleAndBelowDivider` is its UIKit counterpart.
+                name: "no-buttons-title-only",
+                dialog: AlertDialog(
+                    title: "Saved",
+                    subtitle: String?.none,
+                    primary: nil,
                     closeOnTapOverlay: true
                 ),
                 properties: GeniePresets.standardProperties()
@@ -715,9 +771,23 @@ enum DifferentialGeometry {
     /// `AlertModalScaffold.card` render from (see `ModalTokens.LayerVisual`'s doc for why this is a
     /// declared value and not a hosted-layer read: `clipShape` is a mask and `.shadow` is a filter,
     /// neither of which lowers to a settable `CALayer` property).
+    ///
+    /// **`primaryButton` is gated on the shape actually HAVING one**, and it has to be: the UIKit
+    /// side reports `nil` when `btPrimaryAction` was never built, so returning the token value
+    /// unconditionally compared a declared visual against an absent button and called it a
+    /// divergence. The gate asks the SHARED resolver — the same question `AlertModalScaffold`'s
+    /// button run now asks — rather than re-deriving "is there a primary" from the descriptor, so
+    /// the two cannot drift. Vacuous before Pass 2, when every descriptor had a primary button.
     static func swiftUILayerVisuals(_ shape: Shape, tokens: ModalTokens? = nil) -> LayerVisuals {
         let tokens = tokens ?? ModalTokens(from: shape.properties)
-        return LayerVisuals(card: tokens.cardVisual, primaryButton: tokens.primaryButtonVisual)
+        let holder = UIKitModalRenderer.AlertHolder.make(for: shape.dialog, resolve: { _ in })
+        let resolved = GBAlertModal.resolve(
+            properties: shape.properties, holder: holder, isLandscape: false
+        )
+        return LayerVisuals(
+            card: tokens.cardVisual,
+            primaryButton: resolved.showsPrimary ? tokens.primaryButtonVisual : nil
+        )
     }
 
     /// **Corroboration, narrow on purpose:** every DISTINCT non-zero `shadowOffset` found on the

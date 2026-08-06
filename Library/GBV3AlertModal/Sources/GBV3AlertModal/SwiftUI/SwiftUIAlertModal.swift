@@ -14,16 +14,17 @@ import SwiftUI
 /// `showsBanner`, `showsTitle`, `subtitle`, `showsCloseButton`, `closeOnTapOverlay`,
 /// `dismissOnAction`, `showsPrimary`, `showsSecondary`, `buttonAxis` and `buttonsMatchParent`.
 ///
-/// Two caveats remain, both narrow and deliberate:
+/// One caveat remains, narrow and deliberate:
 /// * `isLandscape` is still fixed to `false` here, so `contentWidth` (the one orientation-sensitive
 ///   field) can still differ from a UIKit render in landscape. The card is width-adaptive
 ///   (`ModalTokens.cardMaxWidth` is a CAP, not a fixed width) — but the PORTRAIT reading of
 ///   `contentWidth` now does reach the layout, as `ModalTokens.contentMaxWidth` on the content
 ///   container (see `AlertModalScaffold.card`).
-/// * `showsPrimary` is RESOLVED correctly but not yet OBEYED: `AlertModalScaffold` requires a
-///   primary button, so a `Properties` with a nil `primaryActionStyle` hides the primary on the
-///   UIKit path while SwiftUI still draws it. `showsSecondary`, `buttonAxis` and
-///   `buttonsMatchParent` are all resolved AND obeyed (see `body` and `AlertModalScaffold.card`).
+///
+/// `showsPrimary` used to be the second caveat — resolved correctly and not obeyed, because
+/// `AlertModalScaffold.primaryTitle` was a non-optional `String`. It is optional as of Pass 2, and
+/// `card` passes `resolved.showsPrimary ? config.primary : nil`, so all ELEVEN resolver fields are
+/// now both resolved and obeyed.
 ///
 /// A caller that omits `properties` (SwiftUI-only demos, previews, tests) still gets the fixed
 /// sentinel described on `resolved(from:)` — for those there is no `Properties` in play at all,
@@ -155,9 +156,24 @@ public struct SwiftUIAlertModal: View {
         // it before any layout runs (`.resizable()` discards it). Short-circuited on the flag, so a
         // modal with no banner never pays for the lookup at all.
         let bannerArtworkSize = drawsBanner ? (config.image?.pointSize ?? .zero) : .zero
+        // Every row's TRAILING gap is conditional on something existing below it, because UIKit's
+        // are: `buildDividers` creates `vwBannerAndBelowDivider` / `vwTitleAndBelowDivider` /
+        // `vwSubtitleAndBelowDivider` only when a later component was actually built. That was
+        // invisible while `primary` was a non-optional String — the main-action container then
+        // ALWAYS existed, so every "is anything below me" test was trivially true and an
+        // unconditional `.padding(.bottom, …)` matched. Making the button run absentable is what
+        // makes the condition observable, so it is spelled out here.
+        let payload = Self.subtitlePayload(resolved: resolved, config: config, holder: holder)
+        let hasButtons = resolved.showsPrimary || resolved.showsSecondary
+        let hasSubtitle = payload.rendersARow
+        let hasTitle = resolved.showsTitle && config.title != nil
         return AlertModalScaffold(
             tokens: tokens,
-            primaryTitle: config.primary,
+            // `showsPrimary` is now OBEYED, not merely resolved — the divergence recorded in this
+            // type's own doc comment and in `DivergenceCatalog.showsPrimaryNotObeyed`. The resolver
+            // requires BOTH a primary action string AND a `primaryActionStyle`, so a `Properties`
+            // with a nil style hides the primary on the UIKit path; it now hides it here too.
+            primaryTitle: resolved.showsPrimary ? config.primary : nil,
             isPrimaryLoading: isPrimaryLoading,
             primaryEnabled: primaryEnabled,
             onPrimary: { onAction(.primary) },
@@ -185,16 +201,32 @@ public struct SwiftUIAlertModal: View {
             bannerArtworkSize: bannerArtworkSize
         ) {
             if drawsBanner, let image = config.image {
-                BannerSlot(image: image, tokens: tokens)
+                BannerSlot(
+                    image: image,
+                    tokens: tokens,
+                    hasContentBelow: hasTitle || hasSubtitle || hasButtons
+                )
             }
-            titleAndSubtitle(resolved: resolved, holder: holder)
+            titleAndSubtitle(
+                resolved: resolved,
+                payload: payload,
+                hasSubtitle: hasSubtitle,
+                hasButtons: hasButtons
+            )
         }
     }
 
     /// The two text rows, in the order and with the priorities the directive states.
+    ///
+    /// `hasSubtitle`/`hasButtons` are what UIKit's `buildDividers` consults: a row's trailing gap
+    /// exists only when a later row does. Both are computed by the caller so the whole card agrees
+    /// on one answer.
     @ViewBuilder
     private func titleAndSubtitle(
-        resolved: GBAlertModal.ResolvedModal, holder: GBAlertModal.DataHolder
+        resolved: GBAlertModal.ResolvedModal,
+        payload: SubtitlePayload,
+        hasSubtitle: Bool,
+        hasButtons: Bool
     ) -> some View {
             if resolved.showsTitle, let title = config.title {
                 Text(title)
@@ -221,7 +253,9 @@ public struct SwiftUIAlertModal: View {
                     // produced a floor too short for the text it was protecting.
                     .frame(minHeight: tokens.titleFloorHeight(for: NSAttributedString(title)))
                     .modalGeometryProbe(.title)
-                    .padding(.bottom, tokens.gapBelowTitle)
+                    // UIKit's `vwTitleAndBelowDivider`, which `buildDividers` creates only when
+                    // `svSubtitleContainer != nil || svMainActionContainer != nil`.
+                    .padding(.bottom, hasSubtitle || hasButtons ? tokens.gapBelowTitle : 0)
                     // OUTERMOST, and it has to be: `layoutPriority` is read by the enclosing
                     // container (`AlertModalScaffold`'s VStack) off the view it actually holds, so a
                     // `.padding` applied after it would be the view the VStack sees. This is the
@@ -231,7 +265,7 @@ public struct SwiftUIAlertModal: View {
                     // Magnitudes are not comparable to UIKit's 0…1000 scale — only the order is.
                     .layoutPriority(Self.titleLayoutPriority)
             }
-            subtitleView(resolved: resolved, holder: holder)
+            subtitleView(payload: payload, hasButtons: hasButtons)
     }
 
     // `textRows` sat here: a `Properties.contentScrollable` branch that wrapped `titleAndSubtitle`
@@ -245,11 +279,8 @@ public struct SwiftUIAlertModal: View {
     /// Renders whatever `subtitlePayload` selected. All the DECISION + PAYLOAD SELECTION logic
     /// lives in that pure function (testable without a view); this just switches on its result.
     @ViewBuilder
-    private func subtitleView(
-        resolved: GBAlertModal.ResolvedModal,
-        holder: GBAlertModal.DataHolder
-    ) -> some View {
-        switch Self.subtitlePayload(resolved: resolved, config: config, holder: holder) {
+    private func subtitleView(payload: SubtitlePayload, hasButtons: Bool) -> some View {
+        switch payload {
         case .none:
             EmptyView()
         case let .plain(subtitle):
@@ -267,7 +298,9 @@ public struct SwiftUIAlertModal: View {
                     .modifier(NeverTruncates(minimumScaleFactor: tokens.titleMinimumScaleFactor))
             }
             .modalGeometryProbe(.subtitle)
-            .padding(.bottom, tokens.gapBelowSubtitle)
+            // UIKit's `vwSubtitleAndBelowDivider`: `svMainActionContainer != nil` is its only
+            // condition, the subtitle being the last content row.
+            .padding(.bottom, hasButtons ? tokens.gapBelowSubtitle : 0)
             // The LOWER rung of the directive's ordering — see `subtitleLayoutPriority`.
             .layoutPriority(Self.subtitleLayoutPriority)
         case let .attributed(attributed):
@@ -285,7 +318,9 @@ public struct SwiftUIAlertModal: View {
                     .modifier(NeverTruncates(minimumScaleFactor: tokens.titleMinimumScaleFactor))
             }
             .modalGeometryProbe(.subtitle)
-            .padding(.bottom, tokens.gapBelowSubtitle)
+            // UIKit's `vwSubtitleAndBelowDivider`: `svMainActionContainer != nil` is its only
+            // condition, the subtitle being the last content row.
+            .padding(.bottom, hasButtons ? tokens.gapBelowSubtitle : 0)
             .layoutPriority(Self.subtitleLayoutPriority)
         case .custom:
             // A plain `AlertDialog` never populates `subtitleCustomView` (that field doesn't exist
@@ -350,6 +385,9 @@ public struct SwiftUIAlertModal: View {
 private struct BannerSlot: View {
     let image: ModalImage
     let tokens: ModalTokens
+    /// UIKit's `vwBannerAndBelowDivider` condition — `lbTitle != nil || svSubtitleContainer != nil
+    /// || svMainActionContainer != nil`. A banner with nothing under it gets no trailing gap.
+    let hasContentBelow: Bool
     @Environment(\.modalBannerGeometry) private var bannerGeometry
 
     var body: some View {
@@ -435,7 +473,7 @@ private struct BannerSlot: View {
             // Paired with the slot, so an unmeasured slot carries no gap either: a `.zero`
             // geometry must occupy no vertical space at all, exactly as UIKit's `vwBanner`
             // collapses rather than leaving a 12pt hole under nothing.
-            .padding(.bottom, bannerGeometry.height > 0 ? tokens.gapBelowBanner : 0)
+            .padding(.bottom, bannerGeometry.height > 0 && hasContentBelow ? tokens.gapBelowBanner : 0)
     }
 }
 
@@ -649,6 +687,20 @@ extension SwiftUIAlertModal {
         case plain(AttributedString)
         case attributed(NSAttributedString)
         case custom
+
+        /// Whether this payload puts an actual ROW in the card — the counterpart of UIKit's
+        /// `svSubtitleContainer != nil`, which `buildDividers` reads to decide whether the row
+        /// ABOVE gets a trailing gap.
+        ///
+        /// `.custom` is `false` because `subtitleView` renders `EmptyView()` for it: a plain
+        /// `AlertDialog` has no `subtitleCustomView` field, so the case is unreachable from this
+        /// view and reporting a row that never draws would put a phantom gap under the title.
+        var rendersARow: Bool {
+            switch self {
+            case .none, .custom: return false
+            case .plain, .attributed: return true
+            }
+        }
     }
 
     /// The subtitle DECISION + PAYLOAD SELECTION, pulled out of the view body so it's a plain,

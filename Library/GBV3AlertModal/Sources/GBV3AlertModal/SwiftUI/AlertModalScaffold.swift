@@ -23,7 +23,9 @@ extension EnvironmentValues {
 public struct AlertModalScaffold<Content: View>: View {
     public let tokens: ModalTokens
     public var scrim: Color
-    public let primaryTitle: String
+    /// `nil` → NO primary button, mirroring `svMainActionContainer` simply not being handed a
+    /// `vwPrimaryAction`. Optional since Pass 2; see `StandardAlertContent.primary`.
+    public let primaryTitle: String?
     public var isPrimaryLoading: Bool = false
     public var primaryEnabled: Bool = true
     public let onPrimary: () -> Void
@@ -69,7 +71,7 @@ public struct AlertModalScaffold<Content: View>: View {
     public init(
         tokens: ModalTokens = .standard,
         scrim: Color? = nil,
-        primaryTitle: String,
+        primaryTitle: String?,
         isPrimaryLoading: Bool = false,
         primaryEnabled: Bool = true,
         onPrimary: @escaping () -> Void,
@@ -288,20 +290,38 @@ public struct AlertModalScaffold<Content: View>: View {
         // than in a nested VStack so it stays byte-for-byte the layout that shipped before.
         VStack(spacing: 0) {
             content()
-            if buttonAxis == .horizontal {
-                // FALLBACK-POLICY NOTE (pre-existing, deliberately unchanged): `tokens.interButton`
-                // falls back to `standard`'s literal 8 when `Properties.space` is nil, whereas the
-                // UIKit main-action stack uses `properties?.space?.interButton ?? .zero`. Inert for
-                // the real preset (which supplies `space`), but `buttonAxis` is load-bearing now,
-                // so the difference is recorded here rather than silently inherited.
-                HStack(spacing: tokens.interButton) {
-                    primaryButton
-                    if let secondaryTitle { secondaryButton(secondaryTitle) }
-                }
-            } else {
-                primaryButton
-                if let secondaryTitle {
-                    secondaryButton(secondaryTitle).padding(.top, tokens.interButton)
+            // The whole run is gated on "is there at least one button", mirroring
+            // `buildActionComponents`: `svMainActionContainer` is built ONLY `if resolved.showsPrimary
+            // || resolved.showsSecondary`, and is `nil` otherwise. An empty `HStack` would be
+            // zero-sized and look equivalent, but it is not — see `trailingGap` in
+            // `SwiftUIAlertModal`, which has to know whether this row exists at all.
+            if primaryTitle != nil || secondaryTitle != nil {
+                if buttonAxis == .horizontal {
+                    // FALLBACK-POLICY NOTE (pre-existing, deliberately unchanged): `tokens.interButton`
+                    // falls back to `standard`'s literal 8 when `Properties.space` is nil, whereas the
+                    // UIKit main-action stack uses `properties?.space?.interButton ?? .zero`. Inert for
+                    // the real preset (which supplies `space`), but `buttonAxis` is load-bearing now,
+                    // so the difference is recorded here rather than silently inherited.
+                    //
+                    // `HStack(spacing:)` puts the gap only BETWEEN children, so a lone secondary gets
+                    // no leading gap — the same arithmetic `UIStackView.spacing` does over one
+                    // arranged subview. The vertical branch below has to say that out loud instead.
+                    HStack(spacing: tokens.interButton) {
+                        if let primaryTitle { primaryButton(primaryTitle) }
+                        if let secondaryTitle { secondaryButton(secondaryTitle) }
+                    }
+                } else {
+                    if let primaryTitle { primaryButton(primaryTitle) }
+                    if let secondaryTitle {
+                        // The gap is BETWEEN the two buttons, so it must vanish when the secondary is
+                        // alone. Spelled as a conditional because this branch hand-rolls the stack
+                        // spacing (the run is inline in the card's `VStack(spacing: 0)`, not a nested
+                        // VStack) — `UIStackView` gets this for free, and a bare
+                        // `.padding(.top, interButton)` would leave an 8pt hole above a lone
+                        // secondary that UIKit does not have.
+                        secondaryButton(secondaryTitle)
+                            .padding(.top, primaryTitle == nil ? 0 : tokens.interButton)
+                    }
                 }
             }
         }
@@ -365,12 +385,12 @@ public struct AlertModalScaffold<Content: View>: View {
     /// The pressed state composes: `ObliquePrimaryStyle` offsets the button by `obliqueOffset`
     /// (−3, +3) while pressed, which cancels this displacement and lands it flush in its slot —
     /// exactly what UIKit's `transform = .identity.translatedBy(x: -3, y: 3)` does.
-    private var primaryButton: some View {
+    private func primaryButton(_ title: String) -> some View {
         Button(action: onPrimary) {
             if isPrimaryLoading {
                 ProgressView().tint(tokens.palette.onAccent)
             } else {
-                Text(primaryTitle)
+                Text(title)
             }
         }
         .buttonStyle(ObliquePrimaryStyle(tokens: tokens, fillsWidth: buttonsMatchParent))

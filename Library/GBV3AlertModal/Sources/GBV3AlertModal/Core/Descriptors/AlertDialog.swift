@@ -16,7 +16,8 @@ public struct AlertDialog: ModalDescriptor, StandardAlertContent {
     public var image: ModalImage?
     public var title: AttributedString?
     public var subtitle: AttributedString?
-    public var primary: String
+    /// `nil` → no primary button. See `StandardAlertContent.primary`.
+    public var primary: String?
     public var secondary: String?
     public var closeOnTapOverlay: Bool
     public var showCloseButton: Bool
@@ -30,7 +31,7 @@ public struct AlertDialog: ModalDescriptor, StandardAlertContent {
         image: ModalImage? = nil,
         title: String? = nil,
         subtitle: String? = nil,
-        primary: String,
+        primary: String?,
         secondary: String? = nil,
         closeOnTapOverlay: Bool = false,
         showCloseButton: Bool = false,
@@ -55,7 +56,7 @@ public struct AlertDialog: ModalDescriptor, StandardAlertContent {
         image: ModalImage? = nil,
         title: AttributedString?,
         subtitle: AttributedString?,
-        primary: String,
+        primary: String?,
         secondary: String? = nil,
         closeOnTapOverlay: Bool = false,
         showCloseButton: Bool = false,
