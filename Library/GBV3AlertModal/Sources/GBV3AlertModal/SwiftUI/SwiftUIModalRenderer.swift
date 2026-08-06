@@ -332,10 +332,15 @@ public final class SwiftUIModalRenderer: ObservableObject, ModalRenderer {
     public func registerBuiltInDescriptors() {
         // `[weak self]` in every closure: they are stored in `self.registrations`, exactly as in
         // `registerStandard`, so a strong capture would be a retain cycle.
-        register(TextInputDialog.self) { [weak self] descriptor, resolve in
-            (self?.properties(for: .standard),
-             UIKitModalRenderer.TextInputHolder.make(for: descriptor, resolve: resolve))
-        }
+        // `ModalContent.make`, not `UIKitModalRenderer.TextInputHolder.make` — bypasses the public
+        // `Factory<D>`-typed `register(_:factory:)` the same way `registerStandard` does, so the
+        // wider `any ModalContentInputs` factory type can be used without a `DataHolder`.
+        registrations[ObjectIdentifier(TextInputDialog.self)] = Registration<TextInputDialog>(
+            factory: { [weak self] descriptor, _ in
+                (self?.properties(for: .standard), ModalContent.make(for: descriptor))
+            },
+            route: nil, content: nil, view: nil
+        )
         register(TextInputDialog.self, view: { [weak self] descriptor, resolve in
             TextInputContent.make(
                 for: descriptor, tokens: self?.tokens(for: .standard) ?? .standard, resolve: resolve

@@ -81,4 +81,22 @@ extension ModalContent {
             dismissOnAction: false // the renderer's own gate owns teardown, same as AlertHolder.make
         )
     }
+
+    /// The mirror of `UIKitModalRenderer.TextInputHolder.make` — same mapping, minus the `UITextField`
+    /// itself: `hasSubtitleCustomView` records that a custom view WOULD occupy the subtitle slot,
+    /// confirmed inert on this backend (see `SwiftUIModalRenderer`'s own doc on `makePresentation`),
+    /// kept for structural parity. No `showCloseButton` field on `TextInputDialog` — always `false`,
+    /// same as the UIKit holder never setting it either.
+    public static func make(for descriptor: TextInputDialog) -> ModalContent {
+        let (titlePlain, titleAttr) = ModalText.split(descriptor.title)
+        return ModalContent(
+            closeOnTapOverlay: descriptor.closeOnTapOverlay,
+            title: titlePlain,
+            hasAttributedTitle: (titleAttr?.length ?? 0) > 0,
+            hasSubtitleCustomView: true,
+            primaryAction: descriptor.primary,
+            secondaryAction: descriptor.secondary,
+            dismissOnAction: false
+        )
+    }
 }
