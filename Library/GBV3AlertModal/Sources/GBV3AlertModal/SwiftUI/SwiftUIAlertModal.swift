@@ -329,7 +329,20 @@ public struct SwiftUIAlertModal: View {
                 // reads its own — draws them completely unstyled. `AttributedTextBridge` re-scopes
                 // colour and font so the emphasis the caller asked for survives. Styling stays
                 // limited to the whitelisted bold/color/link subgrammar.
+                //
+                // `.font`/`.foregroundColor` here are AMBIENT, same as the `.plain` case above —
+                // they are what a run WITHOUT an explicit attribute falls back to. Their absence was
+                // a real gap: a caller styling only PART of a subtitle (e.g. one bold word, the rest
+                // untouched — `GenieShapeCatalog.badgeUnlockSubtitle`'s exact shape) got the untouched
+                // runs rendered in SwiftUI's system default rather than `tokens.subtitleFont`/
+                // `.subtitleText`, matching UIKit's OWN equivalent gap (`ModalLayout.renderedFont`'s
+                // doc: `lbSubtitle.font` is never assigned, so an unstyled UIKit run falls back to the
+                // 17pt system default too) rather than fixing it — this closes the SwiftUI side.
+                // `AttributedTextBridge` sets an explicit per-run attribute only where the caller did,
+                // so a run's own styling still wins over this ambient default, exactly like `.plain`.
                 Text(AttributedTextBridge.swiftUIRenderable(attributed))
+                    .font(tokens.subtitleFont.font)
+                    .foregroundColor(tokens.palette.subtitleText)
                     .multilineTextAlignment(.center)
                     .modifier(ContentRowWidth(fillsWidth: tokens.contentChildrenFillWidth))
                     .modifier(NeverTruncates(minimumScaleFactor: tokens.titleMinimumScaleFactor))
