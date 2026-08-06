@@ -20,7 +20,11 @@
 //  FOUR of the five are GEOMETRY — the two engines arbitrate the same constraints
 //  differently. The fifth (`divergence-shows-primary-not-obeyed`) is a different
 //  kind of thing: a RENDERER-OBEDIENCE gap, where the shared resolver's answer is
-//  correct and one backend simply does not read it.
+//  correct and one backend simply did not read it. **That fifth one is FIXED as of
+//  Pass 2** — which is the point of the distinction: a geometry divergence is an
+//  arbitration difference to be understood, an obedience gap is a bug to be closed.
+//  The row and its shape stay so the two cards can still be stepped side by side,
+//  now agreeing; the SwiftUI caption carries the before-and-after numbers.
 //
 //  A sixth, `divergence-d7-subtitle-viewport`, is DELETED along with the
 //  `Properties.contentScrollable` flag that was its entire cause. With the flag
@@ -202,7 +206,7 @@ extension DivergenceCatalog {
 // SwiftUI `SubtitleSlot` mirrors `svSubtitleContainer` unconditionally, and the 1222pt subtitle
 // measures 645.33 against 645.33 in portrait and 161.33 against 161.33 in landscape.
 
-// MARK: - `showsPrimary` is resolved but not obeyed
+// MARK: - `showsPrimary` was resolved but not obeyed (CLOSED, Pass 2)
 
 extension DivergenceCatalog {
     /// **`primaryActionStyle` NIL, with the primary action STRING still present.**
@@ -212,10 +216,15 @@ extension DivergenceCatalog {
     /// so it answers FALSE here — correctly, and identically for both backends, since both
     /// run the same resolver over the same holder. `GBAlertModal+ViewGraph`'s
     /// `buildActionComponents` obeys it and builds no primary button, no button slot and no
-    /// main-action stack at all; `AlertModalScaffold` cannot obey it, because its
-    /// `primaryTitle` is a non-optional `String` and `card` draws `primaryButton`
-    /// unconditionally. So the divergence is not two engines arbitrating differently — it is
-    /// one renderer not reading a flag. See `SwiftUIAlertModal`'s doc comment, which records it.
+    /// main-action stack at all; `AlertModalScaffold` COULD NOT obey it, because its
+    /// `primaryTitle` was a non-optional `String` and `card` drew `primaryButton`
+    /// unconditionally. So the divergence was not two engines arbitrating differently — it was
+    /// one renderer not reading a flag.
+    ///
+    /// **Closed in Pass 2:** `primaryTitle` is `String?` and `SwiftUIAlertModal` passes
+    /// `resolved.showsPrimary ? config.primary : nil`. This shape is kept because it is still the
+    /// cleanest reachable input for the condition — and because a row that once diverged and now
+    /// agrees is the evidence, not the absence of a row.
     ///
     /// Keeping the primary STRING is what makes the shape reachable: drop it and
     /// `showsPrimary` is false for the ordinary reason (no action) and the SwiftUI scaffold

@@ -147,14 +147,68 @@ So the SwiftUI surface is free to be reshaped right now, without staging or depr
 materially stronger position than "everything public is a contract," and Pass 3 should plan on it
 rather than protecting a compatibility that does not exist.
 
-## 4. The descriptor gap is the keystone
+## 4. The descriptor gap — ~~one problem~~ THREE, with three different answers
 
-Nine `notRenderable` gallery entries, the `showsPrimary` divergence, and the four bespoke
-delegations are **one problem**: a `ModalDescriptor` is a `Sendable` value that cannot carry a view,
-cannot express "no primary button" (`AlertDialog.primary` is a non-optional `String`), and has no
-presentation-state channel.
+**Corrected 2026-08-06, in Pass 2.** This section said the nine `notRenderable` entries, the
+`showsPrimary` divergence and the four bespoke delegations were **one problem** and that "closing it
+collapses all three at once." They shared a symptom — the UIKit gallery entry reaches past the
+descriptor — and had nothing else in common:
 
-Closing it collapses all three at once, and it is the highest-leverage single change available.
+| | entries | answer |
+|---|---|---|
+| **(a)** cannot say "no primary button" | 6 stress + the `showsPrimary` divergence | genuinely missing vocabulary. **Fixed** |
+| **(b)** cannot carry a `UIView` | 1 (`variant-subtitle-customview`) | **WON'T FIX** — costs `Sendable`; `register(_:view:)` already serves it |
+| **(c)** no presentation-state channel | 2 (button enable/disable) | the channel already existed. **Fixed** |
+
+So Pass 2 closed **eight of nine**, not nine, and (b) is now a recorded decision rather than a gap.
+
+**(a) — `StandardAlertContent.primary` is `String?`.** Nothing on the UIKit side changed to accept
+it: `DataHolder.primaryAction` was already `String?`, so `nil` reaches `resolve`, which reports
+`showsPrimary` false, which `buildActionComponents` has always obeyed. The five bespoke descriptors
+keep a required primary — none has a buttonless shape.
+
+`SwiftUIAlertModal` now passes `resolved.showsPrimary ? config.primary : nil`, which closes the
+`showsPrimary`-resolved-but-not-obeyed divergence as a side effect. All eleven resolver fields are
+resolved AND obeyed.
+
+**(c) — no new channel was needed, and looking for one was the mistake.** `ModalRenderer.update(_:to:)`
+already rebuilt a live presentation on both backends, so presentation state belongs ON the descriptor:
+`AlertDialog.primaryEnabled`/`secondaryEnabled` (`ButtonEnablement`). The UIKit renderer makes the
+same two `changeXActionEnableState` calls the gallery makes by hand, *after* its rebuild.
+
+This costs the claim that "a descriptor carries content and style, not presentation state" — which
+`LoadingDialog.isLoading` had already falsified. It is false on purpose now.
+
+**What Pass 2 did NOT touch:** the four bespoke delegations. Those are Pass 4, and grouping them here
+was part of the same over-collection.
+
+## 4a. The real work in Pass 2 was the SPACING, and it was invisible until then
+
+Making the primary button absentable is three lines of vocabulary. What it cost was two layout rules
+that had been **vacuously true** for as long as every descriptor carried a primary button:
+
+- **A lone secondary must not carry the inter-button gap.** SwiftUI's vertical button run hand-rolls
+  what `UIStackView.spacing` does, as a `.padding(.top, interButton)` on the secondary — and stack
+  spacing applies only BETWEEN arranged subviews. Measured cost of getting it wrong: 8pt.
+- **Every row's trailing gap is conditional on a row existing below it.** That is exactly what UIKit's
+  `buildDividers` computes (`vwBannerAndBelowDivider`, `vwTitleAndBelowDivider`,
+  `vwSubtitleAndBelowDivider` each exist only when a later component was built), and
+  `SwiftUIAlertModal` applied all three unconditionally. Measured cost: 16pt on the subtitle.
+
+Neither is visible from the descriptor change. Both were found by reading `GBAlertModal+ViewGraph.swift`
+before writing any SwiftUI, which is the ordering Pass 1 established and this pass reused deliberately.
+
+**Three shapes were added to the differential gate** — `no-primary-secondary-only`,
+`no-buttons-title-subtitle`, `no-buttons-title-only` — and the third exists only because the second
+cannot see the title's gap (its subtitle satisfies the condition either way). Both rules are
+mutation-verified.
+
+**One thing the gate could not do, and it is worth recording alongside §6's blindness note.**
+Enable-state has no geometry: a disabled button occupies the same frame as an enabled one, so
+`assertAgrees` is green through the entire (c) feature and can never gate it. `ButtonEnablementTests`
+is a separate, non-geometric gate for that reason — the differential harness is not a universal net,
+and the failure mode here is *absence of signal* rather than the common-mode *sameness of signal* §6
+describes.
 
 ## 5. Staged path
 
@@ -166,8 +220,10 @@ renderer and there was no environment to read from; and the real find was that t
 measured `String(title.characters)`, discarding per-run fonts the view draws. Golden absolute pins
 landed alongside, after the mutation run in §6 showed the gate could not see a moved floor.
 
-**Pass 2 — the descriptor gap.** `AlertDialog.primary` becomes optional; descriptors gain a
-presentation-state channel. Closes nine gallery gaps and one divergence.
+**Pass 2 — the descriptor gap. DONE**, and it was three problems rather than one — see §4 for the
+correction and §4a for what the layout work turned out to be. `primary` is optional, descriptors carry
+button enable-state through the `update(_:to:)` channel that already existed, and one entry is closed
+as WON'T FIX. Eight gallery gaps and one divergence, not nine.
 
 **Pass 3 — the core.** A SwiftUI-native configuration type and resolver over `Core/` descriptors.
 This is where "by construction" stops being true and the gate becomes the only thing holding the

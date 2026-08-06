@@ -6,15 +6,16 @@
 //  representation and every `GBAlertModal.ActionStyle` case, name-for-name with the
 //  UIKit side so the two galleries can be compared row by row.
 //
-//  THREE of the eleven are `notRenderable`, and all three for the same reason: the
-//  UIKit entry reaches PAST the descriptor. `variant-subtitle-customview` hands the
-//  holder a live `UIView`; the two button-state entries call
-//  `changePrimaryActionEnableState` / `changeSecondaryActionEnableState` on the modal
-//  AFTER `init` has built the view graph. A `ModalDescriptor` is a `Sendable` value —
-//  it carries no view and has no post-construction hook — so neither backend can
-//  express these THROUGH a descriptor. This is a descriptor-vocabulary limit, not a
-//  SwiftUI one, and the same limit produces the six `notRenderable` stress twins and
-//  the `showsPrimary` divergence.
+//  ONE of the eleven is `notRenderable`, down from three (Pass 2). All three used to
+//  fail the same way — the UIKit entry reaches PAST the descriptor — but that was two
+//  different limits wearing one description, and they have different answers:
+//
+//   * NO POST-CONSTRUCTION HOOK (the two button-state entries). Fixed. `AlertDialog`
+//     carries `primaryEnabled`/`secondaryEnabled` and `update(_:to:)` was already the
+//     channel; see `ButtonEnablement`.
+//   * CANNOT CARRY A VIEW (`variant-subtitle-customview`). NOT fixed, deliberately —
+//     `ModalDescriptor: Sendable` is the thing being protected, and the bespoke-view
+//     route already serves the real use case. See that entry's own reason.
 //
 //  `notRenderable` rather than an approximation on purpose: an entry that renders
 //  something adjacent looks like agreement and is worse than an honest gap.
@@ -106,12 +107,14 @@ extension SwiftUICatalog {
             SwiftUICatalogEntry.notRenderable(
                 "variant-subtitle-customview",
                 category: "Variant · Subtitle",
-                reason: "The UIKit entry sets `DataHolder.subtitleCustomView` to a live, bordered "
-                    + "`UIView`. `ModalDescriptor` is a `Sendable` value type and cannot carry a "
-                    + "view, so NEITHER backend can express this through a descriptor — the UIKit "
-                    + "twin bypasses the descriptor path entirely. The bespoke-view route "
-                    + "(`SwiftUIModalRenderer.register(_:view:)`) is how a real caller would do "
-                    + "this; see the `badge-detail-popup` entry for a worked example."
+                reason: "WON'T FIX, not can't — the only row here that is a decision. The UIKit "
+                    + "entry sets `DataHolder.subtitleCustomView` to a live, bordered `UIView`, and "
+                    + "`ModalDescriptor` is `Sendable` precisely so descriptors can cross actor "
+                    + "boundaries (it is why `ModalImage` carries an asset NAME and not a "
+                    + "`UIImage`). Making a descriptor carry a view would trade that for one "
+                    + "gallery row. The bespoke-view route "
+                    + "(`SwiftUIModalRenderer.register(_:view:)`) already covers the real use case "
+                    + "— see the `badge-detail-popup` entry for a worked example."
             )
         ]
     }
@@ -175,33 +178,50 @@ extension SwiftUICatalog {
 // MARK: - Button enabled/disabled state
 
 extension SwiftUICatalog {
-    /// Both entries are `notRenderable` for the SAME reason, and it is worth stating once:
-    /// the UIKit twins call `changeSecondaryActionEnableState` / `changePrimaryActionEnableState`
-    /// on the modal AFTER `init(properties:holder:)` has built the view graph — the buttons do
-    /// not exist before that. A descriptor has no post-construction hook.
+    /// **Both entries render now (Pass 2), and the reason they could not is worth keeping.**
     ///
-    /// `SwiftUIAlertModal` DOES carry a `primaryEnabled` flag (see `SatisfactionDemoView`), so
-    /// the SwiftUI backend can express a disabled primary — just not through the descriptor
-    /// path this catalog renders. There is no `secondaryEnabled` counterpart at all.
+    /// It was: the UIKit twins call `changeSecondaryActionEnableState` /
+    /// `changePrimaryActionEnableState` on the modal AFTER `init(properties:holder:)` has built the
+    /// view graph — the buttons do not exist before that — and "a descriptor carries content and
+    /// style, not presentation state."
+    ///
+    /// That last clause is what changed, and it was already untrue: `LoadingDialog.isLoading` is
+    /// presentation state on a descriptor and has been since it shipped. `AlertDialog` carries
+    /// `primaryEnabled`/`secondaryEnabled` (`ButtonEnablement`), and no new channel was needed —
+    /// `update(_:to:)` already rebuilt a live presentation on both backends, so the UIKit renderer
+    /// makes those same two calls after its rebuild and the SwiftUI one passes the flags into
+    /// `AlertModalScaffold`. `secondaryEnabled` did not exist on the SwiftUI side at all and was
+    /// added with them.
+    ///
+    /// These entries present the DISABLED state directly rather than presenting-then-updating: the
+    /// gallery is a shape catalog, and the shape is what the row is for. `ButtonEnablementTests`
+    /// covers the update path, in both directions, on both backends.
     static var variantButtonStateEntries: [SwiftUICatalogEntry] {
         [
-            SwiftUICatalogEntry.notRenderable(
-                "variant-button-states",
-                category: "Variant · Button State",
-                reason: "The UIKit twin calls `changeSecondaryActionEnableState(isEnable: false)` "
-                    + "after construction. A `ModalDescriptor` has no post-construction hook, and "
-                    + "`SwiftUIAlertModal` has no `secondaryEnabled` flag to carry it — so this "
-                    + "shape is unreachable from the descriptor path on either backend."
-            ),
-            SwiftUICatalogEntry.notRenderable(
-                "variant-button-primary-disabled",
-                category: "Variant · Button State",
-                reason: "The UIKit twin calls `changePrimaryActionEnableState(isEnable: false)` "
-                    + "after construction. `SwiftUIAlertModal.primaryEnabled` CAN express this "
-                    + "(see `SatisfactionDemoView`), but the descriptor path this catalog renders "
-                    + "has no way to set it — a descriptor carries content and style, not "
-                    + "presentation state."
-            )
+            SwiftUICatalogEntry.renderable(
+                "variant-button-states", category: "Variant · Button State"
+            ) {
+                AlertDialog(
+                    title: "Disabled Secondary",
+                    subtitle: "The secondary action is present but not tappable.",
+                    primary: "Okay",
+                    secondary: "Cancel",
+                    secondaryEnabled: false,
+                    closeOnTapOverlay: true
+                )
+            },
+            SwiftUICatalogEntry.renderable(
+                "variant-button-primary-disabled", category: "Variant · Button State"
+            ) {
+                AlertDialog(
+                    title: "Disabled Primary",
+                    subtitle: "The primary action is present but not tappable.",
+                    primary: "Okay",
+                    secondary: "Cancel",
+                    primaryEnabled: false,
+                    closeOnTapOverlay: true
+                )
+            }
         ]
     }
 }

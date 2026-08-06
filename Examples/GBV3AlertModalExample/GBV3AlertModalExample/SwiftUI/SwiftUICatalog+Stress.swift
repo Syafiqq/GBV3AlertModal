@@ -14,9 +14,11 @@
 //  A stress matrix whose two halves disagree because someone retyped a string is
 //  a matrix that measures the typing, not the layout.
 //
-//  SIX entries are `notRenderable`, and the reason is the same one for all six —
-//  see `SwiftUICatalog.noPrimaryReason`. It is a DESCRIPTOR-VOCABULARY limit, not
-//  a SwiftUI one, and the gallery shows it rather than dropping the rows.
+//  ALL 28 render. Six used to be `notRenderable` for one shared reason —
+//  `StandardAlertContent.primary` was a non-optional `String`, so no descriptor could
+//  say "no primary button" on EITHER backend. It is `String?` as of Pass 2 and the six
+//  spell `primary: nil`. The note that stood here is kept, in full, above
+//  `stressEntries` below: the limit was real, and what it cost is worth remembering.
 //
 
 import Foundation
@@ -79,23 +81,22 @@ extension SwiftUIDivergence {
 // MARK: - The stress entries
 
 extension SwiftUICatalog {
-    /// The reason all six buttonless stress shapes are `notRenderable`.
+    /// **The six buttonless stress shapes render now, and `noPrimaryReason` is gone with them.**
     ///
-    /// **Not a renderer gap.** `StandardAlertContent.primary` is a non-optional `String`, so
-    /// `AlertDialog` — and every other descriptor in the standard family — structurally cannot
-    /// say "no primary button". `UIKitModalRenderer.AlertHolder.make` passes `descriptor.primary`
-    /// straight into `DataHolder.primaryAction`, so the UIKit DESCRIPTOR path cannot express it
-    /// either; the UIKit gallery entry sidesteps the descriptors entirely and builds a
-    /// `DataHolder` with `primaryAction: nil` by hand (see `StressCatalog.entry`).
+    /// It used to read: "`StandardAlertContent.primary` is a non-optional `String`, so no descriptor
+    /// can express 'no primary button'. Not a SwiftUI gap — the UIKit descriptor path can't either;
+    /// the UIKit twin builds a `DataHolder` with `primaryAction: nil` directly."
     ///
-    /// Spelling it `primary: ""` would be worse than useless: `showsPrimary` is
-    /// `holder.primaryAction != nil`, so an empty string draws an EMPTY BUTTON — a shape neither
-    /// backend has, dressed up as a passing comparison.
-    static let noPrimaryReason =
-        "StandardAlertContent.primary is a non-optional String, so no descriptor can express "
-        + "'no primary button'. Not a SwiftUI gap — the UIKit descriptor path can't either; the "
-        + "UIKit twin builds a DataHolder with primaryAction: nil directly."
-
+    /// Every word of that was true and it is the whole reason `primary` is `String?` now (Pass 2).
+    /// The six entries below spell `primary: nil` and go through the ordinary descriptor path on
+    /// both backends; the UIKit twins still hand-build their `DataHolder`s, because `StressCatalog`
+    /// is the frozen gallery and nothing required changing it.
+    ///
+    /// One thing the old note got right and is worth keeping: spelling it `primary: ""` would have
+    /// been worse than useless. `showsPrimary` tests `holder.primaryAction != nil`, so an empty
+    /// string draws an EMPTY BUTTON — a shape neither backend has, dressed up as a passing
+    /// comparison.
+    ///
     /// All 28, in `StressCatalog.entries` order.
     static var stressEntries: [SwiftUICatalogEntry] {
         stressSweepEntries
@@ -168,9 +169,15 @@ extension SwiftUICatalog {
                     closeOnTapOverlay: true
                 )
             },
-            SwiftUICatalogEntry.notRenderable(
-                "stress-primary-none", category: category, reason: noPrimaryReason
-            ),
+            SwiftUICatalogEntry.renderable("stress-primary-none", category: category) {
+                AlertDialog(
+                    title: StressCatalog.title10Line,
+                    subtitle: StressCatalog.subtitle10Line,
+                    primary: nil,
+                    secondary: StressCatalog.secondaryFull,
+                    closeOnTapOverlay: true
+                )
+            },
             SwiftUICatalogEntry.renderable("stress-primary-wrapped", category: category) {
                 AlertDialog(
                     title: StressCatalog.title10Line,
@@ -279,12 +286,28 @@ extension SwiftUICatalog {
     static var stressDegenerateEntries: [SwiftUICatalogEntry] {
         let category = StressCatalog.degenerateCategory
         return [
-            SwiftUICatalogEntry.notRenderable(
-                "stress-all-none", category: category, reason: noPrimaryReason
-            ),
-            SwiftUICatalogEntry.notRenderable(
-                "stress-banner-only", category: category, reason: noPrimaryReason
-            ),
+            SwiftUICatalogEntry.renderable("stress-all-none", category: category) {
+                AlertDialog(
+                    title: String?.none,
+                    subtitle: String?.none,
+                    primary: nil,
+                    closeOnTapOverlay: true
+                )
+            },
+            SwiftUICatalogEntry.renderable(
+                "stress-banner-only",
+                category: category,
+                divergences: [.bannerArtworkNote, .ultraAspectBanner]
+            ) {
+                AlertDialog(
+                    image: ModalImage("banner_ultrawide"),
+                    title: String?.none,
+                    subtitle: String?.none,
+                    primary: nil,
+                    closeOnTapOverlay: true,
+                    style: .stressWideBanner
+                )
+            },
             SwiftUICatalogEntry.renderable("stress-buttons-only", category: category) {
                 AlertDialog(
                     title: String?.none,
@@ -294,9 +317,14 @@ extension SwiftUICatalog {
                     closeOnTapOverlay: true
                 )
             },
-            SwiftUICatalogEntry.notRenderable(
-                "stress-title-only", category: category, reason: noPrimaryReason
-            )
+            SwiftUICatalogEntry.renderable("stress-title-only", category: category) {
+                AlertDialog(
+                    title: StressCatalog.title10Line,
+                    subtitle: String?.none,
+                    primary: nil,
+                    closeOnTapOverlay: true
+                )
+            }
         ]
     }
 
@@ -385,9 +413,14 @@ extension SwiftUICatalog {
                     closeOnTapOverlay: true
                 )
             },
-            SwiftUICatalogEntry.notRenderable(
-                "stress-no-buttons", category: category, reason: noPrimaryReason
-            ),
+            SwiftUICatalogEntry.renderable("stress-no-buttons", category: category) {
+                AlertDialog(
+                    title: StressCatalog.title10Line,
+                    subtitle: StressCatalog.subtitle10Line,
+                    primary: nil,
+                    closeOnTapOverlay: true
+                )
+            },
             SwiftUICatalogEntry.renderable("stress-two-wrapped-vertical", category: category) {
                 AlertDialog(
                     title: String?.none,
@@ -397,9 +430,20 @@ extension SwiftUICatalog {
                     closeOnTapOverlay: true
                 )
             },
-            SwiftUICatalogEntry.notRenderable(
-                "stress-widebanner-title-only", category: category, reason: noPrimaryReason
-            ),
+            SwiftUICatalogEntry.renderable(
+                "stress-widebanner-title-only",
+                category: category,
+                divergences: [.bannerArtworkNote, .ultraAspectBanner]
+            ) {
+                AlertDialog(
+                    image: ModalImage("banner_ultrawide"),
+                    title: StressCatalog.title10Line,
+                    subtitle: String?.none,
+                    primary: nil,
+                    closeOnTapOverlay: true,
+                    style: .stressWideBanner
+                )
+            },
             SwiftUICatalogEntry.renderable(
                 "stress-close-button-horizontal-wrapped",
                 category: category

@@ -30,12 +30,16 @@
 //  1222pt subtitle measures 645.33 against 645.33 in portrait, 161.33 against
 //  161.33 in landscape. There is nothing left to display.
 //
-//  **Four of the five are GEOMETRY; the fifth is not.**
-//  `divergence-shows-primary-not-obeyed` is a renderer-OBEDIENCE gap — the shared
-//  resolver's answer is right and this backend does not read it — so it is a
-//  plain DEFECT rather than an accepted difference in arbitration. Its caption
-//  says so, because a reader stepping the section should not have to infer which
-//  kind of thing they are looking at.
+//  **Four of the five are GEOMETRY; the fifth is not — and the fifth is now FIXED.**
+//  `divergence-shows-primary-not-obeyed` was a renderer-OBEDIENCE gap — the shared
+//  resolver's answer was right and this backend did not read it — so it was a plain
+//  DEFECT rather than an accepted difference in arbitration, and that is exactly why
+//  it was the one that could simply be closed. Pass 2 closed it (`primaryTitle` is
+//  `String?`). The ROW STAYS, with its caption rewritten to past tense and its
+//  measurements intact: it is the section's only worked example of the defect class,
+//  and deleting the evidence with the bug would leave the remaining four looking like
+//  the only kind of divergence there is. Stepping it against the UIKit twin should now
+//  show two identical cards.
 //
 
 import Foundation
@@ -134,25 +138,26 @@ extension SwiftUIDivergence {
     // `d7Residual` sat here and is DELETED with `Properties.contentScrollable`, which was the
     // whole of what it captioned. With the flag gone the two backends agree on that shape.
 
+    /// **CLOSED in Pass 2.** The measurements are kept because they are what the fix has to be
+    /// judged against, not because the gap is still open — the two backends agree on this shape now.
     static let showsPrimaryNotObeyed = SwiftUIDivergence(
-        caption: "showsPrimary not obeyed · DEFECT — and NOT a geometry divergence like the other "
-            + "five. This is a RENDERER-OBEDIENCE gap: the shared resolver gets the answer right "
-            + "and this backend does not read it. WHAT TO LOOK FOR: the UIKit twin has NO BUTTON AT "
-            + "ALL below the subtitle; this card still draws a full-width orange primary. Measured "
-            + "at 390x844 on the library's mirror of this preset: the UIKit card is 320x123.0 and "
-            + "builds no btPrimaryAction, no vwPrimaryAction and no svMainActionContainer; the "
-            + "SwiftUI card is 320x187.0 with a 256x48 button at (35, 112) — 64.0pt of extra card "
-            + "height, and that SwiftUI card is bit-identical to a control that DOES supply a "
-            + "primaryActionStyle, so the flag changes nothing here whatsoever. Cause: a "
-            + "primaryActionStyle of nil with the action STRING still present makes "
-            + "resolve() report showsPrimary false (it requires BOTH), which "
-            + "GBAlertModal+ViewGraph obeys — but AlertModalScaffold's primaryTitle is a "
-            + "non-optional String and card draws primaryButton unconditionally, so it CANNOT "
-            + "obey it. The phantom button is not even off-colour: with no style to read, "
-            + "ModalTokens keeps standard's literal 0xF7941E accent, which is the same orange "
-            + "this preset's theme supplies. Presence is the entire tell. Recorded on "
-            + "SwiftUIAlertModal's own doc comment; fixing it needs an optional primaryTitle on "
-            + "the scaffold, which is a public API change and out of scope for a frozen UIKit."
+        caption: "showsPrimary not obeyed · CLOSED (Pass 2). Kept as the record of a defect class "
+            + "the other five entries do not contain: this was never geometry, it was RENDERER "
+            + "OBEDIENCE — the shared resolver got the answer right and this backend could not read "
+            + "it. WHAT IT LOOKED LIKE, measured at 390x844 on the library's mirror of this preset: "
+            + "the UIKit card was 320x123.0 with no btPrimaryAction, no vwPrimaryAction and no "
+            + "svMainActionContainer; the SwiftUI card was 320x187.0 with a 256x48 button at "
+            + "(35, 112) — 64.0pt of phantom card height. The button was not even off-colour "
+            + "(ModalTokens keeps standard's 0xF7941E accent with no style to read, the same orange "
+            + "this preset supplies), so PRESENCE was the entire tell. Cause: a primaryActionStyle "
+            + "of nil with the action STRING still present makes resolve() report showsPrimary "
+            + "false — it requires BOTH — which GBAlertModal+ViewGraph obeys, but "
+            + "AlertModalScaffold.primaryTitle was a non-optional String and card drew primaryButton "
+            + "unconditionally. FIX: primaryTitle is String? and SwiftUIAlertModal passes "
+            + "resolved.showsPrimary ? config.primary : nil. The old note said this was 'out of "
+            + "scope for a frozen UIKit' — it needed no UIKit change at all. Gated by "
+            + "DifferentialGeometryTests' no-buttons-title-subtitle shape, whose UIKit card measures "
+            + "the same 320x123.0."
     )
 }
 
