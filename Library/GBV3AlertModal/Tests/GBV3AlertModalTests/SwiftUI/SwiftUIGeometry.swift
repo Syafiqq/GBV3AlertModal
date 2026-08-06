@@ -456,6 +456,43 @@ enum DifferentialGeometry {
         }
     }
 
+    // MARK: - Layer visuals (spec C-3b)
+    //
+    // Only the SwiftUI half lives here — `LayerVisuals`/`swiftUILayerVisuals` moved from
+    // `DifferentialGeometryComparison.swift` at Pass 5 step 4, because `GeometryPinsTests` (a
+    // permanent pin, not part of the gate) depends on them. `uiKitLayerVisuals` had no such
+    // dependent and died with the gate — see that commit for the check.
+
+    /// The two surfaces that HAVE a layer identity. Frames cannot express either of them.
+    struct LayerVisuals: Equatable {
+        var card: ModalTokens.LayerVisual
+        /// `nil` when the shape draws no primary button.
+        var primaryButton: ModalTokens.LayerVisual?
+    }
+
+    /// The SwiftUI side's DECLARED layer identity — the values `ObliquePrimaryStyle` and
+    /// `AlertModalScaffold.card` render from (see `ModalTokens.LayerVisual`'s doc for why this is a
+    /// declared value and not a hosted-layer read: `clipShape` is a mask and `.shadow` is a filter,
+    /// neither of which lowers to a settable `CALayer` property).
+    ///
+    /// **`primaryButton` is gated on the shape actually HAVING one**, and it has to be: the UIKit
+    /// side used to report `nil` when `btPrimaryAction` was never built, so returning the token value
+    /// unconditionally compared a declared visual against an absent button and called it a
+    /// divergence. This asks the SHARED resolver — the same question `AlertModalScaffold`'s button
+    /// run itself asks — rather than re-deriving "is there a primary" from the descriptor, so the two
+    /// cannot drift.
+    static func swiftUILayerVisuals(_ shape: Shape, tokens: ModalTokens? = nil) -> LayerVisuals {
+        let tokens = tokens ?? ModalTokens(from: shape.properties)
+        let holder = UIKitModalRenderer.AlertHolder.make(for: shape.dialog, resolve: { _ in })
+        let resolved = GBAlertModal.resolve(
+            properties: shape.properties, holder: holder, isLandscape: false
+        )
+        return LayerVisuals(
+            card: tokens.cardVisual,
+            primaryButton: resolved.showsPrimary ? tokens.primaryButtonVisual : nil
+        )
+    }
+
     // MARK: - Hosting
 
     /// A key window sized to `host`, created the way `SnapshotSupport.renderForSnapshot` documents.
