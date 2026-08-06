@@ -215,3 +215,23 @@ public extension GBAlertModal.Properties {
         }
     }
 }
+
+// MARK: - The resolver's inputs
+
+/// The UIKit vocabulary's half of `ModalStructureInputs`. Every member is a projection of a field
+/// that already existed and that `resolve` already read — nothing is computed here that was not
+/// being computed inline before, which is what makes the extraction behaviour-preserving.
+extension GBAlertModal.Properties: ModalStructureInputs {
+    public var hasPrimaryActionStyle: Bool { primaryActionStyle != nil }
+    public var hasSecondaryActionStyle: Bool { secondaryActionStyle != nil }
+    /// `buttonActionOrientation ?? .vertical` collapsed to a `Bool`, losslessly: the axis has
+    /// exactly two cases, so "defaults to vertical" and "is it horizontal" are the same statement.
+    public var buttonsAreHorizontal: Bool { buttonActionOrientation == .horizontal }
+    /// `== true`, not `?? false` — UIKit reads exactly this, so a nil means "hug" rather than
+    /// "no opinion, use the default".
+    public var buttonsMatchParent: Bool { buttonActionShouldMatchParent == true }
+    public var fixedWidthPortrait: CGFloat? { contentProperty?.fixedWidthPortrait }
+    public var maxWidthPortrait: CGFloat? { contentProperty?.maxWidthPortrait }
+    public var fixedWidthLandscape: CGFloat? { contentProperty?.fixedWidthLandscape }
+    public var maxWidthLandscape: CGFloat? { contentProperty?.maxWidthLandscape }
+}

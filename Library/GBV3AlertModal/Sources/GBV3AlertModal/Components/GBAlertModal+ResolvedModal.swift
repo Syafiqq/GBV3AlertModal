@@ -55,6 +55,23 @@ extension GBAlertModal {
             holder: DataHolder,
             isLandscape: Bool
     ) -> ResolvedModal {
+        resolve(inputs: properties, holder: holder, isLandscape: isLandscape)
+    }
+
+    /// **The same resolver, over whichever configuration vocabulary the caller has.**
+    ///
+    /// The body moved here unchanged; the `Properties` signature above now forwards, so no existing
+    /// call site or public API moved. `ModalStructureInputs` is the FIVE things this function was
+    /// already reading off `Properties` — see that protocol for the measurement and for why a second
+    /// resolver was never necessary.
+    ///
+    /// This is what keeps both backends deciding identically once a SwiftUI-native config exists.
+    /// §5 expected Pass 3 to give that up; it did not have to.
+    nonisolated public static func resolve(
+            inputs: (any ModalStructureInputs)?,
+            holder: DataHolder,
+            isLandscape: Bool
+    ) -> ResolvedModal {
         // Banner — `registerDialogView`: `if let banner = dataHolder?.banner`. A degenerate
         // (nil OR zero-size) image reserves no banner slot: a zero-size `UIImage()` has no
         // pixels to render and would otherwise leave an empty gap above the title.
@@ -81,8 +98,8 @@ extension GBAlertModal {
         }
 
         // Actions — `registerDialogView`: requires BOTH the action string and its style.
-        let showsPrimary = holder.primaryAction != nil && properties?.primaryActionStyle != nil
-        let showsSecondary = holder.secondaryAction != nil && properties?.secondaryActionStyle != nil
+        let showsPrimary = holder.primaryAction != nil && inputs?.hasPrimaryActionStyle == true
+        let showsSecondary = holder.secondaryAction != nil && inputs?.hasSecondaryActionStyle == true
 
         // Close — `registerDialogView`: `dataHolder?.showCloseButton == true` (vwContainer is
         // always present once the base design is built).
@@ -90,8 +107,14 @@ extension GBAlertModal {
 
         // Button axis / alignment — `adjustDialogViewStyle`. When no orientation is set the
         // main-action stack keeps its generated default of `.vertical`.
-        let buttonAxis = properties?.buttonActionOrientation ?? .vertical
-        let buttonsMatchParent = properties?.buttonActionShouldMatchParent == true
+        // The `Bool -> Axis` direction of the lossless collapse documented on
+        // `ModalStructureInputs.buttonsAreHorizontal`. `ResolvedModal` keeps speaking
+        // `NSLayoutConstraint.Axis` because `UIStackView.axis` takes exactly that type and the UIKit
+        // renderer is frozen; SwiftUI bridges it once, at `AlertModalScaffold`'s boundary.
+        let buttonAxis: NSLayoutConstraint.Axis = inputs?.buttonsAreHorizontal == true
+                ? .horizontal
+                : .vertical
+        let buttonsMatchParent = inputs?.buttonsMatchParent == true
 
         // Runtime flags — consumed by the overlay-tap / dismiss callbacks.
         let dismissOnAction = holder.dismissOnAction
@@ -99,13 +122,12 @@ extension GBAlertModal {
 
         // Content width — `adjustSvContentContainerConstraint`: fixed and max are independent,
         // each preferring the current orientation and falling back to the other.
-        let contentProperty = properties?.contentProperty
         let fixedWidth = isLandscape
-                ? contentProperty?.fixedWidthLandscape ?? contentProperty?.fixedWidthPortrait
-                : contentProperty?.fixedWidthPortrait ?? contentProperty?.fixedWidthLandscape
+                ? inputs?.fixedWidthLandscape ?? inputs?.fixedWidthPortrait
+                : inputs?.fixedWidthPortrait ?? inputs?.fixedWidthLandscape
         let maxWidth = isLandscape
-                ? contentProperty?.maxWidthLandscape ?? contentProperty?.maxWidthPortrait
-                : contentProperty?.maxWidthPortrait ?? contentProperty?.maxWidthLandscape
+                ? inputs?.maxWidthLandscape ?? inputs?.maxWidthPortrait
+                : inputs?.maxWidthPortrait ?? inputs?.maxWidthLandscape
 
         let contentWidth: ResolvedModal.WidthResolution
         switch (fixedWidth, maxWidth) {

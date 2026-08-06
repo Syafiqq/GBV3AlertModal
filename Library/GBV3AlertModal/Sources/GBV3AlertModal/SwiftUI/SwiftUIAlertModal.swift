@@ -32,9 +32,16 @@ import SwiftUI
 @MainActor
 public struct SwiftUIAlertModal: View {
     public let config: AlertDialog
-    /// The real `GBAlertModal.Properties` this modal is being rendered under, when the caller has
-    /// one (`SwiftUIModalRenderer` always does). `nil` falls back to `sentinelProperties`.
-    public let properties: GBAlertModal.Properties?
+    /// **The configuration the resolver reads, in EITHER vocabulary.**
+    ///
+    /// Was `GBAlertModal.Properties?`, which made a caller name a UIKit type to drive this view.
+    /// It is `ModalStructureInputs` now — the five structural fields `GBAlertModal.resolve`
+    /// actually reads — so `GBAlertModal.Properties` and `ModalProperties` both satisfy it and a
+    /// SwiftUI-native caller can pass `ModalProperties` here with `ModalTokens(from:)` beside it.
+    ///
+    /// One resolver still, not two: see `ModalStructureInputs`. `nil` falls back to
+    /// `sentinelProperties`.
+    public let properties: (any ModalStructureInputs)?
     /// Presentation state — NOT part of `AlertDialog`. The caller owns this; the view only reads it.
     public var primaryEnabled: Bool = true
     public var secondaryEnabled: Bool = true
@@ -44,7 +51,7 @@ public struct SwiftUIAlertModal: View {
 
     public init(
         config: AlertDialog,
-        properties: GBAlertModal.Properties? = nil,
+        properties: (any ModalStructureInputs)? = nil,
         primaryEnabled: Bool = true,
         secondaryEnabled: Bool = true,
         isPrimaryLoading: Bool = false,
@@ -98,7 +105,7 @@ public struct SwiftUIAlertModal: View {
     /// `ModalText.split`, which isn't free to repeat.
     private func resolved(from holder: GBAlertModal.DataHolder, isLandscape: Bool) -> GBAlertModal.ResolvedModal {
         GBAlertModal.resolve(
-            properties: properties ?? Self.sentinelProperties,
+            inputs: properties ?? Self.sentinelProperties,
             holder: holder,
             isLandscape: isLandscape
         )

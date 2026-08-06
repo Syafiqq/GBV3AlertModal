@@ -285,7 +285,30 @@ question deserved to be decided on its own evidence rather than inside a 600-lin
     test. `standard` ships a 160pt `bannerMaxHeight`, and both derivations assign the banner fields
     unconditionally because `nil` there means "install no such constraint". An empty config derives
     `standard` MINUS the banner fields.
-- **3c — feeding the shared resolver.**
+- **3c — feeding the shared resolver. DONE, and it stops one step short of where it aimed.**
+
+  `ModalStructureInputs` (in `Core/`, Foundation only) carries the five fields, both configurations
+  conform, and `GBAlertModal.resolve` takes it. The old `resolve(properties:)` signature is kept as
+  a forwarder, so no existing call site or public API moved. `SwiftUIAlertModal.properties` widened
+  to `(any ModalStructureInputs)?`, which means **the public SwiftUI view can now be built without
+  naming a single UIKit type**: `ModalProperties` for structure, `ModalTokens(from:)` for styling.
+
+  `buttonsAreHorizontal` is a `Bool`, not `NSLayoutConstraint.Axis` — the axis has exactly two
+  cases, so `orientation ?? .vertical` and "is it horizontal" are the same statement, and a
+  UIKit-typed protocol requirement would have dragged `import UIKit` into the one file whose job is
+  not to need it. `resolve` maps it back, because `UIStackView.axis` takes exactly that type.
+
+  **What it does NOT deliver: `SwiftUIModalRenderer` still takes `GBAlertModal.Properties`.** The
+  obstruction is real and worth recording rather than working around. `SwiftUIModalRenderer.Factory`
+  returns `(GBAlertModal.Properties?, DataHolder)` and is **deliberately source-identical to
+  `UIKitModalRenderer.Factory`** — a property the parity suite asserts structurally
+  (`RendererParityTests`, and `RendererFixtures`' "the two branch bodies are LITERALLY THE SAME
+  EXPRESSION"). Widening it to carry either vocabulary breaks that tested invariant.
+
+  That invariant exists to serve the differential gate, which §6 already schedules for deletion at
+  Pass 5. So the renderer's config vocabulary is **blocked on the gate retiring**, not on design —
+  a Pass 5 dependency §5 did not anticipate. Deferred deliberately: breaking a tested parity claim
+  to reach a milestone early is the trade this project has consistently declined.
 
 **"and resolver" is struck, and this pass no longer costs "by construction".** The original plan
 assumed a SwiftUI-native config forces a second resolver. Measured instead: `GBAlertModal.resolve`
@@ -306,7 +329,10 @@ makes both backends resolve the same way.
 
 **Pass 4 — bespoke views.** Native SwiftUI text input, date picker, badge, loading.
 
-**Pass 5 — be READY to retire UIKit.** Not "delete UIKit": this repo cannot do that on its own, and
+**Pass 5 — be READY to retire UIKit.** *Gained a dependency from Pass 3c: `SwiftUIModalRenderer`'s
+configuration vocabulary cannot move until the differential gate retires, because `Factory`'s
+source-identity with the UIKit renderer is a parity-tested invariant. Sequence the gate's deletion
+BEFORE the renderer's config change, not after.* Not "delete UIKit": this repo cannot do that on its own, and
 the app is out of scope (§6a). The deliverable is a library where the SwiftUI path touches no UIKit
 **in its vocabulary** — no `UIColor`, `UIFont`, `UIEdgeInsets` or `NSLayoutConstraint.Axis` in any
 type a caller names — and the UIKit half is inert, deletable the day the app stops importing it, by

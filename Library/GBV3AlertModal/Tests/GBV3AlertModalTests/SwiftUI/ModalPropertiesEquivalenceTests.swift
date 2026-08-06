@@ -168,6 +168,83 @@ final class ModalPropertiesEquivalenceTests: XCTestCase {
         XCTAssertNotEqual(ModalTokens(from: Self.swiftUI), refonted)
     }
 
+    // MARK: - One resolver, both vocabularies
+
+    /// **The claim §5 was written to give up: both configurations decide the SAME structure.**
+    ///
+    /// The spec expected a SwiftUI-native config to force a second resolver, and accepted that
+    /// "'by construction' stops being true and the gate becomes the only thing holding the two
+    /// together". `GBAlertModal.resolve` turned out to read exactly five things from a
+    /// configuration, so `ModalStructureInputs` lets both feed the one resolver — and this is the
+    /// test that says so rather than the doc comment.
+    ///
+    /// BOTH orientations, because two of those five fields are orientation-sensitive and the
+    /// preset states four DISTINCT widths: portrait must read 257/258 and landscape 259/260, so a
+    /// derivation that dropped the landscape fallback would pass a portrait-only test.
+    func test_bothVocabularies_resolveTheSameStructure() {
+        let holder = UIKitModalRenderer.AlertHolder.make(
+            for: AlertDialog(title: "T", subtitle: "S", primary: "OK", secondary: "No"),
+            resolve: { _ in }
+        )
+
+        for isLandscape in [false, true] {
+            XCTAssertEqual(
+                GBAlertModal.resolve(inputs: Self.uiKit, holder: holder, isLandscape: isLandscape),
+                GBAlertModal.resolve(inputs: Self.swiftUI, holder: holder, isLandscape: isLandscape),
+                "the two vocabularies disagree at isLandscape: \(isLandscape)"
+            )
+        }
+    }
+
+    /// Non-vacuity for the above: a resolver that returned an all-default `ResolvedModal` for both
+    /// inputs would satisfy it perfectly. These are the five fields a configuration actually
+    /// decides, read off the SwiftUI side, each at a value only this preset produces.
+    func test_theResolvedStructure_actuallyReflectsTheConfiguration() {
+        let holder = UIKitModalRenderer.AlertHolder.make(
+            for: AlertDialog(title: "T", subtitle: "S", primary: "OK", secondary: "No"),
+            resolve: { _ in }
+        )
+
+        let portrait = GBAlertModal.resolve(inputs: Self.swiftUI, holder: holder, isLandscape: false)
+        XCTAssertTrue(portrait.showsPrimary)
+        XCTAssertTrue(portrait.showsSecondary)
+        XCTAssertTrue(portrait.buttonsMatchParent)
+        XCTAssertEqual(portrait.buttonAxis, .horizontal)
+        XCTAssertEqual(portrait.contentWidth, .fixedAndMax(fixed: 257, max: 258))
+
+        let landscape = GBAlertModal.resolve(inputs: Self.swiftUI, holder: holder, isLandscape: true)
+        XCTAssertEqual(landscape.contentWidth, .fixedAndMax(fixed: 259, max: 260))
+    }
+
+    /// The `Properties` overload is now a forwarder. If it ever stops agreeing with the one it
+    /// forwards to, every existing caller silently gets a different answer from the tests.
+    func test_theLegacyOverload_forwardsToTheSameResolver() {
+        let holder = UIKitModalRenderer.AlertHolder.make(
+            for: AlertDialog(title: "T", subtitle: "S", primary: "OK", secondary: "No"),
+            resolve: { _ in }
+        )
+
+        XCTAssertEqual(
+            GBAlertModal.resolve(properties: Self.uiKit, holder: holder, isLandscape: false),
+            GBAlertModal.resolve(inputs: Self.uiKit, holder: holder, isLandscape: false)
+        )
+    }
+
+    /// A `ModalProperties`-driven `SwiftUIAlertModal` is the end-to-end point of the pass: a caller
+    /// can now build the public SwiftUI view without naming a single UIKit type — `ModalProperties`
+    /// for structure, `ModalTokens(from:)` for styling.
+    func test_theViewAcceptsTheSwiftUIVocabulary() {
+        let view = SwiftUIAlertModal(
+            config: AlertDialog(title: "T", subtitle: "S", primary: "OK"),
+            properties: Self.swiftUI,
+            tokens: ModalTokens(from: Self.swiftUI),
+            onAction: { _ in }
+        )
+
+        XCTAssertEqual(view.tokens, ModalTokens(from: Self.swiftUI))
+        XCTAssertEqual(view.tokens.contentMaxWidth, 257, "min(fixed 257, max 258)")
+    }
+
     // MARK: - Defaults
 
     /// **An empty config derives `standard` MINUS the banner fields — not `standard`.**

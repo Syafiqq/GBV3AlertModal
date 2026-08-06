@@ -277,3 +277,20 @@ public extension ModalProperties.ActionStyle {
         }
     }
 }
+
+// MARK: - The resolver's inputs
+
+/// The SwiftUI vocabulary's half of `ModalStructureInputs` — the same eight projections
+/// `GBAlertModal.Properties` supplies, off the same field names. This is the whole of what makes
+/// ONE resolver serve both configurations, and therefore the whole of why Pass 3 did not have to
+/// give up the "by construction" guarantee the spec expected it to.
+extension ModalProperties: ModalStructureInputs {
+    public var hasPrimaryActionStyle: Bool { primaryActionStyle != nil }
+    public var hasSecondaryActionStyle: Bool { secondaryActionStyle != nil }
+    public var buttonsAreHorizontal: Bool { buttonActionOrientation == .horizontal }
+    public var buttonsMatchParent: Bool { buttonActionShouldMatchParent == true }
+    public var fixedWidthPortrait: CGFloat? { contentProperty?.fixedWidthPortrait }
+    public var maxWidthPortrait: CGFloat? { contentProperty?.maxWidthPortrait }
+    public var fixedWidthLandscape: CGFloat? { contentProperty?.fixedWidthLandscape }
+    public var maxWidthLandscape: CGFloat? { contentProperty?.maxWidthLandscape }
+}
