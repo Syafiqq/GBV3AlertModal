@@ -347,10 +347,12 @@ public final class SwiftUIModalRenderer: ObservableObject, ModalRenderer {
             )
         })
 
-        register(DatePickerDialog.self) { [weak self] descriptor, resolve in
-            (self?.properties(for: .standard),
-             UIKitModalRenderer.DatePickerHolder.make(for: descriptor, resolve: resolve))
-        }
+        registrations[ObjectIdentifier(DatePickerDialog.self)] = Registration<DatePickerDialog>(
+            factory: { [weak self] descriptor, _ in
+                (self?.properties(for: .standard), ModalContent.make(for: descriptor))
+            },
+            route: nil, content: nil, view: nil
+        )
         register(DatePickerDialog.self, view: { [weak self] descriptor, resolve in
             DatePickerContent.make(
                 for: descriptor, tokens: self?.tokens(for: .standard) ?? .standard, resolve: resolve

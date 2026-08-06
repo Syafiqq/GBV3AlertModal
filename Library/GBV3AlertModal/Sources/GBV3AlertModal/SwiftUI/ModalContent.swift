@@ -99,4 +99,20 @@ extension ModalContent {
             dismissOnAction: false
         )
     }
+
+    /// The mirror of `UIKitModalRenderer.DatePickerHolder.make` — `minimumDate`/`maximumDate` have no
+    /// `ModalContentInputs` field (`resolve` never asks about them; they only bound the `UIDatePicker`
+    /// this backend doesn't build), so only the fields `resolve` reads are carried, same as TextInput.
+    public static func make(for descriptor: DatePickerDialog) -> ModalContent {
+        let (titlePlain, titleAttr) = ModalText.split(descriptor.title)
+        return ModalContent(
+            closeOnTapOverlay: descriptor.closeOnTapOverlay,
+            title: titlePlain,
+            hasAttributedTitle: (titleAttr?.length ?? 0) > 0,
+            hasSubtitleCustomView: true,
+            primaryAction: descriptor.primary,
+            secondaryAction: descriptor.secondary,
+            dismissOnAction: false
+        )
+    }
 }
