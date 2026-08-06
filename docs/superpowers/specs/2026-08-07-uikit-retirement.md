@@ -1,6 +1,7 @@
 # Brief — Pass 5: retire UIKit, and let Swift 6 hold the line
 
-**Status: IN PROGRESS**, steps 1-3 of §3 done. Written 2026-08-07 at the end of the Pass 4 session.
+**Status: IN PROGRESS**, steps 1,2,3,4,6 of §3 done, step 5 deferred, §2's acceptance test done.
+Written 2026-08-07 at the end of the Pass 4 session.
 Direction doc: `2026-08-05-backend-independence.md` (§5's Pass 5 entry, §6a's "ready is the finish
 line", §6's note that the differential gate has an end date). D2 and D4 (§4) picked **yes** — the
 full pass, not either cheaper alternative.
@@ -67,7 +68,35 @@ full pass, not either cheaper alternative.
     `registerBuiltInDescriptors()`) still call `UIKitModalRenderer.*Holder.make` via the
     now-legacy-but-still-fully-supported `Factory<D>` path — deliberately left for a follow-up, not
     forgotten. They still work; nothing regresses by leaving them.
-  - Verify in progress as of this note.
+  - **Done, commit `048adab`.** 544/0, example app builds clean.
+
+**Step 5 — DEFERRED, owner decision.** `Presentation.properties`/`registerStandard`'s factory read
+the SAME registry entry point 6 writes; there is no conversion between `GBAlertModal.Properties` and
+`ModalProperties` by design. A `ModalProperties`-typed `init`/`register(style:)` for the standard
+family would need `Presentation` to represent BOTH vocabularies — new dual-tracking machinery
+(a `PropertiesSource` enum, a second `Presentation` field, `registerStandard` checking two maps) for
+a capability nothing currently consumes. §6a covers it: "ready is the finish line, not deleted" — step
+6 proved the mechanism works, closing entry points 1-4 is provably possible later, just not built now.
+
+**§2's acceptance test — done, commit `f399b7d`.** `OffMainActorResolutionTests
+.resolveOffMainActor`: `nonisolated`, no `@MainActor`, no `await`, descriptor + `ModalProperties` ->
+`resolve` + `ModalTokens`, run inside `Task.detached` to prove it genuinely compiles and runs off the
+main actor. 545/0.
+
+**D6 re-checked, no action needed.** `RendererParityTests` ran clean through step 6 unmodified,
+because `SwiftUIModalRenderer`'s PUBLIC `Factory` type never changed (the whole point of the additive
+design at step 6) — `RendererFixtures`' "literally the same expression" trick is still exactly true.
+Brief's D6 assumed Factory's type would move; it didn't, so there is nothing to reduce.
+
+**Real Swift 6 compiler bug hit and worked around**, recorded in case it recurs elsewhere in this
+codebase: `Self.foo()` called inside a `Task.detached` closure trips the region-based isolation
+checker ("pattern that the region-based isolation checker does not understand how to check — please
+file a bug"). The fully-qualified type name (`ActualTypeName.foo()`) does not trip it and means the
+same thing. See `OffMainActorResolutionTests`' call site.
+
+**Pass 5 status: steps 1, 2, 3, 4, 6 done; step 5 deferred (owner decision); §2's acceptance test
+done. Remaining, not yet started:** the 5 bespoke holders (real step-6 leftover, still on the legacy
+path, still fully working).
 
 ---
 
