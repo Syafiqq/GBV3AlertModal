@@ -68,24 +68,23 @@ final class ModalTokensProvenanceTests: XCTestCase {
         XCTAssertEqual(ModalTokens(from: properties).palette.titleText, Color(uiColor: .magenta))
     }
 
-    /// Same scope caveat as `test_subtitleFont_comesFromProperties_viaFontBridge` below: this proves
-    /// the derivation READS `properties.titleFont`, not that the `UIFont -> Font` bridge is faithful.
+    /// **These two got STRICTER when `titleFont` became a `ModalFont`, and the old caveat is gone.**
+    ///
+    /// They used to read `XCTAssertEqual(tokens.titleFont, Font(font))` and carry a note saying so:
+    /// both sides called the same `Font(UIFont)` bridge, so the assertion proved provenance (the
+    /// value flows from `Properties`) but could not have caught a bridge that dropped size or
+    /// weight. `ModalFont` stores the caller's `UIFont` verbatim, so the token can be compared
+    /// against the ORIGINAL rather than against a round trip — identity, not agreement.
     func test_titleFont_comesFromProperties_viaFontBridge() {
         let font = UIFont.systemFont(ofSize: 41, weight: .ultraLight)
         let properties = GBAlertModal.Properties(titleFont: font)
-        XCTAssertEqual(ModalTokens(from: properties).titleFont, Font(font))
+        XCTAssertEqual(ModalTokens(from: properties).titleFont.uiFont, font)
     }
 
-    /// NOTE on scope: this asserts the derivation reads `properties.subtitleFont` at all — that the
-    /// `UIFont` genuinely flows from `Properties` into the token (provenance) — via the exact same
-    /// internal `Font(UIFont)` bridge used on both sides of the comparison. It does NOT independently
-    /// verify the bridge itself preserves size/weight (a bug in the bridge would pass here since
-    /// both sides call it); that bridge was instead verified directly against the SwiftUI/CoreText
-    /// SDK during implementation (see the task report), not by this XCTest.
     func test_subtitleFont_comesFromProperties_viaFontBridge() {
         let font = UIFont.systemFont(ofSize: 31, weight: .light)
         let properties = GBAlertModal.Properties(subtitleFont: font)
-        XCTAssertEqual(ModalTokens(from: properties).subtitleFont, Font(font))
+        XCTAssertEqual(ModalTokens(from: properties).subtitleFont.uiFont, font)
     }
 
     func test_subtitleColor_comesFromProperties() {

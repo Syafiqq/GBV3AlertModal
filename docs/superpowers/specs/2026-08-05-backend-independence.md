@@ -120,16 +120,39 @@ have traded a real guarantee for a lower import count.
 *vocabulary* — no `UIColor`, `UIFont` or `UIEdgeInsets` in any type a caller names — and not for the
 internals, by measurement rather than by choice. §5's Pass 5 should be read that way.
 
-**The open question this leaves for Pass 3.** Today the split works because the INPUT is a `UIFont`:
-`init(from:)` derives `Font(titleFont)` to draw with and keeps `titleFont` to measure with. A
-SwiftUI-native config hands the library a `Font?`, which is opaque and has no `Font -> UIFont`
-direction — so the library could render the caller's font but not measure it. Keeping a twin does not
-help; there is nothing to keep a twin *of*.
+**~~The open question this leaves for Pass 3.~~ ANSWERED, in Pass 3a — `ModalFont`.**
 
-The candidate fix, matching §3a's rule: the field stays named `titleFont` and takes a small descriptor
-(family, size, weight) that the library derives both a `Font` and a `UIFont` from. Not settled — but
-"accept `Font?` and reconstruct a measurement font by guessing" is ruled out, because that is exactly
-the guessed measurement the numbers above show the cost of.
+The question was: today the split works because the INPUT is a `UIFont`, and `init(from:)` derives
+`Font(titleFont)` to draw with while keeping `titleFont` to measure with. A SwiftUI-native config
+hands the library a `Font?`, which is opaque with no `Font -> UIFont` direction — so the library
+could render the caller's font but not measure it. Keeping a twin does not help; there is nothing to
+keep a twin *of*.
+
+The answer is to stop trying to keep two things in step and **invert which one is stored**.
+`ModalFont` stores the `UIFont` and DERIVES the `Font` through the platform's own bridge. The caller
+states `.system(size:weight:)` or `.custom(_:size:)` — `Font`'s own factory spelling, no UIKit type
+named — and gets one value with two projections. The drawn font and the measured font are not two
+values that agree; they are one value.
+
+**This was not only forward-looking — it removed a live hazard.** `ModalTokens` carried
+`titleFont: Font` and `titleUIFont: UIFont` as separate stored properties. `init(from: Properties)`
+set both from the one `Properties.titleFont` and could not drift, but the memberwise init took only
+the `Font`, so `ModalTokens.standard` stated `.system(size: 24, weight: .bold)` and let the `UIFont`
+keep its own default — the same face, typed twice, kept equal by hand and guarded by a test. The
+drift that test protected against is now unwritable.
+
+Two smaller consequences worth recording:
+
+- **`ModalTokensTests`' two font-provenance tests got STRICTER.** They compared
+  `tokens.titleFont == Font(font)` — both sides through the same bridge, which the tests' own note
+  admitted could not catch a bridge that dropped size or weight. The token now holds the caller's
+  `UIFont` verbatim, so they assert identity against the original.
+- **A missing custom face falls back to the system font, deliberately.** `UIFont(name:size:)` returns
+  nil where `Font.custom` silently draws the system font; measuring anything else would reintroduce
+  the drawn-one-thing / measured-another bug in the one case it is easiest to miss.
+
+Still ruled out, unchanged: "accept `Font?` and reconstruct a measurement font by guessing" — that is
+exactly the guessed measurement the numbers above show the cost of.
 
 ## 3c. `ModalTokens` has no external consumer — the §6a constraint does not reach it
 
@@ -225,9 +248,32 @@ correction and §4a for what the layout work turned out to be. `primary` is opti
 button enable-state through the `update(_:to:)` channel that already existed, and one entry is closed
 as WON'T FIX. Eight gallery gaps and one divergence, not nine.
 
-**Pass 3 — the core.** A SwiftUI-native configuration type and resolver over `Core/` descriptors.
-This is where "by construction" stops being true and the gate becomes the only thing holding the
-two together — so it lands *after* the gate is at its strongest.
+**Pass 3 — the core.** Split into three, because it is much larger than 1 or 2 and its riskiest
+question deserved to be decided on its own evidence rather than inside a 600-line diff:
+
+- **3a — `ModalFont`. DONE.** The §3b open question, answered above. Self-contained, and it paid for
+  itself immediately by collapsing a real hand-maintained coincidence in `ModalTokens`.
+- **3b — `ModalProperties`** (the §3a vocabulary mirror) **and `ModalTokens.init(from:)` beside it.**
+  The bulk. Gated by: the same preset expressed both ways must produce an IDENTICAL `ModalTokens` —
+  the failure mode for a large parallel type is a mistranscribed field, and that is the test for it.
+- **3c — feeding the shared resolver.**
+
+**"and resolver" is struck, and this pass no longer costs "by construction".** The original plan
+assumed a SwiftUI-native config forces a second resolver. Measured instead: `GBAlertModal.resolve`
+reads exactly FIVE things from `Properties` — `primaryActionStyle` and `secondaryActionStyle` for
+their NIL-NESS only, plus `buttonActionOrientation`, `buttonActionShouldMatchParent` and
+`contentProperty`. Everything else comes from the holder. A small protocol carrying those five,
+satisfied by both config types, keeps ONE resolver and both backends provably deciding identically.
+
+That matters more than it looks: §6 measured the differential gate to be common-mode blind and
+**already at its structural ceiling**, so "land Pass 3 after the gate is at its strongest" was
+buying a safety net that cannot catch this class. Keeping the shared resolver is not a shortcut —
+it is the only guarantee available.
+
+`ResolvedModal.buttonAxis` staying `NSLayoutConstraint.Axis` does not violate Pass 5 either:
+`ResolvedModal` is not a type a caller names, and the axis is already bridged at one call site.
+`AlertHolder.make` stays for the same reason — internal, caller-invisible, and the mechanism that
+makes both backends resolve the same way.
 
 **Pass 4 — bespoke views.** Native SwiftUI text input, date picker, badge, loading.
 

@@ -113,7 +113,7 @@ public struct TextInputModalView: View {
     private var titleView: some View {
         if let title = descriptor.title {
             Text(title)
-                .font(tokens.titleFont)
+                .font(tokens.titleFont.font)
                 .foregroundColor(tokens.palette.titleText)
                 .multilineTextAlignment(.center)
                 .padding(.bottom, tokens.gapBelowTitle)
@@ -205,7 +205,7 @@ public struct DatePickerModalView: View {
     private var titleView: some View {
         if let title = descriptor.title {
             Text(title)
-                .font(tokens.titleFont)
+                .font(tokens.titleFont.font)
                 .foregroundColor(tokens.palette.titleText)
                 .multilineTextAlignment(.center)
                 .padding(.bottom, tokens.gapBelowTitle)

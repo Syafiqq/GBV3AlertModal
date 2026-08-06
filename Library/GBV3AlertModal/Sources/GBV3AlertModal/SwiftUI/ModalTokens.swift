@@ -83,31 +83,22 @@ public struct ModalTokens: Sendable {
     /// No `Properties` counterpart: UIKit hardcodes the floor too.
     public var titleMinimumScaleFactor: CGFloat = ModalLayout.titleMinimumScaleFactor
 
-    /// **The FALLBACK font the title floor measures with — not a second way to state the title's font.**
-    ///
-    /// `SwiftUI.Font` is opaque: it can be rendered but not measured, and there is no `Font -> UIFont`
-    /// direction to recover one from (the bridge only runs `UIFont -> Font`, via `CTFont`). Rung 2's
-    /// SwiftUI half needs a real measurement — how tall the title is once shrunk to
-    /// `titleMinimumScaleFactor` — so the `UIFont` that `titleFont` was BUILT FROM is kept here rather
-    /// than reconstructed by guesswork.
-    ///
-    /// **It used to be described as `titleFont`'s "measurement twin", and that framing was wrong in a
-    /// way that hid a bug.** A twin implies the two always say the same thing, so the floor measured
-    /// `String(title.characters)` at this font and ignored the title's own runs — which `Text` draws.
-    /// A title carrying a larger run rendered large and measured small, and the row was allocated less
-    /// height than its glyphs need. `ModalLayout.titleFloorHeight` now takes the styled string and
-    /// uses this only for runs that state NO font of their own. That is a fallback, not a twin.
-    ///
-    /// **Internal, not public — it never was API.** No caller in this repo, the example app, or either
-    /// `geniebook-student-ios` checkout has ever read or written it; it was `public` only because the
-    /// whole struct was declared that way. The font a caller states is `Properties.titleFont`, from
-    /// which `init(from:)` derives both this and `titleFont`.
-    var titleUIFont: UIFont = .systemFont(ofSize: 24, weight: .bold)
-
-    /// The subtitle's fallback, for the same reason: its floor is ONE LINE of the font it renders in,
-    /// and a `Font` cannot report a line height. Assigned from the one `Properties.subtitleFont` in
-    /// `init(from:)`. Internal for the same reason as `titleUIFont` — never a public contract.
-    var subtitleUIFont: UIFont = .systemFont(ofSize: 16, weight: .regular)
+    // The title's and subtitle's fonts live below, as `titleFont`/`subtitleFont`, and are `ModalFont`
+    // rather than `Font` — ONE value carrying both what SwiftUI draws and what `ModalLayout`
+    // measures.
+    //
+    // Two stored properties sat here — `titleUIFont`/`subtitleUIFont`, "the FALLBACK font the title
+    // floor measures with" — because `SwiftUI.Font` is opaque: renderable, not measurable, with no
+    // `Font -> UIFont` direction to recover one from. That reason is unchanged and is why `ModalFont`
+    // stores the `UIFont` and derives the `Font`, rather than the other way round.
+    //
+    // What DID change is that they are no longer separately settable. `init(from: Properties)` set
+    // both from the one `Properties.titleFont` and could not drift — but the memberwise `init` took
+    // only the `Font`, so `standard` stated `.system(size: 24, weight: .bold)` and let the `UIFont`
+    // keep its own default: the same face, typed twice, agreeing by hand.
+    // `test_theStandardTitleFontAndItsMeasurementFallback_agree` guarded that coincidence. With one
+    // stored value there is no coincidence left to guard, and the drift it protected against is now
+    // unwritable rather than merely tested for. See `ModalFont`.
 
     /// The close button's tap target, 48×48. UIKit pins `btCloseAction` to `vwContainer`'s
     /// top-trailing with `size == 48` (`GBAlertModal+ViewGraph.swift`'s `installConstraints`); the
@@ -186,8 +177,8 @@ public struct ModalTokens: Sendable {
 
     // Typography — real preset: title SHSans.bold 24, subtitle SHSans.regular 16, buttons
     // SHSans.heavy 16. `titleFont`/`subtitleFont` derive losslessly from `Properties`' `UIFont`s.
-    public var titleFont: Font
-    public var subtitleFont: Font
+    public var titleFont: ModalFont
+    public var subtitleFont: ModalFont
     // Button label fonts DO have a `Properties` counterpart — `ActionStyle` themes all carry a
     // `titleFont: UIFont?` (`ObliqueBottomLeftTheme.titleFont` for the primary style,
     // `PlainTheme.titleFont` for the secondary style) and the UIKit renderer applies it
@@ -336,16 +327,16 @@ public struct ModalTokens: Sendable {
     ///
     /// **Takes the STYLED title.** It used to take a `String`, and the call site flattened the
     /// `AttributedString` with `String(title.characters)` — discarding any per-run font, which `Text`
-    /// nonetheless draws. `titleUIFont` is the fallback for runs stating no font of their own, not a
+    /// nonetheless draws. `titleFont.uiFont` is the fallback for runs stating no font of their own, not a
     /// replacement for the ones that do.
     func titleFloorHeight(for text: NSAttributedString) -> CGFloat {
-        ModalLayout.titleFloorHeight(text, fallback: titleUIFont, width: contentMaxWidth)
+        ModalLayout.titleFloorHeight(text, fallback: titleFont.uiFont, width: contentMaxWidth)
     }
 
-    /// Convenience for an unstyled title: every glyph in `titleUIFont`. Same answer the `String`
+    /// Convenience for an unstyled title: every glyph in `titleFont.uiFont`. Same answer the `String`
     /// overload used to give, kept because most callers (and every test fixture) have a plain string.
     func titleFloorHeight(for text: String) -> CGFloat {
-        titleFloorHeight(for: NSAttributedString(string: text, attributes: [.font: titleUIFont]))
+        titleFloorHeight(for: NSAttributedString(string: text, attributes: [.font: titleFont.uiFont]))
     }
 
     /// **The subtitle row's floor: one line, the SwiftUI half of `ModalLayout.subtitleFloorHeight`.**
@@ -360,7 +351,7 @@ public struct ModalTokens: Sendable {
     /// the SLOT, whose whole job is to be given less than its content: measured in landscape, the
     /// slot lands exactly here (19.09) while the text inside it is 38.33.
     var subtitleFloorHeight: CGFloat {
-        ModalLayout.subtitleFloorHeight(font: subtitleUIFont)
+        ModalLayout.subtitleFloorHeight(font: subtitleFont.uiFont)
     }
 
     init(
@@ -377,8 +368,8 @@ public struct ModalTokens: Sendable {
         gapBelowTitle: CGFloat,
         gapBelowSubtitle: CGFloat,
         interButton: CGFloat,
-        titleFont: Font,
-        subtitleFont: Font,
+        titleFont: ModalFont,
+        subtitleFont: ModalFont,
         palette: Palette
     ) {
         self.cornerRadius = cornerRadius
@@ -437,7 +428,7 @@ public struct ModalTokens: Sendable {
     /// | `bannerRatio` | (a) | `bannerRatio` — `test_bannerRatio_comesFromProperties` |
     /// | `bannerMaxHeight` | (a) | `bannerMaxHeight` — `test_bannerMaxHeight_comesFromProperties`, `test_bannerMaxHeight_isNilWhenPropertiesSetsNoCap` |
     /// | `bannerFixedHeight` | (a) | `bannerFixedHeight` — `test_bannerFixedHeight_comesFromProperties` |
-    /// | `titleFont` | (a) | `titleFont` to draw with AND `titleUIFont` to measure with, both from this one field — `test_titleFont_comesFromProperties_viaFontBridge`, `test_theStandardTitleFontAndItsMeasurementFallback_agree`. `titleUIFont` exists because `Font` can be rendered but not measured; it is the FALLBACK for title runs stating no font, not a second way to state one. |
+    /// | `titleFont` | (a) | `titleFont`, a `ModalFont` — ONE value carrying both what SwiftUI draws (`.font`) and what `ModalLayout` measures (`.uiFont`) — `test_titleFont_comesFromProperties_viaFontBridge`. It stores the `UIFont` and derives the `Font` because `Font` can be rendered but not measured; `.uiFont` is the FALLBACK for title runs stating no font, not a second way to state one. |
     /// | `titleColor` | (a) | `palette.titleText` — `test_titleColor_comesFromProperties` |
     /// | `subtitleFont` | (a) | `subtitleFont` — `test_subtitleFont_comesFromProperties_viaFontBridge` |
     /// | `subtitleColor` | (a) | `palette.subtitleText` — `test_subtitleColor_comesFromProperties` |
@@ -583,16 +574,14 @@ public struct ModalTokens: Sendable {
             interButton = space.interButton
         }
 
+        // ONE assignment each, where there used to be two. `ModalFont` carries the `UIFont` the
+        // caller stated and derives the `Font` from it, so "the rendered font and the measured font
+        // cannot be different fonts" is now structural rather than a property of this code.
         if let titleFont = properties.titleFont {
-            self.titleFont = Font(titleFont)
-            // The measurement fallback, from the SAME `UIFont` — see `titleUIFont`. Assigned here and
-            // nowhere else, so the rendered font and the measured font cannot be different fonts.
-            titleUIFont = titleFont
+            self.titleFont = ModalFont(titleFont)
         }
         if let subtitleFont = properties.subtitleFont {
-            self.subtitleFont = Font(subtitleFont)
-            // The measurement fallback, from the SAME `UIFont` — see `subtitleUIFont`.
-            subtitleUIFont = subtitleFont
+            self.subtitleFont = ModalFont(subtitleFont)
         }
         if let titleColor = properties.titleColor {
             palette.titleText = Color(uiColor: titleColor)

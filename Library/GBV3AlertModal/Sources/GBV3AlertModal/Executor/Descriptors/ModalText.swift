@@ -57,7 +57,7 @@ public enum ModalText {
     /// **COLOUR ONLY, and the asymmetry is not an oversight.** `UIColor(_: Color)` exists (iOS 14+),
     /// so SwiftUI colour converts exactly. There is no `Font -> UIFont` direction — the bridge runs
     /// `UIFont -> Font` via `CTFont` and not back — which is the same wall that makes
-    /// `ModalTokens.titleUIFont` a hand-carried measurement fallback. A SwiftUI-scoped FONT therefore
+    /// `ModalFont` store a `UIFont` and derive the `Font` from it. A SwiftUI-scoped FONT therefore
     /// still degrades to plain, and that is the honest outcome rather than a guess at a point size.
     ///
     /// **Note the consequence for the title floor.** A SwiftUI-scoped font degrading to plain here

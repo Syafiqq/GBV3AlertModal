@@ -29,7 +29,7 @@ struct SatisfactionDemoView: View {
             onOverlayTap: { onAction(.dismissed) }
         ) {
             Text("How helpful was this?")
-                .font(ModalTokens.standard.titleFont)
+                .font(ModalTokens.standard.titleFont.font)
                 .foregroundColor(ModalTokens.standard.palette.titleText)
                 .multilineTextAlignment(.center)
                 .padding(.bottom, ModalTokens.standard.gapBelowTitle)

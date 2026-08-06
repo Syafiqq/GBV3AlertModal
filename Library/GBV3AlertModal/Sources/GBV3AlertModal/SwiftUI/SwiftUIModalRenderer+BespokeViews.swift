@@ -170,7 +170,7 @@ public struct BadgeModalView: View {
     private var titleView: some View {
         if let title = descriptor.title {
             Text(title)
-                .font(tokens.titleFont)
+                .font(tokens.titleFont.font)
                 .foregroundColor(tokens.palette.titleText)
                 .multilineTextAlignment(.center)
                 .padding(.bottom, tokens.gapBelowTitle)
@@ -184,7 +184,7 @@ public struct BadgeModalView: View {
             // `SwiftUIAlertModal.subtitlePayload` documents for `.plain`: routing it through
             // `ModalText.split`'s plain `String` would drop SwiftUI-scoped styling.
             Text(subtitle)
-                .font(tokens.subtitleFont)
+                .font(tokens.subtitleFont.font)
                 .foregroundColor(tokens.palette.subtitleText)
                 .multilineTextAlignment(.center)
                 .padding(.bottom, tokens.gapBelowSubtitle)
@@ -217,12 +217,12 @@ public struct BadgeModalView: View {
                     .frame(width: 72, height: 72)
             }
             Text(badge.name)
-                .font(tokens.subtitleFont)
+                .font(tokens.subtitleFont.font)
                 .foregroundColor(tokens.palette.titleText)
                 .multilineTextAlignment(.center)
             if let detail = badge.detail {
                 Text(detail)
-                    .font(tokens.subtitleFont)
+                    .font(tokens.subtitleFont.font)
                     .foregroundColor(tokens.palette.subtitleText)
                     .multilineTextAlignment(.center)
                     // Wrap rather than truncate on the 256/300pt card.
@@ -277,14 +277,14 @@ public struct LoadingModalView: View {
         ) {
             if let title = descriptor.title {
                 Text(title)
-                    .font(tokens.titleFont)
+                    .font(tokens.titleFont.font)
                     .foregroundColor(tokens.palette.titleText)
                     .multilineTextAlignment(.center)
                     .padding(.bottom, tokens.gapBelowTitle)
             }
             if let subtitle = descriptor.subtitle {
                 Text(subtitle)
-                    .font(tokens.subtitleFont)
+                    .font(tokens.subtitleFont.font)
                     .foregroundColor(tokens.palette.subtitleText)
                     .multilineTextAlignment(.center)
                     .padding(.bottom, tokens.gapBelowSubtitle)
@@ -343,7 +343,7 @@ public struct SatisfactionModalView: View {
         ) {
             if let title = descriptor.title {
                 Text(title)
-                    .font(tokens.titleFont)
+                    .font(tokens.titleFont.font)
                     .foregroundColor(tokens.palette.titleText)
                     .multilineTextAlignment(.center)
                     .padding(.bottom, tokens.gapBelowTitle)

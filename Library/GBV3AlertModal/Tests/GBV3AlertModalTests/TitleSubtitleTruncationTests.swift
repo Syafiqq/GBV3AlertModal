@@ -597,16 +597,16 @@ final class TitleSubtitleTruncationTests: XCTestCase {
     }
 
     /// **One floor, read by both renderers** — the subtitle's counterpart of
-    /// `test_theShrinkFloor_isOneSharedNumber`, and the reason `subtitleUIFont` exists.
+    /// `test_theShrinkFloor_isOneSharedNumber`, and the reason `ModalFont` carries a `UIFont`.
     func test_theSubtitleFloor_isOneSharedNumber() throws {
         let properties = GeniePresets.standardProperties()
         let font = try XCTUnwrap(properties.subtitleFont)
         let tokens = ModalTokens(from: properties)
 
         XCTAssertEqual(
-            tokens.subtitleUIFont, font, "the measurement fallback is not the rendered font"
+            tokens.subtitleFont.uiFont, font, "the measured font is not the font that was stated"
         )
-        XCTAssertEqual(tokens.subtitleFont, Font(font))
+        XCTAssertEqual(tokens.subtitleFont.font, Font(font))
         XCTAssertEqual(tokens.subtitleFloorHeight, ModalLayout.subtitleFloorHeight(font: font))
 
         // …and UIKit derives the SAME number from the live label, via the text's own `.font`.
@@ -617,9 +617,10 @@ final class TitleSubtitleTruncationTests: XCTestCase {
             "the two renderers protect different amounts of subtitle"
         )
 
-        // `standard` has no `Properties`; its literal twin must match the `Font` beside it.
-        XCTAssertEqual(ModalTokens.standard.subtitleUIFont.pointSize, 16)
+        // `standard` has no `Properties`, so it states a literal — ONE literal now, not a `Font` and
+        // a `UIFont` that had to be kept equal by hand.
         XCTAssertEqual(ModalTokens.standard.subtitleFont, .system(size: 16, weight: .regular))
+        XCTAssertEqual(ModalTokens.standard.subtitleFont.uiFont.pointSize, 16)
     }
 
     /// `renderedFont` is the piece that keeps the floor honest: the subtitle label is never assigned a
@@ -1074,23 +1075,28 @@ final class TitleSubtitleTruncationTests: XCTestCase {
         XCTAssertEqual(ModalTokens.standard.titleFloorHeight(for: Self.longTitle), 0)
     }
 
-    /// `titleUIFont` is what the floor measures with when a title run states no font of its own:
-    /// `Font` cannot be measured and cannot be converted back to a `UIFont`, so the drawn font and the
-    /// measurement fallback must come from ONE source. On the derived path they do; `standard` carries
-    /// a literal, and this pins that literal to the `Font` beside it.
+    /// `titleFont.uiFont` is what the floor measures with when a title run states no font of its own:
+    /// `Font` cannot be measured and cannot be converted back to a `UIFont`, so the drawn font and
+    /// the measured one must come from ONE source.
+    ///
+    /// **This test used to assert that they agree, and it no longer can**, which is the improvement.
+    /// The two were separate stored properties; `standard` stated the `Font` and let the `UIFont`
+    /// keep its default, so the assertion below guarded two literals someone had typed to match.
+    /// `ModalFont` stores the `UIFont` and derives the `Font`, so what is left to check is only that
+    /// the DERIVATION is the platform bridge — a mismatch is no longer expressible.
     ///
     /// **Not a "twin"** — that framing implied the two always agree, which is what let the flattened
     /// call site hide: a title whose runs DO state a font is drawn at those and must be measured at
     /// those. See `test_theTitleFloor_readsTheFontsTheTitleCarries`.
-    func test_theStandardTitleFontAndItsMeasurementFallback_agree() {
-        XCTAssertEqual(ModalTokens.standard.titleUIFont.pointSize, 24)
+    func test_theTitleFont_isOneValue_drawnAndMeasured() {
         XCTAssertEqual(ModalTokens.standard.titleFont, .system(size: 24, weight: .bold))
+        XCTAssertEqual(ModalTokens.standard.titleFont.uiFont.pointSize, 24)
 
-        // Derived: both come from the one `Properties.titleFont`.
+        // The `Properties` path: the caller's own `UIFont`, unchanged, with the `Font` derived off it.
         let font = UIFont.boldSystemFont(ofSize: 31)
         let tokens = ModalTokens(from: GBAlertModal.Properties(titleFont: font))
-        XCTAssertEqual(tokens.titleUIFont, font)
-        XCTAssertEqual(tokens.titleFont, Font(font))
+        XCTAssertEqual(tokens.titleFont.uiFont, font)
+        XCTAssertEqual(tokens.titleFont.font, Font(font))
     }
 
     /// The fit search, exercised as the pure function it is — no label, no window, no layout pass.

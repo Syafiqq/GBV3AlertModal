@@ -240,7 +240,7 @@ public struct SwiftUIAlertModal: View {
     ) -> some View {
             if resolved.showsTitle, let title = config.title {
                 Text(title)
-                    .font(tokens.titleFont)
+                    .font(tokens.titleFont.font)
                     .foregroundColor(tokens.palette.titleText)
                     .multilineTextAlignment(.center)
                     // The row's WIDTH first (UIKit's `lbTitle` fills the content width and centres
@@ -258,7 +258,7 @@ public struct SwiftUIAlertModal: View {
                     // same string in a smaller font never needs MORE height — so it cannot disturb an
                     // unpressured shape. See `ModalTokens.titleFloorHeight(for:)`.
                     // The STYLED title, not `String(title.characters)`. `Text(title)` draws each run's
-                    // own font where it has one — `.font(tokens.titleFont)` above is only the ambient
+                    // own font where it has one — `.font(tokens.titleFont.font)` above is only the ambient
                     // default — so flattening to characters measured a font the view may not draw and
                     // produced a floor too short for the text it was protecting.
                     .frame(minHeight: tokens.titleFloorHeight(for: NSAttributedString(title)))
@@ -298,7 +298,7 @@ public struct SwiftUIAlertModal: View {
                 floor: tokens.subtitleFloorHeight, fillsWidth: tokens.contentChildrenFillWidth
             ) {
                 Text(subtitle)
-                    .font(tokens.subtitleFont)
+                    .font(tokens.subtitleFont.font)
                     .foregroundColor(tokens.palette.subtitleText)
                     .multilineTextAlignment(.center)
                     .modifier(ContentRowWidth(fillsWidth: tokens.contentChildrenFillWidth))
