@@ -178,6 +178,7 @@ public final class UIKitModalRenderer: ModalRenderer {
             return
         }
         modal.show(parent: window, completion: {})
+        Self.applyButtonEnablement(of: descriptor, to: modal)
 
         live[id] = Live(
             modal: modal,
@@ -185,9 +186,32 @@ public final class UIKitModalRenderer: ModalRenderer {
             rebuild: { [weak self] anyDescriptor in
                 guard let self, let next = anyDescriptor as? D else { return }
                 let (p, h) = factory(next, gate)
-                self.live[id]?.modal.updateDialog(holder: h, properties: p)
+                guard let modal = self.live[id]?.modal else { return }
+                modal.updateDialog(holder: h, properties: p)
+                // AFTER the rebuild, and that ordering is the whole point: `updateDialog` tears the
+                // view graph down and builds a new one, so the buttons this touches do not exist
+                // before it and any state applied earlier would be discarded. It is also why the
+                // flag lives on the DESCRIPTOR rather than in a renderer method — `update(_:to:)`
+                // is the channel, and this is it being honoured.
+                Self.applyButtonEnablement(of: next, to: modal)
             }
         )
+    }
+
+    /// Applies `ButtonEnablement` if the descriptor carries it, using `GBAlertModal`'s OWN public
+    /// post-construction API — the same two calls the stress gallery makes by hand. `GBAlertModal`
+    /// is untouched.
+    ///
+    /// A runtime cast, and it is worth naming the one claim it costs: `registerStandard` notes that
+    /// neither renderer casts a descriptor at `present` time, which keeps the STYLE lookup static
+    /// and identical across backends. That still holds — style is read off `D` where `D` is known.
+    /// This is a different question ("does this descriptor carry presentation state at all") asked
+    /// of a `D` that is fully generic here, and both `changeXActionEnableState` calls no-op when the
+    /// button was never built, so a wrong answer cannot produce a wrong render.
+    private static func applyButtonEnablement(of descriptor: Any, to modal: GBAlertModal) {
+        guard let state = descriptor as? ButtonEnablement else { return }
+        modal.changePrimaryActionEnableState(isEnable: state.primaryEnabled)
+        modal.changeSecondaryActionEnableState(isEnable: state.secondaryEnabled)
     }
 
     public func update<D: ModalDescriptor>(_ id: ModalID, to descriptor: D) {

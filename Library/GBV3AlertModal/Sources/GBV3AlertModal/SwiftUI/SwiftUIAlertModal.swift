@@ -37,6 +37,7 @@ public struct SwiftUIAlertModal: View {
     public let properties: GBAlertModal.Properties?
     /// Presentation state — NOT part of `AlertDialog`. The caller owns this; the view only reads it.
     public var primaryEnabled: Bool = true
+    public var secondaryEnabled: Bool = true
     public var isPrimaryLoading: Bool = false
     public let tokens: ModalTokens
     public let onAction: (AlertDialog.Result) -> Void
@@ -45,6 +46,7 @@ public struct SwiftUIAlertModal: View {
         config: AlertDialog,
         properties: GBAlertModal.Properties? = nil,
         primaryEnabled: Bool = true,
+        secondaryEnabled: Bool = true,
         isPrimaryLoading: Bool = false,
         tokens: ModalTokens = .standard,
         onAction: @escaping (AlertDialog.Result) -> Void
@@ -52,6 +54,7 @@ public struct SwiftUIAlertModal: View {
         self.config = config
         self.properties = properties
         self.primaryEnabled = primaryEnabled
+        self.secondaryEnabled = secondaryEnabled
         self.isPrimaryLoading = isPrimaryLoading
         self.tokens = tokens
         self.onAction = onAction
@@ -175,9 +178,16 @@ public struct SwiftUIAlertModal: View {
             // with a nil style hides the primary on the UIKit path; it now hides it here too.
             primaryTitle: resolved.showsPrimary ? config.primary : nil,
             isPrimaryLoading: isPrimaryLoading,
-            primaryEnabled: primaryEnabled,
+            // BOTH sources, and disabled wins. `primaryEnabled` is this view's own property, owned
+            // by a caller constructing `SwiftUIAlertModal` directly (`SatisfactionDemoView`);
+            // `config.primaryEnabled` is the descriptor field the EXECUTOR path sets, changed
+            // mid-presentation through `update(_:to:)`. Neither is redundant — they are two
+            // different callers — and `&&` is the only combination where a caller who disables a
+            // button cannot have it re-enabled by the other one's default.
+            primaryEnabled: primaryEnabled && config.primaryEnabled,
             onPrimary: { onAction(.primary) },
             secondaryTitle: resolved.showsSecondary ? config.secondary : nil,
+            secondaryEnabled: secondaryEnabled && config.secondaryEnabled,
             onSecondary: { onAction(.secondary) },
             showClose: resolved.showsCloseButton,
             onClose: { onAction(.dismissed) },

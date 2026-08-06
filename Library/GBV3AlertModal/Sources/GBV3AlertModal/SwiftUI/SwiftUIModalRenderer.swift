@@ -411,14 +411,22 @@ public final class SwiftUIModalRenderer: ObservableObject, ModalRenderer {
             case .close: return AlertDialog.Result.dismissed
             }
         }
-        // Lossless within `StandardAlertContent` — every field of the protocol is carried over.
+        // Lossless within `StandardAlertContent` — every field of the protocol is carried over,
+        // PLUS `ButtonEnablement` when the descriptor carries it. That second part is a cast for the
+        // same reason `UIKitModalRenderer.applyButtonEnablement` is one: enablement is presentation
+        // state, deliberately not part of the content protocol, so a descriptor may or may not have
+        // it. Dropping it here would silently re-break `variant-button-states` on this backend only
+        // — the flag would reach the UIKit renderer and never reach `SwiftUIAlertModal`.
         let content: (D) -> AlertDialog = { descriptor in
-            AlertDialog(
+            let state = descriptor as? ButtonEnablement
+            return AlertDialog(
                 image: descriptor.image,
                 title: descriptor.title,
                 subtitle: descriptor.subtitle,
                 primary: descriptor.primary,
                 secondary: descriptor.secondary,
+                primaryEnabled: state?.primaryEnabled ?? true,
+                secondaryEnabled: state?.secondaryEnabled ?? true,
                 closeOnTapOverlay: descriptor.closeOnTapOverlay,
                 showCloseButton: descriptor.showCloseButton,
                 style: descriptor.style

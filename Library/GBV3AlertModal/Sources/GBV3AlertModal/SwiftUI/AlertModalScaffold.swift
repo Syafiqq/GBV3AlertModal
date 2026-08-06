@@ -30,6 +30,9 @@ public struct AlertModalScaffold<Content: View>: View {
     public var primaryEnabled: Bool = true
     public let onPrimary: () -> Void
     public var secondaryTitle: String? = nil
+    /// The counterpart of `primaryEnabled`, added with `AlertDialog.secondaryEnabled` — the gallery's
+    /// `variant-button-states` entry disables the SECONDARY, and there was nothing to carry it.
+    public var secondaryEnabled: Bool = true
     public var onSecondary: () -> Void = {}
     public var showClose: Bool = false
     public var onClose: () -> Void = {}
@@ -76,6 +79,7 @@ public struct AlertModalScaffold<Content: View>: View {
         primaryEnabled: Bool = true,
         onPrimary: @escaping () -> Void,
         secondaryTitle: String? = nil,
+        secondaryEnabled: Bool = true,
         onSecondary: @escaping () -> Void = {},
         showClose: Bool = false,
         onClose: @escaping () -> Void = {},
@@ -94,6 +98,7 @@ public struct AlertModalScaffold<Content: View>: View {
         self.primaryEnabled = primaryEnabled
         self.onPrimary = onPrimary
         self.secondaryTitle = secondaryTitle
+        self.secondaryEnabled = secondaryEnabled
         self.onSecondary = onSecondary
         self.showClose = showClose
         self.onClose = onClose
@@ -409,6 +414,7 @@ public struct AlertModalScaffold<Content: View>: View {
     private func secondaryButton(_ title: String) -> some View {
         Button(action: onSecondary) { Text(title) }
             .buttonStyle(PlainSecondaryStyle(tokens: tokens))
+            .disabled(!secondaryEnabled)
             // INSIDE the caller's `.padding(.top, tokens.interButton)`, so this measures the button
             // and not the inter-button gap (UIKit's counterpart, `btSecondaryAction`, likewise
             // excludes the main-action stack's spacing).

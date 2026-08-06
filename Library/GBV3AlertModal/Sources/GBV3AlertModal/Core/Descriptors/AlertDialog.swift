@@ -9,7 +9,7 @@ import Foundation
 /// renderer.register(style: .badge, properties: badgeProperties)
 /// executor.present(AlertDialog(title: "Unlocked!", primary: "Nice", style: .badge))
 /// ```
-public struct AlertDialog: ModalDescriptor, StandardAlertContent {
+public struct AlertDialog: ModalDescriptor, StandardAlertContent, ButtonEnablement {
     public enum Result: Sendable, Equatable { case primary, secondary, dismissed }
     public static var dismissedResult: Result { .dismissed }
 
@@ -19,6 +19,10 @@ public struct AlertDialog: ModalDescriptor, StandardAlertContent {
     /// `nil` → no primary button. See `StandardAlertContent.primary`.
     public var primary: String?
     public var secondary: String?
+    /// Presentation state, changed mid-flight through `ModalExecutor.update(_:to:)`. See
+    /// `ButtonEnablement`. Both default to `true`, so no existing call site moves.
+    public var primaryEnabled: Bool
+    public var secondaryEnabled: Bool
     public var closeOnTapOverlay: Bool
     public var showCloseButton: Bool
     /// Which registered style preset renders this dialog. Defaults to `.standard` in BOTH
@@ -33,6 +37,8 @@ public struct AlertDialog: ModalDescriptor, StandardAlertContent {
         subtitle: String? = nil,
         primary: String?,
         secondary: String? = nil,
+        primaryEnabled: Bool = true,
+        secondaryEnabled: Bool = true,
         closeOnTapOverlay: Bool = false,
         showCloseButton: Bool = false,
         style: ModalStyle = .standard
@@ -43,6 +49,8 @@ public struct AlertDialog: ModalDescriptor, StandardAlertContent {
             subtitle: subtitle.map(AttributedString.init),
             primary: primary,
             secondary: secondary,
+            primaryEnabled: primaryEnabled,
+            secondaryEnabled: secondaryEnabled,
             closeOnTapOverlay: closeOnTapOverlay,
             showCloseButton: showCloseButton,
             style: style
@@ -58,6 +66,8 @@ public struct AlertDialog: ModalDescriptor, StandardAlertContent {
         subtitle: AttributedString?,
         primary: String?,
         secondary: String? = nil,
+        primaryEnabled: Bool = true,
+        secondaryEnabled: Bool = true,
         closeOnTapOverlay: Bool = false,
         showCloseButton: Bool = false,
         style: ModalStyle = .standard
@@ -67,6 +77,8 @@ public struct AlertDialog: ModalDescriptor, StandardAlertContent {
         self.subtitle = subtitle
         self.primary = primary
         self.secondary = secondary
+        self.primaryEnabled = primaryEnabled
+        self.secondaryEnabled = secondaryEnabled
         self.closeOnTapOverlay = closeOnTapOverlay
         self.showCloseButton = showCloseButton
         self.style = style
