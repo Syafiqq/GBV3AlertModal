@@ -115,4 +115,28 @@ extension ModalContent {
             dismissOnAction: false
         )
     }
+
+    /// The mirror of `UIKitModalRenderer.BadgeHolder.make`. The badge GRID itself is not carried —
+    /// same gap the UIKit holder has (see its doc): `Badge` artwork/labels are drawn by
+    /// `BadgeModalView` directly from the descriptor, never through `ModalContentInputs`, which only
+    /// answers `resolve`'s structural questions.
+    public static func make(for descriptor: BadgeDialog) -> ModalContent {
+        let (titlePlain, titleAttr) = ModalText.split(descriptor.title)
+        let (subPlain, subAttr) = ModalText.split(descriptor.subtitle)
+        let hasBanner = descriptor.banner.flatMap {
+            UIImage(named: $0.assetName, in: $0.bundle, compatibleWith: nil)
+        } != nil
+        return ModalContent(
+            closeOnTapOverlay: descriptor.closeOnTapOverlay,
+            hasBanner: hasBanner,
+            title: titlePlain,
+            hasAttributedTitle: (titleAttr?.length ?? 0) > 0,
+            subtitle: subPlain,
+            hasAttributedSubtitle: (subAttr?.length ?? 0) > 0,
+            primaryAction: descriptor.primary,
+            secondaryAction: descriptor.secondary,
+            showCloseButton: descriptor.showCloseButton,
+            dismissOnAction: false
+        )
+    }
 }

@@ -359,10 +359,12 @@ public final class SwiftUIModalRenderer: ObservableObject, ModalRenderer {
             )
         })
 
-        register(BadgeDialog.self) { [weak self] descriptor, resolve in
-            (self?.properties(for: descriptor.style),
-             UIKitModalRenderer.BadgeHolder.make(for: descriptor, resolve: resolve))
-        }
+        registrations[ObjectIdentifier(BadgeDialog.self)] = Registration<BadgeDialog>(
+            factory: { [weak self] descriptor, _ in
+                (self?.properties(for: descriptor.style), ModalContent.make(for: descriptor))
+            },
+            route: nil, content: nil, view: nil
+        )
         register(BadgeDialog.self, view: { [weak self] descriptor, resolve in
             BadgeContent.make(
                 for: descriptor,
