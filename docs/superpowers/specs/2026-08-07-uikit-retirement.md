@@ -35,6 +35,12 @@ full pass, not either cheaper alternative.
     1 failure — `no-buttons-title-only`, exactly the shape whose own doc comment says it is "the only
     shape that fails" this mutation.
   - All four confirmed. Full suite back to 590/0 after each revert.
+- **Step 4**, commit `9d5fff1`: deleted `DifferentialGeometryTests.swift` (46 tests) and
+  `DifferentialGeometryComparison.swift` entirely. NOT `RendererParityTests` — D6, step 5. Correction
+  found first: `LayerVisuals`/`swiftUILayerVisuals` had to move to `SwiftUIGeometry.swift` before
+  deleting — `GeometryPinsTests` depends on them and isn't part of the gate.
+  `bannerIsUnresolvableInTheLibraryBundle` is mentioned only in a doc comment outside the gate
+  (`TestBundleAssetTests.swift`), never called — confirmed by grep, died clean. 590 → 544/0.
 
 ---
 
