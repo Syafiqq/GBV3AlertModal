@@ -373,10 +373,12 @@ public final class SwiftUIModalRenderer: ObservableObject, ModalRenderer {
             )
         })
 
-        register(LoadingDialog.self) { [weak self] descriptor, resolve in
-            (self?.properties(for: descriptor.style),
-             UIKitModalRenderer.LoadingHolder.make(for: descriptor, resolve: resolve))
-        }
+        registrations[ObjectIdentifier(LoadingDialog.self)] = Registration<LoadingDialog>(
+            factory: { [weak self] descriptor, _ in
+                (self?.properties(for: descriptor.style), ModalContent.make(for: descriptor))
+            },
+            route: nil, content: nil, view: nil
+        )
         register(LoadingDialog.self, view: { [weak self] descriptor, resolve in
             LoadingContent.make(
                 for: descriptor,

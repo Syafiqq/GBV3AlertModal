@@ -139,4 +139,23 @@ extension ModalContent {
             dismissOnAction: false
         )
     }
+
+    /// The mirror of `UIKitModalRenderer.LoadingHolder.make`. `descriptor.isLoading` has no
+    /// `ModalContentInputs` field — same drop the UIKit holder makes (see its doc): the spinner state
+    /// is drawn by `LoadingModalView` directly, `resolve` never asks about it.
+    public static func make(for descriptor: LoadingDialog) -> ModalContent {
+        let (titlePlain, titleAttr) = ModalText.split(descriptor.title)
+        let (subPlain, subAttr) = ModalText.split(descriptor.subtitle)
+        return ModalContent(
+            closeOnTapOverlay: descriptor.closeOnTapOverlay,
+            title: titlePlain,
+            hasAttributedTitle: (titleAttr?.length ?? 0) > 0,
+            subtitle: subPlain,
+            hasAttributedSubtitle: (subAttr?.length ?? 0) > 0,
+            primaryAction: descriptor.primary,
+            secondaryAction: descriptor.secondary,
+            showCloseButton: descriptor.showCloseButton,
+            dismissOnAction: false
+        )
+    }
 }
