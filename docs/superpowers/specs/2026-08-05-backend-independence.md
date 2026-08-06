@@ -51,12 +51,44 @@ Everything else splits. For the SwiftUI half to contain no UIKit it needs its ow
 
 | what | why it cannot be shared |
 |---|---|
-| configuration type | `Properties` is 18 `UIColor`, 6 `UIFont`, 3 `UIEdgeInsets`, 3 `NSLayoutConstraint` |
-| resolver | `ResolvedModal.buttonAxis` is `NSLayoutConstraint.Axis` |
-| text measurement | `Font` cannot report a line height, so a `UIFont` is kept to measure with. ~~CoreText can measure without UIKit~~ — **measured false for the multi-line case, see §3b** |
+| configuration type | `Properties` is 18 `UIColor`, 6 `UIFont`, 3 `UIEdgeInsets`, 3 `NSLayoutConstraint`. **DONE — `ModalProperties`, Pass 3b** |
+| ~~resolver~~ | ~~`ResolvedModal.buttonAxis` is `NSLayoutConstraint.Axis`~~ — **no second resolver was needed; see §5's Pass 3c** |
+| text measurement | `Font` cannot report a line height, so a `UIFont` is kept to measure with. ~~CoreText can measure without UIKit~~ — **measured false for the multi-line case, see §3b.** `ModalFont` (Pass 3a) makes the drawn and measured font ONE value |
 | axis | currently bridged at one call site |
-| orientation source | `UIScreen.main` — also wrong on iPad multitasking, where it is the screen and not the window |
-| four bespoke views | text input, date picker, badge, loading all delegate to `UIKitModalRenderer` because descriptors cannot carry a `UIView` |
+| orientation source | ~~`UIScreen.main`~~ — **deleted in Pass 1**; it never reached a renderer, and there was no environment to read a real one from |
+| ~~four bespoke views~~ | ~~text input, date picker, badge, loading all delegate to `UIKitModalRenderer` because descriptors cannot carry a `UIView`~~ — **MEASURED FALSE, see §3d** |
+
+## 3d. The bespoke views were never delegating. SwiftUI is the RICHER half
+
+**Measured 2026-08-06, at the start of Pass 4.** §3's last row said text input, date picker, badge
+and loading "all delegate to `UIKitModalRenderer` because descriptors cannot carry a `UIView`". That
+is false, and appears to have been false when it was written:
+
+- `SwiftUIModalRenderer+InputViews.swift` (225 lines) and `+BespokeViews.swift` (448 lines) are
+  **native SwiftUI**. Neither imports UIKit. There is no `UIViewRepresentable` anywhere in `SwiftUI/`.
+- `registerBuiltInDescriptors()` registers a `view:` for all five bespoke descriptors, and
+  `ModalHost` draws that view in preference to anything else.
+- **UIKit is the poorer half here, and its own source says so.**
+  `UIKitModalRenderer.registerBuiltInDescriptors`: "`BadgeDialog`'s badge GRID has no UIKit content
+  view in this library (SwiftUI draws it with `BadgeModalView`), and `LoadingDialog.isLoading` has no
+  UIKit expression at all."
+
+What the SwiftUI half genuinely still uses `UIKitModalRenderer` for is the **holder factories**
+(`TextInputHolder.make` and friends) — producing the `DataHolder` the SHARED resolver consumes. That
+is not a rendering delegation; it is the mechanism that makes both backends decide identically, and
+Pass 3 deliberately kept it (§5's Pass 3c).
+
+**This is the fifth factual error found in this spec family** (four were corrected in Pass 1's §0),
+and all five are the same defect: a statement about the boundary that nothing re-checked. So Pass 4's
+deliverable is an ENFORCEMENT rather than a port — `SwiftUIPurityTests` names every file in
+`SwiftUI/` permitted to import UIKit, with the reason and the pass that removes it, and fails both
+when the list grows and when an entry goes stale. `AlertModalScaffold.swift` was found carrying an
+`import UIKit` it did not use, which is exactly how an allow-list becomes a fiction.
+
+**The remaining UIKit surface in `SwiftUI/`, in full, is now that allow-list:** `ModalFont` and
+`ModalTokens` (permanent — §3b measurement, and `Properties` is the app's API per §6a),
+`AttributedTextBridge` (permanent while `Properties` is — naming both attribute scopes is its job),
+and `SwiftUIModalRenderer` (Pass 5, blocked on the gate retiring).
 
 ## 3a. The SwiftUI config mirrors `Properties`' VOCABULARY, not its types
 
@@ -212,8 +244,9 @@ same two `changeXActionEnableState` calls the gallery makes by hand, *after* its
 This costs the claim that "a descriptor carries content and style, not presentation state" — which
 `LoadingDialog.isLoading` had already falsified. It is false on purpose now.
 
-**What Pass 2 did NOT touch:** the four bespoke delegations. Those are Pass 4, and grouping them here
-was part of the same over-collection.
+**What Pass 2 did NOT touch:** the four bespoke delegations. Those were called Pass 4, and grouping
+them here was part of the same over-collection — which turned out to matter twice over, because
+Pass 4 then measured them not to be delegations at all (§3d).
 
 ## 4a. The real work in Pass 2 was the SPACING, and it was invisible until then
 
@@ -327,7 +360,20 @@ it is the only guarantee available.
 `AlertHolder.make` stays for the same reason — internal, caller-invisible, and the mechanism that
 makes both backends resolve the same way.
 
-**Pass 4 — bespoke views.** Native SwiftUI text input, date picker, badge, loading.
+**Pass 4 — bespoke views. DONE, and there was nothing to build.** ~~Native SwiftUI text input, date
+picker, badge, loading.~~ All four already were — see §3d for the measurement. SwiftUI is the richer
+half of the two, and `UIKitModalRenderer`'s own source says so.
+
+So the deliverable became an ENFORCEMENT of the boundary instead of a port to it:
+`SwiftUIPurityTests` names every file in `SwiftUI/` permitted to import UIKit, with a reason and the
+pass that removes it, and fails **both** when the list grows and when an entry goes stale. It also
+names the two bespoke-view files explicitly and checks for `UIViewRepresentable`, so the specific
+claim §3 got wrong is pinned to the specific test that corrects it.
+
+That check immediately found `AlertModalScaffold.swift` importing UIKit and using zero UIKit symbols
+— a dead import, deleted. **This is the point of the pass:** five statements in this spec family have
+now been measured false, and every one was a description of the boundary that nothing re-checked. The
+allow-list is the first version of that description which cannot rot.
 
 **Pass 5 — be READY to retire UIKit.** *Gained a dependency from Pass 3c: `SwiftUIModalRenderer`'s
 configuration vocabulary cannot move until the differential gate retires, because `Factory`'s

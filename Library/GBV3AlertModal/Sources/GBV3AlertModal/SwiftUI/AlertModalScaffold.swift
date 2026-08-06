@@ -1,5 +1,4 @@
 import SwiftUI
-import UIKit
 
 /// How the banner row — which lives inside the caller's `content` closure — learns the geometry the
 /// scaffold computed from its `GeometryReader`. An environment value rather than a `PreferenceKey`
