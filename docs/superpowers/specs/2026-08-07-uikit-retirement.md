@@ -1,8 +1,40 @@
 # Brief — Pass 5: retire UIKit, and let Swift 6 hold the line
 
-**Status: NOT STARTED.** Written 2026-08-07 at the end of the Pass 4 session, to be picked up next
-session. Direction doc: `2026-08-05-backend-independence.md` (§5's Pass 5 entry, §6a's "ready is the
-finish line", §6's note that the differential gate has an end date).
+**Status: IN PROGRESS**, steps 1-3 of §3 done. Written 2026-08-07 at the end of the Pass 4 session.
+Direction doc: `2026-08-05-backend-independence.md` (§5's Pass 5 entry, §6a's "ready is the finish
+line", §6's note that the differential gate has an end date). D2 and D4 (§4) picked **yes** — the
+full pass, not either cheaper alternative.
+
+## Progress (append-only; steps 4-6 still ahead)
+
+- **Step 1**, commit `b6236e5`: split `DifferentialGeometrySupport.swift` into `SwiftUIGeometry.swift`
+  (measurement, survives step 4) and `DifferentialGeometryComparison.swift` (comparison, dies at step
+  4). Correction to this brief found in the process: `uiKitFrames`/`makeUIKitModal` had to move into
+  the SURVIVING file, not the dying one as §3's own text suggested —
+  `TitleSubtitleTruncationTests.test_swiftUITitle_wrapsToTheSameHeightUIKitDoes`, outside the gate,
+  calls `uiKitFrames` directly. 552/0 before and after.
+- **Step 2**, commit `115bae6`: recorded `GeometryPinsTests.swift`, 38 tests pinning SwiftUI's own
+  numbers — 15 shapes' portrait frames, 7 of those also landscape (matching the gate's own landscape
+  gating), `banner-wide` landscape's origin+height only (matching the gate's own width exclusion for
+  that shape), and all 15 shapes' layer visuals. Generated mechanically from a throwaway recorder
+  test, not transcribed. 590/0.
+- **Step 3**, this commit, no code changes (verification only — all mutations reverted before
+  committing): ran the brief's own mutation table with the gate excluded via `-skip-testing`/
+  `-only-testing`, confirmed each row against the pins alone.
+  - `titleMinimumScaleFactor` 0.75→0.70 (the shared `ModalLayout` constant): caught by
+    `TitleSubtitleTruncationTests` (4 failures) — NOT by `GeometryPinsTests`, which stayed green, as
+    expected: none of the 15 catalog shapes' titles are long enough to hit the shrink floor. Confirms
+    this row's own point — a shared-constant mutation is invisible to a cross-backend diff (both
+    sides move together) and needs an absolute pin.
+  - `ModalTokens.contentMaxWidth` +20: `GeometryPinsTests`, 38/38 tests touched, 99 assertion
+    failures — card and every row, as predicted.
+  - `obliqueOffset` (−3,3)→(0,0): `GeometryPinsTests`, 52 assertion failures, exactly the
+    primary-button frame pin and the layer-visual pin, on every shape that has a primary button (the
+    3 no-primary shapes correctly unaffected).
+  - A row's trailing gap (title's, `SwiftUIAlertModal.body`) made unconditional: `GeometryPinsTests`,
+    1 failure — `no-buttons-title-only`, exactly the shape whose own doc comment says it is "the only
+    shape that fails" this mutation.
+  - All four confirmed. Full suite back to 590/0 after each revert.
 
 ---
 
