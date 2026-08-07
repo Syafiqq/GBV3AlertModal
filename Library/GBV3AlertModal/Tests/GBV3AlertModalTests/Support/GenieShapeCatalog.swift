@@ -93,10 +93,15 @@ enum GenieShapeCatalog {
     /// One catalog shape, reduced to the only thing a coverage test needs: how to present it.
     struct Shape {
         let name: String
-        /// Presents the shape on an already-registered renderer. `@MainActor` spelled explicitly
-        /// (rather than relying on the enclosing enum's isolation) so the stored closure's isolation
-        /// is unambiguous under Swift 6.
-        let present: @MainActor (SwiftUIModalRenderer, ModalID) -> Void
+        /// Presents the shape on an already-registered renderer.
+        ///
+        /// `any ModalRenderer`, not `SwiftUIModalRenderer` — every one of the 26 closures below calls
+        /// exactly one thing, `renderer.present(descriptor, id:, resolve:)`, the `ModalRenderer`
+        /// protocol requirement, so genericizing costs nothing and lets `EmbeddedShapeCoverageTests`
+        /// reuse these 26 definitions verbatim rather than duplicating them for a second renderer.
+        /// `@MainActor` spelled explicitly (rather than relying on the enclosing enum's isolation) so
+        /// the stored closure's isolation is unambiguous under Swift 6.
+        let present: @MainActor (any ModalRenderer, ModalID) -> Void
     }
 
     static func shape(named name: String) -> Shape? {

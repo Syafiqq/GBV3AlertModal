@@ -154,6 +154,135 @@ enum GeniePresets {
         return properties
     }
 
+    // MARK: - Catalog presets (ModalProperties), for the 26 real shapes on the UIKit-free renderers
+    //
+    // Field-for-field transcriptions of the UIKit presets below (`permissionAlertProperties()` and
+    // friends) — same relationship `standardModalProperties()`/`popupModalProperties()` already have
+    // to `standardProperties()`/`popupProperties()`. `bannerFixedHeight` is dropped everywhere (no
+    // `ModalProperties` field — §3a, measured inert on UIKit's own path).
+
+    static func permissionAlertModalProperties() -> ModalProperties {
+        var properties = standardModalProperties()
+        properties.padding = UIMinMaxEdgeInsets(top: (20, 20), left: (30, 30), bottom: (12, 12), right: (30, 30))
+        properties.space = ModalProperties.ComponentSpace(banner: 8, title: 12, subtitle: 20, interButton: 8)
+        return properties
+    }
+
+    static func obliqueRedModalProperties() -> ModalProperties {
+        var properties = standardModalProperties()
+        properties.primaryActionStyle = .obliqueBottomLeft(
+            ModalProperties.ActionStyle.ObliqueBottomLeftTheme(
+                unPressedColor: Color(uiColor: .systemRed),
+                pressedColor: Color(uiColor: .systemRed),
+                disabledColor: Color(uiColor: .gray),
+                shadowColor: Color(uiColor: .systemRed),
+                titleColor: .white,
+                titleDisableColor: .white
+            )
+        )
+        return properties
+    }
+
+    /// Shared shape behind the 7 banner-popup catalog entries — same reason `GeniePresets
+    /// .popupBannerProperties(ratio:maxHeight:fixedHeight:)` is spelled once.
+    static func popupBannerModalProperties(ratio: CGFloat, maxHeight: CGFloat) -> ModalProperties {
+        var properties = popupModalProperties()
+        properties.bannerRatio = ratio
+        properties.bannerMaxHeight = maxHeight
+        return properties
+    }
+
+    static func errorBannerModalProperties() -> ModalProperties {
+        popupBannerModalProperties(ratio: 295.0 / 256.0, maxHeight: 320)
+    }
+
+    static func forceUpdateBannerModalProperties() -> ModalProperties {
+        popupBannerModalProperties(ratio: 320.0 / 320.0, maxHeight: 320)
+    }
+
+    static func capBannerModalProperties() -> ModalProperties {
+        popupBannerModalProperties(ratio: 320.0 / 197.0, maxHeight: 216)
+    }
+
+    static func quizBannerModalProperties() -> ModalProperties {
+        popupBannerModalProperties(ratio: 320.0 / 229.0, maxHeight: 216)
+    }
+
+    static func aiNotesBannerModalProperties() -> ModalProperties {
+        popupBannerModalProperties(ratio: 960.0 / 681.0, maxHeight: 320)
+    }
+
+    static func creditDeductionModalProperties() -> ModalProperties {
+        var properties = popupModalProperties()
+        properties.titleFont = .system(size: 24, weight: .heavy)
+        return properties
+    }
+
+    static func streakModalProperties() -> ModalProperties {
+        var properties = standardModalProperties()
+        properties.padding = UIMinMaxEdgeInsets(top: (20, 40), left: (20, 48), bottom: (20, 32), right: (20, 48))
+        properties.bannerRatio = 200.0 / 168.0
+        properties.bannerMaxHeight = 168
+        properties.space = ModalProperties.ComponentSpace(banner: 16, title: 12, subtitle: 24, interButton: 8)
+        return properties
+    }
+
+    static func timerBannerModalProperties() -> ModalProperties {
+        var properties = standardModalProperties()
+        properties.padding = UIMinMaxEdgeInsets(top: (32, 32), left: (32, 32), bottom: (32, 32), right: (32, 32))
+        properties.bannerRatio = 193.0 / 170.0
+        properties.bannerMaxHeight = 170
+        return properties
+    }
+
+    static func exitWorksheetBannerModalProperties() -> ModalProperties {
+        var properties = standardModalProperties()
+        properties.bannerRatio = 365.0 / 206.0
+        properties.bannerMaxHeight = 144
+        return properties
+    }
+
+    static func renameInputModalProperties() -> ModalProperties {
+        var properties = standardModalProperties()
+        properties.padding = UIMinMaxEdgeInsets(top: (20, 32), left: (16, 32), bottom: (16, 16), right: (16, 32))
+        properties.titleFont = .system(size: 24, weight: .heavy)
+        properties.space = ModalProperties.ComponentSpace(banner: 8, title: 16, subtitle: 32, interButton: 8)
+        return properties
+    }
+
+    static func datePickerInputModalProperties() -> ModalProperties {
+        var properties = standardModalProperties()
+        properties.padding = UIMinMaxEdgeInsets(top: (20, 32), left: (12, 40), bottom: (16, 16), right: (12, 40))
+        properties.titleFont = .system(size: 24, weight: .heavy)
+        properties.space = ModalProperties.ComponentSpace(banner: 8, title: 0, subtitle: 8, interButton: 8)
+        return properties
+    }
+
+    /// `BadgesPopUpView.swift`'s real preset. Deliberately NOT named `badgeModalProperties()` — see
+    /// the UIKit sibling's own note on why `badgeProperties()` is reserved for the synthetic third
+    /// preset `RendererParityTests`/`ModalStyleTests` assert on field-by-field.
+    static func badgeUnlockModalProperties() -> ModalProperties {
+        var properties = standardModalProperties()
+        properties.padding = UIMinMaxEdgeInsets(top: (20, 40), left: (20, 48), bottom: (20, 32), right: (20, 48))
+        properties.bannerRatio = 1
+        properties.bannerMaxHeight = 144
+        properties.space = ModalProperties.ComponentSpace(banner: 16, title: 12, subtitle: 24, interButton: 8)
+        return properties
+    }
+
+    static func badgeMultiModalProperties() -> ModalProperties {
+        var properties = badgeUnlockModalProperties()
+        properties.bannerMaxHeight = 216
+        return properties
+    }
+
+    static func badgeDetailModalProperties() -> ModalProperties {
+        var properties = standardModalProperties()
+        properties.padding = UIMinMaxEdgeInsets(top: (20, 36), left: (20, 48), bottom: (20, 36), right: (20, 48))
+        properties.space = ModalProperties.ComponentSpace(banner: 0, title: 0, subtitle: 24, interButton: 0)
+        return properties
+    }
+
     /// A THIRD preset, standing in for the app's real `badgeProperties`/`streakModalProperties`/
     /// `permissionAlertProperties` — the presets that have no descriptor type and are the whole
     /// reason `ModalStyle` exists.
