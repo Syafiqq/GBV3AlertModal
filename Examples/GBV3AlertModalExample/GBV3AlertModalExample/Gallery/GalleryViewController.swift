@@ -83,6 +83,9 @@ final class GalleryViewController: UITableViewController {
             UIBarButtonItem(title: "Tier 0", style: .plain, target: self, action: #selector(openTier0Demo)),
             UIBarButtonItem(title: "Tier 1", style: .plain, target: self, action: #selector(openAdoptionDemo)),
             UIBarButtonItem(
+                title: "Embedded", style: .plain, target: self, action: #selector(openEmbeddedDemo)
+            ),
+            UIBarButtonItem(
                 title: "SwiftUI Catalog",
                 style: .plain,
                 target: self,
@@ -136,6 +139,15 @@ final class GalleryViewController: UITableViewController {
                 popupProperties: GalleryPresets.popupProperties
             )
         )
+        navigationController?.pushViewController(host, animated: true)
+    }
+
+    /// Sanity check for `EmbeddedModalRenderer` — the UIKit-free renderer
+    /// (`docs`... see the plan at `iridescent-enchanting-pike.md`) — running in a real app screen,
+    /// not just unit tests. Same chain shape as `openAdoptionDemo`, minimal preset (not
+    /// `GalleryPresets`-fidelity — this answers "does it work", not "does it look production-exact").
+    @objc private func openEmbeddedDemo() {
+        let host = UIHostingController(rootView: EmbeddedAdoptionScreen())
         navigationController?.pushViewController(host, animated: true)
     }
 
