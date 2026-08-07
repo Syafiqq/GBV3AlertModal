@@ -536,3 +536,45 @@ final class Tier0HostingSmokeTests: XCTestCase {
         return nil
     }
 }
+
+// MARK: - rootRenderer — WindowModalRenderer paints SwiftUI-drawn content OVER a live SwiftUI screen
+
+/// Same empirical proof `Tier0HostingSmokeTests` runs for `UIKitModalRenderer`, for
+/// `WindowModalRenderer` (rootRenderer, `a1c6bbb`) instead: a SwiftUI-DRAWN modal (not a UIKit
+/// `GBAlertModal`) installs at window level, over an existing SwiftUI screen's content, as the
+/// topmost subview — proving the window-installation mechanics actually work in a real app, not
+/// just against a bare `UIWindow` in `WindowModalRendererTests`.
+@MainActor
+final class WindowModalRendererHostingSmokeTests: XCTestCase {
+    func test_windowRendererModal_paintsOverSwiftUIScreen() {
+        let swiftUIScreen = UIHostingController(rootView: SwiftUIDemoScreen())
+        let window = UIWindow(frame: CGRect(x: 0, y: 0, width: 390, height: 844))
+        window.rootViewController = swiftUIScreen
+        window.makeKeyAndVisible()
+        window.layoutIfNeeded()
+        defer { window.isHidden = true; window.rootViewController = nil }
+
+        let renderer = WindowModalRenderer(
+            alertProperties: GalleryPresets.standardModalProperties, windowProvider: { window }
+        )
+        let executor = DefaultModalExecutor(renderer: renderer)
+
+        let before = window.subviews.count
+        let token = executor.present(AlertDialog(title: "Over SwiftUI", subtitle: "Hi", primary: "OK"))
+        window.layoutIfNeeded()
+
+        // 1) A real view now lives directly in the SwiftUI screen's window — not nested inside the
+        //    SwiftUI screen's own view hierarchy.
+        XCTAssertGreaterThan(window.subviews.count, before, "presenting should add a view to the window")
+        // 2) The SwiftUI host is still present underneath.
+        XCTAssertTrue(swiftUIScreen.view.isDescendant(of: window), "SwiftUI content should remain in the window")
+        // 3) The modal paints OVER the SwiftUI content: topmost subview, direct child of the window.
+        XCTAssertTrue(
+            window.subviews.last?.superview === window,
+            "the hosted modal should be a window-level overlay, not nested in the SwiftUI view"
+        )
+
+        renderer.dismiss(token.id)
+        XCTAssertEqual(window.subviews.count, before, "dismiss should remove the hosted view from the window")
+    }
+}

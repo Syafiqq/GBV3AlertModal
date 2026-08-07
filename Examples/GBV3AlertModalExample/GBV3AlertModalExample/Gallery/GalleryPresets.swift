@@ -11,6 +11,7 @@
 //  call sites (see docs/superpowers/specs/2026-07-21-dialog-catalog.md).
 //
 
+import SwiftUI
 import UIKit
 import GBV3AlertModal
 
@@ -230,6 +231,72 @@ enum GalleryPresets {
             subtitle: 20,
             interButton: 8
         )
+    )
+
+    // MARK: - ModalProperties (SwiftUI vocabulary, for the UIKit-free renderer demos)
+    //
+    // A minimal, functional preset — not a fidelity port of `properties` above (no GalleryColor/
+    // GallerySHSans mirroring). Shared by EmbeddedAdoptionScreen and the "Window" gallery demo, both
+    // of which exist to answer "does the UIKit-free renderer actually work", not "does it look
+    // production-exact".
+
+    static let standardModalProperties = ModalProperties(
+        baseTint: .blue,
+        overlayColor: .black.opacity(0.6),
+        contentProperty: ModalProperties.ContentProperty(
+            backgroundColor: .white,
+            cornerRadius: 16,
+            fixedWidthPortrait: 256,
+            maxWidthPortrait: 256,
+            fixedWidthLandscape: 256,
+            maxWidthLandscape: 256,
+            childShouldMatchParent: true
+        ),
+        margin: EdgeInsets(top: 0, leading: 20, bottom: 0, trailing: 20),
+        padding: UIMinMaxEdgeInsets(top: (16, 24), left: (16, 32), bottom: (16, 24), right: (16, 32)),
+        bannerRatio: 1,
+        titleFont: .system(size: 24, weight: .bold),
+        titleColor: .primary,
+        subtitleFont: .system(size: 16),
+        subtitleColor: .secondary,
+        buttonActionShouldMatchParent: true,
+        buttonActionOrientation: .vertical,
+        primaryActionStyle: .obliqueBottomLeft(
+            ModalProperties.ActionStyle.ObliqueBottomLeftTheme(
+                unPressedColor: .orange,
+                pressedColor: .blue,
+                disabledColor: .gray,
+                shadowColor: .orange,
+                titleColor: .white,
+                titleDisableColor: .white,
+                titleFont: .system(size: 16, weight: .medium)
+            )
+        ),
+        secondaryActionStyle: .plain(
+            ModalProperties.ActionStyle.PlainTheme(
+                titleColor: .blue, titleDisableColor: .gray, titleFont: .system(size: 16, weight: .medium)
+            )
+        ),
+        closeButtonTint: .black,
+        space: ModalProperties.ComponentSpace(banner: 8, title: 8, subtitle: 16, interButton: 8)
+    )
+
+    static let popupModalProperties = ModalProperties(
+        baseTint: standardModalProperties.baseTint,
+        overlayColor: standardModalProperties.overlayColor,
+        contentProperty: standardModalProperties.contentProperty,
+        margin: standardModalProperties.margin,
+        padding: UIMinMaxEdgeInsets(top: (20, 32), left: (20, 32), bottom: (20, 32), right: (20, 32)),
+        titleFont: standardModalProperties.titleFont,
+        titleColor: standardModalProperties.titleColor,
+        subtitleFont: standardModalProperties.subtitleFont,
+        subtitleColor: standardModalProperties.subtitleColor,
+        buttonActionShouldMatchParent: standardModalProperties.buttonActionShouldMatchParent,
+        buttonActionOrientation: standardModalProperties.buttonActionOrientation,
+        primaryActionStyle: standardModalProperties.primaryActionStyle,
+        secondaryActionStyle: standardModalProperties.secondaryActionStyle,
+        closeButtonTint: standardModalProperties.closeButtonTint,
+        space: ModalProperties.ComponentSpace(banner: 16, title: 16, subtitle: 24, interButton: 8)
     )
 
     // MARK: - Data Holder

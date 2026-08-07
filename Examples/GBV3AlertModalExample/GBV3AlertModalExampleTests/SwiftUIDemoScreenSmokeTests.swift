@@ -51,11 +51,12 @@ final class SwiftUIDemoScreenSmokeTests: XCTestCase {
         gallery.loadViewIfNeeded()
         let titles = (gallery.navigationItem.rightBarButtonItems ?? []).compactMap(\.title)
         XCTAssertEqual(
-            titles, ["SwiftUI", "Tier 0", "Tier 1", "Embedded", "SwiftUI Catalog"],
+            titles, ["SwiftUI", "Tier 0", "Tier 1", "Embedded", "Window", "SwiftUI Catalog"],
             "the gallery's entry points changed. 'Tier 1' is the AdoptionScreen — VM → executor → "
                 + "coordinator → SwiftUIModalRenderer, the whole chain assembled as a consumer would. "
                 + "'Embedded' is EmbeddedAdoptionScreen — the same chain over the UIKit-free "
-                + "EmbeddedModalRenderer (iridescent-enchanting-pike.md's plan)."
+                + "EmbeddedModalRenderer (mainUIRenderer). 'Window' reuses Tier0DemoScreen over "
+                + "WindowModalRenderer (rootRenderer) — both from iridescent-enchanting-pike.md's plan."
         )
     }
 

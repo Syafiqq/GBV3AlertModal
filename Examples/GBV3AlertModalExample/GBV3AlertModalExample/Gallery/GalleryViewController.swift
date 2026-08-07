@@ -86,6 +86,9 @@ final class GalleryViewController: UITableViewController {
                 title: "Embedded", style: .plain, target: self, action: #selector(openEmbeddedDemo)
             ),
             UIBarButtonItem(
+                title: "Window", style: .plain, target: self, action: #selector(openWindowDemo)
+            ),
+            UIBarButtonItem(
                 title: "SwiftUI Catalog",
                 style: .plain,
                 target: self,
@@ -148,6 +151,24 @@ final class GalleryViewController: UITableViewController {
     /// `GalleryPresets`-fidelity — this answers "does it work", not "does it look production-exact").
     @objc private func openEmbeddedDemo() {
         let host = UIHostingController(rootView: EmbeddedAdoptionScreen())
+        navigationController?.pushViewController(host, animated: true)
+    }
+
+    /// Sanity check for `WindowModalRenderer` — rootRenderer, the window-level UIKit-free renderer
+    /// (plan: `iridescent-enchanting-pike.md`; shipped `a1c6bbb`). Reuses `Tier0DemoScreen` as-is:
+    /// that screen's whole point is "VM drives the executor, the modal paints over this SwiftUI
+    /// screen at window level" — exactly rootRenderer's job, just SwiftUI-drawn instead of UIKit.
+    /// Only 3 of its 5 buttons work here (Confirm delete/Show info/Show popup) — Rename/Pick date
+    /// need `TextInputDialog`/`DatePickerDialog`, which this renderer doesn't register yet (only the
+    /// standard family so far); tapping them resolves `.dismissed` immediately, the documented
+    /// unregistered-descriptor contract, not a bug.
+    @objc private func openWindowDemo() {
+        let renderer = WindowModalRenderer(
+            alertProperties: GalleryPresets.standardModalProperties,
+            popupProperties: GalleryPresets.popupModalProperties
+        )
+        let executor = DefaultModalExecutor(renderer: renderer)
+        let host = UIHostingController(rootView: Tier0DemoScreen(executor: executor))
         navigationController?.pushViewController(host, animated: true)
     }
 

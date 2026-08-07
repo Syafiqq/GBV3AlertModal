@@ -23,9 +23,11 @@ final class EmbeddedAdoptionViewModel: ObservableObject {
     private let executor: DefaultModalExecutor
 
     init() {
+        // GalleryPresets.standardModalProperties/.popupModalProperties — a minimal, UIKit-free
+        // preset shared with the "Window" gallery demo (rootRenderer's own sanity check).
         let renderer = EmbeddedModalRenderer(
-            alertProperties: Self.properties,
-            popupProperties: Self.popupProperties
+            alertProperties: GalleryPresets.standardModalProperties,
+            popupProperties: GalleryPresets.popupModalProperties
         )
         self.renderer = renderer
 
@@ -35,67 +37,6 @@ final class EmbeddedAdoptionViewModel: ObservableObject {
         executor.coordinator = RootScreenModalCoordinator(renderer: renderer)
         self.executor = executor
     }
-
-    /// A minimal, UIKit-free preset — no `GalleryColor`/`GallerySHSans` mirroring, this is a
-    /// functional sanity check, not a fidelity port.
-    private static let properties = ModalProperties(
-        baseTint: .blue,
-        overlayColor: .black.opacity(0.6),
-        contentProperty: ModalProperties.ContentProperty(
-            backgroundColor: .white,
-            cornerRadius: 16,
-            fixedWidthPortrait: 256,
-            maxWidthPortrait: 256,
-            fixedWidthLandscape: 256,
-            maxWidthLandscape: 256,
-            childShouldMatchParent: true
-        ),
-        margin: EdgeInsets(top: 0, leading: 20, bottom: 0, trailing: 20),
-        padding: UIMinMaxEdgeInsets(top: (16, 24), left: (16, 32), bottom: (16, 24), right: (16, 32)),
-        bannerRatio: 1,
-        titleFont: .system(size: 24, weight: .bold),
-        titleColor: .primary,
-        subtitleFont: .system(size: 16),
-        subtitleColor: .secondary,
-        buttonActionShouldMatchParent: true,
-        buttonActionOrientation: .vertical,
-        primaryActionStyle: .obliqueBottomLeft(
-            ModalProperties.ActionStyle.ObliqueBottomLeftTheme(
-                unPressedColor: .orange,
-                pressedColor: .blue,
-                disabledColor: .gray,
-                shadowColor: .orange,
-                titleColor: .white,
-                titleDisableColor: .white,
-                titleFont: .system(size: 16, weight: .medium)
-            )
-        ),
-        secondaryActionStyle: .plain(
-            ModalProperties.ActionStyle.PlainTheme(
-                titleColor: .blue, titleDisableColor: .gray, titleFont: .system(size: 16, weight: .medium)
-            )
-        ),
-        closeButtonTint: .black,
-        space: ModalProperties.ComponentSpace(banner: 8, title: 8, subtitle: 16, interButton: 8)
-    )
-
-    private static let popupProperties = ModalProperties(
-        baseTint: properties.baseTint,
-        overlayColor: properties.overlayColor,
-        contentProperty: properties.contentProperty,
-        margin: properties.margin,
-        padding: UIMinMaxEdgeInsets(top: (20, 32), left: (20, 32), bottom: (20, 32), right: (20, 32)),
-        titleFont: properties.titleFont,
-        titleColor: properties.titleColor,
-        subtitleFont: properties.subtitleFont,
-        subtitleColor: properties.subtitleColor,
-        buttonActionShouldMatchParent: properties.buttonActionShouldMatchParent,
-        buttonActionOrientation: properties.buttonActionOrientation,
-        primaryActionStyle: properties.primaryActionStyle,
-        secondaryActionStyle: properties.secondaryActionStyle,
-        closeButtonTint: properties.closeButtonTint,
-        space: ModalProperties.ComponentSpace(banner: 16, title: 16, subtitle: 24, interButton: 8)
-    )
 
     func confirmDelete() async {
         await record("delete") {
