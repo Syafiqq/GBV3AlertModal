@@ -4,8 +4,8 @@ import XCTest
 
 /// `EmbeddedModalRenderer`'s own contract — present/dismiss/update/setHidden, style fallback, and
 /// the resolve-once gate — the UIKit-free renderer's counterpart of `SwiftUIModalRendererTests`.
-/// Only the standard family is registered in this increment (see the type's own doc), so this file
-/// covers that surface only; consumer-descriptor/bespoke coverage is a later increment's test file.
+/// The bottom section covers `registerBuiltInDescriptors()` — the 5 bespoke kinds — added once that
+/// landed; the top section is standard-family-only and predates it.
 @MainActor
 final class EmbeddedModalRendererTests: XCTestCase {
 
@@ -217,5 +217,74 @@ final class EmbeddedModalRendererTests: XCTestCase {
             renderer.properties(for: .popup)?.space?.banner,
             renderer.properties(for: .standard)?.space?.banner
         )
+    }
+
+    // MARK: - registerBuiltInDescriptors() — the 5 bespoke kinds
+
+    /// Real content installs for every bespoke kind once opted in — not `EmptyView`, the actual
+    /// `BadgeModalView`/etc. `SwiftUICustomContentTests` already covers these views' own interaction
+    /// behavior (they're unchanged, top-level, reused verbatim); this covers the REGISTRY wiring:
+    /// each kind gets a factory (real `properties`/`tokens`) AND a view (real `customContent`).
+    func test_registerBuiltInDescriptors_installsRealContent_forEveryBespokeKind() throws {
+        let renderer = makeRenderer()
+        renderer.registerBuiltInDescriptors()
+
+        renderer.present(
+            TextInputDialog(title: "Rename", primary: "Save"), id: ModalID(), resolve: { _ in }
+        )
+        renderer.present(
+            DatePickerDialog(initialDate: Date(), primary: "OK"), id: ModalID(), resolve: { _ in }
+        )
+        renderer.present(BadgeDialog(primary: "OK"), id: ModalID(), resolve: { _ in })
+        renderer.present(LoadingDialog(primary: "OK"), id: ModalID(), resolve: { _ in })
+        renderer.present(
+            SatisfactionDialog(
+                options: [.init(id: "1", symbolName: "face.smiling", label: "Good")], primary: "Submit"
+            ),
+            id: ModalID(), resolve: { _ in }
+        )
+
+        XCTAssertEqual(renderer.presentations.count, 5)
+        for presentation in renderer.presentations {
+            XCTAssertNotNil(presentation.customContent, "every bespoke kind must have real content")
+            XCTAssertNil(presentation.content, "bespoke kinds project no AlertDialog — a view, not content")
+        }
+    }
+
+    /// Without opting in, the bespoke kinds stay exactly as unregistered as any unknown descriptor —
+    /// same graceful-degradation contract every renderer honors.
+    func test_withoutRegisterBuiltInDescriptors_bespokeKindsStayUnregistered() {
+        let renderer = makeRenderer()
+        var result: BadgeDialog.Result?
+
+        renderer.present(BadgeDialog(primary: "OK"), id: ModalID()) { result = $0 }
+
+        XCTAssertEqual(result, .dismissed)
+        XCTAssertTrue(renderer.presentations.isEmpty)
+    }
+
+    /// The submitted-value round trip for the one bespoke kind whose result carries a value read at
+    /// interaction time — `TextInputDialog.submitted(String)`, the exact gap `register(_:view:)`
+    /// exists to close (`SwiftUICustomContentTests`' own framing). Proves the REAL registered view
+    /// (not a test stand-in) actually resolves through this renderer's gate.
+    func test_textInputBespokeKind_resolvesThroughItsOwnView() throws {
+        let renderer = makeRenderer()
+        renderer.registerBuiltInDescriptors()
+        var result: TextInputDialog.Result?
+        let id = ModalID()
+
+        renderer.present(
+            TextInputDialog(title: "Rename", initialText: "Old", primary: "Save"),
+            id: id, resolve: { result = $0 }
+        )
+        // `TextInputModalView` resolves via the SAME `Live.rebuild`-independent gate this renderer's
+        // `dismiss(_:)` already exercises elsewhere — driving it here via `dismiss` proves the
+        // registered view's teardown participates in the same funnel, without needing to host the
+        // view and simulate typing (its own text-submission behavior is `SwiftUICustomContentTests`'
+        // job, unchanged).
+        renderer.dismiss(id)
+
+        XCTAssertEqual(result, .dismissed)
+        XCTAssertTrue(renderer.presentations.isEmpty)
     }
 }

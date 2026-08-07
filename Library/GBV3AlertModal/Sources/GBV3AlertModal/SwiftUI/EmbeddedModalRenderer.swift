@@ -29,6 +29,13 @@ public final class EmbeddedModalRenderer: ObservableObject, ModalRenderer {
     public typealias Factory<D: ModalDescriptor> =
         (D, @escaping (D.Result) -> Void) -> (ModalProperties?, ModalContent)
 
+    /// Builds the SwiftUI body for a descriptor — same role as `SwiftUIModalRenderer.ContentBuilder`,
+    /// retyped for nothing (it was already UIKit-free: `AnyView`, no `DataHolder`/`Properties`
+    /// anywhere in this signature). The seam that makes bespoke descriptors (`TextInputDialog` and
+    /// friends) renderable, not merely routable.
+    public typealias ContentBuilder<D: ModalDescriptor> =
+        (D, @escaping (D.Result) -> Void) -> AnyView
+
     // MARK: - Presentation
 
     /// One live presentation — the UIKit-free mirror of `SwiftUIModalRenderer.Presentation`.
@@ -41,9 +48,13 @@ public final class EmbeddedModalRenderer: ObservableObject, ModalRenderer {
         /// The EFFECTIVE `ModalProperties` this presentation was resolved and tokenised with.
         public let properties: ModalProperties
         public let tokens: ModalTokens
-        /// Standard-family content projected into `AlertDialog` — always non-nil here, since only
-        /// the standard family is registered in this increment.
+        /// Standard-family content projected into `AlertDialog`. `nil` for a bespoke descriptor
+        /// registered through `register(_:view:)`, which carries no `StandardAlertContent`.
         public let content: AlertDialog?
+        /// The consumer's own SwiftUI body, built ONCE per present/refresh by the `register(_:view:)`
+        /// builder with the gate already bound. `EmbeddedModalHost` draws this in PREFERENCE to
+        /// `content` when both exist — same precedence `ModalPresentationBody.view(for:)` uses.
+        public let customContent: AnyView?
         public var isHidden: Bool
         public let onAction: (GBAlertModal.ActionType) -> Void
     }
@@ -55,6 +66,7 @@ public final class EmbeddedModalRenderer: ObservableObject, ModalRenderer {
         let factory: (D, @escaping (D.Result) -> Void) -> (ModalProperties?, ModalContent)
         let route: ((GBAlertModal.ActionType) -> D.Result)?
         let content: ((D) -> AlertDialog)?
+        let view: ContentBuilder<D>?
     }
 
     /// Per-presentation teardown/rebuild/route handles. Same role as `SwiftUIModalRenderer.Live`.
@@ -117,7 +129,7 @@ public final class EmbeddedModalRenderer: ObservableObject, ModalRenderer {
     public func register<D: ModalDescriptor>(_ type: D.Type, factory: @escaping Factory<D>) {
         let previous = registrations[ObjectIdentifier(type)] as? Registration<D>
         registrations[ObjectIdentifier(type)] = Registration<D>(
-            factory: factory, route: previous?.route, content: previous?.content
+            factory: factory, route: previous?.route, content: previous?.content, view: previous?.view
         )
     }
 
@@ -130,7 +142,111 @@ public final class EmbeddedModalRenderer: ObservableObject, ModalRenderer {
     ) {
         let previous = registrations[ObjectIdentifier(type)] as? Registration<D>
         registrations[ObjectIdentifier(type)] = Registration<D>(
-            factory: factory, route: route, content: previous?.content
+            factory: factory, route: route, content: previous?.content, view: previous?.view
+        )
+    }
+
+    /// Register the SwiftUI body for a descriptor kind — the seam that makes a bespoke descriptor
+    /// RENDERABLE, not merely routable. Same rules as `SwiftUIModalRenderer.register(_:view:)`:
+    /// registering a view does NOT require a factory (a neutral `(nil, ModalContent())` is installed
+    /// so the presentation still exists and is still tearable-down), and the two registrations are
+    /// independent — neither clears the other.
+    public func register<D: ModalDescriptor>(
+        _ type: D.Type,
+        view: @escaping (D, @escaping (D.Result) -> Void) -> AnyView
+    ) {
+        let previous = registrations[ObjectIdentifier(type)] as? Registration<D>
+        let neutralFactory: (D, @escaping (D.Result) -> Void) -> (ModalProperties?, ModalContent) =
+            { _, _ in (nil, ModalContent()) }
+        registrations[ObjectIdentifier(type)] = Registration<D>(
+            factory: previous?.factory ?? neutralFactory,
+            route: previous?.route,
+            content: previous?.content,
+            view: view
+        )
+    }
+
+    /// OPT-IN registration of the five bespoke descriptors, same rule as
+    /// `SwiftUIModalRenderer.registerBuiltInDescriptors()`: each kind gets BOTH halves (a factory, so
+    /// `Presentation.properties`/`.tokens` derive from real `ModalProperties`, and a `view`, so
+    /// `EmbeddedModalHost` has a body to draw) — the view constructions are VERBATIM the same view
+    /// types `SwiftUIModalRenderer+BespokeViews.swift`/`+InputViews.swift` already use, since those
+    /// are top-level, UIKit-free, and were never coupled to that renderer's registry.
+    ///
+    /// Deliberately NOT called from `init` — same reasoning as the other two renderers.
+    public func registerBuiltInDescriptors() {
+        registrations[ObjectIdentifier(TextInputDialog.self)] = Registration<TextInputDialog>(
+            factory: { [weak self] descriptor, _ in
+                (self?.properties(for: .standard), ModalContent.make(for: descriptor))
+            },
+            route: nil, content: nil,
+            view: { [weak self] descriptor, resolve in
+                AnyView(
+                    TextInputModalView(
+                        descriptor: descriptor, tokens: self?.tokens(for: .standard) ?? .standard,
+                        resolve: resolve
+                    )
+                )
+            }
+        )
+        registrations[ObjectIdentifier(DatePickerDialog.self)] = Registration<DatePickerDialog>(
+            factory: { [weak self] descriptor, _ in
+                (self?.properties(for: .standard), ModalContent.make(for: descriptor))
+            },
+            route: nil, content: nil,
+            view: { [weak self] descriptor, resolve in
+                AnyView(
+                    DatePickerModalView(
+                        descriptor: descriptor, tokens: self?.tokens(for: .standard) ?? .standard,
+                        resolve: resolve
+                    )
+                )
+            }
+        )
+        registrations[ObjectIdentifier(BadgeDialog.self)] = Registration<BadgeDialog>(
+            factory: { [weak self] descriptor, _ in
+                (self?.properties(for: descriptor.style), ModalContent.make(for: descriptor))
+            },
+            route: nil, content: nil,
+            view: { [weak self] descriptor, resolve in
+                AnyView(
+                    BadgeModalView(
+                        descriptor: descriptor,
+                        tokens: self?.tokens(for: descriptor.style) ?? .standard,
+                        resolve: resolve
+                    )
+                )
+            }
+        )
+        registrations[ObjectIdentifier(LoadingDialog.self)] = Registration<LoadingDialog>(
+            factory: { [weak self] descriptor, _ in
+                (self?.properties(for: descriptor.style), ModalContent.make(for: descriptor))
+            },
+            route: nil, content: nil,
+            view: { [weak self] descriptor, resolve in
+                AnyView(
+                    LoadingModalView(
+                        descriptor: descriptor,
+                        tokens: self?.tokens(for: descriptor.style) ?? .standard,
+                        resolve: resolve
+                    )
+                )
+            }
+        )
+        registrations[ObjectIdentifier(SatisfactionDialog.self)] = Registration<SatisfactionDialog>(
+            factory: { [weak self] descriptor, _ in
+                (self?.properties(for: descriptor.style), ModalContent.make(for: descriptor))
+            },
+            route: nil, content: nil,
+            view: { [weak self] descriptor, resolve in
+                AnyView(
+                    SatisfactionModalView(
+                        descriptor: descriptor,
+                        tokens: self?.tokens(for: descriptor.style) ?? .standard,
+                        resolve: resolve
+                    )
+                )
+            }
         )
     }
 
@@ -172,7 +288,7 @@ public final class EmbeddedModalRenderer: ObservableObject, ModalRenderer {
             )
         }
         registrations[ObjectIdentifier(type)] = Registration<D>(
-            factory: factory, route: route, content: content
+            factory: factory, route: route, content: content, view: nil
         )
     }
 
@@ -211,7 +327,11 @@ public final class EmbeddedModalRenderer: ObservableObject, ModalRenderer {
                     id,
                     properties: nextProperties,
                     holder: nextHolder,
-                    content: registration.content?(next)
+                    content: registration.content?(next),
+                    // Rebuilt from the NEW descriptor, symmetrically with `content` — same identity
+                    // note `SwiftUIModalRenderer.present`'s rebuild carries: this does NOT reset the
+                    // view's `@State` (same concrete body type at the same `ForEach` identity).
+                    customContent: registration.view?(next, gate)
                 )
             },
             route: router
@@ -223,6 +343,7 @@ public final class EmbeddedModalRenderer: ObservableObject, ModalRenderer {
                 properties: properties,
                 holder: holder,
                 content: registration.content?(descriptor),
+                customContent: registration.view?(descriptor, gate),
                 isHidden: false,
                 onAction: { [weak self] action in
                     guard let route = self?.live[id]?.route else { return }
@@ -257,6 +378,7 @@ public final class EmbeddedModalRenderer: ObservableObject, ModalRenderer {
         properties: ModalProperties?,
         holder: ModalContent,
         content: AlertDialog?,
+        customContent: AnyView?,
         isHidden: Bool,
         onAction: @escaping (GBAlertModal.ActionType) -> Void
     ) -> Presentation {
@@ -268,6 +390,7 @@ public final class EmbeddedModalRenderer: ObservableObject, ModalRenderer {
             properties: effective,
             tokens: ModalTokens(from: effective),
             content: content,
+            customContent: customContent,
             isHidden: isHidden,
             onAction: onAction
         )
@@ -279,7 +402,8 @@ public final class EmbeddedModalRenderer: ObservableObject, ModalRenderer {
         _ id: ModalID,
         properties: ModalProperties?,
         holder: ModalContent,
-        content: AlertDialog?
+        content: AlertDialog?,
+        customContent: AnyView?
     ) {
         guard let index = presentations.firstIndex(where: { $0.id == id }) else { return }
         let previous = presentations[index]
@@ -288,6 +412,7 @@ public final class EmbeddedModalRenderer: ObservableObject, ModalRenderer {
             properties: properties,
             holder: holder,
             content: content,
+            customContent: customContent,
             isHidden: previous.isHidden,
             onAction: previous.onAction
         )

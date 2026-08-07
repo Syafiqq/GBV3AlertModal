@@ -34,15 +34,17 @@ public struct EmbeddedModalHost<Content: View>: View {
             )
     }
 
-    /// Only the standard-family branch exists in this increment — `EmbeddedModalRenderer` registers
-    /// no descriptor kind that produces `customContent`, so there is nothing to prefer over `content`
-    /// yet. Add a `customContent` branch here (mirroring `ModalPresentationBody.view(for:)`) when the
-    /// bespoke descriptors' view support lands. `content` is `nil` only for a kind registered via
-    /// `register(_:factory:)` alone (routable, no body) — skipped rather than guessed at, same rule
-    /// `ModalPresentationBody` uses.
+    /// Prefers the consumer's registered view over the standard body — same precedence
+    /// `ModalPresentationBody.view(for:)` uses, for the same reason: a `register(_:view:)` body is
+    /// the WHOLE modal (its own `AlertModalScaffold`), because its buttons must read the `@State` it
+    /// owns. `content` alone (no `customContent`) is the standard family, drawn by `SwiftUIAlertModal`.
+    /// Neither means the kind is routable but has nothing to draw — a `register(_:factory:)`-only
+    /// registration — skipped rather than guessed at.
     @ViewBuilder
     private func modal(for presentation: EmbeddedModalRenderer.Presentation) -> some View {
-        if let config = presentation.content {
+        if let customContent = presentation.customContent {
+            customContent
+        } else if let config = presentation.content {
             SwiftUIAlertModal(
                 config: config,
                 properties: presentation.properties,

@@ -224,4 +224,70 @@ final class WindowModalRendererTests: XCTestCase {
             renderer.properties(for: .standard)?.space?.banner
         )
     }
+
+    // MARK: - registerBuiltInDescriptors() — the 5 bespoke kinds
+
+    /// Real content installs (a real view in the window) for every bespoke kind once opted in — same
+    /// coverage `EmbeddedModalRendererTests` runs for `EmbeddedModalRenderer`.
+    func test_registerBuiltInDescriptors_installsRealContent_forEveryBespokeKind() {
+        let window = makeWindow()
+        let renderer = makeRenderer(window: window)
+        renderer.registerBuiltInDescriptors()
+        let before = window.subviews.count
+
+        renderer.present(
+            TextInputDialog(title: "Rename", primary: "Save"), id: ModalID(), resolve: { _ in }
+        )
+        renderer.present(
+            DatePickerDialog(initialDate: Date(), primary: "OK"), id: ModalID(), resolve: { _ in }
+        )
+        renderer.present(BadgeDialog(primary: "OK"), id: ModalID(), resolve: { _ in })
+        renderer.present(LoadingDialog(primary: "OK"), id: ModalID(), resolve: { _ in })
+        renderer.present(
+            SatisfactionDialog(
+                options: [.init(id: "1", symbolName: "face.smiling", label: "Good")], primary: "Submit"
+            ),
+            id: ModalID(), resolve: { _ in }
+        )
+
+        XCTAssertEqual(window.subviews.count, before + 5, "each bespoke kind must install a real view")
+        XCTAssertEqual(renderer.live.count, 5)
+    }
+
+    /// Without opting in, the bespoke kinds stay exactly as unregistered as any unknown descriptor.
+    func test_withoutRegisterBuiltInDescriptors_bespokeKindsStayUnregistered() {
+        let window = makeWindow()
+        let renderer = makeRenderer(window: window)
+        var result: BadgeDialog.Result?
+        let before = window.subviews.count
+
+        renderer.present(BadgeDialog(primary: "OK"), id: ModalID()) { result = $0 }
+
+        XCTAssertEqual(result, .dismissed)
+        XCTAssertTrue(renderer.live.isEmpty)
+        XCTAssertEqual(window.subviews.count, before)
+    }
+
+    /// The registered view resolves through this renderer's SAME teardown funnel `dismiss(_:)`
+    /// exercises everywhere else — proves the real `TextInputModalView` (not a test stand-in)
+    /// participates correctly, without needing to host it and simulate typing (its own behavior is
+    /// unchanged and tested elsewhere).
+    func test_textInputBespokeKind_resolvesThroughItsOwnView() {
+        let window = makeWindow()
+        let renderer = makeRenderer(window: window)
+        renderer.registerBuiltInDescriptors()
+        var result: TextInputDialog.Result?
+        let id = ModalID()
+        let before = window.subviews.count
+
+        renderer.present(
+            TextInputDialog(title: "Rename", initialText: "Old", primary: "Save"),
+            id: id, resolve: { result = $0 }
+        )
+        renderer.dismiss(id)
+
+        XCTAssertEqual(result, .dismissed)
+        XCTAssertTrue(renderer.live.isEmpty)
+        XCTAssertEqual(window.subviews.count, before, "dismiss must remove the hosted view")
+    }
 }

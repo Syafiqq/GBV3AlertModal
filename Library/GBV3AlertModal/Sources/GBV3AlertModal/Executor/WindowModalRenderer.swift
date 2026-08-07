@@ -31,10 +31,19 @@ public final class WindowModalRenderer: ModalRenderer {
     public typealias Factory<D: ModalDescriptor> =
         (D, @escaping (D.Result) -> Void) -> (ModalProperties?, ModalContent)
 
+    /// Builds the SwiftUI body for a bespoke descriptor — same role as `EmbeddedModalRenderer
+    /// .ContentBuilder`/`SwiftUIModalRenderer.ContentBuilder`. Handed the resolve GATE directly
+    /// (not routed through `route`), because these views own their own state and resolve themselves
+    /// at interaction time — the same reason `SwiftUIModalRenderer.registerBuiltInDescriptors` never
+    /// sets `route` for the five bespoke kinds, only `view`.
+    public typealias ContentBuilder<D: ModalDescriptor> =
+        (D, @escaping (D.Result) -> Void) -> AnyView
+
     private struct Registration<D: ModalDescriptor> {
         let factory: (D, @escaping (D.Result) -> Void) -> (ModalProperties?, ModalContent)
         let route: ((GBAlertModal.ActionType) -> D.Result)?
         let content: ((D) -> AlertDialog)?
+        let view: ContentBuilder<D>?
     }
 
     /// One installed presentation: the hosting controller actually mounted in the window, plus the
@@ -97,7 +106,7 @@ public final class WindowModalRenderer: ModalRenderer {
     public func register<D: ModalDescriptor>(_ type: D.Type, factory: @escaping Factory<D>) {
         let previous = registrations[ObjectIdentifier(type)] as? Registration<D>
         registrations[ObjectIdentifier(type)] = Registration<D>(
-            factory: factory, route: previous?.route, content: previous?.content
+            factory: factory, route: previous?.route, content: previous?.content, view: previous?.view
         )
     }
 
@@ -108,8 +117,111 @@ public final class WindowModalRenderer: ModalRenderer {
     ) {
         let previous = registrations[ObjectIdentifier(type)] as? Registration<D>
         registrations[ObjectIdentifier(type)] = Registration<D>(
-            factory: factory, route: route, content: previous?.content
+            factory: factory, route: route, content: previous?.content, view: previous?.view
         )
+    }
+
+    /// Register the SwiftUI body for a descriptor kind — same rules as `EmbeddedModalRenderer
+    /// .register(_:view:)`: does not require a factory (a neutral one is installed so the
+    /// presentation is still tearable-down), and the two registrations are independent.
+    public func register<D: ModalDescriptor>(
+        _ type: D.Type,
+        view: @escaping (D, @escaping (D.Result) -> Void) -> AnyView
+    ) {
+        let previous = registrations[ObjectIdentifier(type)] as? Registration<D>
+        let neutralFactory: (D, @escaping (D.Result) -> Void) -> (ModalProperties?, ModalContent) =
+            { _, _ in (nil, ModalContent()) }
+        registrations[ObjectIdentifier(type)] = Registration<D>(
+            factory: previous?.factory ?? neutralFactory,
+            route: previous?.route,
+            content: previous?.content,
+            view: view
+        )
+    }
+
+    /// OPT-IN registration of the five bespoke descriptors — same rule and same VERBATIM view
+    /// constructions as `EmbeddedModalRenderer.registerBuiltInDescriptors()` (see that type for why
+    /// these views are reusable, top-level, UIKit-free types).
+    public func registerBuiltInDescriptors() {
+        registrations[ObjectIdentifier(TextInputDialog.self)] = Registration<TextInputDialog>(
+            factory: { [weak self] descriptor, _ in
+                (self?.properties(for: .standard), ModalContent.make(for: descriptor))
+            },
+            route: nil, content: nil,
+            view: { [weak self] descriptor, resolve in
+                AnyView(
+                    TextInputModalView(
+                        descriptor: descriptor, tokens: self?.tokens(for: .standard) ?? .standard,
+                        resolve: resolve
+                    )
+                )
+            }
+        )
+        registrations[ObjectIdentifier(DatePickerDialog.self)] = Registration<DatePickerDialog>(
+            factory: { [weak self] descriptor, _ in
+                (self?.properties(for: .standard), ModalContent.make(for: descriptor))
+            },
+            route: nil, content: nil,
+            view: { [weak self] descriptor, resolve in
+                AnyView(
+                    DatePickerModalView(
+                        descriptor: descriptor, tokens: self?.tokens(for: .standard) ?? .standard,
+                        resolve: resolve
+                    )
+                )
+            }
+        )
+        registrations[ObjectIdentifier(BadgeDialog.self)] = Registration<BadgeDialog>(
+            factory: { [weak self] descriptor, _ in
+                (self?.properties(for: descriptor.style), ModalContent.make(for: descriptor))
+            },
+            route: nil, content: nil,
+            view: { [weak self] descriptor, resolve in
+                AnyView(
+                    BadgeModalView(
+                        descriptor: descriptor,
+                        tokens: self?.tokens(for: descriptor.style) ?? .standard,
+                        resolve: resolve
+                    )
+                )
+            }
+        )
+        registrations[ObjectIdentifier(LoadingDialog.self)] = Registration<LoadingDialog>(
+            factory: { [weak self] descriptor, _ in
+                (self?.properties(for: descriptor.style), ModalContent.make(for: descriptor))
+            },
+            route: nil, content: nil,
+            view: { [weak self] descriptor, resolve in
+                AnyView(
+                    LoadingModalView(
+                        descriptor: descriptor,
+                        tokens: self?.tokens(for: descriptor.style) ?? .standard,
+                        resolve: resolve
+                    )
+                )
+            }
+        )
+        registrations[ObjectIdentifier(SatisfactionDialog.self)] = Registration<SatisfactionDialog>(
+            factory: { [weak self] descriptor, _ in
+                (self?.properties(for: descriptor.style), ModalContent.make(for: descriptor))
+            },
+            route: nil, content: nil,
+            view: { [weak self] descriptor, resolve in
+                AnyView(
+                    SatisfactionModalView(
+                        descriptor: descriptor,
+                        tokens: self?.tokens(for: descriptor.style) ?? .standard,
+                        resolve: resolve
+                    )
+                )
+            }
+        )
+    }
+
+    /// `ModalTokens` for a style, off the same style map `properties(for:)` reads.
+    private func tokens(for style: ModalStyle) -> ModalTokens {
+        guard let properties = properties(for: style) else { return .standard }
+        return ModalTokens(from: properties)
     }
 
     private func registerStandard<D>(
@@ -142,7 +254,7 @@ public final class WindowModalRenderer: ModalRenderer {
             )
         }
         registrations[ObjectIdentifier(type)] = Registration<D>(
-            factory: factory, route: route, content: content
+            factory: factory, route: route, content: content, view: nil
         )
     }
 
@@ -182,12 +294,19 @@ public final class WindowModalRenderer: ModalRenderer {
             router = { action in gate(route(action)) }
         }
 
-        // `registration.content` is `nil` for a descriptor registered via `register(_:factory:)`/
-        // `register(_:route:factory:)` alone (no `register(_:view:)` equivalent exists on this
-        // renderer) — matches `ModalPresentationBody.view(for:)`'s own "routable, no body" outcome:
-        // still live, still resolvable via `dismiss(_:)`/`route`, nothing installed in the window.
+        // Precedence mirrors `ModalPresentationBody.view(for:)`: a `register(_:view:)` body is the
+        // WHOLE modal (its own `AlertModalScaffold`) and wins over the standard `content` projection.
+        // `registration.view` is handed `gate` directly — bespoke views resolve themselves at
+        // interaction time, no `route` needed (see `ContentBuilder`'s own doc). Neither present means
+        // a `register(_:factory:)`-only registration — matches `ModalPresentationBody`'s own
+        // "routable, no body" outcome: still live, still resolvable via `dismiss(_:)`/`route`,
+        // nothing installed in the window.
         var hostingController: UIHostingController<AnyView>?
-        if let content = registration.content {
+        if let view = registration.view {
+            let controller = UIHostingController(rootView: view(descriptor, gate))
+            Self.install(controller, in: window)
+            hostingController = controller
+        } else if let content = registration.content {
             let controller = UIHostingController(
                 rootView: Self.view(
                     config: content(descriptor), properties: effective, tokens: tokens,
@@ -207,9 +326,13 @@ public final class WindowModalRenderer: ModalRenderer {
             resolveDismissed: { gate(D.dismissedResult) },
             rebuild: { [weak self] anyDescriptor in
                 guard let self, let next = anyDescriptor as? D else { return }
+                if let view = registration.view {
+                    self.live[id]?.hostingController?.rootView = view(next, gate)
+                    return
+                }
+                guard let content = registration.content else { return }
                 let (nextProperties, _) = registration.factory(next, gate)
                 let nextEffective = nextProperties ?? ModalProperties()
-                guard let content = registration.content else { return }
                 self.live[id]?.hostingController?.rootView = Self.view(
                     config: content(next),
                     properties: nextEffective,
