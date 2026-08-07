@@ -401,6 +401,94 @@ final class AdoptionScreenTests: XCTestCase {
     }
 }
 
+// MARK: - EmbeddedModalRenderer — the UIKit-free renderer, hosted the same way
+
+/// **`EmbeddedAdoptionScreen`, exercised as a consumer would use it — the same gate
+/// `AdoptionScreenTests` runs for `AdoptionScreen`, closing the "does it actually run" gap that
+/// unit tests alone (`EmbeddedModalRendererTests`) can't: real window, real `UIHostingController`,
+/// real `RootScreenModalCoordinator` serialisation, resolved through the same `onAction` handle a
+/// rendered button's tap calls.**
+@MainActor
+final class EmbeddedAdoptionScreenTests: XCTestCase {
+
+    func test_theScreenBuildsAndHostsItsRenderer() {
+        let screen = EmbeddedAdoptionScreen()
+        let host = UIHostingController(rootView: screen)
+        let window = UIWindow(frame: CGRect(x: 0, y: 0, width: 390, height: 844))
+        window.rootViewController = host
+        window.isHidden = false
+        window.makeKeyAndVisible()
+        window.setNeedsLayout()
+        window.layoutIfNeeded()
+        defer { window.isHidden = true; window.rootViewController = nil }
+
+        XCTAssertFalse(host.view.bounds.isEmpty, "the embedded adoption screen was not laid out")
+    }
+
+    /// Same proof `AdoptionScreenTests.test_twoPresentationsAtOnce_serialise` runs for the UIKit-typed
+    /// renderer: `RootScreenModalCoordinator` needs zero code changes to arbitrate `EmbeddedModalRenderer`
+    /// — this is that claim, exercised end to end rather than assumed from the type signature matching.
+    func test_twoPresentationsAtOnce_serialise() async {
+        let vm = EmbeddedAdoptionViewModel()
+
+        let both = Task { await vm.presentTwoAtOnce() }
+        await Task.yield()
+        try? await Task.sleep(nanoseconds: 50_000_000)
+
+        XCTAssertEqual(
+            vm.renderer.presentations.count, 1,
+            "two modals are live at once — the coordinator is not serialising EmbeddedModalRenderer"
+        )
+
+        // Resolved through the SAME handle a rendered SwiftUIAlertModal's button tap calls
+        // (EmbeddedModalHost -> SwiftUIAlertModal.onAction -> Presentation.onAction) — no test-only door.
+        vm.renderer.presentations.first?.onAction(.primary)
+        try? await Task.sleep(nanoseconds: 50_000_000)
+        XCTAssertLessThanOrEqual(
+            vm.renderer.presentations.count, 1,
+            "more than one presentation after the first resolved"
+        )
+
+        both.cancel()
+    }
+
+    /// **The rendering claim, not just the data-model claim.** Everything above proves
+    /// `EmbeddedModalRenderer.presentations` changes correctly; this proves `EmbeddedModalHost`
+    /// actually turns that into real UIKit views inside the hosted window — the SwiftUI->UIKit
+    /// bridge working, not just the `@Published` array.
+    func test_presenting_actuallyAddsRenderedContent_toTheHostedWindow() {
+        let vm = EmbeddedAdoptionViewModel()
+        let host = UIHostingController(
+            rootView: EmbeddedModalHost(renderer: vm.renderer) { Color.clear }
+        )
+        let window = UIWindow(frame: CGRect(x: 0, y: 0, width: 390, height: 844))
+        window.rootViewController = host
+        window.isHidden = false
+        window.makeKeyAndVisible()
+        window.setNeedsLayout()
+        window.layoutIfNeeded()
+        defer { window.isHidden = true; window.rootViewController = nil }
+
+        func subviewCount(_ view: UIView) -> Int {
+            1 + view.subviews.reduce(0) { $0 + subviewCount($1) }
+        }
+        let before = subviewCount(host.view)
+
+        vm.renderer.present(
+            AlertDialog(title: "T", subtitle: "S", primary: "OK"), id: ModalID(), resolve: { _ in }
+        )
+        window.setNeedsLayout()
+        window.layoutIfNeeded()
+        let during = subviewCount(host.view)
+
+        XCTAssertGreaterThan(
+            during, before,
+            "presenting through EmbeddedModalRenderer must add real drawn content to the hosted "
+                + "window, not just update the renderer's own @Published state"
+        )
+    }
+}
+
 // MARK: - Tier 0 — the existing UIKit executor paints OVER a live SwiftUI screen
 
 /// Proves (not just reasons) that a SwiftUI ViewModel can drive dialogs TODAY with zero new
