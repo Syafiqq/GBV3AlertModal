@@ -4,14 +4,16 @@ import UIKit
 /// The backends behind `ModalRenderer`. Parity tests loop this so a failure message can name
 /// the offending kind (spec C-2).
 ///
-/// `.embedded` (`EmbeddedModalRenderer`) is UIKit-vocabulary-free and, in this increment, registers
-/// only the standard family — `effectiveProperties(_:)`/`registerCustom(...)` below are intentionally
-/// NOT generalized to it (they're UIKit-typed by design), so tests using either method must loop
+/// `.embedded` (`EmbeddedModalRenderer`) and `.window` (`WindowModalRenderer`) are both UIKit-
+/// vocabulary-free — `effectiveProperties(_:)`/`registerCustom(...)`/`register(style:properties:)`/
+/// `reRegisterStandardAlertFactory(properties:)` below are intentionally NOT generalized to either
+/// (they're UIKit-typed by design), so tests using any of those four methods must loop
 /// `[.uiKit, .swiftUI]` explicitly rather than `.allCases`.
 enum RendererKind: String, CaseIterable {
     case uiKit
     case swiftUI
     case embedded
+    case window
 }
 
 /// A renderer-agnostic driver for the parity gate.
@@ -45,6 +47,7 @@ final class RendererHarness {
         case uiKit(UIKitModalRenderer)
         case swiftUI(SwiftUIModalRenderer)
         case embedded(EmbeddedModalRenderer)
+        case window(WindowModalRenderer)
     }
 
     let kind: RendererKind
@@ -85,6 +88,18 @@ final class RendererHarness {
                     popupProperties: GeniePresets.popupModalProperties()
                 )
             )
+        case .window:
+            // Needs a real UIWindow, same as .uiKit — WindowModalRenderer installs directly into it.
+            let window = UIWindow(frame: UIScreen.main.bounds)
+            window.makeKeyAndVisible()
+            self.window = window
+            self.box = .window(
+                WindowModalRenderer(
+                    alertProperties: GeniePresets.standardModalProperties(),
+                    popupProperties: GeniePresets.popupModalProperties(),
+                    windowProvider: { window }
+                )
+            )
         }
     }
 
@@ -94,6 +109,7 @@ final class RendererHarness {
         case .uiKit(let backend): return backend
         case .swiftUI(let backend): return backend
         case .embedded(let backend): return backend
+        case .window(let backend): return backend
         }
     }
 
@@ -112,6 +128,10 @@ final class RendererHarness {
             backend.presentations.first(where: { $0.id == id })?.onAction(action)
         case .embedded(let backend):
             backend.presentations.first(where: { $0.id == id })?.onAction(action)
+        case .window(let backend):
+            // No `presentations`/`onAction` layer — `Live.route` IS the action handler, the exact
+            // closure the hosted `SwiftUIAlertModal`'s own `onAction` calls at tap time.
+            backend.live[id]?.route?(action)
         }
     }
 
@@ -141,6 +161,15 @@ final class RendererHarness {
                 guard let onAction else { return }
                 onAction(action)
             }
+        case .window(let backend):
+            // `Live.route` closes over `id` and re-looks-up `live[id]` at call time (same pattern
+            // every renderer's gate uses), so a route captured now genuinely goes stale after
+            // teardown — same discriminating shape the other three cases have.
+            let route = backend.live[id]?.route
+            return { action in
+                guard let route else { return }
+                route(action)
+            }
         }
     }
 
@@ -153,6 +182,7 @@ final class RendererHarness {
         case .uiKit(let backend): return backend.live[id] != nil
         case .swiftUI(let backend): return backend.live[id] != nil
         case .embedded(let backend): return backend.live[id] != nil
+        case .window(let backend): return backend.live[id] != nil
         }
     }
 
@@ -163,16 +193,20 @@ final class RendererHarness {
         case .uiKit(let backend): return backend.live.count
         case .swiftUI(let backend): return backend.live.count
         case .embedded(let backend): return backend.live.count
+        case .window(let backend): return backend.live.count
         }
     }
 
     /// The presentation's hidden flag: `UIView.isHidden` on UIKit, `Presentation.isHidden` on
-    /// SwiftUI/embedded. `nil` when there is no live presentation for `id`.
+    /// SwiftUI/embedded, the hosting controller's own `view.isHidden` on window. `nil` when there is
+    /// no live presentation for `id` (or, for `.window`, no content was installed for it — see
+    /// `WindowModalRenderer.present`'s "routable, no body" doc).
     func isHidden(_ id: ModalID) -> Bool? {
         switch box {
         case .uiKit(let backend): return backend.live[id]?.modal.isHidden
         case .swiftUI(let backend): return backend.presentations.first(where: { $0.id == id })?.isHidden
         case .embedded(let backend): return backend.presentations.first(where: { $0.id == id })?.isHidden
+        case .window(let backend): return backend.live[id]?.hostingController?.view.isHidden
         }
     }
 
@@ -191,10 +225,10 @@ final class RendererHarness {
             return backend.live[id]?.modal.properties
         case .swiftUI(let backend):
             return backend.presentations.first(where: { $0.id == id })?.properties
-        case .embedded:
-            // Deliberately unsupported: `EmbeddedModalRenderer.Presentation.properties` is
-            // `ModalProperties`, not `GBAlertModal.Properties` — there is no UIKit-typed value to
-            // return here without an adapter the plan explicitly declined to build. `nil` fails
+        case .embedded, .window:
+            // Deliberately unsupported for either UIKit-free renderer: their `Presentation`/`Live`
+            // carry `ModalProperties`, not `GBAlertModal.Properties` — there is no UIKit-typed value
+            // to return here without an adapter the plan explicitly declined to build. `nil` fails
             // loud (via `XCTUnwrap`) rather than silently comparing the wrong type. Callers of this
             // method must loop `[.uiKit, .swiftUI]` explicitly, never `.allCases`.
             return nil
@@ -217,6 +251,8 @@ final class RendererHarness {
             return backend.presentations.first(where: { $0.id == id })?.resolved.subtitle
         case .embedded(let backend):
             return backend.presentations.first(where: { $0.id == id })?.resolved.subtitle
+        case .window(let backend):
+            return backend.live[id]?.resolved.subtitle
         }
     }
 
@@ -259,15 +295,15 @@ final class RendererHarness {
             backend.register(type, route: route) { descriptor, _ in
                 (properties, holder(descriptor))
             }
-        case .embedded:
-            // Deliberately unsupported: `holder`/`properties` are UIKit-typed
-            // (`GBAlertModal.DataHolder`/`.Properties`), and `EmbeddedModalRenderer.Factory` takes
-            // `ModalProperties`/`ModalContent` — there is no adapter between them the plan declined
-            // to build. Fails LOUD (not a silent no-registration, which would let the test proceed
-            // and misreport as "unregistered descriptor" instead of naming this method as the cause).
-            // Callers must loop `[.uiKit, .swiftUI]` explicitly, never `.allCases`.
+        case .embedded, .window:
+            // Deliberately unsupported for either UIKit-free renderer: `holder`/`properties` are
+            // UIKit-typed (`GBAlertModal.DataHolder`/`.Properties`), and both renderers' `Factory`
+            // takes `ModalProperties`/`ModalContent` — there is no adapter between them the plan
+            // declined to build. Fails LOUD (not a silent no-registration, which would let the test
+            // proceed and misreport as "unregistered descriptor" instead of naming this method as
+            // the cause). Callers must loop `[.uiKit, .swiftUI]` explicitly, never `.allCases`.
             fatalError(
-                "RendererHarness.registerCustom is not supported for .embedded — "
+                "RendererHarness.registerCustom is not supported for .\(kind.rawValue) — "
                     + "loop [.uiKit, .swiftUI] explicitly"
             )
         }
@@ -288,9 +324,9 @@ final class RendererHarness {
         switch box {
         case .uiKit(let backend): backend.register(style: style, properties: properties)
         case .swiftUI(let backend): backend.register(style: style, properties: properties)
-        case .embedded:
+        case .embedded, .window:
             fatalError(
-                "RendererHarness.register(style:properties:) is not supported for .embedded — "
+                "RendererHarness.register(style:properties:) is not supported for .\(kind.rawValue) — "
                     + "loop [.uiKit, .swiftUI] explicitly"
             )
         }
@@ -303,6 +339,7 @@ final class RendererHarness {
         case .uiKit(let backend): return backend.isRegistered(style: style)
         case .swiftUI(let backend): return backend.isRegistered(style: style)
         case .embedded(let backend): return backend.isRegistered(style: style)
+        case .window(let backend): return backend.isRegistered(style: style)
         }
     }
 
@@ -322,11 +359,11 @@ final class RendererHarness {
             backend.register(AlertDialog.self) { descriptor, resolve in
                 (properties, UIKitModalRenderer.AlertHolder.make(for: descriptor, resolve: resolve))
             }
-        case .embedded:
+        case .embedded, .window:
             // Same UIKit-typed-argument reasoning as `registerCustom`/`register(style:properties:)`.
             fatalError(
-                "RendererHarness.reRegisterStandardAlertFactory is not supported for .embedded — "
-                    + "loop [.uiKit, .swiftUI] explicitly"
+                "RendererHarness.reRegisterStandardAlertFactory is not supported for "
+                    + ".\(kind.rawValue) — loop [.uiKit, .swiftUI] explicitly"
             )
         }
     }

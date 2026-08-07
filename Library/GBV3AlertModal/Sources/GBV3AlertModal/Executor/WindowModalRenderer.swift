@@ -51,6 +51,12 @@ public final class WindowModalRenderer: ModalRenderer {
     /// matching `UIKitModalRenderer.Live`/`EmbeddedModalRenderer.Live`, since `var live` below is
     /// internal for `@testable` assertions and must be at least as visible as its value type.
     struct Live {
+        /// Structure only — same shared chain every backend runs (`GBAlertModal.resolve`), kept
+        /// purely for `@testable` introspection (`RendererHarness.resolvedSubtitle`, the parity gate).
+        /// Never read by rendering: `SwiftUIAlertModal`/the registered bespoke view each re-resolve
+        /// internally from `config`/`properties`, same as every other backend's own doc states. `var`
+        /// so `update(_:to:)` can refresh it in place via `live[id]?.resolved = ...`.
+        var resolved: GBAlertModal.ResolvedModal
         /// `nil` for a descriptor registered with no content projection — still live and routable,
         /// nothing installed in the window. See `present`'s own doc on this. `UIHostingController`
         /// is a class, so `rootView` can still be reassigned on rebuild without this being `var`.
@@ -281,13 +287,15 @@ public final class WindowModalRenderer: ModalRenderer {
             resolve(result)
         }
 
-        // `holder` (the `ModalContent`) is unused here: unlike `EmbeddedModalRenderer`, this renderer
-        // never calls `GBAlertModal.resolve` itself — `SwiftUIAlertModal` already re-resolves
-        // internally from `config`/`properties` (see its own doc), and nothing here needs the
-        // resolved value for introspection the way a parity-harness `Presentation` would.
-        let (properties, _) = registration.factory(descriptor, gate)
+        let (properties, holder) = registration.factory(descriptor, gate)
         let effective = properties ?? ModalProperties()
         let tokens = ModalTokens(from: effective)
+        // `SwiftUIAlertModal`/a registered bespoke view each re-resolve internally from
+        // `config`/`properties` for actual RENDERING (see `SwiftUIAlertModal`'s own doc) — this
+        // resolve is purely for `Live.resolved`, the parity-harness introspection point
+        // (`RendererHarness.resolvedSubtitle`), same role `EmbeddedModalRenderer.Presentation
+        // .resolved` plays.
+        let resolved = GBAlertModal.resolve(inputs: effective, content: holder, isLandscape: false)
 
         var router: ((GBAlertModal.ActionType) -> Void)?
         if let route = registration.route {
@@ -321,18 +329,22 @@ public final class WindowModalRenderer: ModalRenderer {
         }
 
         live[id] = Live(
+            resolved: resolved,
             hostingController: hostingController,
             route: router,
             resolveDismissed: { gate(D.dismissedResult) },
             rebuild: { [weak self] anyDescriptor in
                 guard let self, let next = anyDescriptor as? D else { return }
+                let (nextProperties, nextHolder) = registration.factory(next, gate)
+                let nextEffective = nextProperties ?? ModalProperties()
+                self.live[id]?.resolved = GBAlertModal.resolve(
+                    inputs: nextEffective, content: nextHolder, isLandscape: false
+                )
                 if let view = registration.view {
                     self.live[id]?.hostingController?.rootView = view(next, gate)
                     return
                 }
                 guard let content = registration.content else { return }
-                let (nextProperties, _) = registration.factory(next, gate)
-                let nextEffective = nextProperties ?? ModalProperties()
                 self.live[id]?.hostingController?.rootView = Self.view(
                     config: content(next),
                     properties: nextEffective,
