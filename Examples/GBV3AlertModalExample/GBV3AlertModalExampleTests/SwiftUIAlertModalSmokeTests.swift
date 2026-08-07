@@ -578,3 +578,56 @@ final class WindowModalRendererHostingSmokeTests: XCTestCase {
         XCTAssertEqual(window.subviews.count, before, "dismiss should remove the hosted view from the window")
     }
 }
+
+// MARK: - The 26-real-shape catalog, in front of a human's eyes, on the two UIKit-free renderers
+
+/// `EmbeddedCatalogScreen` builds, hosts its renderer, and actually presents a real shape — the
+/// visual half of `EmbeddedShapeCoverageTests`' structural claim, now proven end to end through a
+/// live app screen rather than a bare renderer.
+@MainActor
+final class EmbeddedCatalogScreenTests: XCTestCase {
+    func test_theScreenBuildsAndHostsItsRenderer() {
+        let host = UIHostingController(rootView: EmbeddedCatalogScreen())
+        let window = UIWindow(frame: CGRect(x: 0, y: 0, width: 390, height: 844))
+        window.rootViewController = host
+        window.isHidden = false
+        window.makeKeyAndVisible()
+        window.setNeedsLayout()
+        window.layoutIfNeeded()
+        defer { window.isHidden = true; window.rootViewController = nil }
+
+        XCTAssertFalse(host.view.bounds.isEmpty, "the embedded catalog screen was not laid out")
+    }
+
+    func test_presentingTheFirstShape_actuallyShowsUpOnTheRenderer() async {
+        // `present(at:)` fires the entry's `present` closure inside a `Task` (so traversal can
+        // CANCEL a still-pending presentation) — the renderer's own synchronous append only runs
+        // once that Task gets its first turn, so this polls a few yields rather than asserting
+        // immediately after the call, which would race the Task before it ever started.
+        let model = EmbeddedCatalogModel()
+        model.present(at: 0)
+        for _ in 0..<10 where model.renderer.presentations.isEmpty {
+            await Task.yield()
+        }
+        XCTAssertEqual(model.renderer.presentations.count, 1, "presenting a real catalog shape should show it")
+        model.dismissCurrent()
+    }
+}
+
+/// The `WindowModalRenderer` twin: same claim, `WindowCatalogModel` paints into a real `UIWindow`
+/// instead of a caller-embedded `@Published` array.
+@MainActor
+final class WindowCatalogScreenTests: XCTestCase {
+    func test_theScreenBuilds() {
+        let host = UIHostingController(rootView: WindowCatalogScreen())
+        let window = UIWindow(frame: CGRect(x: 0, y: 0, width: 390, height: 844))
+        window.rootViewController = host
+        window.isHidden = false
+        window.makeKeyAndVisible()
+        window.setNeedsLayout()
+        window.layoutIfNeeded()
+        defer { window.isHidden = true; window.rootViewController = nil }
+
+        XCTAssertFalse(host.view.bounds.isEmpty, "the window catalog screen was not laid out")
+    }
+}

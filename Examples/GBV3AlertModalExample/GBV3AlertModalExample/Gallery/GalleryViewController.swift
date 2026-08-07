@@ -94,6 +94,12 @@ final class GalleryViewController: UITableViewController {
                 target: self,
                 action: #selector(openSwiftUICatalogTapped)
             ),
+            UIBarButtonItem(
+                title: "Embedded Catalog", style: .plain, target: self, action: #selector(openEmbeddedCatalog)
+            ),
+            UIBarButtonItem(
+                title: "Window Catalog", style: .plain, target: self, action: #selector(openWindowCatalog)
+            ),
         ]
     }
 
@@ -158,15 +164,15 @@ final class GalleryViewController: UITableViewController {
     /// (plan: `iridescent-enchanting-pike.md`; shipped `a1c6bbb`). Reuses `Tier0DemoScreen` as-is:
     /// that screen's whole point is "VM drives the executor, the modal paints over this SwiftUI
     /// screen at window level" — exactly rootRenderer's job, just SwiftUI-drawn instead of UIKit.
-    /// Only 3 of its 5 buttons work here (Confirm delete/Show info/Show popup) — Rename/Pick date
-    /// need `TextInputDialog`/`DatePickerDialog`, which this renderer doesn't register yet (only the
-    /// standard family so far); tapping them resolves `.dismissed` immediately, the documented
-    /// unregistered-descriptor contract, not a bug.
+    /// All 5 of its buttons work here since `1d7aa46`: `registerBuiltInDescriptors()` registers the
+    /// 5 bespoke kinds (Rename/Pick date included), same call `EmbeddedAdoptionScreen`'s renderer
+    /// never needed for ITS 3 buttons (none of them use a bespoke kind) but this one does.
     @objc private func openWindowDemo() {
         let renderer = WindowModalRenderer(
             alertProperties: GalleryPresets.standardModalProperties,
             popupProperties: GalleryPresets.popupModalProperties
         )
+        renderer.registerBuiltInDescriptors()
         let executor = DefaultModalExecutor(renderer: renderer)
         let host = UIHostingController(rootView: Tier0DemoScreen(executor: executor))
         navigationController?.pushViewController(host, animated: true)
@@ -174,6 +180,19 @@ final class GalleryViewController: UITableViewController {
 
     @objc private func openSwiftUICatalogTapped() {
         openSwiftUICatalog(entryNamed: nil)
+    }
+
+    /// The 26 real shapes, in front of a human's eyes, on `EmbeddedModalRenderer` — the visual half
+    /// of the claim `EmbeddedShapeCoverageTests` proves structurally in the library's test target.
+    @objc private func openEmbeddedCatalog() {
+        let host = UIHostingController(rootView: EmbeddedCatalogScreen())
+        navigationController?.pushViewController(host, animated: true)
+    }
+
+    /// The `WindowModalRenderer` twin of `openEmbeddedCatalog` — same 26 shapes, rootRenderer backend.
+    @objc private func openWindowCatalog() {
+        let host = UIHostingController(rootView: WindowCatalogScreen())
+        navigationController?.pushViewController(host, animated: true)
     }
 
     /// Tier 1: the SAME 26 shapes as this gallery's `DialogCatalog` rows, rendered
