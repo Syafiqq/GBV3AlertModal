@@ -1,11 +1,17 @@
 import UIKit
 @testable import GBV3AlertModal
 
-/// The two backends behind `ModalRenderer`. Parity tests loop this so a failure message can name
+/// The backends behind `ModalRenderer`. Parity tests loop this so a failure message can name
 /// the offending kind (spec C-2).
+///
+/// `.embedded` (`EmbeddedModalRenderer`) is UIKit-vocabulary-free and, in this increment, registers
+/// only the standard family — `effectiveProperties(_:)`/`registerCustom(...)` below are intentionally
+/// NOT generalized to it (they're UIKit-typed by design), so tests using either method must loop
+/// `[.uiKit, .swiftUI]` explicitly rather than `.allCases`.
 enum RendererKind: String, CaseIterable {
     case uiKit
     case swiftUI
+    case embedded
 }
 
 /// A renderer-agnostic driver for the parity gate.
@@ -38,6 +44,7 @@ final class RendererHarness {
     private enum Box {
         case uiKit(UIKitModalRenderer)
         case swiftUI(SwiftUIModalRenderer)
+        case embedded(EmbeddedModalRenderer)
     }
 
     let kind: RendererKind
@@ -70,6 +77,14 @@ final class RendererHarness {
                     popupProperties: GeniePresets.popupProperties()
                 )
             )
+        case .embedded:
+            self.window = nil
+            self.box = .embedded(
+                EmbeddedModalRenderer(
+                    alertProperties: GeniePresets.standardModalProperties(),
+                    popupProperties: GeniePresets.popupModalProperties()
+                )
+            )
         }
     }
 
@@ -78,6 +93,7 @@ final class RendererHarness {
         switch box {
         case .uiKit(let backend): return backend
         case .swiftUI(let backend): return backend
+        case .embedded(let backend): return backend
         }
     }
 
@@ -93,6 +109,8 @@ final class RendererHarness {
         case .uiKit(let backend):
             backend.live[id]?.modal.dismissAndEmit(event: action)
         case .swiftUI(let backend):
+            backend.presentations.first(where: { $0.id == id })?.onAction(action)
+        case .embedded(let backend):
             backend.presentations.first(where: { $0.id == id })?.onAction(action)
         }
     }
@@ -117,6 +135,12 @@ final class RendererHarness {
                 guard let onAction else { return }
                 onAction(action)
             }
+        case .embedded(let backend):
+            let onAction = backend.presentations.first(where: { $0.id == id })?.onAction
+            return { action in
+                guard let onAction else { return }
+                onAction(action)
+            }
         }
     }
 
@@ -128,6 +152,7 @@ final class RendererHarness {
         switch box {
         case .uiKit(let backend): return backend.live[id] != nil
         case .swiftUI(let backend): return backend.live[id] != nil
+        case .embedded(let backend): return backend.live[id] != nil
         }
     }
 
@@ -137,15 +162,17 @@ final class RendererHarness {
         switch box {
         case .uiKit(let backend): return backend.live.count
         case .swiftUI(let backend): return backend.live.count
+        case .embedded(let backend): return backend.live.count
         }
     }
 
     /// The presentation's hidden flag: `UIView.isHidden` on UIKit, `Presentation.isHidden` on
-    /// SwiftUI. `nil` when there is no live presentation for `id`.
+    /// SwiftUI/embedded. `nil` when there is no live presentation for `id`.
     func isHidden(_ id: ModalID) -> Bool? {
         switch box {
         case .uiKit(let backend): return backend.live[id]?.modal.isHidden
         case .swiftUI(let backend): return backend.presentations.first(where: { $0.id == id })?.isHidden
+        case .embedded(let backend): return backend.presentations.first(where: { $0.id == id })?.isHidden
         }
     }
 
@@ -164,6 +191,13 @@ final class RendererHarness {
             return backend.live[id]?.modal.properties
         case .swiftUI(let backend):
             return backend.presentations.first(where: { $0.id == id })?.properties
+        case .embedded:
+            // Deliberately unsupported: `EmbeddedModalRenderer.Presentation.properties` is
+            // `ModalProperties`, not `GBAlertModal.Properties` — there is no UIKit-typed value to
+            // return here without an adapter the plan explicitly declined to build. `nil` fails
+            // loud (via `XCTUnwrap`) rather than silently comparing the wrong type. Callers of this
+            // method must loop `[.uiKit, .swiftUI]` explicitly, never `.allCases`.
+            return nil
         }
     }
 
@@ -180,6 +214,8 @@ final class RendererHarness {
         case .uiKit(let backend):
             return backend.live[id]?.modal.makeResolvedModal().subtitle
         case .swiftUI(let backend):
+            return backend.presentations.first(where: { $0.id == id })?.resolved.subtitle
+        case .embedded(let backend):
             return backend.presentations.first(where: { $0.id == id })?.resolved.subtitle
         }
     }
@@ -223,6 +259,17 @@ final class RendererHarness {
             backend.register(type, route: route) { descriptor, _ in
                 (properties, holder(descriptor))
             }
+        case .embedded:
+            // Deliberately unsupported: `holder`/`properties` are UIKit-typed
+            // (`GBAlertModal.DataHolder`/`.Properties`), and `EmbeddedModalRenderer.Factory` takes
+            // `ModalProperties`/`ModalContent` — there is no adapter between them the plan declined
+            // to build. Fails LOUD (not a silent no-registration, which would let the test proceed
+            // and misreport as "unregistered descriptor" instead of naming this method as the cause).
+            // Callers must loop `[.uiKit, .swiftUI]` explicitly, never `.allCases`.
+            fatalError(
+                "RendererHarness.registerCustom is not supported for .embedded — "
+                    + "loop [.uiKit, .swiftUI] explicitly"
+            )
         }
     }
 
@@ -232,10 +279,20 @@ final class RendererHarness {
     /// `register(style:properties:)` is source-identical across the backends, by design. The
     /// `switch` exists only because Swift needs a concrete receiver to pick the overload; there is
     /// no semantic branch here, and that is precisely the claim the style parity test verifies.
+    ///
+    /// `properties` is `GBAlertModal.Properties`-typed, so `.embedded` (whose `register(style:
+    /// properties:)` wants `ModalProperties`) is deliberately unsupported here too, same reasoning
+    /// as `registerCustom` — fails loud rather than silently mistyping. `EmbeddedModalRendererTests`
+    /// covers `.embedded`'s own style registration directly, in its own vocabulary.
     func register(style: ModalStyle, properties: GBAlertModal.Properties) {
         switch box {
         case .uiKit(let backend): backend.register(style: style, properties: properties)
         case .swiftUI(let backend): backend.register(style: style, properties: properties)
+        case .embedded:
+            fatalError(
+                "RendererHarness.register(style:properties:) is not supported for .embedded — "
+                    + "loop [.uiKit, .swiftUI] explicitly"
+            )
         }
     }
 
@@ -245,6 +302,7 @@ final class RendererHarness {
         switch box {
         case .uiKit(let backend): return backend.isRegistered(style: style)
         case .swiftUI(let backend): return backend.isRegistered(style: style)
+        case .embedded(let backend): return backend.isRegistered(style: style)
         }
     }
 
@@ -264,6 +322,12 @@ final class RendererHarness {
             backend.register(AlertDialog.self) { descriptor, resolve in
                 (properties, UIKitModalRenderer.AlertHolder.make(for: descriptor, resolve: resolve))
             }
+        case .embedded:
+            // Same UIKit-typed-argument reasoning as `registerCustom`/`register(style:properties:)`.
+            fatalError(
+                "RendererHarness.reRegisterStandardAlertFactory is not supported for .embedded — "
+                    + "loop [.uiKit, .swiftUI] explicitly"
+            )
         }
     }
 }

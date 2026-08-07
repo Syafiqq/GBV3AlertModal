@@ -1,3 +1,4 @@
+import SwiftUI
 import UIKit
 @testable import GBV3AlertModal
 
@@ -87,6 +88,70 @@ enum GeniePresets {
                 interButton: 8
             )
         )
+    }
+
+    // MARK: - ModalProperties (SwiftUI vocabulary, field-for-field transcriptions of the above)
+    //
+    // Same relationship `ModalPropertiesEquivalenceTests` proves for one preset ad hoc — these are
+    // the reusable fixtures, seeding `RendererHarness.init(.embedded)`. Values transcribed directly
+    // (not derived from the `GBAlertModal.Properties` helpers above, which are UIKit-typed) so a
+    // reader can compare the two field-for-field; `bannerFixedHeight` has no SwiftUI counterpart
+    // (§3a — measured inert on UIKit's own path) and is simply absent here, same as everywhere else
+    // `ModalProperties` is built.
+
+    static func standardModalProperties() -> ModalProperties {
+        ModalProperties(
+            baseTint: Color(uiColor: .systemBlue),
+            overlayColor: Color(uiColor: UIColor.black.withAlphaComponent(0.6)),
+            contentProperty: ModalProperties.ContentProperty(
+                backgroundColor: Color(uiColor: .white),
+                cornerRadius: 16,
+                fixedWidthPortrait: 256,
+                maxWidthPortrait: 256,
+                fixedWidthLandscape: 256,
+                maxWidthLandscape: 256,
+                childShouldMatchParent: true
+            ),
+            margin: EdgeInsets(top: 0, leading: 20, bottom: 0, trailing: 20),
+            padding: UIMinMaxEdgeInsets(top: (16, 24), left: (16, 32), bottom: (16, 24), right: (16, 32)),
+            bannerRatio: 1,
+            bannerMaxHeight: nil,
+            titleFont: .system(size: 24, weight: .bold),
+            titleColor: Color(uiColor: .label),
+            subtitleFont: .system(size: 16),
+            subtitleColor: Color(uiColor: .secondaryLabel),
+            buttonActionShouldMatchParent: true,
+            buttonActionOrientation: .vertical,
+            primaryActionStyle: .obliqueBottomLeft(
+                ModalProperties.ActionStyle.ObliqueBottomLeftTheme(
+                    unPressedColor: Color(uiColor: .systemOrange),
+                    pressedColor: Color(uiColor: .systemBlue),
+                    disabledColor: Color(uiColor: .lightGray),
+                    shadowColor: Color(cgColor: UIColor.systemOrange.cgColor),
+                    titleColor: Color(uiColor: .white),
+                    titleDisableColor: Color(uiColor: .white),
+                    titleFont: .system(size: 16, weight: .medium)
+                )
+            ),
+            secondaryActionStyle: .plain(
+                ModalProperties.ActionStyle.PlainTheme(
+                    titleColor: Color(uiColor: .systemBlue),
+                    titleDisableColor: Color(uiColor: .lightGray),
+                    titleFont: .system(size: 16, weight: .medium)
+                )
+            ),
+            closeButtonTint: Color(uiColor: .black),
+            space: ModalProperties.ComponentSpace(banner: 8, title: 8, subtitle: 16, interButton: 8)
+        )
+    }
+
+    static func popupModalProperties() -> ModalProperties {
+        var properties = standardModalProperties()
+        properties.padding = UIMinMaxEdgeInsets(
+            top: (20, 32), left: (20, 32), bottom: (20, 32), right: (20, 32)
+        )
+        properties.space = ModalProperties.ComponentSpace(banner: 16, title: 16, subtitle: 24, interButton: 8)
+        return properties
     }
 
     /// A THIRD preset, standing in for the app's real `badgeProperties`/`streakModalProperties`/

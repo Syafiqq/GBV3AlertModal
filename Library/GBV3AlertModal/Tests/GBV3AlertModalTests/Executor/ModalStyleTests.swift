@@ -76,7 +76,10 @@ final class ModalStyleTests: XCTestCase {
     /// (and silently used the `.standard` entry) fails here rather than passing by coincidence.
     func test_registeredStyle_rendersWithThatStylesProperties_onBothRenderers() async throws {
         let standardTokens = ModalTokens(from: GeniePresets.standardProperties())
-        for kind in RendererKind.allCases {
+        // .embedded excluded: register(style:properties:)/effectiveProperties are UIKit-typed-
+        // argument, deliberately unsupported there (RendererFixtures.swift's own docs) — this whole
+        // file is style/`Properties` testing, so every loop here needs the same exclusion.
+        for kind: RendererKind in [.uiKit, .swiftUI] {
             let harness = RendererHarness(kind)
             harness.register(style: .badge, properties: GeniePresets.badgeProperties())
             let executor = DefaultModalExecutor(renderer: harness.renderer)
@@ -113,7 +116,10 @@ final class ModalStyleTests: XCTestCase {
     /// one built-in registration render with different `Properties`. This is the property that makes
     /// the type-per-style explosion unnecessary.
     func test_twoStyles_shareOneRegistration_onBothRenderers() throws {
-        for kind in RendererKind.allCases {
+        // .embedded excluded: register(style:properties:)/effectiveProperties are UIKit-typed-
+        // argument, deliberately unsupported there (RendererFixtures.swift's own docs) — this whole
+        // file is style/`Properties` testing, so every loop here needs the same exclusion.
+        for kind: RendererKind in [.uiKit, .swiftUI] {
             let harness = RendererHarness(kind)
             harness.register(style: .badge, properties: GeniePresets.badgeProperties())
             let executor = DefaultModalExecutor(renderer: harness.renderer)
@@ -140,7 +146,10 @@ final class ModalStyleTests: XCTestCase {
     /// the modal presents, styles as standard, and still resolves normally.
     func test_unregisteredStyle_fallsBackToStandard_withoutCrashing_onBothRenderers() async throws {
         let standardTokens = ModalTokens(from: GeniePresets.standardProperties())
-        for kind in RendererKind.allCases {
+        // .embedded excluded: register(style:properties:)/effectiveProperties are UIKit-typed-
+        // argument, deliberately unsupported there (RendererFixtures.swift's own docs) — this whole
+        // file is style/`Properties` testing, so every loop here needs the same exclusion.
+        for kind: RendererKind in [.uiKit, .swiftUI] {
             let harness = RendererHarness(kind)
             harness.register(style: .badge, properties: GeniePresets.badgeProperties())
             let executor = DefaultModalExecutor(renderer: harness.renderer)
@@ -186,7 +195,10 @@ final class ModalStyleTests: XCTestCase {
     /// The lookup runs inside the FACTORY, i.e. per present — so a preset registered AFTER the
     /// renderer was built still applies, and `.standard` itself is replaceable.
     func test_stylesRegisteredAfterInit_apply_andStandardIsReplaceable_onBothRenderers() throws {
-        for kind in RendererKind.allCases {
+        // .embedded excluded: register(style:properties:)/effectiveProperties are UIKit-typed-
+        // argument, deliberately unsupported there (RendererFixtures.swift's own docs) — this whole
+        // file is style/`Properties` testing, so every loop here needs the same exclusion.
+        for kind: RendererKind in [.uiKit, .swiftUI] {
             let harness = RendererHarness(kind)
             let executor = DefaultModalExecutor(renderer: harness.renderer)
 
@@ -205,7 +217,10 @@ final class ModalStyleTests: XCTestCase {
     /// `update(_:to:)` re-runs the factory, so it re-resolves the style too: a live modal can be
     /// restyled in place on both backends.
     func test_update_restylesInPlace_onBothRenderers() throws {
-        for kind in RendererKind.allCases {
+        // .embedded excluded: register(style:properties:)/effectiveProperties are UIKit-typed-
+        // argument, deliberately unsupported there (RendererFixtures.swift's own docs) — this whole
+        // file is style/`Properties` testing, so every loop here needs the same exclusion.
+        for kind: RendererKind in [.uiKit, .swiftUI] {
             let harness = RendererHarness(kind)
             harness.register(style: .badge, properties: GeniePresets.badgeProperties())
             let executor = DefaultModalExecutor(renderer: harness.renderer)
@@ -235,7 +250,10 @@ final class ModalStyleTests: XCTestCase {
     /// preset, because `PopupDialog.style` is pinned to `.popup` and both go through
     /// `properties(for:)`.
     func test_popupDialog_andPopupStyledAlert_resolveTheSamePreset_onBothRenderers() throws {
-        for kind in RendererKind.allCases {
+        // .embedded excluded: register(style:properties:)/effectiveProperties are UIKit-typed-
+        // argument, deliberately unsupported there (RendererFixtures.swift's own docs) — this whole
+        // file is style/`Properties` testing, so every loop here needs the same exclusion.
+        for kind: RendererKind in [.uiKit, .swiftUI] {
             let harness = RendererHarness(kind)   // seeded with popupProperties()
             let executor = DefaultModalExecutor(renderer: harness.renderer)
 

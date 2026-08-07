@@ -306,7 +306,9 @@ final class RendererParityTests: XCTestCase {
             (.secondary, .skipped),
             (.close, .dismissed)
         ]
-        for kind in RendererKind.allCases {
+        // .embedded excluded: registerCustom is UIKit-typed-argument, deliberately unsupported there
+        // (RendererFixtures.swift's own doc on the method).
+        for kind: RendererKind in [.uiKit, .swiftUI] {
             for (action, expected) in cases {
                 let harness = RendererHarness(kind)
                 harness.registerCustom(
@@ -353,7 +355,8 @@ final class RendererParityTests: XCTestCase {
     /// `executor.dismiss` on a custom descriptor must resolve with the DESCRIPTOR's dismissed case,
     /// not the standard family's. Guards the `D.dismissedResult` plumbing through both gates.
     func test_customDescriptor_executorDismiss_resolvesItsDismissedResult_onBothRenderers() async {
-        for kind in RendererKind.allCases {
+        // .embedded excluded: see the same note on the test above.
+        for kind: RendererKind in [.uiKit, .swiftUI] {
             let harness = RendererHarness(kind)
             harness.registerCustom(
                 ParityStepDialog.self,
@@ -408,7 +411,9 @@ final class RendererParityTests: XCTestCase {
     func test_styledDescriptor_producesTheSameStylingDecision_onBothRenderers() async throws {
         var decisions: [RendererKind: StylingDecision] = [:]
 
-        for kind in RendererKind.allCases {
+        // .embedded excluded: register(style:properties:)/effectiveProperties are UIKit-typed-
+        // argument, deliberately unsupported there (RendererFixtures.swift's own docs).
+        for kind: RendererKind in [.uiKit, .swiftUI] {
             let harness = RendererHarness(kind)
             harness.register(style: .parityBadge, properties: GeniePresets.badgeProperties())
             let executor = DefaultModalExecutor(renderer: harness.renderer)
@@ -465,7 +470,8 @@ final class RendererParityTests: XCTestCase {
         let standard = decision(from: GeniePresets.standardProperties())
         var decisions: [RendererKind: StylingDecision] = [:]
 
-        for kind in RendererKind.allCases {
+        // .embedded excluded: see the same note on the style-parity test above.
+        for kind: RendererKind in [.uiKit, .swiftUI] {
             let harness = RendererHarness(kind)
             harness.register(style: .parityBadge, properties: GeniePresets.badgeProperties())
             XCTAssertFalse(
@@ -514,7 +520,8 @@ final class RendererParityTests: XCTestCase {
     func test_redPrimaryShape_keepsTheSecondaryThemeColour_onBothRenderers() async throws {
         let obliqueRed = ModalStyle("parity.obliqueRed")
 
-        for kind in RendererKind.allCases {
+        // .embedded excluded: see the same note on the style-parity test above.
+        for kind: RendererKind in [.uiKit, .swiftUI] {
             let harness = RendererHarness(kind)
             harness.register(style: obliqueRed, properties: GeniePresets.obliqueRedProperties())
             let executor = DefaultModalExecutor(renderer: harness.renderer)
@@ -552,7 +559,9 @@ final class RendererParityTests: XCTestCase {
     /// the replacement holder; on SwiftUI the registry must PRESERVE the standard route. Same call,
     /// same assertion, both backends.
     func test_overridingBuiltInFactory_preservesRouting_onBothRenderers() async {
-        for kind in RendererKind.allCases {
+        // .embedded excluded: reRegisterStandardAlertFactory is UIKit-typed-argument, deliberately
+        // unsupported there (RendererFixtures.swift's own doc).
+        for kind: RendererKind in [.uiKit, .swiftUI] {
             let harness = RendererHarness(kind)
             harness.reRegisterStandardAlertFactory(properties: GeniePresets.popupProperties())
             let executor = DefaultModalExecutor(renderer: harness.renderer)
