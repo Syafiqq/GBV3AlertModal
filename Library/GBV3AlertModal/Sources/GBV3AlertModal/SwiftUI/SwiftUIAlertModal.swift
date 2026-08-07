@@ -246,7 +246,7 @@ public struct SwiftUIAlertModal: View {
         hasButtons: Bool
     ) -> some View {
             if resolved.showsTitle, let title = config.title {
-                Text(title)
+                Text(Self.bridgedTitle(title))
                     .font(tokens.titleFont.font)
                     .foregroundColor(tokens.palette.titleText)
                     .multilineTextAlignment(.center)
@@ -767,5 +767,20 @@ extension SwiftUIAlertModal {
         case .custom:
             return .custom
         }
+    }
+
+    /// **What the title `Text` actually draws — pulled out so a test can call it directly, the same
+    /// reason `subtitlePayload` is a function and not inline in the view.**
+    ///
+    /// `config.title` is a raw `AttributedString`: unlike the subtitle, nothing routed it through
+    /// `AttributedTextBridge` before this fix, so a caller's UIKit-scoped styling (the vocabulary
+    /// `GenieShapeCatalog.styled(_:color:)` and a caller writing `.uiKit.foregroundColor` both use —
+    /// the real `switch-device-recommendation` catalog shape ships a blue UIKit-scoped title) reached
+    /// `Text`'s draw call on its OWN scope and was silently ignored, exactly the bug
+    /// `AttributedTextBridge` exists to close on the subtitle's `.attributed` path. This applies the
+    /// SAME already-proven bridge (`AttributedTextBridgeTests`) here too — round-tripping through
+    /// `NSAttributedString` costs nothing meaningful on a per-presentation title.
+    static func bridgedTitle(_ title: AttributedString) -> AttributedString {
+        AttributedTextBridge.swiftUIRenderable(NSAttributedString(title))
     }
 }
