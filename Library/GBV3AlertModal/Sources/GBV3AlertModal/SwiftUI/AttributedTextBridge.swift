@@ -23,7 +23,15 @@ enum AttributedTextBridge {
 
     /// An `NSAttributedString` as SwiftUI will actually draw it.
     static func swiftUIRenderable(_ text: NSAttributedString) -> AttributedString {
-        var converted = AttributedString(text)
+        swiftUIRenderable(AttributedString(text))
+    }
+
+    /// The same re-scoping for a caller that already holds an `AttributedString` — every descriptor's
+    /// own `title`/`subtitle` field (`AlertDialog`, `BadgeDialog`, `LoadingDialog`,
+    /// `SatisfactionDialog`, `TextInputDialog`, `DatePickerDialog`), never round-tripped through
+    /// `NSAttributedString` at all before reaching a SwiftUI `Text`. Same bug, same fix, one core.
+    static func swiftUIRenderable(_ text: AttributedString) -> AttributedString {
+        var converted = text
 
         for run in converted.runs {
             let range = run.range

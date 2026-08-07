@@ -304,7 +304,11 @@ public struct SwiftUIAlertModal: View {
             SubtitleSlot(
                 floor: tokens.subtitleFloorHeight, fillsWidth: tokens.contentChildrenFillWidth
             ) {
-                Text(subtitle)
+                // `.plain` means `ModalText.split` found no UIKit-scoped run at all, so
+                // `AttributedTextBridge` is a no-op here today — wrapped anyway, uniformly with
+                // every other Text(descriptor field) in this module, so nothing has to keep proving
+                // that classification stays a no-op rather than re-deciding it at every call site.
+                Text(AttributedTextBridge.swiftUIRenderable(subtitle))
                     .font(tokens.subtitleFont.font)
                     .foregroundColor(tokens.palette.subtitleText)
                     .multilineTextAlignment(.center)
@@ -778,9 +782,9 @@ extension SwiftUIAlertModal {
     /// the real `switch-device-recommendation` catalog shape ships a blue UIKit-scoped title) reached
     /// `Text`'s draw call on its OWN scope and was silently ignored, exactly the bug
     /// `AttributedTextBridge` exists to close on the subtitle's `.attributed` path. This applies the
-    /// SAME already-proven bridge (`AttributedTextBridgeTests`) here too — round-tripping through
-    /// `NSAttributedString` costs nothing meaningful on a per-presentation title.
+    /// SAME already-proven bridge (`AttributedTextBridgeTests`) here too, via its `AttributedString`
+    /// overload — no `NSAttributedString` round trip needed.
     static func bridgedTitle(_ title: AttributedString) -> AttributedString {
-        AttributedTextBridge.swiftUIRenderable(NSAttributedString(title))
+        AttributedTextBridge.swiftUIRenderable(title)
     }
 }

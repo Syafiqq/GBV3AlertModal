@@ -112,7 +112,10 @@ public struct TextInputModalView: View {
     @ViewBuilder
     private var titleView: some View {
         if let title = descriptor.title {
-            Text(title)
+            // `AttributedTextBridge`, not the raw descriptor value — see
+            // `SwiftUIAlertModal.bridgedTitle`'s doc for why an unwrapped `Text(title)` silently
+            // drops a caller's UIKit-scoped styling.
+            Text(AttributedTextBridge.swiftUIRenderable(title))
                 .font(tokens.titleFont.font)
                 .foregroundColor(tokens.palette.titleText)
                 .multilineTextAlignment(.center)
@@ -204,7 +207,10 @@ public struct DatePickerModalView: View {
     @ViewBuilder
     private var titleView: some View {
         if let title = descriptor.title {
-            Text(title)
+            // `AttributedTextBridge`, not the raw descriptor value — see
+            // `SwiftUIAlertModal.bridgedTitle`'s doc for why an unwrapped `Text(title)` silently
+            // drops a caller's UIKit-scoped styling.
+            Text(AttributedTextBridge.swiftUIRenderable(title))
                 .font(tokens.titleFont.font)
                 .foregroundColor(tokens.palette.titleText)
                 .multilineTextAlignment(.center)
