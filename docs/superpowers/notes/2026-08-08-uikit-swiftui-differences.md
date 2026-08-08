@@ -134,11 +134,10 @@ UIKit/SwiftUI twin pair you can step to side by side, each caption stating wheth
 - **`BannerAspectStressTests`** (UIKit, 8 automated cases: 3 aspect ratios × portrait/landscape +
   2 extra) has exactly **one** SwiftUI counterpart (`TallBannerYieldTests`, the single highest-risk
   scenario) — not a full 1:1 port of the matrix.
-- **The example app's 28-shape Stress Catalog** (long titles/subtitles, extreme banner ratios,
-  wrapping — `SwiftUICatalog+Stress.swift`) has full SwiftUI coverage for `SwiftUIModalRenderer`'s
-  own catalog screen, but is **not wired into `EmbeddedCatalogScreen`/`WindowCatalogScreen`** (added
-  2026-08-08) — those two only reuse `SwiftUICatalog.dialogEntries`, the 26 real shapes, not the
-  stress matrix. A visual stress browser for Embedded/Window doesn't exist yet.
+- ~~The example app's 28-shape Stress Catalog... not wired into `EmbeddedCatalogScreen`/
+  `WindowCatalogScreen`~~ — **CLOSED same day** (commit `ac66628`, after this doc was first written):
+  both screens now register `UIKitFreeCatalogPresets.stressPresets` and present
+  `SwiftUICatalog.dialogAndStressEntries`, so a visual stress browser exists for Embedded/Window too.
 - **Landscape banner-wide column divergence is not gated by any test at all** — deliberately parked,
   per the entry above; closing it needs a feedback pass, not just a code change.
 - **`variant-subtitle-customview`** — the one `.notRenderable` entry in the whole catalog (26 real +
