@@ -682,6 +682,56 @@ final class RendererParityTests: XCTestCase {
         }
     }
 
+    /// Hide/show against a REAL renderer: `RootScreenModalCoordinatorTests` proves the
+    /// queue-pausing and non-resolving behaviour against `SpyRenderer`; that only proves the
+    /// COORDINATOR side of the contract. This re-runs it here because `hide()`/`show()` pause and
+    /// resume by calling the renderer's OWN `setHidden(_:_:)` — untested against any of the three
+    /// UIKit-free/SwiftUI renderers until now (only `RendererParityTests
+    /// .test_setHidden_neverResolves_onBothRenderers` calls `setHidden` directly; nothing had driven
+    /// it THROUGH a real coordinator's hide/show).
+    func test_coordinatorHideShow_pausesQueueAdvance_andNeverResolves_onBothRenderers() async {
+        for kind in RendererKind.allCases {
+            let (harness, executor) = stack(kind)
+            let coordinator = RootScreenModalCoordinator(renderer: harness.renderer)
+            executor.coordinator = coordinator
+
+            let first = executor.present(AlertDialog(title: "A", subtitle: "S", primary: "OK"))
+            let second = executor.present(AlertDialog(title: "B", subtitle: "S", primary: "OK"))
+            XCTAssertTrue(harness.isLive(first.id), "renderer \(kind.rawValue): premise — first is shown")
+
+            coordinator.hide()
+            XCTAssertEqual(
+                harness.isHidden(first.id), true,
+                "renderer \(kind.rawValue) diverged: hide must hide the shown modal"
+            )
+
+            harness.emit(.primary, on: first.id) // resolves while hidden
+            let firstResult = await first.result
+            XCTAssertEqual(
+                firstResult, .primary,
+                "renderer \(kind.rawValue) diverged: hide must not swallow or alter the real resolve value"
+            )
+            XCTAssertFalse(
+                harness.isLive(second.id),
+                "renderer \(kind.rawValue) diverged: while hidden, the queue must not advance"
+            )
+
+            coordinator.show()
+            XCTAssertTrue(
+                harness.isLive(second.id),
+                "renderer \(kind.rawValue) diverged: show must resume the queue"
+            )
+            XCTAssertEqual(
+                harness.isHidden(second.id), false,
+                "renderer \(kind.rawValue) diverged: show must unhide the newly-advanced modal"
+            )
+
+            harness.emit(.secondary, on: second.id)
+            let secondResult = await second.result
+            XCTAssertEqual(secondResult, .secondary, "renderer \(kind.rawValue) diverged")
+        }
+    }
+
     // MARK: - The one KNOWN DIVERGENCE, pinned rather than hidden
 
     /// **NOT a parity test.** It asserts that the two backends behave DIFFERENTLY, and it exists so
