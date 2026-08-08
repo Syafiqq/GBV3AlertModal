@@ -14,8 +14,8 @@ import UIKit
 ///   - `false` is an explicit "no" that **short-circuits** the `?? globalProperties` fallback.
 ///   - `nil` means "defer to `globalProperties`".
 ///
-/// `globalProperties` itself is `public var globalProperties = GBAlertModal.Properties()`
-/// (`GBV3AlertModal.swift:1`) — i.e. it is built with `Properties.init`'s defaults, so today
+/// `globalProperties` itself is `@MainActor public var globalProperties = GBAlertModal.Properties()`
+/// (`GBV3AlertModal.swift:6`) — i.e. it is built with `Properties.init`'s defaults, so today
 /// `globalProperties.buttonActionShouldMatchParent == false` unless a consumer app reassigns it.
 ///
 /// Analysis of flipping `init`'s default `false -> false` (kept) vs `nil` (proposed by the task
