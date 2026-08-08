@@ -241,6 +241,27 @@ enum DifferentialGeometry {
                 properties: GeniePresets.popupProperties()
                     .copy(bannerRatio: 320.0 / 190.0, bannerMaxHeight: 256)
             ),
+            /// **D-B — the stated ratio does not match the artwork's own aspect.** Same 320x190
+            /// asset as `banner-wide` (deliberately: this is the twin that shows the trigger is
+            /// "ratio disagrees with artwork", not "has a banner"), forced into `bannerRatio: 1`
+            /// instead of the artwork's own 320:190. `BannerGeometryTruthTests
+            /// .test_ratioThatDisagreesWithItsArtwork_divergesFromTheRule` already pins this at the
+            /// isolated `bannerGeometry` function level; this shape is the SAME divergence measured
+            /// through the full render (`GeometryPinsTests
+            /// .test_bannerRatioMismatch_theCardWidthGapIsTheArtworkDemandRule`), so both the rule
+            /// and the shipped view agree it is real.
+            Shape(
+                name: "banner-ratio-mismatch",
+                dialog: AlertDialog(
+                    image: ModalImage(
+                        "gb_test_banner_wide", bundleIdentifier: Bundle.module.bundleIdentifier
+                    ),
+                    title: "Heads up",
+                    subtitle: "A 320x190 asset forced into a bannerRatio: 1 slot.",
+                    primary: "Okay"
+                ),
+                properties: GeniePresets.badgeProperties()   // bannerRatio 1, no cap, 300pt column
+            ),
             /// **The shape that ENGAGES the subtitle scroll — the half of D-7 the gate could not see,
             /// and now the one that CLOSES it.**
             ///
