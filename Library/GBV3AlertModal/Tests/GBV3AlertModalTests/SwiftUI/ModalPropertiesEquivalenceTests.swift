@@ -245,6 +245,51 @@ final class ModalPropertiesEquivalenceTests: XCTestCase {
         XCTAssertEqual(view.tokens.contentMaxWidth, 257, "min(fixed 257, max 258)")
     }
 
+    // MARK: - Capsule / capsuleOutlined (both vocabularies still agree)
+
+    /// The main preset above uses `.obliqueBottomLeft`/`.plain`, so capsule parity needs its own
+    /// small preset — same shape as `test_bothVocabularies_deriveTheSameTokens`, scoped to the two
+    /// cases that main preset cannot exercise (`.capsule`/`.capsuleOutlined` are mutually exclusive
+    /// with `.obliqueBottomLeft` on the same slot).
+    func test_capsuleActionStyles_deriveTheSameTokens_onBothSides() {
+        let uiKit = GBAlertModal.Properties(
+            primaryActionStyle: .capsule(
+                GBAlertModal.ActionStyle.CapsuleTheme(
+                    backgroundColor: .systemYellow, titleColor: .systemPink,
+                    titleFont: .systemFont(ofSize: 21, weight: .black)
+                )
+            ),
+            secondaryActionStyle: .capsuleOutlined(
+                GBAlertModal.ActionStyle.CapsuleOutlineTheme(
+                    titleColor: .systemPurple, borderWidth: 2,
+                    borderColor: UIColor.systemIndigo.cgColor
+                )
+            )
+        )
+        let swiftUI = ModalProperties(
+            primaryActionStyle: .capsule(
+                ModalProperties.ActionStyle.CapsuleTheme(
+                    backgroundColor: Color(uiColor: .systemYellow), titleColor: Color(uiColor: .systemPink),
+                    titleFont: .system(size: 21, weight: .black)
+                )
+            ),
+            secondaryActionStyle: .capsuleOutlined(
+                ModalProperties.ActionStyle.CapsuleOutlineTheme(
+                    titleColor: Color(uiColor: .systemPurple), borderWidth: 2,
+                    // `Color(cgColor:)`, not `Color(uiColor:)` — the UIKit side's `borderColor` is a
+                    // `CGColor` (`ActionStyle.CapsuleOutlineTheme.borderColor: CGColor?`), and the two
+                    // initializers produce different, non-`==` colour providers for the same visual
+                    // colour (the same reason the main preset above converts `shadowColor` this way).
+                    borderColor: Color(cgColor: UIColor.systemIndigo.cgColor)
+                )
+            )
+        )
+
+        XCTAssertEqual(ModalTokens(from: uiKit), ModalTokens(from: swiftUI))
+        XCTAssertNotNil(ModalTokens(from: uiKit).primaryCapsule, "premise: the comparison isn't vacuous")
+        XCTAssertNotNil(ModalTokens(from: uiKit).secondaryCapsuleOutlined, "premise: the comparison isn't vacuous")
+    }
+
     // MARK: - Defaults
 
     /// **An empty config derives `standard` MINUS the banner fields — not `standard`.**

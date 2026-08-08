@@ -389,35 +389,87 @@ public struct AlertModalScaffold<Content: View>: View {
     /// The pressed state composes: `ObliquePrimaryStyle` offsets the button by `obliqueOffset`
     /// (−3, +3) while pressed, which cancels this displacement and lands it flush in its slot —
     /// exactly what UIKit's `transform = .identity.translatedBy(x: -3, y: 3)` does.
+    /// Picks the SwiftUI look for the primary slot — `.capsuleOutlined`/`.capsule` when
+    /// `properties.primaryActionStyle` actually said so (`ModalTokens.primaryCapsuleOutlined`/
+    /// `.primaryCapsule`, checked in that order since they are mutually exclusive by construction —
+    /// see `ModalTokens.init(from:)`), the fixed oblique look otherwise. Only the oblique branch
+    /// carries the ±3 offset padding: that trick exists to pull the oblique shadow INSIDE its slot
+    /// (see the doc below), and capsule/capsuleOutlined have no shadow to pull in — UIKit pins them
+    /// with a plain `edges.equalToSuperview()`, no offset.
+    @ViewBuilder
     private func primaryButton(_ title: String) -> some View {
-        Button(action: onPrimary) {
-            if isPrimaryLoading {
-                ProgressView().tint(tokens.palette.onAccent)
-            } else {
-                Text(title)
-            }
+        if let outlined = tokens.primaryCapsuleOutlined {
+            Button(action: onPrimary) { primaryLabel(title, tint: outlined.title) }
+                .buttonStyle(
+                    CapsuleOutlinedButtonStyle(visual: outlined, tokens: tokens, fillsWidth: buttonsMatchParent)
+                )
+                .disabled(!primaryEnabled || isPrimaryLoading)
+                .modalGeometryProbe(.primaryButton)
+        } else if let capsule = tokens.primaryCapsule {
+            Button(action: onPrimary) { primaryLabel(title, tint: capsule.title) }
+                .buttonStyle(CapsuleButtonStyle(visual: capsule, tokens: tokens, fillsWidth: buttonsMatchParent))
+                .disabled(!primaryEnabled || isPrimaryLoading)
+                .modalGeometryProbe(.primaryButton)
+        } else {
+            Button(action: onPrimary) { primaryLabel(title, tint: tokens.palette.onAccent) }
+                .buttonStyle(ObliquePrimaryStyle(tokens: tokens, fillsWidth: buttonsMatchParent))
+                .disabled(!primaryEnabled || isPrimaryLoading)
+                .modalGeometryProbe(.primaryButton)
+                .padding(
+                    EdgeInsets(
+                        top: -tokens.obliqueOffset.height,
+                        leading: -tokens.obliqueOffset.width,
+                        bottom: tokens.obliqueOffset.height,
+                        trailing: tokens.obliqueOffset.width
+                    )
+                )
         }
-        .buttonStyle(ObliquePrimaryStyle(tokens: tokens, fillsWidth: buttonsMatchParent))
-        .disabled(!primaryEnabled || isPrimaryLoading)
-        .modalGeometryProbe(.primaryButton)
-        .padding(
-            EdgeInsets(
-                top: -tokens.obliqueOffset.height,
-                leading: -tokens.obliqueOffset.width,
-                bottom: tokens.obliqueOffset.height,
-                trailing: tokens.obliqueOffset.width
-            )
-        )
     }
 
+    @ViewBuilder
+    private func primaryLabel(_ title: String, tint: Color) -> some View {
+        if isPrimaryLoading {
+            ProgressView().tint(tint)
+        } else {
+            Text(title)
+        }
+    }
+
+    /// Same precedence as `primaryButton`: `.capsuleOutlined`/`.capsule` when
+    /// `properties.secondaryActionStyle` said so, the fixed plain text look otherwise.
+    ///
+    /// **`fillsWidth: buttonsMatchParent`, not `false`, on the capsule branches.** The hug behaviour
+    /// documented on `PlainSecondaryStyle` is a property of `.plain`'s OWN UIKit constraint
+    /// (`configureButtonActionConstraint`'s `.plain` case: `leading >= superview.leading` +
+    /// `center == superview.center`, never pinned to the trailing edge) — it is not a blanket "the
+    /// secondary slot always hugs" rule. `.capsule`/`.capsuleOutlined` get the SAME
+    /// `edges.equalToSuperview()` constraint as `.obliqueBottomLeft` regardless of which slot they
+    /// are in, so a capsule secondary fills its slot exactly like a capsule primary does.
+    @ViewBuilder
     private func secondaryButton(_ title: String) -> some View {
-        Button(action: onSecondary) { Text(title) }
-            .buttonStyle(PlainSecondaryStyle(tokens: tokens))
-            .disabled(!secondaryEnabled)
-            // INSIDE the caller's `.padding(.top, tokens.interButton)`, so this measures the button
-            // and not the inter-button gap (UIKit's counterpart, `btSecondaryAction`, likewise
-            // excludes the main-action stack's spacing).
-            .modalGeometryProbe(.secondaryButton)
+        if let outlined = tokens.secondaryCapsuleOutlined {
+            Button(action: onSecondary) { Text(title) }
+                .buttonStyle(
+                    CapsuleOutlinedButtonStyle(visual: outlined, tokens: tokens, fillsWidth: buttonsMatchParent)
+                )
+                .disabled(!secondaryEnabled)
+                .modalGeometryProbe(.secondaryButton)
+        } else if let capsule = tokens.secondaryCapsule {
+            Button(action: onSecondary) { Text(title) }
+                .buttonStyle(
+                    CapsuleButtonStyle(visual: capsule, tokens: tokens, fillsWidth: buttonsMatchParent)
+                )
+                .disabled(!secondaryEnabled)
+                .modalGeometryProbe(.secondaryButton)
+        } else {
+            Button(action: onSecondary) { Text(title) }
+                .buttonStyle(PlainSecondaryStyle(tokens: tokens))
+                .disabled(!secondaryEnabled)
+                // INSIDE the caller's `.padding(.top, tokens.interButton)`, so this measures the
+                // button and not the inter-button gap (UIKit's counterpart, `btSecondaryAction`,
+                // likewise excludes the main-action stack's spacing).
+                .modalGeometryProbe(.secondaryButton)
+        }
     }
 }
 

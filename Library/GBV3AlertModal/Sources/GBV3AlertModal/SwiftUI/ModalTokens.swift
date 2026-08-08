@@ -193,6 +193,24 @@ public struct ModalTokens: Sendable, Equatable {
     public var primaryButtonFont: Font = .system(size: 16, weight: .heavy)
     public var secondaryButtonFont: Font = .system(size: 16, weight: .heavy)
 
+    /// **The two `ActionStyle` cases `ObliquePrimaryStyle`/`PlainSecondaryStyle` cannot draw, now
+    /// drawn for real.** `nil` (the case for every real Genie preset today, and for `standard`) means
+    /// "this slot is the fixed oblique/plain look" — `AlertModalScaffold` falls back to
+    /// `ObliquePrimaryStyle`/`PlainSecondaryStyle` exactly as before. Non-`nil` means the caller's
+    /// `primaryActionStyle`/`secondaryActionStyle` was actually `.capsule`/`.capsuleOutlined`, and the
+    /// scaffold draws `CapsuleButtonStyle`/`CapsuleOutlinedButtonStyle` from this instead.
+    ///
+    /// Was permanently `nil` (spec-D8: "no real preset uses capsule, so painting its colours onto the
+    /// oblique/plain SHAPE would be a worse divergence than keeping the literal"). That reasoning
+    /// argued against COUNTERFEITING a capsule with the wrong shape — it never argued against drawing
+    /// the real one, and `ModalProperties`' own doc says as much: `.capsule` was "inert only because
+    /// the SwiftUI RENDERER has not implemented it," carried in the vocabulary on purpose so a future
+    /// implementation would not be a source break. This is that implementation.
+    public var primaryCapsule: CapsuleVisual?
+    public var primaryCapsuleOutlined: CapsuleOutlinedVisual?
+    public var secondaryCapsule: CapsuleVisual?
+    public var secondaryCapsuleOutlined: CapsuleOutlinedVisual?
+
     public var palette: Palette
 
     public struct Palette: Sendable, Equatable {
@@ -237,7 +255,63 @@ public struct ModalTokens: Sendable, Equatable {
         public var scrim: Color
     }
 
+    /// The colours/font `CapsuleButtonStyle` draws from — a solid pill, filled, no border.
+    /// `ActionStyle.CapsuleTheme`'s SwiftUI-side twin, one level post-conversion (`Color`/`Font`
+    /// already resolved, both derivations' `UIColor?`/already-`Color?` fields land here the same way
+    /// every other `palette` field does). Every field defaults to a real value rather than staying
+    /// optional: `CapsuleTheme`'s OWN fields are all optional because UIKit is happy to leave a
+    /// `UIButton`'s background/title colour unset (reads as clear / the button's tint), and SwiftUI
+    /// has no such implicit default to fall back on — `init(theme:fallbackFont:)` is where that gap
+    /// is closed, once, rather than by every read site.
+    public struct CapsuleVisual: Sendable, Equatable {
+        public var background: Color
+        public var backgroundDisabled: Color
+        public var title: Color
+        public var titleDisabled: Color
+        public var font: Font
+
+        public init(
+            background: Color, backgroundDisabled: Color, title: Color, titleDisabled: Color, font: Font
+        ) {
+            self.background = background
+            self.backgroundDisabled = backgroundDisabled
+            self.title = title
+            self.titleDisabled = titleDisabled
+            self.font = font
+        }
+    }
+
+    /// `CapsuleOutlinedButtonStyle`'s counterpart — same fields as `CapsuleVisual` plus the border,
+    /// `ActionStyle.CapsuleOutlineTheme`'s SwiftUI-side twin.
+    public struct CapsuleOutlinedVisual: Sendable, Equatable {
+        public var background: Color
+        public var backgroundDisabled: Color
+        public var title: Color
+        public var titleDisabled: Color
+        public var borderColor: Color
+        public var borderDisabledColor: Color
+        public var borderWidth: CGFloat
+        public var font: Font
+
+        public init(
+            background: Color, backgroundDisabled: Color, title: Color, titleDisabled: Color,
+            borderColor: Color, borderDisabledColor: Color, borderWidth: CGFloat, font: Font
+        ) {
+            self.background = background
+            self.backgroundDisabled = backgroundDisabled
+            self.title = title
+            self.titleDisabled = titleDisabled
+            self.borderColor = borderColor
+            self.borderDisabledColor = borderDisabledColor
+            self.borderWidth = borderWidth
+            self.font = font
+        }
+    }
+
     public static let standard = ModalTokens(
+        // ↓ everything below is unchanged from before `CapsuleVisual`/`CapsuleOutlinedVisual`
+        // existed — `standard` carries no `Properties`, so both fixed styles stay `nil` (the
+        // oblique/plain fallback), the same as every field this type has no input for.
         cornerRadius: 16,
         contentMaxWidth: .infinity,   // no `Properties` to derive a cap from — see the doc above
         cardMarginV: 40,
@@ -464,9 +538,12 @@ public struct ModalTokens: Sendable, Equatable {
     ///
     /// ## `ActionStyle` themes
     ///
-    /// The two SwiftUI button styles are FIXED design identity (spec D8): the primary IS the
-    /// oblique button and the secondary IS the plain text button. So exactly two of the four
-    /// `ActionStyle` cases have a SwiftUI counterpart to derive into.
+    /// The primary/secondary slots default to FIXED design identity (spec D8): with no
+    /// `primaryActionStyle`/`secondaryActionStyle`, or `.obliqueBottomLeft`/`.plain` respectively,
+    /// the primary IS the oblique button and the secondary IS the plain text button. `.capsule`/
+    /// `.capsuleOutlined` are a real fourth/fifth look, not a counterfeit of the fixed ones — see
+    /// `primaryCapsule`/`primaryCapsuleOutlined`/`secondaryCapsule`/`secondaryCapsuleOutlined` below,
+    /// which `AlertModalScaffold` checks BEFORE falling back to oblique/plain.
     ///
     /// | theme.field | class | token / reason |
     /// | --- | --- | --- |
@@ -480,8 +557,8 @@ public struct ModalTokens: Sendable, Equatable {
     /// | `PlainTheme.titleColor` | (a) | `palette.secondaryLabel` — `test_secondaryLabel_comesFromSecondaryTheme_notThePrimaryAccent` |
     /// | `PlainTheme.titleDisableColor` | (a) | `palette.secondaryDisabled` — `test_secondaryDisabledLabel_comesFromPlainTheme_titleDisableColor` |
     /// | `PlainTheme.titleFont` | (a) | `secondaryButtonFont` — `test_secondaryButtonFont_comesFromProperties_plainTheme` |
-    /// | `CapsuleTheme.*` (5 fields) | (b) | No SwiftUI counterpart: nothing here draws a capsule. Painting a capsule theme's colours onto the oblique/plain SHAPES would be a worse divergence than keeping `standard`'s literals, which is what happens — pinned by `test_accentColors_keepStandardLiterals_whenActionStyleIsNotOblique`. A consumer who ships `.capsule` on this backend gets the oblique look; that is the spec-D8 design decision, recorded here rather than silently absorbed. |
-    /// | `CapsuleOutlineTheme.*` (8 fields) | (b) | Same reason as `CapsuleTheme`, plus the three border fields have no analogue on either fixed style. |
+    /// | `CapsuleTheme.*` (5 fields) | (a) | `primaryCapsule`/`secondaryCapsule` (whichever slot carries `.capsule`) — `CapsuleButtonStyle` draws a real filled pill from these, no longer the oblique/plain counterfeit — `test_primaryCapsule_derivesFromProperties`/`test_secondaryCapsule_derivesFromProperties`. |
+    /// | `CapsuleOutlineTheme.*` (8 fields) | (a) | `primaryCapsuleOutlined`/`secondaryCapsuleOutlined`, `CapsuleOutlinedButtonStyle` — same as `CapsuleTheme` plus the three border fields, which now have a real analogue (`Capsule().stroke(...)`) — `test_primaryCapsuleOutlined_derivesFromProperties`/`test_secondaryCapsuleOutlined_derivesFromProperties`. |
     ///
     /// ## Fields of `ModalTokens` with NO `Properties` counterpart
     ///
@@ -622,6 +699,12 @@ public struct ModalTokens: Sendable, Equatable {
                 primaryButtonFont = Font(titleFont)
             }
         }
+        if case let .capsule(theme)? = properties.primaryActionStyle {
+            primaryCapsule = CapsuleVisual(theme: theme, fallbackFont: primaryButtonFont)
+        }
+        if case let .capsuleOutlined(theme)? = properties.primaryActionStyle {
+            primaryCapsuleOutlined = CapsuleOutlinedVisual(theme: theme, fallbackFont: primaryButtonFont)
+        }
 
         // `PlainSecondaryStyle`'s real counterpart is `ActionStyle.plain` (a borderless text
         // button) — the same case `SwiftUIAlertModal`'s sentinel `Properties` already uses for
@@ -642,6 +725,73 @@ public struct ModalTokens: Sendable, Equatable {
                 secondaryButtonFont = Font(titleFont)
             }
         }
+        if case let .capsule(theme)? = properties.secondaryActionStyle {
+            secondaryCapsule = CapsuleVisual(theme: theme, fallbackFont: secondaryButtonFont)
+        }
+        if case let .capsuleOutlined(theme)? = properties.secondaryActionStyle {
+            secondaryCapsuleOutlined = CapsuleOutlinedVisual(theme: theme, fallbackFont: secondaryButtonFont)
+        }
+    }
+}
+
+// MARK: - Capsule visual derivation (both `init(from:)` inputs)
+
+extension ModalTokens.CapsuleVisual {
+    /// From the UIKit-region theme (`GBAlertModal.Properties.primaryActionStyle`/
+    /// `.secondaryActionStyle`). Every `CapsuleTheme` field is optional — UIKit is happy to leave a
+    /// `UIButton`'s background/title unset — so a nil field falls back to a plain, visible default
+    /// (clear background, `.primary` title) rather than propagating the optionality: nothing in
+    /// `CapsuleButtonStyle` reads `Color?`, the same reason every OTHER token here is a concrete
+    /// `Color`, not the `UIColor?` its `Properties` counterpart is.
+    init(theme: GBAlertModal.ActionStyle.CapsuleTheme, fallbackFont: Font) {
+        self.init(
+            background: theme.backgroundColor.map(Color.init(uiColor:)) ?? .clear,
+            backgroundDisabled: theme.backgroundDisableColor.map(Color.init(uiColor:)) ?? .clear,
+            title: theme.titleColor.map(Color.init(uiColor:)) ?? .primary,
+            titleDisabled: theme.titleDisableColor.map(Color.init(uiColor:)) ?? Color.primary.opacity(0.3),
+            font: theme.titleFont.map(Font.init) ?? fallbackFont
+        )
+    }
+
+    /// From the SwiftUI-native theme (`ModalProperties`) — same fallbacks, no colour conversion
+    /// (the caller already stated a `Color`), mirroring the split every other field in this file has
+    /// between its two `init(from:)` derivations.
+    init(theme: ModalProperties.ActionStyle.CapsuleTheme, fallbackFont: Font) {
+        self.init(
+            background: theme.backgroundColor ?? .clear,
+            backgroundDisabled: theme.backgroundDisableColor ?? .clear,
+            title: theme.titleColor ?? .primary,
+            titleDisabled: theme.titleDisableColor ?? Color.primary.opacity(0.3),
+            font: theme.titleFont?.font ?? fallbackFont
+        )
+    }
+}
+
+extension ModalTokens.CapsuleOutlinedVisual {
+    init(theme: GBAlertModal.ActionStyle.CapsuleOutlineTheme, fallbackFont: Font) {
+        self.init(
+            background: theme.backgroundColor.map(Color.init(uiColor:)) ?? .clear,
+            backgroundDisabled: theme.backgroundDisableColor.map(Color.init(uiColor:)) ?? .clear,
+            title: theme.titleColor.map(Color.init(uiColor:)) ?? .primary,
+            titleDisabled: theme.titleDisableColor.map(Color.init(uiColor:)) ?? Color.primary.opacity(0.3),
+            borderColor: theme.borderColor.map(Color.init(cgColor:)) ?? .primary,
+            borderDisabledColor: theme.borderDisableColor.map(Color.init(cgColor:)) ?? Color.primary.opacity(0.3),
+            borderWidth: theme.borderWidth ?? 1,
+            font: theme.titleFont.map(Font.init) ?? fallbackFont
+        )
+    }
+
+    init(theme: ModalProperties.ActionStyle.CapsuleOutlineTheme, fallbackFont: Font) {
+        self.init(
+            background: theme.backgroundColor ?? .clear,
+            backgroundDisabled: theme.backgroundDisableColor ?? .clear,
+            title: theme.titleColor ?? .primary,
+            titleDisabled: theme.titleDisableColor ?? Color.primary.opacity(0.3),
+            borderColor: theme.borderColor ?? .primary,
+            borderDisabledColor: theme.borderDisableColor ?? Color.primary.opacity(0.3),
+            borderWidth: theme.borderWidth ?? 1,
+            font: theme.titleFont?.font ?? fallbackFont
+        )
     }
 }
 
@@ -1022,6 +1172,12 @@ extension ModalTokens {
                 primaryButtonFont = titleFont.font
             }
         }
+        if case let .capsule(theme)? = properties.primaryActionStyle {
+            primaryCapsule = CapsuleVisual(theme: theme, fallbackFont: primaryButtonFont)
+        }
+        if case let .capsuleOutlined(theme)? = properties.primaryActionStyle {
+            primaryCapsuleOutlined = CapsuleOutlinedVisual(theme: theme, fallbackFont: primaryButtonFont)
+        }
 
         // The secondary's colours come from the SECONDARY theme and must never be re-pointed at
         // `palette.accent` — see the UIKit derivation for the shape that caught it.
@@ -1035,6 +1191,12 @@ extension ModalTokens {
             if let titleFont = theme.titleFont {
                 secondaryButtonFont = titleFont.font
             }
+        }
+        if case let .capsule(theme)? = properties.secondaryActionStyle {
+            secondaryCapsule = CapsuleVisual(theme: theme, fallbackFont: secondaryButtonFont)
+        }
+        if case let .capsuleOutlined(theme)? = properties.secondaryActionStyle {
+            secondaryCapsuleOutlined = CapsuleOutlinedVisual(theme: theme, fallbackFont: secondaryButtonFont)
         }
     }
 }

@@ -368,8 +368,90 @@ final class ModalTokensProvenanceTests: XCTestCase {
         XCTAssertNotEqual(tokens.palette.onAccentDisabled, tokens.palette.onAccent)
     }
 
+    // MARK: - Capsule / capsuleOutlined (real looks, not the oblique/plain counterfeit)
+
+    func test_primaryCapsule_derivesFromProperties() {
+        let theme = GBAlertModal.ActionStyle.CapsuleTheme(
+            backgroundColor: .systemYellow,
+            backgroundDisableColor: .systemGray,
+            titleColor: .systemPink,
+            titleDisableColor: .systemTeal,
+            titleFont: .systemFont(ofSize: 21, weight: .black)
+        )
+        let tokens = ModalTokens(from: GBAlertModal.Properties(primaryActionStyle: .capsule(theme)))
+
+        XCTAssertEqual(tokens.primaryCapsule?.background, Color(uiColor: .systemYellow))
+        XCTAssertEqual(tokens.primaryCapsule?.backgroundDisabled, Color(uiColor: .systemGray))
+        XCTAssertEqual(tokens.primaryCapsule?.title, Color(uiColor: .systemPink))
+        XCTAssertEqual(tokens.primaryCapsule?.titleDisabled, Color(uiColor: .systemTeal))
+        XCTAssertEqual(tokens.primaryCapsule?.font, Font(UIFont.systemFont(ofSize: 21, weight: .black)))
+        XCTAssertNil(tokens.primaryCapsuleOutlined, "mutually exclusive with .capsule")
+        XCTAssertNil(tokens.secondaryCapsule, "the SECONDARY slot is untouched by a PRIMARY style")
+    }
+
+    func test_primaryCapsuleOutlined_derivesFromProperties() {
+        let borderColor = UIColor.systemIndigo.cgColor
+        let borderDisableColor = UIColor.systemBrown.cgColor
+        let theme = GBAlertModal.ActionStyle.CapsuleOutlineTheme(
+            backgroundColor: .clear,
+            titleColor: .systemPurple,
+            titleDisableColor: .systemGray2,
+            borderWidth: 2,
+            borderColor: borderColor,
+            borderDisableColor: borderDisableColor
+        )
+        let tokens = ModalTokens(from: GBAlertModal.Properties(primaryActionStyle: .capsuleOutlined(theme)))
+
+        XCTAssertEqual(tokens.primaryCapsuleOutlined?.title, Color(uiColor: .systemPurple))
+        XCTAssertEqual(tokens.primaryCapsuleOutlined?.titleDisabled, Color(uiColor: .systemGray2))
+        XCTAssertEqual(tokens.primaryCapsuleOutlined?.borderWidth, 2)
+        XCTAssertEqual(tokens.primaryCapsuleOutlined?.borderColor, Color(cgColor: borderColor))
+        XCTAssertEqual(tokens.primaryCapsuleOutlined?.borderDisabledColor, Color(cgColor: borderDisableColor))
+        XCTAssertNil(tokens.primaryCapsule, "mutually exclusive with .capsuleOutlined")
+    }
+
+    /// The secondary slot gets the SAME real capsule look, from its OWN `secondaryActionStyle` —
+    /// not a copy of the primary's, the same "own theme, never the other slot's" rule
+    /// `test_secondaryLabel_comesFromSecondaryTheme_notThePrimaryAccent` pins for oblique/plain.
+    func test_secondaryCapsule_derivesFromProperties_fromItsOwnTheme() {
+        let theme = GBAlertModal.ActionStyle.CapsuleTheme(titleColor: .systemOrange)
+        let tokens = ModalTokens(from: GBAlertModal.Properties(
+            primaryActionStyle: .capsule(GBAlertModal.ActionStyle.CapsuleTheme(titleColor: .systemRed)),
+            secondaryActionStyle: .capsule(theme)
+        ))
+
+        XCTAssertEqual(tokens.primaryCapsule?.title, Color(uiColor: .systemRed), "premise: distinct")
+        XCTAssertEqual(tokens.secondaryCapsule?.title, Color(uiColor: .systemOrange))
+        XCTAssertNotEqual(tokens.secondaryCapsule?.title, tokens.primaryCapsule?.title)
+    }
+
+    func test_secondaryCapsuleOutlined_derivesFromProperties() {
+        let theme = GBAlertModal.ActionStyle.CapsuleOutlineTheme(titleColor: .systemCyan, borderWidth: 3)
+        let tokens = ModalTokens(from: GBAlertModal.Properties(secondaryActionStyle: .capsuleOutlined(theme)))
+
+        XCTAssertEqual(tokens.secondaryCapsuleOutlined?.title, Color(uiColor: .systemCyan))
+        XCTAssertEqual(tokens.secondaryCapsuleOutlined?.borderWidth, 3)
+        XCTAssertNil(tokens.secondaryCapsule, "mutually exclusive with .capsuleOutlined")
+    }
+
+    /// A field a real theme leaves `nil` (UIKit is happy to leave a `UIButton`'s background/title
+    /// unset) must not propagate `nil` into a SwiftUI `Color` — there is nothing for `CapsuleButtonStyle`
+    /// to read. `init(theme:fallbackFont:)` closes that gap with fixed, documented fallbacks.
+    func test_capsuleVisual_fillsInUnsetThemeFields_withSensibleDefaults() {
+        let tokens = ModalTokens(from: GBAlertModal.Properties(
+            primaryActionStyle: .capsule(GBAlertModal.ActionStyle.CapsuleTheme())
+        ))
+
+        XCTAssertEqual(tokens.primaryCapsule?.background, .clear)
+        XCTAssertEqual(tokens.primaryCapsule?.title, .primary)
+        XCTAssertEqual(tokens.primaryCapsule?.font, tokens.primaryButtonFont, "falls back to the button font")
+    }
+
     /// A `secondaryActionStyle` that ISN'T `.plain` has no colours the fixed SwiftUI text button
     /// can use — the mirror of `test_accentColors_keepStandardLiterals_whenActionStyleIsNotOblique`.
+    /// (`.capsule` now renders for real — see `test_secondaryCapsule_derivesFromProperties_fromItsOwnTheme`
+    /// above — via `secondaryCapsule`, a SEPARATE token from `palette.secondaryLabel`; this test is
+    /// only about the latter staying untouched.)
     func test_secondaryColors_keepStandardLiterals_whenActionStyleIsNotPlain() {
         let properties = GBAlertModal.Properties(
             secondaryActionStyle: .capsule(.init(titleColor: .systemRed))

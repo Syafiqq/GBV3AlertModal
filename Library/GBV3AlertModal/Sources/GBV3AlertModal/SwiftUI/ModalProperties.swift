@@ -28,18 +28,19 @@ import SwiftUI
 ///   writing one colour as `Color` and the next as `CGColor` is exactly the seam this type exists
 ///   to remove.
 ///
-/// ## What is deliberately the SAME, including the parts nothing draws
+/// ## What is deliberately the SAME, including the parts that used to draw nothing
 ///
-/// All FOUR `ActionStyle` cases are carried, though `ModalButtonStyles` implements only two shapes
-/// and `ModalTokens` reads colours from `.obliqueBottomLeft` (primary) and `.plain` (secondary)
-/// alone. A consumer shipping `.capsule` on this backend already gets the oblique look — a recorded
-/// spec-D8 decision pinned by `test_accentColors_keepStandardLiterals_whenActionStyleIsNotOblique`.
+/// All FOUR `ActionStyle` cases are carried, and `ModalButtonStyles` now implements all four shapes:
+/// `.obliqueBottomLeft` (primary's fixed look) and `.plain` (secondary's fixed look) as before, plus
+/// `.capsule`/`.capsuleOutlined` as real `CapsuleButtonStyle`/`CapsuleOutlinedButtonStyle` looks —
+/// either slot, whichever one's `ActionStyle` says so (`ModalTokens.primaryCapsule`/
+/// `.secondaryCapsule`/`.primaryCapsuleOutlined`/`.secondaryCapsuleOutlined`).
 ///
-/// Dropping the two unread cases was considered and rejected. `bannerFixedHeight` earned its
-/// omission with a measurement showing it does nothing *on UIKit's own path*; `.capsule` is inert
-/// only because the SwiftUI RENDERER has not implemented it. Carrying two cases would bake a
-/// renderer gap into the vocabulary and silently narrow what a migrating call site can say, which
-/// is the opposite of this type's job.
+/// Dropping the two once-unread cases was considered and rejected when this type was written, for
+/// exactly the reason that turned out to matter: `bannerFixedHeight` earned its omission with a
+/// measurement showing it does nothing *on UIKit's own path*, but `.capsule` was inert only because
+/// the SwiftUI RENDERER had not implemented it yet — carrying it anyway is what made implementing it
+/// later (this) an additive change instead of a source break.
 public struct ModalProperties: Sendable {
     public static var `default`: Self { Self() }
 

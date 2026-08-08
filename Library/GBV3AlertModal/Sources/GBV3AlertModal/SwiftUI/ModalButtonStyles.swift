@@ -137,3 +137,94 @@ public struct PlainSecondaryStyle: ButtonStyle {
         }
     }
 }
+
+/// A real fourth/fifth look, not a counterfeit of the two above — `ActionStyle.capsule`, wherever
+/// `Properties`/`ModalProperties` puts it (primary or secondary; UIKit's `configureButtonActionConstraint`
+/// pins BOTH the same way — `edges.equalToSuperview()` on a 48pt-tall slot — so it follows the SAME
+/// `fillsWidth` rule `ObliquePrimaryStyle` documents, whichever slot it is in).
+///
+/// `Capsule()` needs no manual corner radius: UIKit's `GBRoundedButton.updateCornerRadius` sets
+/// `layer.cornerRadius = frame.height / 2`, which is exactly what SwiftUI's `Capsule` shape computes
+/// on its own for any rect (`min(width, height) / 2`) — a 48pt-tall button matches by construction,
+/// not by a copied number.
+public struct CapsuleButtonStyle: ButtonStyle {
+    let visual: ModalTokens.CapsuleVisual
+    let tokens: ModalTokens
+    let fillsWidth: Bool
+
+    public init(visual: ModalTokens.CapsuleVisual, tokens: ModalTokens = .standard, fillsWidth: Bool = true) {
+        self.visual = visual
+        self.tokens = tokens
+        self.fillsWidth = fillsWidth
+    }
+
+    public func makeBody(configuration: Configuration) -> some View {
+        StyledLabel(configuration: configuration, visual: visual, tokens: tokens, fillsWidth: fillsWidth)
+    }
+
+    struct StyledLabel: View {
+        let configuration: ButtonStyleConfiguration
+        let visual: ModalTokens.CapsuleVisual
+        let tokens: ModalTokens
+        let fillsWidth: Bool
+        @Environment(\.isEnabled) private var isEnabled
+
+        var body: some View {
+            configuration.label
+                .font(visual.font)
+                .foregroundColor(isEnabled ? visual.title : visual.titleDisabled)
+                .padding(.horizontal, tokens.buttonLabelPaddingH)
+                .frame(maxWidth: fillsWidth ? .infinity : nil, minHeight: tokens.buttonHeight)
+                .background(Capsule().fill(isEnabled ? visual.background : visual.backgroundDisabled))
+                // UIKit gives `.capsule`/`.capsuleOutlined` no pressed-state animation of their own
+                // (only `.obliqueBottomLeft` has `updateObliqueBottomLeftStylePressed`) — they get
+                // `UIControl`'s default highlighted dimming instead. SwiftUI has no equivalent
+                // implicit dimming, so this borrows `PlainSecondaryStyle`'s own stand-in for the same
+                // gap rather than inventing a second one.
+                .opacity(configuration.isPressed ? 0.5 : 1)
+        }
+    }
+}
+
+/// `.capsuleOutlined` — same shape and fallback rules as `CapsuleButtonStyle`, plus a stroked border.
+public struct CapsuleOutlinedButtonStyle: ButtonStyle {
+    let visual: ModalTokens.CapsuleOutlinedVisual
+    let tokens: ModalTokens
+    let fillsWidth: Bool
+
+    public init(
+        visual: ModalTokens.CapsuleOutlinedVisual, tokens: ModalTokens = .standard, fillsWidth: Bool = true
+    ) {
+        self.visual = visual
+        self.tokens = tokens
+        self.fillsWidth = fillsWidth
+    }
+
+    public func makeBody(configuration: Configuration) -> some View {
+        StyledLabel(configuration: configuration, visual: visual, tokens: tokens, fillsWidth: fillsWidth)
+    }
+
+    struct StyledLabel: View {
+        let configuration: ButtonStyleConfiguration
+        let visual: ModalTokens.CapsuleOutlinedVisual
+        let tokens: ModalTokens
+        let fillsWidth: Bool
+        @Environment(\.isEnabled) private var isEnabled
+
+        var body: some View {
+            configuration.label
+                .font(visual.font)
+                .foregroundColor(isEnabled ? visual.title : visual.titleDisabled)
+                .padding(.horizontal, tokens.buttonLabelPaddingH)
+                .frame(maxWidth: fillsWidth ? .infinity : nil, minHeight: tokens.buttonHeight)
+                .background(Capsule().fill(isEnabled ? visual.background : visual.backgroundDisabled))
+                .overlay(
+                    Capsule().stroke(
+                        isEnabled ? visual.borderColor : visual.borderDisabledColor,
+                        lineWidth: visual.borderWidth
+                    )
+                )
+                .opacity(configuration.isPressed ? 0.5 : 1)
+        }
+    }
+}
