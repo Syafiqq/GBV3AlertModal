@@ -575,6 +575,15 @@ final class WindowModalRendererHostingSmokeTests: XCTestCase {
         )
 
         renderer.dismiss(token.id)
+        // C5 animation parity: `WindowModalRenderer.teardown` now fades the hosted view out
+        // (`GBAlertModal.hide()`'s own duration/curve) before removing it — same async-wait shape
+        // `LayerB_WiringTests.test_hide_removesFromSuperviewAfterAnimation` already uses.
+        XCTAssertGreaterThan(
+            window.subviews.count, before, "the view must still be fading, not yet removed"
+        )
+        let expectation = expectation(description: "dismiss removes the hosted view after its fade")
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { expectation.fulfill() }
+        wait(for: [expectation], timeout: 2.0)
         XCTAssertEqual(window.subviews.count, before, "dismiss should remove the hosted view from the window")
     }
 }

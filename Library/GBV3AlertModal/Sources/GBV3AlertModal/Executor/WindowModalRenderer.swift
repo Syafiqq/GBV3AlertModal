@@ -372,9 +372,23 @@ public final class WindowModalRenderer: ModalRenderer {
 
     // MARK: - Internals
 
+    /// `live[id] = nil` fires synchronously — the same immediate "no longer routable" signal
+    /// `UIKitModalRenderer.teardown` gives (its coordinator's `finish()` needs it to advance the
+    /// queue right away). Only the hosted view's removal animates, and it does so via the literal
+    /// same call `GBAlertModal.hide()` makes: fade `alpha` to 0 over 0.2s, then
+    /// `removeFromSuperview()` in the completion. This renderer already imports `UIKit` for window
+    /// installation, so reusing `UIView.animate` here (rather than a SwiftUI `withAnimation`, which
+    /// has nothing to interpolate — the view is installed imperatively, not via `ForEach`) is the
+    /// same kind of internal-only UIKit use `install(_:in:)` already makes.
     private func teardown(_ id: ModalID) {
-        live[id]?.hostingController?.view.removeFromSuperview()
+        let view = live[id]?.hostingController?.view
         live[id] = nil
+        guard let view else { return }
+        UIView.animate(
+            withDuration: 0.2,
+            animations: { view.alpha = 0 },
+            completion: { _ in view.removeFromSuperview() }
+        )
     }
 
     private static func view(

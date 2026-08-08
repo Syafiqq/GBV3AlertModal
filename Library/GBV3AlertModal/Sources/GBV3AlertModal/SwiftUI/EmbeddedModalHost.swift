@@ -29,6 +29,12 @@ public struct EmbeddedModalHost<Content: View>: View {
                             // uses: not drawn, not hit-testable, still alive.
                             .opacity(presentation.isHidden ? 0 : 1)
                             .allowsHitTesting(!presentation.isHidden)
+                            // Fires only on structural insertion/removal from `presentations`
+                            // (`ForEach` identity), never on the `.opacity` toggle above — so this
+                            // is purely `EmbeddedModalRenderer.teardown`'s animated fade-out.
+                            // Appearing has no ambient animation around `present`'s `.append`, so
+                            // this transition is inert there and the row still appears instantly.
+                            .transition(.opacity)
                     }
                 }
             )

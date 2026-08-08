@@ -419,8 +419,17 @@ public final class EmbeddedModalRenderer: ObservableObject, ModalRenderer {
     }
 
     /// The single teardown funnel — every resolve path lands here exactly once.
+    ///
+    /// Same split `SwiftUIModalRenderer.teardown` uses: `live[id] = nil` is synchronous (the
+    /// coordinator's `finish()` needs it to advance the queue immediately), only the visual removal
+    /// animates — `withAnimation` wraps the `presentations` mutation so `EmbeddedModalHost`'s
+    /// `.transition(.opacity)` fades the row out over the same 0.2s `GBAlertModal.hide()` uses,
+    /// rather than the row vanishing instantly. `present`'s `presentations.append` stays unwrapped,
+    /// so appearing is still instant — matching UIKit's un-animated `show()`.
     private func teardown(_ id: ModalID) {
-        presentations.removeAll { $0.id == id }
         live[id] = nil
+        withAnimation(.easeInOut(duration: 0.2)) {
+            presentations.removeAll { $0.id == id }
+        }
     }
 }

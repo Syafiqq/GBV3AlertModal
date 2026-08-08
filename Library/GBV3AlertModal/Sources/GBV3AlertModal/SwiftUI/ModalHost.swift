@@ -35,6 +35,10 @@ public struct ModalHost<Content: View>: View {
                             // semantics: not drawn, not hit-testable, still alive.
                             .opacity(presentation.isHidden ? 0 : 1)
                             .allowsHitTesting(!presentation.isHidden)
+                            // Same rule as `EmbeddedModalHost`: fires only on structural
+                            // insertion/removal, so this is purely `SwiftUIModalRenderer
+                            // .teardown`'s animated fade-out — appearing stays instant.
+                            .transition(.opacity)
                     }
                 }
             )

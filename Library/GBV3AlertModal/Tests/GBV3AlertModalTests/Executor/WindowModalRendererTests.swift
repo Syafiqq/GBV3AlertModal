@@ -67,18 +67,43 @@ final class WindowModalRendererTests: XCTestCase {
 
     // MARK: - dismiss / teardown
 
-    func test_dismiss_resolvesDismissed_removesFromWindow_andClearsRegistry() {
+    func test_dismiss_resolvesDismissed_andClearsRegistry_immediately() {
         let window = makeWindow()
         let renderer = makeRenderer(window: window)
         let id = ModalID()
         var received: AlertDialog.Result?
-        let before = window.subviews.count
 
         renderer.present(AlertDialog(title: "T", primary: "OK"), id: id) { received = $0 }
         renderer.dismiss(id)
 
+        // Resolve + registry teardown are synchronous — the coordinator's `finish()` needs `live[id]`
+        // gone right away to advance its queue, same contract `UIKitModalRenderer` gives. Only the
+        // hosted VIEW's removal is animated (below), same C5 split `GBAlertModal.hide()` itself uses.
         XCTAssertEqual(received, .dismissed)
         XCTAssertNil(renderer.live[id])
+    }
+
+    /// C5 animation parity: `teardown` fades the hosted view out (`GBAlertModal.hide()`'s own
+    /// duration/curve) before removing it — mirrors `LayerB_WiringTests
+    /// .test_hide_removesFromSuperviewAfterAnimation` exactly, since this renderer reuses that same
+    /// `UIView.animate` call.
+    func test_dismiss_removesHostedViewFromWindowAfterAnimation() {
+        let window = makeWindow()
+        let renderer = makeRenderer(window: window)
+        let id = ModalID()
+        let before = window.subviews.count
+
+        renderer.present(AlertDialog(title: "T", primary: "OK"), id: id) { _ in }
+        XCTAssertGreaterThan(window.subviews.count, before)
+
+        renderer.dismiss(id)
+        XCTAssertGreaterThan(
+            window.subviews.count, before, "the view must still be fading, not yet removed"
+        )
+
+        let expectation = expectation(description: "dismiss removes the hosted view after its fade")
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { expectation.fulfill() }
+        wait(for: [expectation], timeout: 2.0)
         XCTAssertEqual(window.subviews.count, before, "dismiss must remove the hosted view from the window")
     }
 
@@ -278,7 +303,6 @@ final class WindowModalRendererTests: XCTestCase {
         renderer.registerBuiltInDescriptors()
         var result: TextInputDialog.Result?
         let id = ModalID()
-        let before = window.subviews.count
 
         renderer.present(
             TextInputDialog(title: "Rename", initialText: "Old", primary: "Save"),
@@ -286,8 +310,10 @@ final class WindowModalRendererTests: XCTestCase {
         )
         renderer.dismiss(id)
 
+        // Resolve + registry teardown are synchronous (see `test_dismiss_resolvesDismissed_
+        // andClearsRegistry_immediately`); the hosted view's removal is animated (C5) and is covered
+        // by `test_dismiss_removesHostedViewFromWindowAfterAnimation` — not re-asserted here.
         XCTAssertEqual(result, .dismissed)
         XCTAssertTrue(renderer.live.isEmpty)
-        XCTAssertEqual(window.subviews.count, before, "dismiss must remove the hosted view")
     }
 }
