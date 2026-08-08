@@ -71,7 +71,6 @@ UIKit/SwiftUI twin pair you can step to side by side, each caption stating wheth
 
 ### Global divergences (apply to every SwiftUI entry, `SwiftUICatalog.swift:88-107`)
 
-- **No animation.** SwiftUI presents/tears down instantly; UIKit animates.
 - **Banner artwork + geometry resolution mechanism differs.** SwiftUI resolves the asset by *name*
   (`Image(_:)`) and sizes the slot from `ModalTokens.bannerGeometry`; UIKit passes a real `UIImage`
   and lets Auto Layout constraint priorities decide. Same inputs, different layout engines — pinned
@@ -88,6 +87,17 @@ UIKit/SwiftUI twin pair you can step to side by side, each caption stating wheth
 
 ### Fixed this session, kept as closed record
 
+- **No animation (C5).** Was: SwiftUI presented/tore down instantly on all three SwiftUI-native
+  renderers; UIKit fades out over 0.2s (`GBAlertModal.hide()`) on dismiss (present itself is
+  un-animated on UIKit too — `GBAlertModal.show()` has no animation block, so the two backends now
+  agree on BOTH halves). `SwiftUIModalRenderer`/`EmbeddedModalRenderer` wrap their `teardown`'s
+  `presentations` mutation in `withAnimation`, with `.transition(.opacity)` on each host's `ForEach`
+  row; `WindowModalRenderer` (imperative `UIHostingController`, no `ForEach`) calls the literal same
+  `UIView.animate` `GBAlertModal.hide()` uses. `live[id] = nil` (and the token resolve) stay
+  synchronous on all three — only the visual removal is deferred, matching `UIKitModalRenderer`'s own
+  fire-and-forget `hide()`. The no-blink in-place swap needed no change: an `update(_:to:)` rebuild
+  replaces a `presentations` element at the SAME identity, never inserting/removing, so
+  `.transition` never fires for it.
 - **Attributed colour/bold runs** — `AttributedTextBridge` now re-scopes UIKit-scoped colour and
   bold onto SwiftUI's rendering scope, so they now render as UIKit draws them (previously silently
   dropped — a real, shipping-shape-affecting bug, fixed via commits 4464579/f0867e8/7cccf9d).
