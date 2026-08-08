@@ -6,7 +6,8 @@
 //  `EmbeddedModalRenderer`/`WindowModalRenderer` twins of `SwiftUICatalog+Presets.swift`, registering
 //  the SAME 17 style tokens (`.genieErrorBanner` and friends, declared once in `SwiftUICatalog.swift`)
 //  so `SwiftUICatalog.dialogEntries` — built against those tokens — can be presented UNCHANGED on
-//  either UIKit-free renderer.
+//  either UIKit-free renderer. `stressPresets` below does the same for the 5 stress-matrix tokens
+//  (`SwiftUICatalog+Stress.swift`), so `SwiftUICatalog.stressEntries` is presentable too.
 //
 //  STRUCTURAL geometry (padding, banner ratio/height, component spacing) is transcribed verbatim
 //  from `SwiftUICatalog+Presets.swift`, because that is what `ModalTokens`/`ResolvedModal` actually
@@ -47,6 +48,31 @@ enum UIKitFreeCatalogPresets {
             (.genieBadgeMulti, badgeMulti),
             (.genieBadgeDetail, badgeDetail)
         ]
+    }
+
+    /// The 5 stress-matrix style→preset pairs `SwiftUICatalog.stressEntries` asks for by name
+    /// (`.standard`'s no-banner vertical shapes need no token of their own, same as the UIKit/SwiftUI
+    /// twins). Transcribed from `StressCatalog.properties(banner:orientation:)`, the ONE function both
+    /// other galleries already read from — see that function's own doc for why it stays UIKit-typed.
+    static var stressPresets: [(ModalStyle, ModalProperties)] {
+        [
+            (.stressHorizontal, stressProperties(banner: .none, orientation: .horizontal)),
+            (.stressWideBanner, stressProperties(banner: .wide, orientation: .vertical)),
+            (.stressWideBannerHorizontal, stressProperties(banner: .wide, orientation: .horizontal)),
+            (.stressTallBanner, stressProperties(banner: .tall, orientation: .vertical)),
+            (.stressTallBannerHorizontal, stressProperties(banner: .tall, orientation: .horizontal))
+        ]
+    }
+
+    private static func stressProperties(banner: StressCatalog.BannerKind, orientation: Axis) -> ModalProperties {
+        var properties = GalleryPresets.standardModalProperties
+        if orientation == .horizontal {
+            properties.buttonActionOrientation = .horizontal
+        }
+        if let ratio = banner.ratio {
+            properties.bannerRatio = ratio
+        }
+        return properties
     }
 
     private static func popupBanner(ratio: CGFloat, maxHeight: CGFloat) -> ModalProperties {

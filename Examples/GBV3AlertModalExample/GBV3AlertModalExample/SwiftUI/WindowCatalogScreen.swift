@@ -2,11 +2,12 @@
 //  WindowCatalogScreen.swift
 //  GBV3AlertModalExample
 //
-//  The `WindowModalRenderer` twin of `EmbeddedCatalogScreen` — the same 26 real Geniebook shapes,
-//  same `SwiftUICatalog.dialogEntries` reused unchanged, on the rootRenderer backend instead. No
-//  `ModalHost`/`EmbeddedModalHost` wrapper: `WindowModalRenderer` installs each presentation directly
-//  into the key `UIWindow`, so it paints OVER this screen exactly like `Tier0DemoScreen`'s UIKit
-//  modal does — the screen itself is just the list + traversal pill, nothing to embed.
+//  The `WindowModalRenderer` twin of `EmbeddedCatalogScreen` — the same 26 real Geniebook shapes plus
+//  the 28-entry stress matrix, same `SwiftUICatalog.dialogAndStressEntries` reused unchanged, on the
+//  rootRenderer backend instead. No `ModalHost`/`EmbeddedModalHost` wrapper: `WindowModalRenderer`
+//  installs each presentation directly into the key `UIWindow`, so it paints OVER this screen exactly
+//  like `Tier0DemoScreen`'s UIKit modal does — the screen itself is just the list + traversal pill,
+//  nothing to embed.
 //
 
 import SwiftUI
@@ -26,7 +27,7 @@ final class WindowCatalogModel: ObservableObject {
             alertProperties: GalleryPresets.standardModalProperties,
             popupProperties: GalleryPresets.popupModalProperties
         )
-        for (style, properties) in UIKitFreeCatalogPresets.stylePresets {
+        for (style, properties) in UIKitFreeCatalogPresets.stylePresets + UIKitFreeCatalogPresets.stressPresets {
             renderer.register(style: style, properties: properties)
         }
         renderer.registerBuiltInDescriptors()
@@ -34,21 +35,21 @@ final class WindowCatalogModel: ObservableObject {
     }
 
     var currentEntry: SwiftUICatalogEntry? {
-        SwiftUICatalog.dialogEntries[safeIndex: currentIndex]
+        SwiftUICatalog.dialogAndStressEntries[safeIndex: currentIndex]
     }
 
     func step(by offset: Int) {
-        let count = SwiftUICatalog.dialogEntries.count
+        let count = SwiftUICatalog.dialogAndStressEntries.count
         guard count > 0 else { return }
         present(at: ((currentIndex + offset) % count + count) % count)
     }
 
     func present(at index: Int) {
-        guard SwiftUICatalog.dialogEntries.indices.contains(index) else { return }
+        guard SwiftUICatalog.dialogAndStressEntries.indices.contains(index) else { return }
         pending?.cancel()
         currentIndex = index
 
-        let entry = SwiftUICatalog.dialogEntries[index]
+        let entry = SwiftUICatalog.dialogAndStressEntries[index]
         guard entry.present != nil else {
             lastResult = "not yet renderable"
             pending = nil
@@ -57,7 +58,7 @@ final class WindowCatalogModel: ObservableObject {
 
         lastResult = "…"
         pending = Task { @MainActor [weak self] in
-            guard let self, let present = SwiftUICatalog.dialogEntries[index].present else { return }
+            guard let self, let present = SwiftUICatalog.dialogAndStressEntries[index].present else { return }
             let outcome = await present(self.executor)
             guard !Task.isCancelled else { return }
             self.lastResult = outcome
@@ -89,11 +90,12 @@ struct WindowCatalogScreen: View {
     private var entryList: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
-                Text("\(SwiftUICatalog.dialogEntries.count) real shapes, WindowModalRenderer")
+                Text("\(SwiftUICatalog.dialogAndStressEntries.count) shapes, WindowModalRenderer "
+                    + "(26 real + 28 stress)")
                     .font(.headline)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.vertical, 12)
-                ForEach(SwiftUICatalog.dialogEntries.indices, id: \.self) { index in
+                ForEach(SwiftUICatalog.dialogAndStressEntries.indices, id: \.self) { index in
                     row(at: index)
                     Divider()
                 }
@@ -104,7 +106,7 @@ struct WindowCatalogScreen: View {
     }
 
     private func row(at index: Int) -> some View {
-        let entry = SwiftUICatalog.dialogEntries[index]
+        let entry = SwiftUICatalog.dialogAndStressEntries[index]
         return Button {
             model.present(at: index)
         } label: {
@@ -125,7 +127,7 @@ struct WindowCatalogScreen: View {
                     .font(.system(size: 13, weight: .semibold))
                     .lineLimit(1)
                     .minimumScaleFactor(0.6)
-                Text("\(model.currentIndex + 1)/\(SwiftUICatalog.dialogEntries.count) · \(model.lastResult)")
+                Text("\(model.currentIndex + 1)/\(SwiftUICatalog.dialogAndStressEntries.count) · \(model.lastResult)")
                     .font(.system(size: 10))
                     .lineLimit(1)
                     .minimumScaleFactor(0.6)

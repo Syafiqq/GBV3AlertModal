@@ -579,7 +579,7 @@ final class WindowModalRendererHostingSmokeTests: XCTestCase {
     }
 }
 
-// MARK: - The 26-real-shape catalog, in front of a human's eyes, on the two UIKit-free renderers
+// MARK: - The 26-real + 28-stress catalog, in front of a human's eyes, on the two UIKit-free renderers
 
 /// `EmbeddedCatalogScreen` builds, hosts its renderer, and actually presents a real shape — the
 /// visual half of `EmbeddedShapeCoverageTests`' structural claim, now proven end to end through a
@@ -610,6 +610,23 @@ final class EmbeddedCatalogScreenTests: XCTestCase {
             await Task.yield()
         }
         XCTAssertEqual(model.renderer.presentations.count, 1, "presenting a real catalog shape should show it")
+        model.dismissCurrent()
+    }
+
+    /// The stress matrix's own `ModalStyle` tokens (`.stressWideBanner` and friends) are a SEPARATE
+    /// registration from the 26 real shapes' — `UIKitFreeCatalogPresets.stressPresets`, added
+    /// alongside `stylePresets` in `EmbeddedCatalogModel.init`. This is the check that the wiring
+    /// actually reaches the renderer rather than merely compiling: an unregistered style falls back to
+    /// `.standard` silently (see `RendererParityTests.test_unregisteredStyle_fallsBackIdentically_onBothRenderers`),
+    /// so a missing registration here would still present SOMETHING and this test is what would catch it.
+    func test_presentingAStressShape_actuallyShowsUpOnTheRenderer() async {
+        let model = EmbeddedCatalogModel()
+        let stressIndex = SwiftUICatalog.dialogEntries.count // first entry past the 26 real shapes
+        model.present(at: stressIndex)
+        for _ in 0..<10 where model.renderer.presentations.isEmpty {
+            await Task.yield()
+        }
+        XCTAssertEqual(model.renderer.presentations.count, 1, "presenting a stress-matrix shape should show it")
         model.dismissCurrent()
     }
 }

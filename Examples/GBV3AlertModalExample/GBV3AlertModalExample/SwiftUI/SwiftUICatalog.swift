@@ -250,6 +250,12 @@ enum SwiftUICatalog {
     static let entries: [SwiftUICatalogEntry] =
         dialogEntries + stressEntries + variantEntries + divergenceEntries
 
+    /// `dialogEntries` + `stressEntries` — what `EmbeddedCatalogScreen`/`WindowCatalogScreen` present.
+    /// Those two screens exist to answer "does the shape actually render" on the UIKit-free renderers,
+    /// same bar as their structural coverage suites; the variant/divergence sections are UIKit-vs-
+    /// SwiftUI comparison material specific to `SwiftUICatalogScreen` and stay out of scope here.
+    static let dialogAndStressEntries: [SwiftUICatalogEntry] = dialogEntries + stressEntries
+
     static func index(ofEntryNamed name: String) -> Int? {
         entries.firstIndex { $0.name == name }
     }
