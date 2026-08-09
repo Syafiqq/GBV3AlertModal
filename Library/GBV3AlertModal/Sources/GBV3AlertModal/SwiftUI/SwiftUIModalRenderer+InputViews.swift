@@ -183,22 +183,29 @@ public struct DatePickerModalView: View {
             datePicker
                 .datePickerStyle(WheelDatePickerStyle())
                 .labelsHidden()
-                // GUARANTEED gap, applied directly on the picker rather than left to
-                // `tokens.contentPadding`/`contentMaxWidth`. Two things were already tried and did
-                // NOT work through the shared card-width system, which is what motivates going
-                // around it instead of through it:
-                //  1. Clamping the picker's FRAME to `contentMaxWidth` (256) — clipped it on-device.
-                //     UIKit's `UIPickerView`-backed `UIDatePicker` reflows its wheel columns to fit
-                //     whatever width it's given; SwiftUI's native `.wheel` `DatePicker` does not.
-                //  2. Widening `contentMaxWidth` to 320 so the CARD had more room — no visible change
-                //     on-device. The picker isn't reading that proposal at all, wider OR narrower: it
-                //     renders at its own fixed natural size regardless, so a number stated in
-                //     `Properties` has no leverage over it either way.
-                // A literal `.padding()` sidesteps both: it doesn't try to negotiate the picker's
-                // size, it just reserves space the picker's own rendering cannot draw over. Uses
-                // `contentPadding.leftMin` (12pt, this shape's own stated floor) rather than a new
-                // number, so the guarantee is "at least what the design already calls the minimum
-                // acceptable gap", not an arbitrary pick.
+                // A FIXED ceiling on the picker's own width. 256pt visibly clipped it on-device
+                // (attempt 1); this is a SECOND, still-unverified guess, wider than that — not yet
+                // confirmed on-device to avoid clipping, only chosen because 256 was demonstrably too
+                // narrow and a device screenshot showed the picker rendering its 3 columns cleanly at
+                // something close to full card width. Confirm on-device before treating this as
+                // settled. NOT read from `tokens.contentMaxWidth`/`contentPadding`: the picker does
+                // not negotiate width with `Properties` at all in either direction, so a stated
+                // number there has zero leverage over it (widening it to 320 with no frame present
+                // was tried and changed nothing observable).
+                //
+                // The ceiling matters for a reason beyond the picker's own look: `AlertModalScaffold
+                // .card()` puts title, picker AND the primary/secondary buttons in ONE `VStack`, and
+                // `buttonsMatchParent` sizes the buttons to whatever width that `VStack` reports. An
+                // unconstrained picker was the widest (rigid) child, so it was forcing the WHOLE row
+                // — buttons included — out past the card's intended bounds, and everything rendered
+                // flush to wherever the card's own `clipShape` happened to cut it off: not just an
+                // unpadded picker, but unpadded buttons too, on a card that had grown to nearly the
+                // full screen width. Capping the picker's own width is what stops that propagation.
+                .frame(maxWidth: 320)
+                .clipped()
+                // GUARANTEED gap on top of the cap — the cap alone bounds the OVERFLOW, it does not
+                // by itself leave any breathing room, so this is still needed. `contentPadding
+                // .leftMin` (12pt) is this shape's own stated floor, not a new number.
                 .padding(.horizontal, tokens.contentPadding.leftMin)
                 .padding(.bottom, tokens.gapBelowSubtitle)
         }
