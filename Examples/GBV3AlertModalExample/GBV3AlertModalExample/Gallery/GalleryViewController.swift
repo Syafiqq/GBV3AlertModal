@@ -78,29 +78,27 @@ final class GalleryViewController: UITableViewController {
         super.viewDidLoad()
         title = "Dialog Gallery (\(Self.allEntries.count))"
         tableView.register(UITableViewCell.self, forCellReuseIdentifier: Self.cellReuseIdentifier)
-        navigationItem.rightBarButtonItems = [
-            UIBarButtonItem(title: "SwiftUI", style: .plain, target: self, action: #selector(openSwiftUIDemo)),
-            UIBarButtonItem(title: "Tier 0", style: .plain, target: self, action: #selector(openTier0Demo)),
-            UIBarButtonItem(title: "Tier 1", style: .plain, target: self, action: #selector(openAdoptionDemo)),
-            UIBarButtonItem(
-                title: "Embedded", style: .plain, target: self, action: #selector(openEmbeddedDemo)
-            ),
-            UIBarButtonItem(
-                title: "Window", style: .plain, target: self, action: #selector(openWindowDemo)
-            ),
-            UIBarButtonItem(
-                title: "SwiftUI Catalog",
-                style: .plain,
-                target: self,
-                action: #selector(openSwiftUICatalogTapped)
-            ),
-            UIBarButtonItem(
-                title: "Embedded Catalog", style: .plain, target: self, action: #selector(openEmbeddedCatalog)
-            ),
-            UIBarButtonItem(
-                title: "Window Catalog", style: .plain, target: self, action: #selector(openWindowCatalog)
-            ),
-        ]
+        // 8 titled bar button items don't fit an iPhone-width nav bar — UIKit silently drops
+        // whichever ones don't fit rather than showing an overflow affordance, so half of these
+        // were unreachable by tapping. One menu button, grouped into the two pairings that were
+        // getting confused for each other (adoption demo vs. its same-shape 54-entry catalog).
+        navigationItem.rightBarButtonItem = UIBarButtonItem(
+            image: UIImage(systemName: "ellipsis.circle"),
+            menu: UIMenu(children: [
+                UIMenu(title: "", options: .displayInline, children: [
+                    UIAction(title: "SwiftUI") { [weak self] _ in self?.openSwiftUIDemo() },
+                    UIAction(title: "Tier 0") { [weak self] _ in self?.openTier0Demo() },
+                    UIAction(title: "Tier 1") { [weak self] _ in self?.openAdoptionDemo() },
+                    UIAction(title: "Embedded") { [weak self] _ in self?.openEmbeddedDemo() },
+                    UIAction(title: "Window") { [weak self] _ in self?.openWindowDemo() },
+                ]),
+                UIMenu(title: "", options: .displayInline, children: [
+                    UIAction(title: "SwiftUI Catalog") { [weak self] _ in self?.openSwiftUICatalogTapped() },
+                    UIAction(title: "Embedded Catalog") { [weak self] _ in self?.openEmbeddedCatalog() },
+                    UIAction(title: "Window Catalog") { [weak self] _ in self?.openWindowCatalog() },
+                ]),
+            ])
+        )
     }
 
     /// The floating pill is hidden while the SwiftUI catalog is on screen (it
