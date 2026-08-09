@@ -183,15 +183,23 @@ public struct DatePickerModalView: View {
             datePicker
                 .datePickerStyle(WheelDatePickerStyle())
                 .labelsHidden()
-                // NOT clamped to `tokens.contentMaxWidth` (256, `date-picker-worksheet`'s stated
-                // production column) — tried and REVERTED, confirmed clipping the picker on-device.
-                // UIKit's `UIPickerView`-backed `UIDatePicker` reflows its wheel columns to fit
-                // whatever width it is given; SwiftUI's native `.wheel` `DatePicker` does not — it
-                // has an effectively fixed width for a 3-column month/day/year layout and refuses to
-                // compress below it. Clamping the FRAME just cuts off what does not fit rather than
-                // reflowing it, which is strictly worse than the unclamped look (no visible padding,
-                // but nothing visibly truncated). See `SwiftUIModalRenderer+InputViews.swift`'s git
-                // history for the tried-and-reverted attempt and why.
+                // GUARANTEED gap, applied directly on the picker rather than left to
+                // `tokens.contentPadding`/`contentMaxWidth`. Two things were already tried and did
+                // NOT work through the shared card-width system, which is what motivates going
+                // around it instead of through it:
+                //  1. Clamping the picker's FRAME to `contentMaxWidth` (256) — clipped it on-device.
+                //     UIKit's `UIPickerView`-backed `UIDatePicker` reflows its wheel columns to fit
+                //     whatever width it's given; SwiftUI's native `.wheel` `DatePicker` does not.
+                //  2. Widening `contentMaxWidth` to 320 so the CARD had more room — no visible change
+                //     on-device. The picker isn't reading that proposal at all, wider OR narrower: it
+                //     renders at its own fixed natural size regardless, so a number stated in
+                //     `Properties` has no leverage over it either way.
+                // A literal `.padding()` sidesteps both: it doesn't try to negotiate the picker's
+                // size, it just reserves space the picker's own rendering cannot draw over. Uses
+                // `contentPadding.leftMin` (12pt, this shape's own stated floor) rather than a new
+                // number, so the guarantee is "at least what the design already calls the minimum
+                // acceptable gap", not an arbitrary pick.
+                .padding(.horizontal, tokens.contentPadding.leftMin)
                 .padding(.bottom, tokens.gapBelowSubtitle)
         }
     }
