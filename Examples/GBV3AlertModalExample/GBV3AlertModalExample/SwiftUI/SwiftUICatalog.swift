@@ -250,11 +250,17 @@ enum SwiftUICatalog {
     static let entries: [SwiftUICatalogEntry] =
         dialogEntries + stressEntries + variantEntries + divergenceEntries
 
-    /// `dialogEntries` + `stressEntries` — what `EmbeddedCatalogScreen`/`WindowCatalogScreen` present.
-    /// Those two screens exist to answer "does the shape actually render" on the UIKit-free renderers,
-    /// same bar as their structural coverage suites; the variant/divergence sections are UIKit-vs-
-    /// SwiftUI comparison material specific to `SwiftUICatalogScreen` and stay out of scope here.
-    static let dialogAndStressEntries: [SwiftUICatalogEntry] = dialogEntries + stressEntries
+    /// `dialogEntries` + `stressEntries` + `variantEntries` — what `EmbeddedCatalogScreen`/
+    /// `WindowCatalogScreen` present. Those two screens exist to answer "does the shape actually
+    /// render" on the UIKit-free renderers, same bar as their structural coverage suites; variants
+    /// (title/subtitle representations, the four button styles) are real shapes by that same bar,
+    /// so they're included. `divergenceEntries` stay out — that section is UIKit-vs-SwiftUI
+    /// comparison material specific to `SwiftUICatalogScreen`, not a shape of its own.
+    ///
+    /// Order matters: `dialogEntries` first, unchanged, is what
+    /// `EmbeddedCatalogScreenTests`/`WindowCatalogScreenTests` index past (`dialogEntries.count`) to
+    /// reach the first stress entry.
+    static let dialogAndStressEntries: [SwiftUICatalogEntry] = dialogEntries + stressEntries + variantEntries
 
     static func index(ofEntryNamed name: String) -> Int? {
         entries.firstIndex { $0.name == name }

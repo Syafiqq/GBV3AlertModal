@@ -2,9 +2,10 @@
 //  EmbeddedCatalogScreen.swift
 //  GBV3AlertModalExample
 //
-//  The `EmbeddedModalRenderer` twin of `SwiftUICatalogScreen` — the 26 real Geniebook shapes plus the
-//  28-entry stress matrix, in front of a human's eyes, on the mainUIRenderer backend. Reuses
-//  `SwiftUICatalog.dialogAndStressEntries` UNCHANGED: each entry's `present` closure only calls
+//  The `EmbeddedModalRenderer` twin of `SwiftUICatalogScreen` — the 26 real Geniebook shapes, the
+//  28-entry stress matrix, and the 11 variant shapes, in front of a human's eyes, on the
+//  mainUIRenderer backend. Reuses `SwiftUICatalog.dialogAndStressEntries` UNCHANGED: each entry's
+//  `present` closure only calls
 //  `executor.presentAndWait(descriptor())`, which is renderer-agnostic — only the renderer THIS
 //  screen's executor wraps differs.
 //
@@ -30,7 +31,10 @@ final class EmbeddedCatalogModel: ObservableObject {
             alertProperties: GalleryPresets.standardModalProperties,
             popupProperties: GalleryPresets.popupModalProperties
         )
-        for (style, properties) in UIKitFreeCatalogPresets.stylePresets + UIKitFreeCatalogPresets.stressPresets {
+        let presets = UIKitFreeCatalogPresets.stylePresets
+            + UIKitFreeCatalogPresets.stressPresets
+            + UIKitFreeCatalogPresets.variantPresets
+        for (style, properties) in presets {
             renderer.register(style: style, properties: properties)
         }
         renderer.registerBuiltInDescriptors()
@@ -97,7 +101,7 @@ struct EmbeddedCatalogScreen: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
                 Text("\(SwiftUICatalog.dialogAndStressEntries.count) shapes, EmbeddedModalRenderer "
-                    + "(26 real + 28 stress)")
+                    + "(26 real + 28 stress + 11 variants)")
                     .font(.headline)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.vertical, 12)

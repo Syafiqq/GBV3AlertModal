@@ -2,12 +2,12 @@
 //  WindowCatalogScreen.swift
 //  GBV3AlertModalExample
 //
-//  The `WindowModalRenderer` twin of `EmbeddedCatalogScreen` — the same 26 real Geniebook shapes plus
-//  the 28-entry stress matrix, same `SwiftUICatalog.dialogAndStressEntries` reused unchanged, on the
-//  rootRenderer backend instead. No `ModalHost`/`EmbeddedModalHost` wrapper: `WindowModalRenderer`
-//  installs each presentation directly into the key `UIWindow`, so it paints OVER this screen exactly
-//  like `Tier0DemoScreen`'s UIKit modal does — the screen itself is just the list + traversal pill,
-//  nothing to embed.
+//  The `WindowModalRenderer` twin of `EmbeddedCatalogScreen` — the same 26 real Geniebook shapes, 28
+//  stress entries, and 11 variant shapes, same `SwiftUICatalog.dialogAndStressEntries` reused
+//  unchanged, on the rootRenderer backend instead. No `ModalHost`/`EmbeddedModalHost` wrapper:
+//  `WindowModalRenderer` installs each presentation directly into the key `UIWindow`, so it paints
+//  OVER this screen exactly like `Tier0DemoScreen`'s UIKit modal does — the screen itself is just the
+//  list + traversal pill, nothing to embed.
 //
 
 import SwiftUI
@@ -27,7 +27,10 @@ final class WindowCatalogModel: ObservableObject {
             alertProperties: GalleryPresets.standardModalProperties,
             popupProperties: GalleryPresets.popupModalProperties
         )
-        for (style, properties) in UIKitFreeCatalogPresets.stylePresets + UIKitFreeCatalogPresets.stressPresets {
+        let presets = UIKitFreeCatalogPresets.stylePresets
+            + UIKitFreeCatalogPresets.stressPresets
+            + UIKitFreeCatalogPresets.variantPresets
+        for (style, properties) in presets {
             renderer.register(style: style, properties: properties)
         }
         renderer.registerBuiltInDescriptors()
@@ -91,7 +94,7 @@ struct WindowCatalogScreen: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
                 Text("\(SwiftUICatalog.dialogAndStressEntries.count) shapes, WindowModalRenderer "
-                    + "(26 real + 28 stress)")
+                    + "(26 real + 28 stress + 11 variants)")
                     .font(.headline)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.vertical, 12)

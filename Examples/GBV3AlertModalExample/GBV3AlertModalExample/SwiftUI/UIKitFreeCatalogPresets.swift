@@ -7,7 +7,10 @@
 //  the SAME 17 style tokens (`.genieErrorBanner` and friends, declared once in `SwiftUICatalog.swift`)
 //  so `SwiftUICatalog.dialogEntries` — built against those tokens — can be presented UNCHANGED on
 //  either UIKit-free renderer. `stressPresets` below does the same for the 5 stress-matrix tokens
-//  (`SwiftUICatalog+Stress.swift`), so `SwiftUICatalog.stressEntries` is presentable too.
+//  (`SwiftUICatalog+Stress.swift`), so `SwiftUICatalog.stressEntries` is presentable too, and
+//  `variantPresets` does it for the 4 button-style variant tokens, so
+//  `SwiftUICatalog.variantButtonStyleEntries` is presentable — the other 7 variant entries
+//  (title/subtitle/button-state) use `.standard`, already seeded.
 //
 //  STRUCTURAL geometry (padding, banner ratio/height, component spacing) is transcribed verbatim
 //  from `SwiftUICatalog+Presets.swift`, because that is what `ModalTokens`/`ResolvedModal` actually
@@ -25,9 +28,8 @@ import GBV3AlertModal
 enum UIKitFreeCatalogPresets {
 
     /// The 17 style→preset pairs `SwiftUICatalog.dialogEntries` asks for by name (`.standard`/
-    /// `.popup` are already seeded by both renderers' `init`). Deliberately excludes the 4 `variant*`
-    /// tokens (`SwiftUICatalog+Variants.swift`) — those back the stress/variants section, out of
-    /// scope for a screen whose job is the 26 real shapes.
+    /// `.popup` are already seeded by both renderers' `init`). The 4 `variant*` tokens
+    /// (`SwiftUICatalog+Variants.swift`) are a separate table, `variantPresets` below.
     static var stylePresets: [(ModalStyle, ModalProperties)] {
         [
             (.geniePermissionAlert, permissionAlert),
@@ -49,6 +51,67 @@ enum UIKitFreeCatalogPresets {
             (.genieBadgeDetail, badgeDetail)
         ]
     }
+
+    /// The 4 button-style variant style→preset pairs `SwiftUICatalog.variantButtonStyleEntries` asks
+    /// for by name. Mirrors `SwiftUICatalogPresets`'s own four (`GalleryPresets.properties.copy(
+    /// primaryActionStyle: …)`) using the SwiftUI-native `ModalProperties.ActionStyle` cases and
+    /// `GalleryColor` tokens instead — same colours, same shape, UIKit-free type.
+    static var variantPresets: [(ModalStyle, ModalProperties)] {
+        [
+            (.variantCapsule, variantCapsule),
+            (.variantCapsuleOutlined, variantCapsuleOutlined),
+            (.variantPlain, variantPlain),
+            (.variantOblique, variantOblique)
+        ]
+    }
+
+    static var variantCapsule: ModalProperties {
+        var properties = GalleryPresets.standardModalProperties
+        properties.primaryActionStyle = .capsule(
+            ModalProperties.ActionStyle.CapsuleTheme(
+                backgroundColor: Color(uiColor: GalleryColor.accentSecondary),
+                backgroundDisableColor: Color(uiColor: GalleryColor.borderLight),
+                titleColor: Color(uiColor: GalleryColor.white),
+                titleDisableColor: Color(uiColor: GalleryColor.white),
+                titleFont: .system(size: 16, weight: .heavy)
+            )
+        )
+        return properties
+    }
+
+    static var variantCapsuleOutlined: ModalProperties {
+        var properties = GalleryPresets.standardModalProperties
+        properties.primaryActionStyle = .capsuleOutlined(
+            ModalProperties.ActionStyle.CapsuleOutlineTheme(
+                backgroundColor: .clear,
+                backgroundDisableColor: .clear,
+                titleColor: Color(uiColor: GalleryColor.labelSubtitle),
+                titleDisableColor: Color(uiColor: GalleryColor.borderLight),
+                borderWidth: 2,
+                borderColor: Color(uiColor: GalleryColor.labelSubtitle),
+                borderDisableColor: Color(uiColor: GalleryColor.borderLight),
+                titleFont: .system(size: 16, weight: .heavy)
+            )
+        )
+        return properties
+    }
+
+    static var variantPlain: ModalProperties {
+        var properties = GalleryPresets.standardModalProperties
+        properties.primaryActionStyle = .plain(
+            ModalProperties.ActionStyle.PlainTheme(
+                titleColor: Color(uiColor: GalleryColor.accentSecondaryDark),
+                titleDisableColor: Color(uiColor: GalleryColor.borderLight),
+                titleFont: .system(size: 16, weight: .heavy)
+            )
+        )
+        return properties
+    }
+
+    /// Same oblique theme `.standard` already carries — the UIKit twin (`SwiftUICatalogPresets
+    /// .variantOblique`) re-declares its own style token for this exact theme too, so this stays
+    /// a plain passthrough rather than transcribing the theme a second time.
+    static var variantOblique: ModalProperties { GalleryPresets.standardModalProperties }
 
     /// The 5 stress-matrix style→preset pairs `SwiftUICatalog.stressEntries` asks for by name
     /// (`.standard`'s no-banner vertical shapes need no token of their own, same as the UIKit/SwiftUI

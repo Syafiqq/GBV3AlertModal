@@ -46,10 +46,16 @@ final class SwiftUIDemoScreenSmokeTests: XCTestCase {
     /// Asserts the entry points BY TITLE rather than by count. The count form failed the moment a
     /// fourth entry point was added and said only "expected 3, got 4" — which is true of both an
     /// accidental extra button and a deliberate one, and names neither.
+    ///
+    /// The 8 entry points collapsed into one `•••` `UIMenu` button (too many titled bar items to
+    /// fit an iPhone-width nav bar — UIKit silently drops whichever don't fit, with no overflow
+    /// affordance for a plain array), so this reads the titles out of the menu's two inline groups
+    /// instead of `rightBarButtonItems`.
     func test_gallery_exposes_its_entry_points() {
         let gallery = GalleryViewController()
         gallery.loadViewIfNeeded()
-        let titles = (gallery.navigationItem.rightBarButtonItems ?? []).compactMap(\.title)
+        let groups = gallery.navigationItem.rightBarButtonItem?.menu?.children.compactMap { $0 as? UIMenu } ?? []
+        let titles = groups.flatMap { $0.children.compactMap { ($0 as? UIAction)?.title } }
         XCTAssertEqual(
             titles, [
                 "SwiftUI", "Tier 0", "Tier 1", "Embedded", "Window", "SwiftUI Catalog",
