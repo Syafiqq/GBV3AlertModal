@@ -252,6 +252,14 @@ enum GeniePresets {
 
     static func datePickerInputModalProperties() -> ModalProperties {
         var properties = standardModalProperties()
+        // Widened from the production 256pt column — SwiftUI's native `.wheel` `DatePicker` does not
+        // reflow its 3-column layout the way UIKit's real `UIDatePicker` does, so 256pt clips it. 320
+        // is a starting guess pending on-device confirmation; mirrors
+        // `UIKitFreeCatalogPresets.datePickerInput` in the example app.
+        properties.contentProperty?.fixedWidthPortrait = 320
+        properties.contentProperty?.maxWidthPortrait = 320
+        properties.contentProperty?.fixedWidthLandscape = 320
+        properties.contentProperty?.maxWidthLandscape = 320
         properties.padding = UIMinMaxEdgeInsets(top: (20, 32), left: (12, 40), bottom: (16, 16), right: (12, 40))
         properties.titleFont = .system(size: 24, weight: .heavy)
         properties.space = ModalProperties.ComponentSpace(banner: 8, title: 0, subtitle: 8, interButton: 8)

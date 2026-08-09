@@ -3,22 +3,24 @@ import UIKit
 import XCTest
 @testable import GBV3AlertModal
 
-/// **The date-picker card's width, measured.** `WheelDatePickerStyle` was suspected of being a
-/// RIGID child — the same class of problem `BespokeBannerColumnTests` measures for `BadgeModalView`'s
-/// banner artwork — and clamping it to `contentMaxWidth` was tried in
-/// `SwiftUIModalRenderer+InputViews.swift` on that theory.
+/// **The date-picker card's width, measured — across two different fixes for the same report.**
 ///
-/// **Run against this bare host, the theory did not reproduce**: the card already sat exactly at its
-/// 336pt cap (`contentMaxWidth` 256 + `leftMax`/`rightMax` 40 each) BOTH with and without the clamp —
-/// identical numbers. On the 390pt host `DifferentialGeometry` renders at, there is
-/// `390 − 2·20(margin) = 350`pt available, 14pt of slack over the cap, so the card had no reason to
-/// fall short here either way. **The clamp was then reverted anyway**: tested on a real device, it
-/// clipped the picker rather than reflowing it — `UIDatePicker`'s wheel columns reflow to fit
-/// whatever width UIKit gives them, but SwiftUI's native `.wheel` `DatePicker` does not compress
-/// below its 3-column intrinsic width, so constraining its FRAME just cut off what did not fit.
+/// Attempt 1: `WheelDatePickerStyle` was suspected of being a RIGID child — the same class of
+/// problem `BespokeBannerColumnTests` measures for `BadgeModalView`'s banner artwork — so it was
+/// clamped to `contentMaxWidth` (256, the production column). Run against this bare host, the
+/// theory did not reproduce: the card sat exactly at its 336pt cap BOTH with and without the clamp.
+/// **Reverted anyway**: tested on a real device, the clamp CLIPPED the picker rather than reflowing
+/// it — `UIDatePicker`'s wheel columns reflow to fit whatever width UIKit gives them, but SwiftUI's
+/// native `.wheel` `DatePicker` does not compress below its 3-column intrinsic width, so
+/// constraining its FRAME just cut off what did not fit.
 ///
-/// What these two tests guard, independent of that whole clamp episode: the card-width invariant
-/// itself — reaches its cap when there is room, never exceeds it.
+/// Attempt 2 (current): widen the CONTENT column itself instead of constraining the picker —
+/// `GeniePresets.datePickerInputModalProperties()` now states `contentMaxWidth: 320` (a starting
+/// guess pending on-device confirmation, not yet a citation-backed production number). That pushes
+/// `cardMaxWidth` to `320 + 40 + 40 = 400`, which EXCEEDS the 350pt available on the 390pt host this
+/// suite renders at (`390 − 2·20(margin)`) — so the card is now expected to clamp to the available
+/// 350pt, not reach its own stated 400pt cap. That is a different invariant than attempt 1 tested,
+/// and the two tests below were rewritten to match it rather than left asserting the old numbers.
 @MainActor
 final class DatePickerWidthClampTests: XCTestCase {
     private var properties: ModalProperties { GeniePresets.datePickerInputModalProperties() }
@@ -53,23 +55,25 @@ final class DatePickerWidthClampTests: XCTestCase {
         ).width
     }
 
-    /// The card should sit exactly at its cap on a host with 14pt of slack to spare — verified
-    /// identical with and without the (reverted) width clamp, see the file doc.
-    func test_card_reachesItsStatedCap_onAHostWithRoomToSpare() throws {
+    /// With a 400pt cap and only 350pt of host available (`390 − 2·20` margin), the card is
+    /// screen-constrained now, not cap-constrained — it should sit at the AVAILABLE width, not the
+    /// stated cap. If this ever reports the full 400pt cap instead, the margin stopped being applied.
+    func test_card_clampsToTheAvailableHostWidth_notItsOwnCap() throws {
         let tokens = ModalTokens(from: properties)
+        let available = DifferentialGeometry.host.width - tokens.cardMarginH * 2
         let width = try cardWidth()
         XCTAssertEqual(
-            width, tokens.cardMaxWidth, accuracy: DifferentialGeometry.tolerance,
-            "the date-picker card is \(width)pt where its cap is \(tokens.cardMaxWidth)pt, on a host "
-                + "with 14pt to spare over that cap — padding is compressing toward its floor for no "
-                + "reason the available space explains"
+            width, available, accuracy: DifferentialGeometry.tolerance,
+            "the date-picker card is \(width)pt where the host only has \(available)pt available "
+                + "(cap is \(tokens.cardMaxWidth)pt, wider than the host can give it) — expected the "
+                + "margin to clamp it to the available width"
         )
     }
 
-    /// **The other direction.** The card must never OVERSHOOT its cap either — a rigid child that
-    /// reports a larger ideal than proposed can blow past a `.frame(maxWidth:)` ceiling from inside
-    /// it, the same way `BannerSlot` could before it was made to yield (`AlertModalScaffold`'s doc).
-    /// Also unaffected by the (reverted) clamp in this host — see the file doc.
+    /// **The other direction.** The card must never exceed its OWN stated cap regardless of how much
+    /// host room there is — a rigid child that reports a larger ideal than proposed can blow past a
+    /// `.frame(maxWidth:)` ceiling from inside it, the same way `BannerSlot` could before it was made
+    /// to yield (`AlertModalScaffold`'s doc).
     func test_card_neverExceedsItsStatedCap() throws {
         let tokens = ModalTokens(from: properties)
         let width = try cardWidth()

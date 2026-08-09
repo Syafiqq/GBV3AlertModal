@@ -136,8 +136,20 @@ enum SwiftUICatalogPresets {
     }
 
     /// `date-picker-worksheet`.
+    ///
+    /// `contentProperty` is widened past the production 256pt column — SwiftUI's native `.wheel`
+    /// `DatePicker` (what this shape renders through, `SwiftUIModalRenderer+InputViews.swift`) does
+    /// not reflow its 3-column month/day/year layout to fit a narrower width the way UIKit's real
+    /// `UIPickerView`-backed `UIDatePicker` does, so at 256pt it clips instead of compressing. 320 is
+    /// a STARTING GUESS — confirm on-device and adjust; this is not a citation-backed production
+    /// value the way the rest of this preset is (see `UIKitFreeCatalogPresets.datePickerInput`,
+    /// which carries the identical override for the same reason).
     static var datePickerInput: GBAlertModal.Properties {
         GalleryPresets.properties.copy(
+            contentProperty: GalleryPresets.contentProperty.copy(
+                fixedWidthPortrait: 320, maxWidthPortrait: 320,
+                fixedWidthLandscape: 320, maxWidthLandscape: 320
+            ),
             padding: GalleryPresets.padding.copy(
                 top: (20, 32),
                 left: (12, 40),
