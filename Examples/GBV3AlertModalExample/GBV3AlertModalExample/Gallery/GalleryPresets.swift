@@ -235,14 +235,17 @@ enum GalleryPresets {
 
     // MARK: - ModalProperties (SwiftUI vocabulary, for the UIKit-free renderer demos)
     //
-    // A minimal, functional preset — not a fidelity port of `properties` above (no GalleryColor/
-    // GallerySHSans mirroring). Shared by EmbeddedAdoptionScreen and the "Window" gallery demo, both
-    // of which exist to answer "does the UIKit-free renderer actually work", not "does it look
-    // production-exact".
+    // A `GalleryColor`-mirrored port of `properties` above — same colours, same button-font weight
+    // (heavy 16pt everywhere `properties` uses it), only the font FAMILY stays `.system` rather than
+    // `GallerySHSans`/OpenSans (the declared, cross-cutting divergence every SwiftUI screen carries —
+    // see `SwiftUIDivergence.global`'s "Fonts" note). Shared by EmbeddedCatalogScreen/
+    // WindowCatalogScreen/EmbeddedAdoptionScreen, which compare shape-for-shape against the UIKit
+    // Dialog Gallery, so a colour/weight that doesn't match `properties` reads as a rendering defect
+    // rather than the "minimal, functional preset" it used to be documented as.
 
     static let standardModalProperties = ModalProperties(
-        baseTint: .blue,
-        overlayColor: .black.opacity(0.6),
+        baseTint: Color(uiColor: GalleryColor.accentSecondary),
+        overlayColor: Color(uiColor: overlayColor),
         contentProperty: ModalProperties.ContentProperty(
             backgroundColor: .white,
             cornerRadius: 16,
@@ -255,29 +258,37 @@ enum GalleryPresets {
         margin: EdgeInsets(top: 0, leading: 20, bottom: 0, trailing: 20),
         padding: UIMinMaxEdgeInsets(top: (16, 24), left: (16, 32), bottom: (16, 24), right: (16, 32)),
         bannerRatio: 1,
+        // Weight only — family stays `.system`, not `GallerySHSans`/OpenSans (declared, cross-cutting
+        // divergence: `SwiftUIDivergence.global`'s "Fonts" note). Real preset is bold 24 / regular 16.
         titleFont: .system(size: 24, weight: .bold),
-        titleColor: .primary,
+        titleColor: Color(uiColor: GalleryColor.primary),
         subtitleFont: .system(size: 16),
-        subtitleColor: .secondary,
+        subtitleColor: Color(uiColor: GalleryColor.textPrimaryDark),
         buttonActionShouldMatchParent: true,
         buttonActionOrientation: .vertical,
         primaryActionStyle: .obliqueBottomLeft(
             ModalProperties.ActionStyle.ObliqueBottomLeftTheme(
-                unPressedColor: .orange,
-                pressedColor: .blue,
-                disabledColor: .gray,
-                // Matches UIKit's real `obliqueBottomLeftTheme.shadowColor` (`GalleryColor.orangeMandarin`,
-                // below) rather than `.orange` again — same-as-fill flattens the oblique offset layer
-                // into the surface.
+                unPressedColor: Color(uiColor: GalleryColor.accentSecondaryDark),
+                pressedColor: Color(uiColor: GalleryColor.pressedBlue),
+                disabledColor: Color(uiColor: GalleryColor.borderLight),
                 shadowColor: Color(uiColor: GalleryColor.orangeMandarin),
                 titleColor: .white,
                 titleDisableColor: .white,
-                titleFont: .system(size: 16, weight: .medium)
+                // Was `.medium` — every real Genie button (primary AND secondary) is HEAVY 16pt
+                // (`GallerySHSans.heavy.font(16)`); `.medium` is what made every standard-style shape
+                // (all of `.standard`/`.popup`'s many callers, e.g. `standard-one-button`) look
+                // conspicuously lighter than `variant-button-plain`, which already set `.heavy` itself.
+                titleFont: .system(size: 16, weight: .heavy)
             )
         ),
         secondaryActionStyle: .plain(
             ModalProperties.ActionStyle.PlainTheme(
-                titleColor: .blue, titleDisableColor: .gray, titleFont: .system(size: 16, weight: .medium)
+                // Was `.blue`/`.gray` — the real `plainTheme` secondary is ORANGE
+                // (`GalleryColor.accentSecondaryDark`), never blue; `.blue` was a placeholder that
+                // never got swapped for the real token already sitting in this file.
+                titleColor: Color(uiColor: GalleryColor.accentSecondaryDark),
+                titleDisableColor: Color(uiColor: GalleryColor.borderLight),
+                titleFont: .system(size: 16, weight: .heavy)
             )
         ),
         closeButtonTint: .black,
