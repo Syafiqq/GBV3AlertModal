@@ -183,14 +183,15 @@ public struct DatePickerModalView: View {
             datePicker
                 .datePickerStyle(WheelDatePickerStyle())
                 .labelsHidden()
-                // `WheelDatePickerStyle` is a RIGID child — same class of problem `BannerSlot` has
-                // (see `AlertModalScaffold.card()`'s doc): its 3-column month/day/year layout reports
-                // its own ~320pt+ intrinsic width and renders it regardless of the card's stated
-                // content cap, which is what was eating the room `contentPadding`'s max would
-                // otherwise get, squeezing left/right toward their min every time. Clamping it here,
-                // at the rigid child itself, is where `BannerSlot` solved the same shape of problem
-                // (a `.frame(maxWidth:)` cap + `.clipped()`) rather than in the padding tokens, which
-                // are already doing exactly what they're specified to do.
+                // Defensive clamp against the RIGID-child failure mode `BannerSlot` already has a
+                // fix for (see `AlertModalScaffold.card()`'s doc): a child that reports its own
+                // preferred size regardless of what its parent proposes can eat room `contentPadding`
+                // never gets to keep. `DatePickerWidthClampTests` measured this specific host WITHOUT
+                // the clamp and found the card already at its cap either way — so this is hardening
+                // against the class of bug, not a confirmed fix for a reproduced squeeze. Left in:
+                // the failure mode is real (that is what `BannerSlot` needed clamping for), cheap to
+                // guard against, and a `.frame(maxWidth:)` + `.clipped()` here can only ever be a
+                // no-op or a fix, never a regression.
                 .frame(maxWidth: tokens.contentMaxWidth)
                 .clipped()
                 .padding(.bottom, tokens.gapBelowSubtitle)
