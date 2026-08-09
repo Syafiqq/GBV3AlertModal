@@ -183,17 +183,15 @@ public struct DatePickerModalView: View {
             datePicker
                 .datePickerStyle(WheelDatePickerStyle())
                 .labelsHidden()
-                // Defensive clamp against the RIGID-child failure mode `BannerSlot` already has a
-                // fix for (see `AlertModalScaffold.card()`'s doc): a child that reports its own
-                // preferred size regardless of what its parent proposes can eat room `contentPadding`
-                // never gets to keep. `DatePickerWidthClampTests` measured this specific host WITHOUT
-                // the clamp and found the card already at its cap either way — so this is hardening
-                // against the class of bug, not a confirmed fix for a reproduced squeeze. Left in:
-                // the failure mode is real (that is what `BannerSlot` needed clamping for), cheap to
-                // guard against, and a `.frame(maxWidth:)` + `.clipped()` here can only ever be a
-                // no-op or a fix, never a regression.
-                .frame(maxWidth: tokens.contentMaxWidth)
-                .clipped()
+                // NOT clamped to `tokens.contentMaxWidth` (256, `date-picker-worksheet`'s stated
+                // production column) — tried and REVERTED, confirmed clipping the picker on-device.
+                // UIKit's `UIPickerView`-backed `UIDatePicker` reflows its wheel columns to fit
+                // whatever width it is given; SwiftUI's native `.wheel` `DatePicker` does not — it
+                // has an effectively fixed width for a 3-column month/day/year layout and refuses to
+                // compress below it. Clamping the FRAME just cuts off what does not fit rather than
+                // reflowing it, which is strictly worse than the unclamped look (no visible padding,
+                // but nothing visibly truncated). See `SwiftUIModalRenderer+InputViews.swift`'s git
+                // history for the tried-and-reverted attempt and why.
                 .padding(.bottom, tokens.gapBelowSubtitle)
         }
     }
