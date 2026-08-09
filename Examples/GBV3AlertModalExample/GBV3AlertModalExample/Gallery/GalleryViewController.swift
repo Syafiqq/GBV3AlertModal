@@ -184,13 +184,23 @@ final class GalleryViewController: UITableViewController {
 
     /// The 26 real shapes, in front of a human's eyes, on `EmbeddedModalRenderer` — the visual half
     /// of the claim `EmbeddedShapeCoverageTests` proves structurally in the library's test target.
+    ///
+    /// Hides the window-level pill first, same reason `openSwiftUICatalog` does: this screen draws
+    /// its OWN bottom traversal pill (`EmbeddedCatalogScreen.traversalPill`), and leaving the
+    /// window-level one up stacked the two at nearly the same bottom position.
     @objc private func openEmbeddedCatalog() {
+        floatingControl?.pauseAutoPlay()
+        floatingControl?.isHidden = true
         let host = UIHostingController(rootView: EmbeddedCatalogScreen())
         navigationController?.pushViewController(host, animated: true)
     }
 
-    /// The `WindowModalRenderer` twin of `openEmbeddedCatalog` — same 26 shapes, rootRenderer backend.
+    /// The `WindowModalRenderer` twin of `openEmbeddedCatalog` — same 26 shapes, rootRenderer
+    /// backend, same own-pill-vs-window-pill overlap fixed the same way (`WindowCatalogScreen`
+    /// draws its own `traversalPill` too).
     @objc private func openWindowCatalog() {
+        floatingControl?.pauseAutoPlay()
+        floatingControl?.isHidden = true
         let host = UIHostingController(rootView: WindowCatalogScreen())
         navigationController?.pushViewController(host, animated: true)
     }

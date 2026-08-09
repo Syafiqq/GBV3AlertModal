@@ -94,7 +94,11 @@ enum UIKitFreeCatalogPresets {
         properties.primaryActionStyle = .obliqueBottomLeft(
             ModalProperties.ActionStyle.ObliqueBottomLeftTheme(
                 unPressedColor: .red, pressedColor: .red, disabledColor: .gray,
-                shadowColor: .red, titleColor: .white, titleDisableColor: .white
+                // Matches UIKit's real "leave class" theme (`GalleryPresets.obliqueBottomLeftRedTheme.shadowColor`
+                // = `GalleryColor.englishVermillion`) rather than `.red` again — same-as-fill flattens
+                // the oblique offset layer into the surface.
+                shadowColor: Color(uiColor: GalleryColor.englishVermillion),
+                titleColor: .white, titleDisableColor: .white
             )
         )
         return properties

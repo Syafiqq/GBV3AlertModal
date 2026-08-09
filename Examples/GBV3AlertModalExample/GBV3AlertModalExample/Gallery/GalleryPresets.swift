@@ -266,7 +266,10 @@ enum GalleryPresets {
                 unPressedColor: .orange,
                 pressedColor: .blue,
                 disabledColor: .gray,
-                shadowColor: .orange,
+                // Matches UIKit's real `obliqueBottomLeftTheme.shadowColor` (`GalleryColor.orangeMandarin`,
+                // below) rather than `.orange` again — same-as-fill flattens the oblique offset layer
+                // into the surface.
+                shadowColor: Color(uiColor: GalleryColor.orangeMandarin),
                 titleColor: .white,
                 titleDisableColor: .white,
                 titleFont: .system(size: 16, weight: .medium)
