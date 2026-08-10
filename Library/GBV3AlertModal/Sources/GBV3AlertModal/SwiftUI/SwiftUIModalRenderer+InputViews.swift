@@ -183,25 +183,20 @@ public struct DatePickerModalView: View {
             datePicker
                 .datePickerStyle(WheelDatePickerStyle())
                 .labelsHidden()
-                // A FIXED ceiling on the picker's own width. 256pt visibly clipped it on-device
-                // (attempt 1); this is a SECOND, still-unverified guess, wider than that — not yet
-                // confirmed on-device to avoid clipping, only chosen because 256 was demonstrably too
-                // narrow and a device screenshot showed the picker rendering its 3 columns cleanly at
-                // something close to full card width. Confirm on-device before treating this as
-                // settled. NOT read from `tokens.contentMaxWidth`/`contentPadding`: the picker does
-                // not negotiate width with `Properties` at all in either direction, so a stated
-                // number there has zero leverage over it (widening it to 320 with no frame present
-                // was tried and changed nothing observable).
-                //
-                // The ceiling matters for a reason beyond the picker's own look: `AlertModalScaffold
-                // .card()` puts title, picker AND the primary/secondary buttons in ONE `VStack`, and
-                // `buttonsMatchParent` sizes the buttons to whatever width that `VStack` reports. An
-                // unconstrained picker was the widest (rigid) child, so it was forcing the WHOLE row
-                // — buttons included — out past the card's intended bounds, and everything rendered
-                // flush to wherever the card's own `clipShape` happened to cut it off: not just an
-                // unpadded picker, but unpadded buttons too, on a card that had grown to nearly the
-                // full screen width. Capping the picker's own width is what stops that propagation.
-                .frame(maxWidth: 320)
+                // An EXACT fixed frame, not `.frame(maxWidth:)`. `maxWidth` is a PROPOSAL — it caps
+                // what's offered down to the child, but a rigid/UIKit-bridged child (`WheelDatePickerStyle`
+                // wraps a real `UIPickerView`) can still report a bigger size back UP to its parent
+                // regardless, and SwiftUI lets that propagate. `.clipped()` only trims what's DRAWN;
+                // it does nothing to the SIZE used for layout. Confirmed on-device with a border
+                // diagnostic (`AlertModalScaffold.card()`'s row-level border split into two
+                // disconnected rectangles exactly where the picker sat — its native size was
+                // corrupting the row's own reported width, and `buttonsMatchParent` faithfully copied
+                // that onto the buttons, which is why they read as unpadded). An EXACT `width:` is a
+                // real override — the view reports precisely that number to its parent no matter what
+                // its child wants — which `maxWidth` never was. 320 is still an unverified guess for
+                // the NUMBER (does it avoid clipping the picker's own content); the MECHANISM (exact
+                // vs max) is now confirmed.
+                .frame(width: 320)
                 .clipped()
                 // GUARANTEED gap on top of the cap — the cap alone bounds the OVERFLOW, it does not
                 // by itself leave any breathing room, so this is still needed. `contentPadding
