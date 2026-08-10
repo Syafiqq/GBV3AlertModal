@@ -141,6 +141,28 @@ public struct TextInputModalView: View {
 
 /// `DatePickerDialog` rendered in SwiftUI: a `DatePicker` inside the shared `AlertModalScaffold`
 /// chrome. Same shape as `TextInputModalView` — see it for why the scaffold lives in here.
+///
+/// **KNOWN, UNRESOLVED: this picker's own width propagates to the WHOLE `AlertModalScaffold` row**
+/// (title + picker + primary/secondary buttons, one `VStack`), pushing the buttons flush to the
+/// card edge instead of padded — `buttonsMatchParent` faithfully sizes them to whatever that row
+/// reports, and this picker is what corrupts the report. Confirmed with a controlled on-device
+/// experiment: swap the picker for an inert placeholder and the buttons pad correctly; put it back
+/// and they go flush again, independent of anything else in the shape's `Properties`.
+///
+/// Three pure-SwiftUI containment techniques were each tried on real device and NONE worked:
+/// `.frame(maxWidth:)` (a proposal, not an override — expected to fail and did), an EXACT
+/// `.frame(width:)` (a real override for ordinary SwiftUI content — still failed), and an
+/// `.overlay()`-based technique where an invisible fixed-size base view hosts the picker as
+/// decoration (whose reported size, per SwiftUI's own documented `overlay(content:)` contract,
+/// should never depend on what's overlaid — still failed). `WheelDatePickerStyle` does not let any
+/// SwiftUI-level frame constrain what it reports upward to its parent, by any technique tried.
+///
+/// The one technique that would reliably work — wrapping a raw `UIDatePicker` in a hand-built
+/// UIKit-view bridge with an explicit `sizeThatFits` override — is NOT available here without a
+/// real decision: this file is on `SwiftUIPurityTests`'s enforced pure-SwiftUI allow-list
+/// (`test_theBespokeAndInputViews_arePureSwiftUI`), reflecting this project's deliberate "SwiftUI
+/// half stays UIKit-free" direction. Left unclamped (the least-broken state — visible content, no
+/// padding, rather than a fourth failed containment layered on) until that's decided.
 @MainActor
 public struct DatePickerModalView: View {
     public let descriptor: DatePickerDialog
@@ -180,35 +202,18 @@ public struct DatePickerModalView: View {
             // The descriptor's range, honoured the way `DatePickerHolder` honours it. SwiftUI has
             // no single initialiser taking two optional bounds, so the four cases are spelled out —
             // `PartialRangeFrom`/`PartialRangeThrough` are what express "one end only".
-            // CONFIRMED on-device: `.frame(maxWidth:)` AND `.frame(width:)` (an exact override) both
-            // failed to stop this picker's own reported size from widening the whole row — swapping
-            // it for an inert placeholder was the control that proved it (buttons padded normally
-            // with no picker present, flush again with one, regardless of any frame modifier tried
-            // directly on it). `WheelDatePickerStyle` simply does not let its SwiftUI wrapper's frame
-            // constrain what it reports upward, no matter how that frame is spelled.
-            //
-            // This flips WHO decides the reported size instead of asking the picker to comply: an
-            // invisible, EXACTLY-sized `Color.clear` is the BASE view here, and the picker is drawn
-            // as an `.overlay()` ON TOP of it. `.overlay(content:)`'s reported size always comes from
-            // the BASE, never from `content` — that is the one part of this picker's layout SwiftUI
-            // does not hand back to the picker's own opinion, because the base never asks it.
-            // A hand-built UIKit-view wrapper was the other way to force this and is NOT an option:
-            // this file is on `SwiftUIPurityTests`'s enforced pure-SwiftUI list
-            // (`test_theBespokeAndInputViews_arePureSwiftUI`), which greps for exactly that pattern.
-            //
-            // 320×216 are both still GUESSES — width carried over from the failed frame attempts,
-            // height is a typical `.wheels`-style row-count estimate, neither measured against what
-            // this picker's own content actually needs. Confirm on-device; widen either if the wheel
-            // clips inside this box.
-            Color.clear
-                .frame(width: 320, height: 216)
-                .overlay(
-                    datePicker
-                        .datePickerStyle(WheelDatePickerStyle())
-                        .labelsHidden()
-                        .clipped()
-                )
-                .padding(.horizontal, tokens.contentPadding.leftMin)
+            // **UNRESOLVED — see the SwiftUIModalRenderer+InputViews.swift file doc.** Confirmed
+            // on-device with a controlled placeholder swap: this picker is what makes
+            // `AlertModalScaffold`'s primary/secondary buttons render flush to the card edge instead
+            // of padded, on every shape that uses it. THREE different pure-SwiftUI techniques —
+            // `.frame(maxWidth:)`, an exact `.frame(width:)`, and an `.overlay()`-based base-view
+            // override, which should not have been able to fail by SwiftUI's own documented
+            // contract — were each tried on real device and NONE changed anything. Left unclamped
+            // here rather than layering a fourth non-working attempt on top of the first three; see
+            // the file doc for the decision this is blocked on before a fifth is worth trying.
+            datePicker
+                .datePickerStyle(WheelDatePickerStyle())
+                .labelsHidden()
                 .padding(.bottom, tokens.gapBelowSubtitle)
         }
     }

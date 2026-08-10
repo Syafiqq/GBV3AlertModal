@@ -252,14 +252,10 @@ enum GeniePresets {
 
     static func datePickerInputModalProperties() -> ModalProperties {
         var properties = standardModalProperties()
-        // MUST match the picker's own `.frame(maxWidth:)` cap (`SwiftUIModalRenderer
-        // +InputViews.swift`) — a row ceiling narrower than the picker's own cap still overflows.
-        // 320 is still an unverified guess pending on-device confirmation; mirrors
-        // `UIKitFreeCatalogPresets.datePickerInput` in the example app.
-        properties.contentProperty?.fixedWidthPortrait = 320
-        properties.contentProperty?.maxWidthPortrait = 320
-        properties.contentProperty?.fixedWidthLandscape = 320
-        properties.contentProperty?.maxWidthLandscape = 320
+        // `contentProperty` deliberately NOT overridden: widening it was tried and had no
+        // observable effect on-device either way — the picker does not read this number in any
+        // direction (see `DatePickerModalView`'s doc). Left at `standard`'s real 256pt production
+        // column rather than kept at an unmotivated number that never did anything.
         properties.padding = UIMinMaxEdgeInsets(top: (20, 32), left: (12, 40), bottom: (16, 16), right: (12, 40))
         properties.titleFont = .system(size: 24, weight: .heavy)
         properties.space = ModalProperties.ComponentSpace(banner: 8, title: 0, subtitle: 8, interButton: 8)
