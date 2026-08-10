@@ -243,9 +243,21 @@ public struct DatePickerModalView: View {
             // four-branch dance the built-in type needed (no single initialiser takes two optional
             // bounds), `UIDatePicker.minimumDate`/`.maximumDate` are already optional, so the
             // descriptor's range passes straight through.
+            //
+            // `.frame(width:)` — WITHOUT this, `WheelDatePicker` reports whatever width the raw
+            // `UIDatePicker` prefers when genuinely unconstrained, which is the same failure this
+            // whole file exists to route around, just for a mundane reason this time (a missing
+            // frame at the call site) rather than an unreachable Apple bridge. A NORMAL
+            // `UIViewRepresentable`, unlike `SwiftUI.DatePicker(.wheel)`, DOES apply this constraint
+            // to the real view — that is the entire reason this type exists.
+            //
+            // `tokens.contentMaxWidth`, falling back to 256 (the real production column) only for
+            // `.standard`'s deliberately uncapped `.infinity` (no `Properties` to derive a cap
+            // from) — `.frame(width: .infinity)` is invalid and would size unpredictably.
             WheelDatePicker(
                 date: $date, minimumDate: descriptor.minimumDate, maximumDate: descriptor.maximumDate
             )
+            .frame(width: tokens.contentMaxWidth.isFinite ? tokens.contentMaxWidth : 256)
             .padding(.bottom, tokens.gapBelowSubtitle)
         }
     }
