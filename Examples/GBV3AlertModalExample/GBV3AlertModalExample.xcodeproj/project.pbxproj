@@ -3,17 +3,18 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 60;
+	objectVersion = 77;
 	objects = {
 
 /* Begin PBXBuildFile section */
 		5907CCAA2F258613006DF5A5 /* GBV3AlertModal in Frameworks */ = {isa = PBXBuildFile; productRef = 5907CCA92F258613006DF5A5 /* GBV3AlertModal */; };
-		5962A4B32935DFA100183658 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5962A4B22935DFA100183658 /* AppDelegate.swift */; };
-		5962A4B72935DFA100183658 /* ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5962A4B62935DFA100183658 /* ViewController.swift */; };
-		5962A4BA2935DFA100183658 /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 5962A4B82935DFA100183658 /* Main.storyboard */; };
-		5962A4BC2935DFA200183658 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 5962A4BB2935DFA200183658 /* Assets.xcassets */; };
-		5962A4BF2935DFA200183658 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 5962A4BD2935DFA200183658 /* LaunchScreen.storyboard */; };
-		5962A4CA2935DFA200183658 /* GBV3AlertModalExampleTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5962A4C92935DFA200183658 /* GBV3AlertModalExampleTests.swift */; };
+		AA01FF0000000000000000A3 /* ViewInspector in Frameworks */ = {isa = PBXBuildFile; productRef = AA01FF0000000000000000A2 /* ViewInspector */; };
+		AA02FF0000000000000000B3 /* SnapshotTesting in Frameworks */ = {isa = PBXBuildFile; productRef = AA02FF0000000000000000B2 /* SnapshotTesting */; };
+		3567F5F9DB3772B53171BFDA /* DialogCatalogSmokeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 67D7397FE64CF510E4C54DDA /* DialogCatalogSmokeTests.swift */; };
+		15D837B7443427679455B3AA /* AlertResolutionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 208B6DB5BEF6BE7A0B59FDFB /* AlertResolutionTests.swift */; };
+		368CAF3A43206A9CDAA09FAB /* SwiftUIAlertModalSmokeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E57904A58A5B83CC314F570 /* SwiftUIAlertModalSmokeTests.swift */; };
+		16EF31E2A1BDDBAEC29CA9AC /* SwiftUIDemoScreenSmokeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E2CF600334B8B8CA32375C4B /* SwiftUIDemoScreenSmokeTests.swift */; };
+		01B9BAB389F03BF4E18FF491 /* GenerationGuardTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE42C37D4823D8857ABCACE7 /* GenerationGuardTests.swift */; };
 		5962A4D42935DFA200183658 /* GBV3AlertModalExampleUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5962A4D32935DFA200183658 /* GBV3AlertModalExampleUITests.swift */; };
 		5962A4D62935DFA200183658 /* GBV3AlertModalExampleUITestsLaunchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5962A4D52935DFA200183658 /* GBV3AlertModalExampleUITestsLaunchTests.swift */; };
 /* End PBXBuildFile section */
@@ -37,18 +38,37 @@
 
 /* Begin PBXFileReference section */
 		5962A4AF2935DFA100183658 /* GBV3AlertModalExample.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = GBV3AlertModalExample.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		5962A4B22935DFA100183658 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
-		5962A4B62935DFA100183658 /* ViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewController.swift; sourceTree = "<group>"; };
-		5962A4B92935DFA100183658 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/Main.storyboard; sourceTree = "<group>"; };
-		5962A4BB2935DFA200183658 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
-		5962A4BE2935DFA200183658 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
-		5962A4C02935DFA200183658 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		5962A4C52935DFA200183658 /* GBV3AlertModalExampleTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = GBV3AlertModalExampleTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-		5962A4C92935DFA200183658 /* GBV3AlertModalExampleTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GBV3AlertModalExampleTests.swift; sourceTree = "<group>"; };
+		67D7397FE64CF510E4C54DDA /* DialogCatalogSmokeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DialogCatalogSmokeTests.swift; sourceTree = "<group>"; };
+		208B6DB5BEF6BE7A0B59FDFB /* AlertResolutionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlertResolutionTests.swift; sourceTree = "<group>"; };
+		0E57904A58A5B83CC314F570 /* SwiftUIAlertModalSmokeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SwiftUIAlertModalSmokeTests.swift; sourceTree = "<group>"; };
+		E2CF600334B8B8CA32375C4B /* SwiftUIDemoScreenSmokeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SwiftUIDemoScreenSmokeTests.swift; sourceTree = "<group>"; };
+		EE42C37D4823D8857ABCACE7 /* GenerationGuardTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GenerationGuardTests.swift; sourceTree = "<group>"; };
 		5962A4CF2935DFA200183658 /* GBV3AlertModalExampleUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = GBV3AlertModalExampleUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		5962A4D32935DFA200183658 /* GBV3AlertModalExampleUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GBV3AlertModalExampleUITests.swift; sourceTree = "<group>"; };
 		5962A4D52935DFA200183658 /* GBV3AlertModalExampleUITestsLaunchTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GBV3AlertModalExampleUITestsLaunchTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		2C900388D44C7837D3ED1A6E /* Exceptions for "GBV3AlertModalExample" folder in "GBV3AlertModalExample" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 5962A4AE2935DFA100183658 /* GBV3AlertModalExample */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
+/* Begin PBXFileSystemSynchronizedRootGroup section */
+		AC2006C6BA6E8D27A8C6647C /* GBV3AlertModalExample */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				2C900388D44C7837D3ED1A6E /* Exceptions for "GBV3AlertModalExample" folder in "GBV3AlertModalExample" target */,
+			);
+			path = GBV3AlertModalExample;
+			sourceTree = "<group>";
+		};
+/* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
 		5962A4AC2935DFA100183658 /* Frameworks */ = {
@@ -63,6 +83,8 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				AA01FF0000000000000000A3 /* ViewInspector in Frameworks */,
+				AA02FF0000000000000000B3 /* SnapshotTesting in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -79,7 +101,7 @@
 		5962A4A62935DFA100183658 = {
 			isa = PBXGroup;
 			children = (
-				5962A4B12935DFA100183658 /* GBV3AlertModalExample */,
+				AC2006C6BA6E8D27A8C6647C /* GBV3AlertModalExample */,
 				5962A4C82935DFA200183658 /* GBV3AlertModalExampleTests */,
 				5962A4D22935DFA200183658 /* GBV3AlertModalExampleUITests */,
 				5962A4B02935DFA100183658 /* Products */,
@@ -96,23 +118,14 @@
 			name = Products;
 			sourceTree = "<group>";
 		};
-		5962A4B12935DFA100183658 /* GBV3AlertModalExample */ = {
-			isa = PBXGroup;
-			children = (
-				5962A4B22935DFA100183658 /* AppDelegate.swift */,
-				5962A4B62935DFA100183658 /* ViewController.swift */,
-				5962A4B82935DFA100183658 /* Main.storyboard */,
-				5962A4BB2935DFA200183658 /* Assets.xcassets */,
-				5962A4BD2935DFA200183658 /* LaunchScreen.storyboard */,
-				5962A4C02935DFA200183658 /* Info.plist */,
-			);
-			path = GBV3AlertModalExample;
-			sourceTree = "<group>";
-		};
 		5962A4C82935DFA200183658 /* GBV3AlertModalExampleTests */ = {
 			isa = PBXGroup;
 			children = (
-				5962A4C92935DFA200183658 /* GBV3AlertModalExampleTests.swift */,
+				67D7397FE64CF510E4C54DDA /* DialogCatalogSmokeTests.swift */,
+				208B6DB5BEF6BE7A0B59FDFB /* AlertResolutionTests.swift */,
+				0E57904A58A5B83CC314F570 /* SwiftUIAlertModalSmokeTests.swift */,
+				E2CF600334B8B8CA32375C4B /* SwiftUIDemoScreenSmokeTests.swift */,
+				EE42C37D4823D8857ABCACE7 /* GenerationGuardTests.swift */,
 			);
 			path = GBV3AlertModalExampleTests;
 			sourceTree = "<group>";
@@ -141,6 +154,9 @@
 			);
 			dependencies = (
 			);
+			fileSystemSynchronizedGroups = (
+				AC2006C6BA6E8D27A8C6647C /* GBV3AlertModalExample */,
+			);
 			name = GBV3AlertModalExample;
 			productName = GBV3AlertModalExample;
 			productReference = 5962A4AF2935DFA100183658 /* GBV3AlertModalExample.app */;
@@ -160,6 +176,10 @@
 				5962A4C72935DFA200183658 /* PBXTargetDependency */,
 			);
 			name = GBV3AlertModalExampleTests;
+			packageProductDependencies = (
+				AA01FF0000000000000000A2 /* ViewInspector */,
+				AA02FF0000000000000000B2 /* SnapshotTesting */,
+			);
 			productName = GBV3AlertModalExampleTests;
 			productReference = 5962A4C52935DFA200183658 /* GBV3AlertModalExampleTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
@@ -190,7 +210,7 @@
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
 				LastSwiftUpdateCheck = 1410;
-				LastUpgradeCheck = 1510;
+				LastUpgradeCheck = 2600;
 				TargetAttributes = {
 					5962A4AE2935DFA100183658 = {
 						CreatedOnToolsVersion = 14.1;
@@ -206,7 +226,7 @@
 				};
 			};
 			buildConfigurationList = 5962A4AA2935DFA100183658 /* Build configuration list for PBXProject "GBV3AlertModalExample" */;
-			compatibilityVersion = "Xcode 14.0";
+			compatibilityVersion = "Xcode 16.0";
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
@@ -215,7 +235,9 @@
 			);
 			mainGroup = 5962A4A62935DFA100183658;
 			packageReferences = (
-				5907CCA82F258613006DF5A5 /* XCRemoteSwiftPackageReference "GBV3AlertModal" */,
+				C26FFF611997680E529907C4 /* XCLocalSwiftPackageReference ".." */,
+				AA01FF0000000000000000A1 /* XCRemoteSwiftPackageReference "ViewInspector" */,
+				AA02FF0000000000000000B1 /* XCRemoteSwiftPackageReference "swift-snapshot-testing" */,
 			);
 			productRefGroup = 5962A4B02935DFA100183658 /* Products */;
 			projectDirPath = "";
@@ -233,9 +255,6 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				5962A4BF2935DFA200183658 /* LaunchScreen.storyboard in Resources */,
-				5962A4BC2935DFA200183658 /* Assets.xcassets in Resources */,
-				5962A4BA2935DFA100183658 /* Main.storyboard in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -260,8 +279,6 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				5962A4B72935DFA100183658 /* ViewController.swift in Sources */,
-				5962A4B32935DFA100183658 /* AppDelegate.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -269,7 +286,11 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				5962A4CA2935DFA200183658 /* GBV3AlertModalExampleTests.swift in Sources */,
+				3567F5F9DB3772B53171BFDA /* DialogCatalogSmokeTests.swift in Sources */,
+				15D837B7443427679455B3AA /* AlertResolutionTests.swift in Sources */,
+				368CAF3A43206A9CDAA09FAB /* SwiftUIAlertModalSmokeTests.swift in Sources */,
+				16EF31E2A1BDDBAEC29CA9AC /* SwiftUIDemoScreenSmokeTests.swift in Sources */,
+				01B9BAB389F03BF4E18FF491 /* GenerationGuardTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -296,25 +317,6 @@
 			targetProxy = 5962A4D02935DFA200183658 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
-
-/* Begin PBXVariantGroup section */
-		5962A4B82935DFA100183658 /* Main.storyboard */ = {
-			isa = PBXVariantGroup;
-			children = (
-				5962A4B92935DFA100183658 /* Base */,
-			);
-			name = Main.storyboard;
-			sourceTree = "<group>";
-		};
-		5962A4BD2935DFA200183658 /* LaunchScreen.storyboard */ = {
-			isa = PBXVariantGroup;
-			children = (
-				5962A4BE2935DFA200183658 /* Base */,
-			);
-			name = LaunchScreen.storyboard;
-			sourceTree = "<group>";
-		};
-/* End PBXVariantGroup section */
 
 /* Begin XCBuildConfiguration section */
 		5962A4D72935DFA200183658 /* Debug */ = {
@@ -368,7 +370,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 13.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
@@ -423,7 +425,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 13.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				SDKROOT = iphoneos;
@@ -445,10 +447,9 @@
 				INFOPLIST_FILE = GBV3AlertModalExample/Info.plist;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
-				INFOPLIST_KEY_UIMainStoryboardFile = Main;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				IPHONEOS_DEPLOYMENT_TARGET = 13.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -460,7 +461,8 @@
 				SUPPORTS_MACCATALYST = NO;
 				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = YES;
 				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_VERSION = 5.0;
+				SWIFT_STRICT_CONCURRENCY = complete;
+				SWIFT_VERSION = 6.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Debug;
@@ -477,10 +479,9 @@
 				INFOPLIST_FILE = GBV3AlertModalExample/Info.plist;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
-				INFOPLIST_KEY_UIMainStoryboardFile = Main;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				IPHONEOS_DEPLOYMENT_TARGET = 13.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -492,7 +493,8 @@
 				SUPPORTS_MACCATALYST = NO;
 				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = YES;
 				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_VERSION = 5.0;
+				SWIFT_STRICT_CONCURRENCY = complete;
+				SWIFT_VERSION = 6.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Release;
@@ -505,7 +507,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 68M5L3KNEH;
 				GENERATE_INFOPLIST_FILE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 13.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.geniebook.GBV3AlertModalExampleTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -513,7 +515,7 @@
 				SUPPORTS_MACCATALYST = NO;
 				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = YES;
 				SWIFT_EMIT_LOC_STRINGS = NO;
-				SWIFT_VERSION = 5.0;
+				SWIFT_VERSION = 6.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/GBV3AlertModalExample.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/GBV3AlertModalExample";
 			};
@@ -527,7 +529,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 68M5L3KNEH;
 				GENERATE_INFOPLIST_FILE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 13.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.geniebook.GBV3AlertModalExampleTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -535,7 +537,7 @@
 				SUPPORTS_MACCATALYST = NO;
 				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = YES;
 				SWIFT_EMIT_LOC_STRINGS = NO;
-				SWIFT_VERSION = 5.0;
+				SWIFT_VERSION = 6.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/GBV3AlertModalExample.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/GBV3AlertModalExample";
 			};
@@ -548,7 +550,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 68M5L3KNEH;
 				GENERATE_INFOPLIST_FILE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 13.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.geniebook.GBV3AlertModalExampleUITests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -556,7 +558,7 @@
 				SUPPORTS_MACCATALYST = NO;
 				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = YES;
 				SWIFT_EMIT_LOC_STRINGS = NO;
-				SWIFT_VERSION = 5.0;
+				SWIFT_VERSION = 6.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 				TEST_TARGET_NAME = GBV3AlertModalExample;
 			};
@@ -569,7 +571,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 68M5L3KNEH;
 				GENERATE_INFOPLIST_FILE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 13.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.geniebook.GBV3AlertModalExampleUITests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -577,7 +579,7 @@
 				SUPPORTS_MACCATALYST = NO;
 				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = YES;
 				SWIFT_EMIT_LOC_STRINGS = NO;
-				SWIFT_VERSION = 5.0;
+				SWIFT_VERSION = 6.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 				TEST_TARGET_NAME = GBV3AlertModalExample;
 			};
@@ -624,13 +626,28 @@
 		};
 /* End XCConfigurationList section */
 
+/* Begin XCLocalSwiftPackageReference section */
+		C26FFF611997680E529907C4 /* XCLocalSwiftPackageReference ".." */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = ../..;
+		};
+/* End XCLocalSwiftPackageReference section */
+
 /* Begin XCRemoteSwiftPackageReference section */
-		5907CCA82F258613006DF5A5 /* XCRemoteSwiftPackageReference "GBV3AlertModal" */ = {
+		AA01FF0000000000000000A1 /* XCRemoteSwiftPackageReference "ViewInspector" */ = {
 			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "git@github.com:Syafiqq/GBV3AlertModal.git";
+			repositoryURL = "https://github.com/nalexn/ViewInspector";
 			requirement = {
-				branch = main;
-				kind = branch;
+				kind = upToNextMajorVersion;
+				minimumVersion = 0.9.0;
+			};
+		};
+		AA02FF0000000000000000B1 /* XCRemoteSwiftPackageReference "swift-snapshot-testing" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/pointfreeco/swift-snapshot-testing.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.17.0;
 			};
 		};
 /* End XCRemoteSwiftPackageReference section */
@@ -638,8 +655,18 @@
 /* Begin XCSwiftPackageProductDependency section */
 		5907CCA92F258613006DF5A5 /* GBV3AlertModal */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = 5907CCA82F258613006DF5A5 /* XCRemoteSwiftPackageReference "GBV3AlertModal" */;
+			package = C26FFF611997680E529907C4 /* XCLocalSwiftPackageReference ".." */;
 			productName = GBV3AlertModal;
+		};
+		AA01FF0000000000000000A2 /* ViewInspector */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = AA01FF0000000000000000A1 /* XCRemoteSwiftPackageReference "ViewInspector" */;
+			productName = ViewInspector;
+		};
+		AA02FF0000000000000000B2 /* SnapshotTesting */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = AA02FF0000000000000000B1 /* XCRemoteSwiftPackageReference "swift-snapshot-testing" */;
+			productName = SnapshotTesting;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};
