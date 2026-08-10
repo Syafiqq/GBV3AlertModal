@@ -136,8 +136,19 @@ enum SwiftUICatalogPresets {
     }
 
     /// `date-picker-worksheet`.
+    ///
+    /// `contentProperty` MUST match the picker's own `.frame(maxWidth:)` cap in
+    /// `SwiftUIModalRenderer+InputViews.swift` exactly — a row ceiling narrower than what the
+    /// picker itself is capped to still overflows, just by a different amount, so these two
+    /// numbers are one fix applied in two places, not two independent ones. 320 is still an
+    /// UNVERIFIED guess pending on-device confirmation (see `UIKitFreeCatalogPresets
+    /// .datePickerInput`, which carries the identical override for the same reason).
     static var datePickerInput: GBAlertModal.Properties {
         GalleryPresets.properties.copy(
+            contentProperty: GalleryPresets.contentProperty.copy(
+                fixedWidthPortrait: 320, maxWidthPortrait: 320,
+                fixedWidthLandscape: 320, maxWidthLandscape: 320
+            ),
             padding: GalleryPresets.padding.copy(
                 top: (20, 32),
                 left: (12, 40),

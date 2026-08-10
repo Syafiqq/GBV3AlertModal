@@ -213,6 +213,15 @@ enum UIKitFreeCatalogPresets {
 
     static var datePickerInput: ModalProperties {
         var properties = GalleryPresets.standardModalProperties
+        // MUST match the picker's own `.frame(maxWidth:)` cap in `SwiftUIModalRenderer
+        // +InputViews.swift` exactly. A row's outer ceiling narrower than what the picker is
+        // itself capped to still overflows — the picker becomes the widest child either way,
+        // just by a different amount — so these two numbers are one fix, not two independent ones.
+        // 320 is still an UNVERIFIED guess pending on-device confirmation.
+        properties.contentProperty?.fixedWidthPortrait = 320
+        properties.contentProperty?.maxWidthPortrait = 320
+        properties.contentProperty?.fixedWidthLandscape = 320
+        properties.contentProperty?.maxWidthLandscape = 320
         properties.padding = UIMinMaxEdgeInsets(top: (20, 32), left: (12, 40), bottom: (16, 16), right: (12, 40))
         properties.titleFont = .system(size: 24, weight: .heavy)
         properties.space = ModalProperties.ComponentSpace(banner: 8, title: 0, subtitle: 8, interButton: 8)
