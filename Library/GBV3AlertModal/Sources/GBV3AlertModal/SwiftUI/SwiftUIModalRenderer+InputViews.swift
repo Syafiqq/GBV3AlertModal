@@ -1,5 +1,7 @@
 import Foundation // `Date` / `AttributedString` — the descriptors' own vocabulary.
 import SwiftUI
+import UIKit // `WheelDatePicker` only — see its own doc for why this is a deliberate, owner-approved
+             // exception to this file's usual UIKit-free rule, not a quiet regression.
 
 // The SwiftUI mirror of `UIKitModalRenderer+InputHolders.swift`, one-for-one:
 //
@@ -139,30 +141,71 @@ public struct TextInputModalView: View {
     }
 }
 
+/// A raw `UIDatePicker` (`.date` mode, `.wheels` style), pinned by the ordinary SwiftUI
+/// `UIViewRepresentable` hosting contract — NOT the built-in `SwiftUI.DatePicker(.wheel)`.
+///
+/// **Why this exists — an owner-approved exception, not a quiet regression.** `SwiftUI.DatePicker`
+/// styled `.wheel` wraps `UIPickerView`/`UIDatePicker` through Apple's own PRIVATE bridge, and that
+/// bridge does not forward any SwiftUI-level frame constraint down to the real picker — confirmed
+/// on real device, three separate ways: `.frame(maxWidth:)` (a proposal, expected to fail), an
+/// EXACT `.frame(width:)` (a real override for ordinary SwiftUI content — still failed), and an
+/// `.overlay()`-based base-view technique that should not have been able to fail by SwiftUI's own
+/// documented `overlay(content:)` contract — still failed. A controlled placeholder swap confirmed
+/// the picker (not `Properties`, not the scaffold, not anything else in this shape) is what
+/// corrupts `AlertModalScaffold`'s row: `buttonsMatchParent` sizes the primary/secondary buttons to
+/// whatever that row reports, and the built-in picker was reporting something the row never asked
+/// for, flush to the card edge.
+///
+/// This works because a representable WE author goes through the ORDINARY `UIViewRepresentable`
+/// hosting contract, which DOES apply SwiftUI's computed frame to the underlying `UIView` directly
+/// — no opaque bridge in the way. `UIDatePicker`'s own `.wheels` layout then reflows its
+/// month/day/year columns to fit whatever width it is actually given, the same way it already does
+/// at the real production call site (`GeniePresets.datePickerWorksheet()` in this repo's own test
+/// fixtures) and the same way UIKit's own gallery entry for this shape already renders.
+///
+/// Deliberately on `SwiftUIPurityTests`'s `permittedUIKitImporters` allow-list with this file's
+/// name and this reason, rather than adding a silent import: the allow-list's whole point is that a
+/// new UIKit dependency is a decision, made by editing that list, not a line added at the top of a
+/// file (see that test's own doc).
+struct WheelDatePicker: UIViewRepresentable {
+    @Binding var date: Date
+    let minimumDate: Date?
+    let maximumDate: Date?
+
+    func makeUIView(context: Context) -> UIDatePicker {
+        let picker = UIDatePicker()
+        picker.datePickerMode = .date
+        picker.preferredDatePickerStyle = .wheels
+        picker.minimumDate = minimumDate
+        picker.maximumDate = maximumDate
+        picker.date = date
+        picker.addTarget(
+            context.coordinator, action: #selector(Coordinator.dateChanged(_:)), for: .valueChanged
+        )
+        return picker
+    }
+
+    /// `date` is written back only when it actually differs — `UIDatePicker.date` round-trips
+    /// through calendar/timezone normalization, so writing it unconditionally on every SwiftUI
+    /// update pass (which `updateUIView` gets called on for reasons unrelated to the date changing)
+    /// can fight the user mid-scroll.
+    func updateUIView(_ uiView: UIDatePicker, context: Context) {
+        if uiView.date != date { uiView.date = date }
+        uiView.minimumDate = minimumDate
+        uiView.maximumDate = maximumDate
+    }
+
+    func makeCoordinator() -> Coordinator { Coordinator(date: $date) }
+
+    final class Coordinator: NSObject {
+        let date: Binding<Date>
+        init(date: Binding<Date>) { self.date = date }
+        @objc func dateChanged(_ sender: UIDatePicker) { date.wrappedValue = sender.date }
+    }
+}
+
 /// `DatePickerDialog` rendered in SwiftUI: a `DatePicker` inside the shared `AlertModalScaffold`
 /// chrome. Same shape as `TextInputModalView` — see it for why the scaffold lives in here.
-///
-/// **KNOWN, UNRESOLVED: this picker's own width propagates to the WHOLE `AlertModalScaffold` row**
-/// (title + picker + primary/secondary buttons, one `VStack`), pushing the buttons flush to the
-/// card edge instead of padded — `buttonsMatchParent` faithfully sizes them to whatever that row
-/// reports, and this picker is what corrupts the report. Confirmed with a controlled on-device
-/// experiment: swap the picker for an inert placeholder and the buttons pad correctly; put it back
-/// and they go flush again, independent of anything else in the shape's `Properties`.
-///
-/// Three pure-SwiftUI containment techniques were each tried on real device and NONE worked:
-/// `.frame(maxWidth:)` (a proposal, not an override — expected to fail and did), an EXACT
-/// `.frame(width:)` (a real override for ordinary SwiftUI content — still failed), and an
-/// `.overlay()`-based technique where an invisible fixed-size base view hosts the picker as
-/// decoration (whose reported size, per SwiftUI's own documented `overlay(content:)` contract,
-/// should never depend on what's overlaid — still failed). `WheelDatePickerStyle` does not let any
-/// SwiftUI-level frame constrain what it reports upward to its parent, by any technique tried.
-///
-/// The one technique that would reliably work — wrapping a raw `UIDatePicker` in a hand-built
-/// UIKit-view bridge with an explicit `sizeThatFits` override — is NOT available here without a
-/// real decision: this file is on `SwiftUIPurityTests`'s enforced pure-SwiftUI allow-list
-/// (`test_theBespokeAndInputViews_arePureSwiftUI`), reflecting this project's deliberate "SwiftUI
-/// half stays UIKit-free" direction. Left unclamped (the least-broken state — visible content, no
-/// padding, rather than a fourth failed containment layered on) until that's decided.
 @MainActor
 public struct DatePickerModalView: View {
     public let descriptor: DatePickerDialog
@@ -196,42 +239,14 @@ public struct DatePickerModalView: View {
             }
         ) {
             titleView
-            // `.date` only + wheels — the same two choices `DatePickerHolder` makes
-            // (`datePickerMode = .date`, `preferredDatePickerStyle = .wheels`).
-            // `WheelDatePickerStyle` is iOS 13+, safely inside the iOS 15 floor.
-            // The descriptor's range, honoured the way `DatePickerHolder` honours it. SwiftUI has
-            // no single initialiser taking two optional bounds, so the four cases are spelled out —
-            // `PartialRangeFrom`/`PartialRangeThrough` are what express "one end only".
-            // **UNRESOLVED — see the SwiftUIModalRenderer+InputViews.swift file doc.** Confirmed
-            // on-device with a controlled placeholder swap: this picker is what makes
-            // `AlertModalScaffold`'s primary/secondary buttons render flush to the card edge instead
-            // of padded, on every shape that uses it. THREE different pure-SwiftUI techniques —
-            // `.frame(maxWidth:)`, an exact `.frame(width:)`, and an `.overlay()`-based base-view
-            // override, which should not have been able to fail by SwiftUI's own documented
-            // contract — were each tried on real device and NONE changed anything. Left unclamped
-            // here rather than layering a fourth non-working attempt on top of the first three; see
-            // the file doc for the decision this is blocked on before a fifth is worth trying.
-            datePicker
-                .datePickerStyle(WheelDatePickerStyle())
-                .labelsHidden()
-                .padding(.bottom, tokens.gapBelowSubtitle)
-        }
-    }
-
-    /// `DatePicker` has a distinct initialiser per bound combination, so the descriptor's optional
-    /// range becomes four branches rather than one expression. Unbounded is the default and matches
-    /// `UIDatePicker`'s, so an existing caller that sets neither is unaffected.
-    @ViewBuilder
-    private var datePicker: some View {
-        switch (descriptor.minimumDate, descriptor.maximumDate) {
-        case let (minimum?, maximum?):
-            DatePicker("", selection: $date, in: minimum...maximum, displayedComponents: [.date])
-        case let (minimum?, nil):
-            DatePicker("", selection: $date, in: minimum..., displayedComponents: [.date])
-        case let (nil, maximum?):
-            DatePicker("", selection: $date, in: ...maximum, displayedComponents: [.date])
-        case (nil, nil):
-            DatePicker("", selection: $date, displayedComponents: [.date])
+            // `WheelDatePicker`, not `SwiftUI.DatePicker` — see its own doc for why. Unlike the
+            // four-branch dance the built-in type needed (no single initialiser takes two optional
+            // bounds), `UIDatePicker.minimumDate`/`.maximumDate` are already optional, so the
+            // descriptor's range passes straight through.
+            WheelDatePicker(
+                date: $date, minimumDate: descriptor.minimumDate, maximumDate: descriptor.maximumDate
+            )
+            .padding(.bottom, tokens.gapBelowSubtitle)
         }
     }
 

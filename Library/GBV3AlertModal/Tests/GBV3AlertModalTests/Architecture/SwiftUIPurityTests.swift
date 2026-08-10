@@ -6,10 +6,16 @@ import XCTest
 /// The direction spec's §3 listed "four bespoke views — text input, date picker, badge, loading —
 /// all delegate to `UIKitModalRenderer` because descriptors cannot carry a `UIView`" as work
 /// remaining for Pass 4. That was measured false: `SwiftUIModalRenderer+InputViews.swift` and
-/// `+BespokeViews.swift` are 673 lines of native SwiftUI between them, import no UIKit, contain no
-/// `UIViewRepresentable`, and are the RICHER half — `BadgeDialog`'s grid has no UIKit content view
-/// in this library at all, and `LoadingDialog.isLoading` has no UIKit expression
+/// `+BespokeViews.swift` were 673 lines of native SwiftUI between them, importing no UIKit,
+/// containing no `UIViewRepresentable`, and were the RICHER half — `BadgeDialog`'s grid has no
+/// UIKit content view in this library at all, and `LoadingDialog.isLoading` has no UIKit expression
 /// (`UIKitModalRenderer.registerBuiltInDescriptors` says so itself).
+///
+/// `+InputViews.swift` has since gained ONE owner-approved exception: `WheelDatePicker` (a raw
+/// `UIDatePicker` behind `UIViewRepresentable`), because `SwiftUI.DatePicker(.wheel)` was measured
+/// — three separate ways, on real device — not to let any SwiftUI-level frame constrain what it
+/// reports to its parent, corrupting `AlertModalScaffold`'s button row on every shape that uses it.
+/// See `WheelDatePicker`'s own doc for the full account. `+BespokeViews.swift` remains fully pure.
 ///
 /// A claim like that rots the moment someone adds an import for a quick fix, which is precisely how
 /// §3's row came to be wrong. `CorePurityTests` solves the same problem for `Core/` by making the
@@ -44,6 +50,20 @@ final class SwiftUIPurityTests: XCTestCase {
     ///   (Pass 5 step 6). `ModalImage`'s bundle-relative asset resolution is inherently a UIKit-region
     ///   question as long as banners are loaded by name.
     ///
+    /// - `SwiftUIModalRenderer+InputViews.swift`: **owner-approved, scoped to `WheelDatePicker`.**
+    ///   `SwiftUI.DatePicker(.wheel)` wraps `UIPickerView`/`UIDatePicker` through Apple's own
+    ///   PRIVATE bridge, and that bridge does not forward any SwiftUI-level frame constraint down
+    ///   to the real picker — confirmed on real device, three separate ways (`.frame(maxWidth:)`,
+    ///   an EXACT `.frame(width:)`, and an `.overlay()`-based technique that should not have been
+    ///   able to fail by SwiftUI's own documented contract), each of which left
+    ///   `AlertModalScaffold`'s primary/secondary buttons rendering flush to the card edge instead
+    ///   of padded — `buttonsMatchParent` faithfully copies whatever the row reports, and the
+    ///   built-in picker was reporting something the row never asked for. `WheelDatePicker` is a
+    ///   raw `UIDatePicker` behind the ORDINARY `UIViewRepresentable` hosting contract instead,
+    ///   which DOES apply SwiftUI's computed frame to the real view, the same way the production
+    ///   UIKit gallery entry for this shape already constrains its own `UIDatePicker`. See
+    ///   `WheelDatePicker`'s own doc for the full account of what was tried first.
+    ///
     /// `AlertModalScaffold.swift` was on this list and is NOT any more: it imported UIKit and used
     /// zero UIKit symbols. A dead import is how an allow-list becomes a fiction.
     private static let permittedUIKitImporters: Set<String> = [
@@ -52,7 +72,8 @@ final class SwiftUIPurityTests: XCTestCase {
         "AttributedTextBridge.swift",
         "SwiftUIModalRenderer.swift",
         "DataHolder+ModalContentInputs.swift",
-        "ModalContent.swift"
+        "ModalContent.swift",
+        "SwiftUIModalRenderer+InputViews.swift"
     ]
 
     private var swiftUISwiftFiles: [URL] {
@@ -115,11 +136,15 @@ final class SwiftUIPurityTests: XCTestCase {
 
     /// **The bespoke views are native, and this is the assertion that says so.**
     ///
-    /// Named explicitly rather than left to the general check above, because these four are what §3
-    /// claimed still delegated to UIKit. Naming them means the correction is pinned to the specific
+    /// Named explicitly rather than left to the general check above, because these were what §3
+    /// claimed still delegated to UIKit. Naming it means the correction is pinned to the specific
     /// claim it corrects, and a future reader diffing the spec against the code lands here.
-    func test_theBespokeAndInputViews_arePureSwiftUI() throws {
-        for name in ["SwiftUIModalRenderer+BespokeViews.swift", "SwiftUIModalRenderer+InputViews.swift"] {
+    ///
+    /// `+InputViews.swift` dropped OFF this list deliberately (`WheelDatePicker`, see
+    /// `permittedUIKitImporters`'s own doc) — it is on the allow-list above instead, which is the
+    /// honest place for a file with one, named, owner-approved exception rather than none.
+    func test_theBespokeViews_arePureSwiftUI() throws {
+        for name in ["SwiftUIModalRenderer+BespokeViews.swift"] {
             let file = try XCTUnwrap(swiftUISwiftFiles.first { $0.lastPathComponent == name })
             let source = try String(contentsOf: file, encoding: .utf8)
 
@@ -136,6 +161,30 @@ final class SwiftUIPurityTests: XCTestCase {
                 "\(name) wraps a UIKit view"
             )
         }
+    }
+
+    /// **`WheelDatePicker` is the ONLY UIKit-facing surface `+InputViews.swift` is allowed to have.**
+    /// The general checks above prove the file imports UIKit and wraps a representable — this
+    /// proves it does not do so anywhere else, so the exception stays exactly as scoped as its
+    /// reason claims.
+    func test_inputViews_onlyWheelDatePicker_touchesUIKit() throws {
+        let file = try XCTUnwrap(
+            swiftUISwiftFiles.first { $0.lastPathComponent == "SwiftUIModalRenderer+InputViews.swift" }
+        )
+        let source = try String(contentsOf: file, encoding: .utf8)
+        // `": UIViewRepresentable"` (the conformance syntax), not a bare substring match — the file's
+        // own doc comments legitimately say "UIViewRepresentable" in prose more than once explaining
+        // WHY `WheelDatePicker` exists, and a raw substring count would false-positive on those.
+        let conformanceCount = source.components(separatedBy: ": UIViewRepresentable").count - 1
+        XCTAssertEqual(
+            conformanceCount, 1,
+            "expected exactly one `: UIViewRepresentable` conformance (WheelDatePicker) — found "
+                + "\(conformanceCount). If this is a second exception it needs its own reason in "
+                + "permittedUIKitImporters, not a silent addition alongside the first."
+        )
+        XCTAssertFalse(
+            source.contains("UIViewControllerRepresentable"), "\(file.lastPathComponent) wraps a view controller"
+        )
     }
 
     /// Same textual matcher `CorePurityTests` uses, narrowed to UIKit — SwiftUI files may of course
