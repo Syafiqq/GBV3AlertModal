@@ -180,27 +180,34 @@ public struct DatePickerModalView: View {
             // The descriptor's range, honoured the way `DatePickerHolder` honours it. SwiftUI has
             // no single initialiser taking two optional bounds, so the four cases are spelled out —
             // `PartialRangeFrom`/`PartialRangeThrough` are what express "one end only".
-            datePicker
-                .datePickerStyle(WheelDatePickerStyle())
-                .labelsHidden()
-                // An EXACT fixed frame, not `.frame(maxWidth:)`. `maxWidth` is a PROPOSAL — it caps
-                // what's offered down to the child, but a rigid/UIKit-bridged child (`WheelDatePickerStyle`
-                // wraps a real `UIPickerView`) can still report a bigger size back UP to its parent
-                // regardless, and SwiftUI lets that propagate. `.clipped()` only trims what's DRAWN;
-                // it does nothing to the SIZE used for layout. Confirmed on-device with a border
-                // diagnostic (`AlertModalScaffold.card()`'s row-level border split into two
-                // disconnected rectangles exactly where the picker sat — its native size was
-                // corrupting the row's own reported width, and `buttonsMatchParent` faithfully copied
-                // that onto the buttons, which is why they read as unpadded). An EXACT `width:` is a
-                // real override — the view reports precisely that number to its parent no matter what
-                // its child wants — which `maxWidth` never was. 320 is still an unverified guess for
-                // the NUMBER (does it avoid clipping the picker's own content); the MECHANISM (exact
-                // vs max) is now confirmed.
-                .frame(width: 320)
-                .clipped()
-                // GUARANTEED gap on top of the cap — the cap alone bounds the OVERFLOW, it does not
-                // by itself leave any breathing room, so this is still needed. `contentPadding
-                // .leftMin` (12pt) is this shape's own stated floor, not a new number.
+            // CONFIRMED on-device: `.frame(maxWidth:)` AND `.frame(width:)` (an exact override) both
+            // failed to stop this picker's own reported size from widening the whole row — swapping
+            // it for an inert placeholder was the control that proved it (buttons padded normally
+            // with no picker present, flush again with one, regardless of any frame modifier tried
+            // directly on it). `WheelDatePickerStyle` simply does not let its SwiftUI wrapper's frame
+            // constrain what it reports upward, no matter how that frame is spelled.
+            //
+            // This flips WHO decides the reported size instead of asking the picker to comply: an
+            // invisible, EXACTLY-sized `Color.clear` is the BASE view here, and the picker is drawn
+            // as an `.overlay()` ON TOP of it. `.overlay(content:)`'s reported size always comes from
+            // the BASE, never from `content` — that is the one part of this picker's layout SwiftUI
+            // does not hand back to the picker's own opinion, because the base never asks it.
+            // A hand-built UIKit-view wrapper was the other way to force this and is NOT an option:
+            // this file is on `SwiftUIPurityTests`'s enforced pure-SwiftUI list
+            // (`test_theBespokeAndInputViews_arePureSwiftUI`), which greps for exactly that pattern.
+            //
+            // 320×216 are both still GUESSES — width carried over from the failed frame attempts,
+            // height is a typical `.wheels`-style row-count estimate, neither measured against what
+            // this picker's own content actually needs. Confirm on-device; widen either if the wheel
+            // clips inside this box.
+            Color.clear
+                .frame(width: 320, height: 216)
+                .overlay(
+                    datePicker
+                        .datePickerStyle(WheelDatePickerStyle())
+                        .labelsHidden()
+                        .clipped()
+                )
                 .padding(.horizontal, tokens.contentPadding.leftMin)
                 .padding(.bottom, tokens.gapBelowSubtitle)
         }
