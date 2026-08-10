@@ -29,6 +29,16 @@ extension GBAlertModal {
 
         public let space: ComponentSpace?
 
+        // `contentScrollable` lived here and is DELETED. It opted the SwiftUI backend into an outer
+        // `ScrollableContent` around title AND subtitle; the UIKit renderer never read it at all.
+        // `SwiftUIAlertModal.SubtitleSlot` — a `ScrollView` under `.frame(minHeight:maxHeight:)`
+        // mirroring UIKit's `svSubtitleContainer` — now compresses and scrolls the subtitle
+        // UNCONDITIONALLY, which is the behaviour the flag existed to reach. Measured on a 1222pt
+        // subtitle: with the flag off, SwiftUI's viewport lands on UIKit's to the point (645.33 vs
+        // 645.33 portrait, 161.33 vs 161.33 landscape); with it ON the subtitle slot was never
+        // pressured and reported the full 1222, i.e. the flag's only remaining effect was to make
+        // one row of the differential gate incomparable. It never appeared in a released tag.
+
         public init(
                 baseTint: UIColor? = nil,
                 overlayColor: UIColor? = nil,
@@ -204,4 +214,24 @@ public extension GBAlertModal.Properties {
             )
         }
     }
+}
+
+// MARK: - The resolver's inputs
+
+/// The UIKit vocabulary's half of `ModalStructureInputs`. Every member is a projection of a field
+/// that already existed and that `resolve` already read — nothing is computed here that was not
+/// being computed inline before, which is what makes the extraction behaviour-preserving.
+extension GBAlertModal.Properties: ModalStructureInputs {
+    public var hasPrimaryActionStyle: Bool { primaryActionStyle != nil }
+    public var hasSecondaryActionStyle: Bool { secondaryActionStyle != nil }
+    /// `buttonActionOrientation ?? .vertical` collapsed to a `Bool`, losslessly: the axis has
+    /// exactly two cases, so "defaults to vertical" and "is it horizontal" are the same statement.
+    public var buttonsAreHorizontal: Bool { buttonActionOrientation == .horizontal }
+    /// `== true`, not `?? false` — UIKit reads exactly this, so a nil means "hug" rather than
+    /// "no opinion, use the default".
+    public var buttonsMatchParent: Bool { buttonActionShouldMatchParent == true }
+    public var fixedWidthPortrait: CGFloat? { contentProperty?.fixedWidthPortrait }
+    public var maxWidthPortrait: CGFloat? { contentProperty?.maxWidthPortrait }
+    public var fixedWidthLandscape: CGFloat? { contentProperty?.fixedWidthLandscape }
+    public var maxWidthLandscape: CGFloat? { contentProperty?.maxWidthLandscape }
 }

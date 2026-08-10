@@ -15,7 +15,15 @@ extension GBAlertModal {
 
         public let subtitle: String?
         public let subtitleAttributed: NSAttributedString?
-        public weak var subtitleCustomView: UIView?
+        // Strong (not `weak`): the ONLY strong reference a caller-constructed custom view
+        // gets before `DataHolder.init` returns is this parameter's local. If this property
+        // were `weak`, that local's release at scope exit would leave nothing keeping the
+        // view alive — the view could already be deallocated before the modal ever installs
+        // it, well before `GBAlertModal.init(holder:)` runs. Making this property strong
+        // closes that window at the root: `GBAlertModal.dataHolder` holds this struct
+        // strongly, so as long as the modal is alive, so is the view. Source-compatible:
+        // same name, same `UIView?` type — only ownership semantics change.
+        public var subtitleCustomView: UIView?
 
         public let primaryAction: String?
 

@@ -1,61 +1,78 @@
 import Foundation
 import UIKit
-import SnapKit
 
-private var kEmptySpaceForKeyboardExtension: CGFloat = 48
+private let kEmptySpaceForKeyboardExtension: CGFloat = 48
 
 // MARK: - LIFECYCLE AND CALLBACK
 
 open class GBAlertModal: UIView {
     // MARK: Outlets
     // Overlay
-    public private(set) var vwOverlay: UIView?
+    // Setter widened from `private(set)` to `internal(set)`: assigned from `initDesign` in
+    // GBAlertModal+ViewFactory.swift (different file, same module).
+    public internal(set) var vwOverlay: UIView?
 
     // Main Container
-    public private(set) var vwContainer: UIView?
+    // Setter widened from `private(set)` to `internal(set)`: assigned from `initDesign` in
+    // GBAlertModal+ViewFactory.swift (different file, same module).
+    public internal(set) var vwContainer: UIView?
 
     // Main Content
-    public private(set) var svContentContainer: UIStackView?
+    // Setter widened from `private(set)` to `internal(set)`: assigned from `initDesign` in
+    // GBAlertModal+ViewFactory.swift (different file, same module).
+    public internal(set) var svContentContainer: UIStackView?
 
     // Content
-    public private(set) var vwBanner: UIView?
-    public private(set) var ivBanner: UIImageView?
+    // Setters widened from `private(set)` to `internal(set)`: assigned from `registerDialogView`
+    // in GBAlertModal+ViewGraph.swift (different file, same module).
+    public internal(set) var vwBanner: UIView?
+    public internal(set) var ivBanner: UIImageView?
 
-    public private(set) var lbTitle: UILabel?
+    public internal(set) var lbTitle: UILabel?
 
-    public private(set) var svSubtitleContainer: UIScrollView?
-    public private(set) var lbSubtitle: UILabel?
-    public private(set) weak var vwSubtitle: UIView?
+    public internal(set) var svSubtitleContainer: UIScrollView?
+    public internal(set) var lbSubtitle: UILabel?
+    public internal(set) weak var vwSubtitle: UIView?
 
     // Main action container
-    public private(set) var svMainActionContainer: UIStackView?
+    public internal(set) var svMainActionContainer: UIStackView?
 
     // Action
-    public private(set) var vwPrimaryAction: UIView?
-    public private(set) var btPrimaryAction: UIButton?
-    public private(set) var vwSecondaryAction: UIView?
-    public private(set) var btSecondaryAction: UIButton?
+    public internal(set) var vwPrimaryAction: UIView?
+    public internal(set) var btPrimaryAction: UIButton?
+    public internal(set) var vwSecondaryAction: UIView?
+    public internal(set) var btSecondaryAction: UIButton?
 
-    public private(set) var btCloseAction: UIButton?
+    public internal(set) var btCloseAction: UIButton?
 
     // Divider
-    public private(set) var vwBannerAndBelowDivider: UIView?
-    public private(set) var vwTitleAndBelowDivider: UIView?
-    public private(set) var vwSubtitleAndBelowDivider: UIView?
+    public internal(set) var vwBannerAndBelowDivider: UIView?
+    public internal(set) var vwTitleAndBelowDivider: UIView?
+    public internal(set) var vwSubtitleAndBelowDivider: UIView?
 
     // MARK: Constraints
 
     // MARK: Attributes Gestures
-    private var tapRecognizerOverlay: UIGestureRecognizer?
+    var tapRecognizerOverlay: UIGestureRecognizer?
 
     // MARK: ViewModel
 
     // MARK: Private Properties
 
-    private var properties: Properties?
-    private var dataHolder: DataHolder?
+    var properties: Properties?
+    var dataHolder: DataHolder?
 
     // MARK: Data
+
+    /// **The title's UNSCALED attributed text**, kept so rung 2 always scales from the ORIGINAL
+    /// rather than from an already-scaled string (which would compound: 0.75 of 0.75 of 0.75…).
+    /// Assigned by `buildTitleComponent` alongside `lbTitle` and cleared with it.
+    var titleNominalAttributedText: NSAttributedString?
+
+    /// The font scale currently applied to `lbTitle` — 1 whenever the title is at full size. Read by
+    /// `adjustTitleFontScale` purely as an idempotence guard: when the newly computed scale equals
+    /// this, nothing is assigned, nothing is invalidated, and the layout settles instead of looping.
+    var titleFontScaleApplied: CGFloat = 1
 
     // MARK: Public Properties
 
@@ -76,155 +93,6 @@ open class GBAlertModal: UIView {
         fatalError("init(coder:) has not been implemented")
     }
 
-    // MARK: Lifecycle
-
-    // MARK: Override Function
-
-    override public func layoutSubviews() {
-        super.layoutSubviews()
-
-        if let svContentContainer {
-            adjustSvContentContainerConstraintWidth(svContentContainer)
-        }
-    }
-
-    // MARK: Callback
-
-    @objc
-    private func onOverlayTapped(_ sender: UITapGestureRecognizer) {
-        guard dataHolder?.closeOnTapOverlay == true else {
-            return
-        }
-
-        switch sender.state {
-        case .ended:
-            dismissAndEmit(event: .close)
-        default:
-            break
-        }
-    }
-
-    @objc
-    private func onPrimaryActionTapped() {
-        dismissAndEmit(event: .primary)
-    }
-
-    @objc
-    private func onSecondaryActionTapped() {
-        dismissAndEmit(event: .secondary)
-    }
-
-    @objc
-    private func onActionButtonPressed(_ sender: UIButton) {
-        if sender === btPrimaryAction,
-           let primaryActionStyle = properties?.primaryActionStyle,
-           case ActionStyle.obliqueBottomLeft(let style) = primaryActionStyle {
-            updateObliqueBottomLeftStylePressed(sender, style: style)
-        } else if sender === btSecondaryAction,
-                  let secondaryActionStyle = properties?.secondaryActionStyle,
-                  case ActionStyle.obliqueBottomLeft(let style) = secondaryActionStyle {
-            updateObliqueBottomLeftStylePressed(sender, style: style)
-        }
-    }
-
-    @objc
-    private func onActionButtonUnPressed(_ sender: UIButton) {
-        if sender === btPrimaryAction,
-           let primaryActionStyle = properties?.primaryActionStyle,
-           case ActionStyle.obliqueBottomLeft(let style) = primaryActionStyle {
-            updateObliqueBottomLeftStyleUnPressed(sender, style: style)
-        } else if sender === btSecondaryAction,
-                  let secondaryActionStyle = properties?.secondaryActionStyle,
-                  case ActionStyle.obliqueBottomLeft(let style) = secondaryActionStyle {
-            updateObliqueBottomLeftStyleUnPressed(sender, style: style)
-        }
-    }
-
-    @objc
-    private func onCloseTapped() {
-        dismissAndEmit(event: .close)
-    }
-
-    // MARK: Public Function
-
-    public func show(parent: UIView, completion onShown: @escaping () -> Void) {
-        weak var parent = parent
-        guard let parent else {
-            return
-        }
-
-        alpha = 1
-        transform = .identity
-
-        parent.addSubview(self)
-        snp.makeConstraints { (make: ConstraintMaker) in
-            make.edges
-                    .equalTo(parent)
-        }
-
-        onShown()
-    }
-
-    @objc
-    public func hide() {
-        UIView.animate(
-                withDuration: 0.2,
-                animations: { [weak self] in
-                    self?.alpha = 0
-                },
-                completion: { [weak self] _ in
-                    self?.removeFromSuperview()
-                }
-        )
-    }
-
-    public func dismiss() {
-        if dataHolder?.dismissOnAction == true {
-            hide()
-        }
-    }
-
-    public func dismissAndEmit(event: ActionType) {
-        if dataHolder?.dismissOnAction == true {
-            hide()
-        }
-        dataHolder?.completion?(self, event)
-    }
-
-    public func updateDialog(holder: DataHolder, properties: Properties?) {
-        dataHolder = holder
-        updateProperties(properties ?? self.properties ?? globalProperties)
-
-        unregisterDialogView()
-        unregisterEvents()
-        adjustBaseDialogConstraint()
-        registerDialogView()
-        adjustDialogViewStyle()
-        registerEvents()
-        updateConstraintsIfNeeded()
-        layoutIfNeeded()
-    }
-
-    public func changePrimaryActionEnableState(isEnable: Bool) {
-        guard let btPrimaryAction else {
-            return
-        }
-        btPrimaryAction.isEnabled = isEnable
-        if let style = properties?.primaryActionStyle {
-            configureButtonActionStyle(btPrimaryAction, style: style)
-        }
-    }
-
-    public func changeSecondaryActionEnableState(isEnable: Bool) {
-        guard let btSecondaryAction else {
-            return
-        }
-        btSecondaryAction.isEnabled = isEnable
-        if let style = properties?.secondaryActionStyle {
-            configureButtonActionStyle(btSecondaryAction, style: style)
-        }
-    }
-
     // MARK: Deinitialization
 
     deinit {
@@ -233,630 +101,15 @@ open class GBAlertModal: UIView {
 }
 
 // MARK: - PRIVATE FUNCTIONS
-
-private extension GBAlertModal {
-    // MARK: Init Functions
-    func initViews() {
-        translatesAutoresizingMaskIntoConstraints = false
-
-        vwContainer?.clipsToBounds = true
-
-        unregisterDialogView()
-        adjustBaseDialogConstraint()
-        registerDialogView()
-        adjustDialogViewStyle()
-    }
-
-    func initEvents() {
-        unregisterEvents()
-        registerEvents()
-        removeKeyboardEvents()
-        listenKeyboardEvents()
-    }
-
-    func initData() {
-    }
-
-    // MARK: Views
-
-    func unregisterDialogView() {
-        svContentContainer?.removeAllArrangedSubviews()
-
-        vwBanner?.removeFromSuperview()
-        ivBanner?.removeFromSuperview()
-        lbTitle?.removeFromSuperview()
-        svSubtitleContainer?.removeFromSuperview()
-        lbSubtitle?.removeFromSuperview()
-        vwSubtitle?.removeFromSuperview()
-
-        vwBannerAndBelowDivider?.removeFromSuperview()
-        vwTitleAndBelowDivider?.removeFromSuperview()
-        vwSubtitleAndBelowDivider?.removeFromSuperview()
-
-        svMainActionContainer?.removeAllArrangedSubviews()
-        svMainActionContainer?.removeFromSuperview()
-
-        vwPrimaryAction?.removeFromSuperview()
-        btPrimaryAction?.removeFromSuperview()
-        vwSecondaryAction?.removeFromSuperview()
-        btSecondaryAction?.removeFromSuperview()
-
-        btCloseAction?.removeFromSuperview()
-    }
-
-    // swiftlint:disable:next function_body_length cyclomatic_complexity
-    func registerDialogView() {
-        // MARK: View Initialization
-        // Setup banner
-        if let banner = dataHolder?.banner {
-            let vwBanner = generateGenericViewDesign()
-            let ivBanner = generateImageViewForBannerDesign()
-            ivBanner.image = banner
-
-            vwBanner.addSubview(ivBanner)
-
-            self.vwBanner = vwBanner
-            self.ivBanner = ivBanner
-        } else {
-            vwBanner = nil
-            ivBanner = nil
-        }
-
-        // Setup title
-        if let title = dataHolder?.title,
-           !title.isEmpty {
-            let lbTitle = generateLabelForTitleDesign()
-            lbTitle.attributedText = NSAttributedString(
-                    string: title,
-                    attributes: [
-                        .font: properties?.titleFont,
-                        .foregroundColor: properties?.titleColor
-                    ].compactMapValues({ $0 })
-            )
-            self.lbTitle = lbTitle
-        } else if let title = dataHolder?.titleAttributed,
-                  title.length > 0 {
-            let lbTitle = generateLabelForTitleDesign()
-            lbTitle.attributedText = title
-            self.lbTitle = lbTitle
-        } else {
-            lbTitle = nil
-        }
-
-        // Setup subtitle
-        if dataHolder?.subtitle != nil ||
-                   dataHolder?.subtitleAttributed != nil ||
-                   dataHolder?.subtitleCustomView != nil {
-            let svSubtitleContainer = generateScrollForCustomViewDesign()
-            let vwSubtitle: UIView?
-            if let subtitle = dataHolder?.subtitle,
-               !subtitle.isEmpty {
-                let lbSubtitle = generateLabelForSubtitleDesign()
-                lbSubtitle.attributedText = NSAttributedString(
-                        string: subtitle,
-                        attributes: [
-                            .font: properties?.subtitleFont,
-                            .foregroundColor: properties?.subtitleColor
-                        ].compactMapValues({ $0 })
-                )
-
-                vwSubtitle = lbSubtitle
-                self.lbSubtitle = lbSubtitle
-            } else if let subtitle = dataHolder?.subtitleAttributed,
-                      subtitle.length > 0 {
-                let lbSubtitle = generateLabelForSubtitleDesign()
-                lbSubtitle.attributedText = subtitle
-
-                vwSubtitle = lbSubtitle
-                self.lbSubtitle = lbSubtitle
-            } else if let subtitle = dataHolder?.subtitleCustomView {
-                vwSubtitle = subtitle
-                self.vwSubtitle = subtitle
-            } else {
-                vwSubtitle = nil
-            }
-
-            if let vwSubtitle {
-                svSubtitleContainer.addSubview(vwSubtitle)
-
-                self.svSubtitleContainer = svSubtitleContainer
-            }
-        } else {
-            svSubtitleContainer = nil
-            lbSubtitle = nil
-            vwSubtitle = nil
-        }
-
-        // Setup primaryAction
-        if let primaryAction = dataHolder?.primaryAction,
-           let primaryActionStyle = properties?.primaryActionStyle {
-            let vwPrimaryAction = generateGenericViewDesign()
-
-            let btPrimaryAction = generateButtonForActionDesign(style: primaryActionStyle)
-            configureButtonActionStyle(btPrimaryAction, title: primaryAction, style: primaryActionStyle)
-
-            vwPrimaryAction.addSubview(btPrimaryAction)
-
-            self.vwPrimaryAction = vwPrimaryAction
-            self.btPrimaryAction = btPrimaryAction
-        } else {
-            vwPrimaryAction = nil
-            btPrimaryAction = nil
-        }
-
-        // Setup secondaryAction
-        if let secondaryAction = dataHolder?.secondaryAction,
-           let secondaryActionStyle = properties?.secondaryActionStyle {
-            let vwSecondaryAction = generateGenericViewDesign()
-
-            let btSecondaryAction = generateButtonForActionDesign(style: secondaryActionStyle)
-            configureButtonActionStyle(btSecondaryAction, title: secondaryAction, style: secondaryActionStyle)
-
-            vwSecondaryAction.addSubview(btSecondaryAction)
-
-            self.vwSecondaryAction = vwSecondaryAction
-            self.btSecondaryAction = btSecondaryAction
-        } else {
-            vwSecondaryAction = nil
-            btSecondaryAction = nil
-        }
-
-        // Setup main action container
-        if vwPrimaryAction != nil || vwSecondaryAction != nil {
-            let svMainActionContainer = generateStackViewForMainButtonDesign()
-            svMainActionContainer.spacing = properties?.space?.interButton ?? .zero
-
-            self.svMainActionContainer = svMainActionContainer
-        } else {
-            svMainActionContainer = nil
-        }
-
-        // Setup close action
-        if dataHolder?.showCloseButton == true,
-           let vwContainer = vwContainer {
-            let btCloseAction = generateButtonForCloseDesign()
-            vwContainer.addSubview(btCloseAction)
-
-            self.btCloseAction = btCloseAction
-        } else {
-            btCloseAction = nil
-        }
-
-        // Setup Divider
-        // Setup banner and its below
-        if vwBanner != nil,
-           lbTitle != nil || svSubtitleContainer != nil || svMainActionContainer != nil {
-            let vwBannerAndBelowDivider = generateGenericViewDesign()
-
-            self.vwBannerAndBelowDivider = vwBannerAndBelowDivider
-        } else {
-            vwBannerAndBelowDivider = nil
-        }
-
-        // Setup title and its below
-        if lbTitle != nil,
-           svSubtitleContainer != nil || svMainActionContainer != nil {
-            let vwTitleAndBelowDivider = generateGenericViewDesign()
-
-            self.vwTitleAndBelowDivider = vwTitleAndBelowDivider
-        } else {
-            vwTitleAndBelowDivider = nil
-        }
-
-        // Setup subtitle and its below
-        if svSubtitleContainer != nil,
-           svMainActionContainer != nil {
-            let vwSubtitleAndBelowDivider = generateGenericViewDesign()
-
-            self.vwSubtitleAndBelowDivider = vwSubtitleAndBelowDivider
-        } else {
-            vwSubtitleAndBelowDivider = nil
-        }
-
-        // MARK: View Graph
-        // Compile View
-
-        [
-            vwPrimaryAction,
-            vwSecondaryAction
-        ]
-                .forEach {
-                    guard let view = $0 else {
-                        return
-                    }
-                    svMainActionContainer?.addArrangedSubview(view)
-                }
-
-        [
-            vwBanner,
-            vwBannerAndBelowDivider,
-            lbTitle,
-            vwTitleAndBelowDivider,
-            svSubtitleContainer,
-            vwSubtitleAndBelowDivider,
-            svMainActionContainer
-        ]
-                .forEach {
-                    guard let view = $0 else {
-                        return
-                    }
-                    svContentContainer?.addArrangedSubview(view)
-                }
-
-        // MARK: View Constraints
-        // Banner
-        if let vwBanner {
-            vwBanner.snp.makeConstraints { (make: ConstraintMaker) in
-                // Pin
-                if let bannerMaxHeight = properties?.bannerMaxHeight {
-                    make.height
-                            .lessThanOrEqualTo(bannerMaxHeight)
-                            .priority(UILayoutPriority(751))
-                }
-                if let bannerFixedHeight = properties?.bannerFixedHeight {
-                    make.height
-                            .equalTo(bannerFixedHeight)
-                            .priority(UILayoutPriority(251))
-                }
-            }
-        }
-        if let ivBanner {
-            ivBanner.snp.makeConstraints { (make: ConstraintMaker) in
-                // Align
-                make.top
-                        .equalToSuperview()
-                make.leading
-                        .greaterThanOrEqualToSuperview()
-                make.leading
-                        .equalToSuperview()
-                        .priority(.low)
-                make.center
-                        .equalToSuperview()
-
-                // Pin
-                if let ratio = properties?.bannerRatio {
-                    make.width
-                            .equalTo(ivBanner.snp.height)
-                            .multipliedBy(ratio)
-                }
-            }
-        }
-
-        // Banner divider
-        if let vwBannerAndBelowDivider {
-            vwBannerAndBelowDivider.snp.makeConstraints { (make: ConstraintMaker) in
-                make.height
-                        .equalTo(properties?.space?.banner ?? .zero)
-            }
-        }
-
-        // Subtitle
-        if let svSubtitleContainer,
-           let vwSubtitle = vwSubtitle ?? lbSubtitle {
-            vwSubtitle.snp.makeConstraints { (make: ConstraintMaker) in
-                make.edges
-                        .equalTo(svSubtitleContainer.contentLayoutGuide)
-                make.width
-                        .equalTo(svSubtitleContainer.frameLayoutGuide)
-                make.height
-                        .equalTo(svSubtitleContainer.frameLayoutGuide)
-                        .priority(.low)
-            }
-        }
-
-        // Title Divider
-        if let vwTitleAndBelowDivider {
-            vwTitleAndBelowDivider.snp.makeConstraints { (make: ConstraintMaker) in
-                make.height
-                        .equalTo(properties?.space?.title ?? .zero)
-            }
-        }
-
-        // Subtitle Divider
-        if let vwSubtitleAndBelowDivider {
-            vwSubtitleAndBelowDivider.snp.makeConstraints { (make: ConstraintMaker) in
-                make.height
-                        .equalTo(properties?.space?.subtitle ?? .zero)
-            }
-        }
-
-        // Primary Action
-        if let vwPrimaryAction,
-           let btPrimaryAction,
-           let primaryActionStyle = properties?.primaryActionStyle {
-            configureButtonActionConstraint(btPrimaryAction, parent: vwPrimaryAction, style: primaryActionStyle)
-        }
-
-        // Secondary Action
-        if let vwSecondaryAction,
-           let btSecondaryAction,
-           let secondaryActionStyle = properties?.secondaryActionStyle {
-            configureButtonActionConstraint(btSecondaryAction, parent: vwSecondaryAction, style: secondaryActionStyle)
-        }
-
-        // Close Action
-        if let btCloseAction {
-            btCloseAction.snp.makeConstraints { (make: ConstraintMaker) in
-                make.top.trailing
-                        .equalToSuperview()
-                make.size
-                        .equalTo(48)
-                make.leading
-                        .greaterThanOrEqualToSuperview()
-                make.bottom
-                        .lessThanOrEqualToSuperview()
-            }
-        }
-    }
-
-    func adjustDialogViewStyle() {
-        // Base View
-        tintColor = properties?.baseTint
-
-        // Overlay
-        vwOverlay?.backgroundColor = properties?.overlayColor
-
-        // Content Container
-        vwContainer?.backgroundColor = properties?.contentProperty?.backgroundColor
-        vwContainer?.layer.cornerRadius = properties?.contentProperty?.cornerRadius ?? .zero
-
-        // Content Container Stack
-        svContentContainer?.alignment = properties?.contentProperty?.childShouldMatchParent == true ? .fill : .center
-
-        // Button Action Stack
-        svMainActionContainer?.alignment = properties?.buttonActionShouldMatchParent == true ? .fill : .center
-
-        // Button Action Orientation
-        if let buttonActionOrientation = properties?.buttonActionOrientation {
-            svMainActionContainer?.axis = buttonActionOrientation
-        }
-
-        // Close Button
-        btCloseAction?.tintColor = properties?.closeButtonTint
-        btCloseAction?.setImage(
-                dataHolder?.closeImage ?? UIImage(
-                        named: "ic_fa_xmark_24",
-                        in: Bundle.module,
-                        compatibleWith: nil
-                ),
-                for: .normal
-        )
-    }
-
-    func adjustBaseDialogConstraint() {
-        if let vwContainer = vwContainer {
-            adjustVwContainerConstraint(vwContainer)
-        }
-        if let svContentContainer = svContentContainer {
-            adjustSvContentContainerConstraint(svContentContainer)
-        }
-    }
-
-    private func adjustVwContainerConstraint(_ vwContainer: UIView) {
-        vwContainer.snp.remakeConstraints { (make: ConstraintMaker) in
-            // Align
-            make.top
-                    .greaterThanOrEqualTo(safeAreaLayoutGuide)
-                    .offset(
-                            properties?.margin?.top ?? .zero
-                    )
-            make.leading
-                    .greaterThanOrEqualTo(safeAreaLayoutGuide)
-                    .offset(
-                            properties?.margin?.left ?? .zero
-                    )
-            make.bottom
-                    .lessThanOrEqualTo(safeAreaLayoutGuide)
-                    .offset(
-                            -(properties?.margin?.bottom ?? .zero)
-                    )
-            make.trailing
-                    .lessThanOrEqualTo(safeAreaLayoutGuide)
-                    .offset(
-                            -(properties?.margin?.right ?? .zero)
-                    )
-
-            make.center
-                    .equalToSuperview()
-                    .priority(.low)
-        }
-    }
-
-    // swiftlint:disable:next function_body_length
-    private func adjustSvContentContainerConstraint(_ svContentContainer: UIView) {
-        svContentContainer.snp.remakeConstraints { (make: ConstraintMaker) in
-            make.top
-                    .greaterThanOrEqualToSuperview()
-                    .offset(
-                            properties?.padding?.topMin ?? .zero
-                    )
-            make.top
-                    .equalToSuperview()
-                    .offset(
-                            properties?.padding?.topMax ?? .zero
-                    )
-                    .priority(.low)
-
-            make.leading
-                    .greaterThanOrEqualToSuperview()
-                    .offset(
-                            properties?.padding?.leftMin ?? .zero
-                    )
-            make.leading
-                    .equalToSuperview()
-                    .offset(
-                            properties?.padding?.leftMax ?? .zero
-                    )
-                    .priority(.low)
-
-            make.bottom
-                    .lessThanOrEqualToSuperview()
-                    .offset(
-                            -(properties?.padding?.bottomMin ?? .zero)
-                    )
-            make.bottom
-                    .equalToSuperview()
-                    .offset(
-                            -(properties?.padding?.bottomMax ?? .zero)
-                    )
-                    .priority(.low)
-
-            make.trailing
-                    .lessThanOrEqualToSuperview()
-                    .offset(
-                            -(properties?.padding?.rightMin ?? .zero)
-                    )
-            make.trailing
-                    .equalToSuperview()
-                    .offset(
-                            -(properties?.padding?.rightMax ?? .zero)
-                    )
-                    .priority(.low)
-
-            make.center
-                    .equalToSuperview()
-                    .priority(.low)
-
-            // Pin
-            let fixedWidth = UIWindow.isLandscape
-                ? properties?.contentProperty?.fixedWidthLandscape ?? properties?.contentProperty?.fixedWidthPortrait
-                : properties?.contentProperty?.fixedWidthPortrait ?? properties?.contentProperty?.fixedWidthLandscape
-            if let fixedWidth {
-                make.width
-                        .equalTo(fixedWidth)
-                        .priority(.medium)
-            }
-
-            let maxWidth = UIWindow.isLandscape
-                ? properties?.contentProperty?.maxWidthLandscape ?? properties?.contentProperty?.maxWidthPortrait
-                : properties?.contentProperty?.maxWidthPortrait ?? properties?.contentProperty?.maxWidthLandscape
-            if let maxWidth {
-                make.width
-                        .lessThanOrEqualTo(maxWidth)
-                        .priority(.high)
-            }
-        }
-    }
-
-    private func adjustSvContentContainerConstraintWidth(_ svContentContainer: UIView) {
-        svContentContainer.snp.updateConstraints { (make: ConstraintMaker) in
-            // Pin
-            let fixedWidth = UIWindow.isLandscape
-                ? properties?.contentProperty?.fixedWidthLandscape ?? properties?.contentProperty?.fixedWidthPortrait
-                : properties?.contentProperty?.fixedWidthPortrait ?? properties?.contentProperty?.fixedWidthLandscape
-            if let fixedWidth {
-                make.width
-                        .equalTo(fixedWidth)
-                        .priority(.medium)
-            }
-
-            let maxWidth = UIWindow.isLandscape
-                ? properties?.contentProperty?.maxWidthLandscape ?? properties?.contentProperty?.maxWidthPortrait
-                : properties?.contentProperty?.maxWidthPortrait ?? properties?.contentProperty?.maxWidthLandscape
-            if let maxWidth {
-                make.width
-                        .lessThanOrEqualTo(maxWidth)
-                        .priority(.high)
-            }
-        }
-    }
-
-    // MARK: ViewModel
-    func registerEvents() {
-        // Gestures
-        let tapRecognizerOverlay = UITapGestureRecognizer(target: self, action: #selector(onOverlayTapped))
-        vwOverlay?.addGestureRecognizer(tapRecognizerOverlay)
-        vwOverlay?.isUserInteractionEnabled = true
-        self.tapRecognizerOverlay = tapRecognizerOverlay
-
-        // Buttons
-        btPrimaryAction?.addTarget(self, action: #selector(onPrimaryActionTapped), for: .touchUpInside)
-        btPrimaryAction?.addTarget(self, action: #selector(onActionButtonPressed(_:)), for: .touchDown)
-        btPrimaryAction?.addTarget(self, action: #selector(onActionButtonPressed(_:)), for: .touchDragEnter)
-        btPrimaryAction?.addTarget(self, action: #selector(onActionButtonUnPressed(_:)), for: .touchDragExit)
-        btPrimaryAction?.addTarget(self, action: #selector(onActionButtonUnPressed(_:)), for: .touchUpInside)
-        btPrimaryAction?.addTarget(self, action: #selector(onActionButtonUnPressed(_:)), for: .touchUpOutside)
-        btSecondaryAction?.addTarget(self, action: #selector(onSecondaryActionTapped), for: .touchUpInside)
-        btSecondaryAction?.addTarget(self, action: #selector(onActionButtonPressed(_:)), for: .touchDown)
-        btSecondaryAction?.addTarget(self, action: #selector(onActionButtonPressed(_:)), for: .touchDragEnter)
-        btSecondaryAction?.addTarget(self, action: #selector(onActionButtonUnPressed(_:)), for: .touchDragExit)
-        btSecondaryAction?.addTarget(self, action: #selector(onActionButtonUnPressed(_:)), for: .touchUpInside)
-        btSecondaryAction?.addTarget(self, action: #selector(onActionButtonUnPressed(_:)), for: .touchUpOutside)
-
-        btCloseAction?.addTarget(self, action: #selector(onCloseTapped), for: .touchUpInside)
-    }
-
-    func unregisterEvents() {
-        // Gestures
-        if let tapRecognizerOverlay = tapRecognizerOverlay {
-            vwOverlay?.removeGestureRecognizer(tapRecognizerOverlay)
-        }
-        tapRecognizerOverlay = nil
-
-        // Buttons
-        btPrimaryAction?.removeTarget(self, action: #selector(onPrimaryActionTapped), for: .touchUpInside)
-        btPrimaryAction?.removeTarget(self, action: #selector(onActionButtonPressed(_:)), for: .touchDown)
-        btPrimaryAction?.removeTarget(self, action: #selector(onActionButtonPressed(_:)), for: .touchDragEnter)
-        btPrimaryAction?.removeTarget(self, action: #selector(onActionButtonUnPressed(_:)), for: .touchDragExit)
-        btPrimaryAction?.removeTarget(self, action: #selector(onActionButtonUnPressed(_:)), for: .touchUpInside)
-        btPrimaryAction?.removeTarget(self, action: #selector(onActionButtonUnPressed(_:)), for: .touchUpOutside)
-        btSecondaryAction?.removeTarget(self, action: #selector(onSecondaryActionTapped), for: .touchUpInside)
-        btSecondaryAction?.removeTarget(self, action: #selector(onActionButtonPressed(_:)), for: .touchDown)
-        btSecondaryAction?.removeTarget(self, action: #selector(onActionButtonPressed(_:)), for: .touchDragEnter)
-        btSecondaryAction?.removeTarget(self, action: #selector(onActionButtonUnPressed(_:)), for: .touchDragExit)
-        btSecondaryAction?.removeTarget(self, action: #selector(onActionButtonUnPressed(_:)), for: .touchUpInside)
-        btSecondaryAction?.removeTarget(self, action: #selector(onActionButtonUnPressed(_:)), for: .touchUpOutside)
-
-        btCloseAction?.removeTarget(self, action: #selector(onCloseTapped), for: .touchUpInside)
-    }
-
-    // MARK: Model
-
-    func updateProperties(_ properties: Properties) {
-        self.properties = Properties(
-                baseTint: properties.baseTint
-                        ?? globalProperties.baseTint,
-                overlayColor: properties.overlayColor
-                        ?? globalProperties.overlayColor,
-                contentProperty: properties.contentProperty
-                        ?? globalProperties.contentProperty,
-                margin: properties.margin
-                        ?? globalProperties.margin,
-                padding: properties.padding
-                        ?? globalProperties.padding,
-                bannerRatio: properties.bannerRatio
-                        ?? globalProperties.bannerRatio,
-                bannerMaxHeight: properties.bannerMaxHeight
-                        ?? globalProperties.bannerMaxHeight,
-                bannerFixedHeight: properties.bannerFixedHeight
-                        ?? globalProperties.bannerFixedHeight,
-                titleFont: properties.titleFont
-                        ?? globalProperties.titleFont,
-                titleColor: properties.titleColor
-                        ?? globalProperties.titleColor,
-                subtitleFont: properties.subtitleFont
-                        ?? globalProperties.subtitleFont,
-                subtitleColor: properties.subtitleColor
-                        ?? globalProperties.subtitleColor,
-                buttonActionShouldMatchParent: properties.buttonActionShouldMatchParent
-                        ?? globalProperties.buttonActionShouldMatchParent,
-                buttonActionOrientation: properties.buttonActionOrientation
-                        ?? globalProperties.buttonActionOrientation,
-                primaryActionStyle: properties.primaryActionStyle
-                        ?? globalProperties.primaryActionStyle,
-                secondaryActionStyle: properties.secondaryActionStyle
-                        ?? globalProperties.secondaryActionStyle,
-                closeButtonTint: properties.closeButtonTint
-                        ?? globalProperties.closeButtonTint,
-                space: properties.space
-                        ?? globalProperties.space
-        )
-    }
-}
+//
+// The `adjust*` constraint methods and `resolvedContentWidths()` that used to live here moved to
+// `GBAlertModal+Layout.swift` in Task 6 (their pure geometry now lives in `Support/ModalLayout.swift`).
 
 // MARK: - KEYBOARD
 
-private extension GBAlertModal {
+extension GBAlertModal {
+    // Internal (extension default): called from `initEvents` in
+    // GBAlertModal+Model.swift (different file, same module).
     func listenKeyboardEvents() {
         let notificationCenter = NotificationCenter.default
         notificationCenter.addObserver(
@@ -885,7 +138,12 @@ private extension GBAlertModal {
         )
     }
 
-    func removeKeyboardEvents() {
+    // Widened from `private` to `internal`: called from `initEvents` in
+    // GBAlertModal+Model.swift (different file, same module); also used by `deinit`
+    // in this file.
+    // nonisolated: only calls thread-safe `NotificationCenter.removeObserver`, so it is safe to invoke
+    // from `deinit` (a nonisolated context) without hopping to the main actor.
+    nonisolated func removeKeyboardEvents() {
         let notificationCenter = NotificationCenter.default
         notificationCenter.removeObserver(self, name: UIResponder.keyboardWillShowNotification, object: nil)
         notificationCenter.removeObserver(self, name: UIResponder.keyboardWillHideNotification, object: nil)
@@ -942,67 +200,46 @@ private extension GBAlertModal {
         vwContainer?.transform = .identity
     }
 
-    // swiftlint:disable:next function_body_length
+    // Geometry now lives in `ModalKeyboardAvoider.offset(...)` (Sources/Support); this function
+    // keeps only notification-era view state: which anchor view to read, coordinate conversion,
+    // and applying the resulting transform.
     func adjustDialogPosition(_ keyboardFrame: CGRect) {
         guard let vwContainer else {
             return
         }
-        // check if upper keyboard has more space than btm
-        if keyboardFrame.minY > (UIScreen.main.bounds.maxY - keyboardFrame.maxY) {
-            guard let bottomView = svMainActionContainer ?? svSubtitleContainer ?? lbTitle,
-                  let bottomViewSuperview = bottomView.superview else {
-                return
-            }
-            let bottomViewRelativeFrame = bottomViewSuperview.convert(
-                    bottomView.frame,
-                    to: nil
-            )
-            var difference = keyboardFrame.minY
-                    - bottomViewRelativeFrame.maxY
-                    - kEmptySpaceForKeyboardExtension
 
-            if let responder = firstResponder,
-               let responderSuperview = responder.superview {
-                let responderRelativeFrame = responderSuperview.convert(responder.frame, to: nil)
-                if difference + responderRelativeFrame.minY < 0 {
-                    difference = -responderRelativeFrame.minY
-                }
-            }
+        let avoider = ModalKeyboardAvoider()
+        let screenMaxY = UIScreen.main.bounds.maxY
+        let keyboardHasMoreSpaceAbove = avoider.keyboardHasMoreSpaceAbove(
+                keyboardFrame: keyboardFrame,
+                screenMaxY: screenMaxY
+        )
 
-            difference += vwContainer.transform.ty
-
-            guard difference < 0 else {
-                return
-            }
-            vwContainer.transform = .identity.translatedBy(x: 0, y: difference)
-        } else {
-            guard let bottomView = lbTitle ?? svSubtitleContainer ?? svMainActionContainer,
-                  let bottomViewSuperview = bottomView.superview else {
-                return
-            }
-            let bottomViewRelativeFrame = bottomViewSuperview.convert(
-                    bottomView.frame,
-                    to: nil
-            )
-            var difference = keyboardFrame.maxY
-                    - bottomViewRelativeFrame.minY
-                    + kEmptySpaceForKeyboardExtension
-
-            if let responder = firstResponder,
-               let responderSuperview = responder.superview {
-                let responderRelativeFrame = responderSuperview.convert(responder.frame, to: nil)
-                if difference + responderRelativeFrame.maxY > UIScreen.main.bounds.maxY {
-                    difference = UIScreen.main.bounds.maxY - responderRelativeFrame.maxY
-                }
-            }
-
-            difference += vwContainer.transform.ty
-
-            guard difference > 0 else {
-                return
-            }
-            vwContainer.transform = .identity.translatedBy(x: 0, y: difference)
+        let bottomView = keyboardHasMoreSpaceAbove
+                ? (svMainActionContainer ?? svSubtitleContainer ?? lbTitle)
+                : (lbTitle ?? svSubtitleContainer ?? svMainActionContainer)
+        guard let bottomView, let bottomViewSuperview = bottomView.superview else {
+            return
         }
+        let anchorFrame = bottomViewSuperview.convert(bottomView.frame, to: nil)
+
+        var responderFrame: CGRect?
+        if let responder = firstResponder, let responderSuperview = responder.superview {
+            responderFrame = responderSuperview.convert(responder.frame, to: nil)
+        }
+
+        guard let difference = avoider.offset(
+                keyboardHasMoreSpaceAbove: keyboardHasMoreSpaceAbove,
+                keyboardFrame: keyboardFrame,
+                anchorFrame: anchorFrame,
+                responderFrame: responderFrame,
+                currentTransformY: vwContainer.transform.ty,
+                screenMaxY: screenMaxY,
+                emptySpace: kEmptySpaceForKeyboardExtension
+        ) else {
+            return
+        }
+        vwContainer.transform = .identity.translatedBy(x: 0, y: difference)
     }
 }
 
@@ -1029,97 +266,3 @@ private extension UIView {
 // MARK: - STATIC DETACHABLE
 
 // MARK: - TRACKING
-
-// MARK: - DESIGN
-
-private extension GBAlertModal {
-    func initDesign() {
-        // MARK: View Initialization
-        let vwOverlay = generateGenericViewDesign()
-        let vwContainer = generateGenericViewDesign()
-        let svContentContainer = generateStackViewForContentDesign()
-
-        // MARK: View Graph
-        addSubview(vwOverlay)
-        addSubview(vwContainer)
-        vwContainer.addSubview(svContentContainer)
-
-        // MARK: View Constraints
-        vwOverlay.snp.makeConstraints { (make: ConstraintMaker) in
-            make.edges
-                    .equalToSuperview()
-        }
-
-        adjustVwContainerConstraint(vwContainer)
-        adjustSvContentContainerConstraint(svContentContainer)
-
-        // MARK: View Assign
-        self.vwOverlay = vwOverlay
-        self.vwContainer = vwContainer
-        self.svContentContainer = svContentContainer
-    }
-
-    func generateGenericViewDesign() -> UIView {
-        let view = UIView(frame: .zero)
-        view.translatesAutoresizingMaskIntoConstraints = false
-        return view
-    }
-
-    func generateStackViewForContentDesign() -> UIStackView {
-        let view = UIStackView()
-        view.translatesAutoresizingMaskIntoConstraints = false
-        view.axis = .vertical
-        view.distribution = .fill
-        view.alignment = .center
-        view.spacing = 0
-        return view
-    }
-
-    func generateImageViewForBannerDesign() -> UIImageView {
-        let view = UIImageView()
-        view.translatesAutoresizingMaskIntoConstraints = false
-        view.contentMode = .scaleAspectFit
-        return view
-    }
-
-    func generateLabelForTitleDesign() -> UILabel {
-        let view = UILabel(frame: .zero)
-        view.translatesAutoresizingMaskIntoConstraints = false
-        view.numberOfLines = 2
-        view.minimumScaleFactor = 0.75
-        view.adjustsFontSizeToFitWidth = true
-        view.textAlignment = .center
-        return view
-    }
-
-    func generateScrollForCustomViewDesign() -> UIScrollView {
-        let view = UIScrollView()
-        view.translatesAutoresizingMaskIntoConstraints = false
-        view.showsHorizontalScrollIndicator = false
-        view.showsVerticalScrollIndicator = true
-        return view
-    }
-
-    func generateLabelForSubtitleDesign() -> UILabel {
-        let view = UILabel(frame: .zero)
-        view.translatesAutoresizingMaskIntoConstraints = false
-        view.numberOfLines = 0
-        view.textAlignment = .center
-        return view
-    }
-
-    func generateStackViewForMainButtonDesign() -> UIStackView {
-        let view = UIStackView()
-        view.translatesAutoresizingMaskIntoConstraints = false
-        view.axis = .vertical
-        view.distribution = .fillEqually
-        view.alignment = .center
-        return view
-    }
-
-    func generateButtonForCloseDesign() -> UIButton {
-        let view = UIButton(type: .system)
-        view.translatesAutoresizingMaskIntoConstraints = false
-        return view
-    }
-}
