@@ -38,7 +38,7 @@ class ViewController: UIViewController {
                         dismissOnAction: false
                 ),
                 completion: { [weak self] _, state in
-                    guard let self = self else {
+                    guard self != nil else {
                         return
                     }
 
@@ -66,6 +66,7 @@ enum DialogType: Equatable {
     case deferred
 }
 
+@MainActor
 protocol Dialogable: AnyObject {
     var isShowing: Bool { get }
     var type: DialogType? { get set }

@@ -1,0 +1,23 @@
+{
+  "images" : [
+    {
+      "filename" : "ic_exit_worksheet_optimised.png",
+      "idiom" : "universal",
+      "scale" : "1x"
+    },
+    {
+      "filename" : "ic_exit_worksheet_optimised@2x.png",
+      "idiom" : "universal",
+      "scale" : "2x"
+    },
+    {
+      "filename" : "ic_exit_worksheet_optimised@3x.png",
+      "idiom" : "universal",
+      "scale" : "3x"
+    }
+  ],
+  "info" : {
+    "author" : "xcode",
+    "version" : 1
+  }
+}
