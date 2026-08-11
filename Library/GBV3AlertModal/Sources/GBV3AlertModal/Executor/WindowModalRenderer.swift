@@ -8,7 +8,7 @@ import UIKit
 /// `UIKitModalRenderer` lives in `Executor/` and not `SwiftUI/`.
 ///
 /// **No queue, by design.** Unlike `EmbeddedModalRenderer` (meant to sit behind
-/// `RootScreenModalCoordinator`, one dialog live at a time, scoped to a specific screen),
+/// `MainTabModalCoordinator`, one dialog live at a time, scoped to a specific screen),
 /// window-level presentations are rare and one-off — the same "overlap accepted" stance
 /// `UIKitModalRenderer`'s own doc states. A caller wanting serialization installs a coordinator
 /// over this renderer exactly as they would over any other; this type itself stays direct-present.

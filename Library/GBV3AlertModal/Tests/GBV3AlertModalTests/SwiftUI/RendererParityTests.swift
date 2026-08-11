@@ -194,7 +194,7 @@ final class RendererParityTests: XCTestCase {
     /// exactly-once guard would make the LATER real `.secondary` interaction a no-op and the awaited
     /// result would come back `.dismissed`. Seeing `.secondary` is therefore positive proof the
     /// token was still open across hide/show — the same argument
-    /// `RootScreenModalCoordinatorTests.test_hide_doesNotResolveCurrentToken` makes against the spy.
+    /// `MainTabModalCoordinatorTests.test_hide_doesNotResolveCurrentToken` makes against the spy.
     func test_setHidden_neverResolves_onBothRenderers() async {
         for kind in RendererKind.allCases {
             let (harness, executor) = stack(kind)
@@ -618,13 +618,13 @@ final class RendererParityTests: XCTestCase {
     // MARK: - Coordinator-level, where the renderer is load-bearing
 
     /// Serial policy against a REAL renderer: the second request must not reach the renderer until
-    /// the first resolves. `RootScreenModalCoordinatorTests` proves this against `SpyRenderer`; the
+    /// the first resolves. `MainTabModalCoordinatorTests` proves this against `SpyRenderer`; the
     /// point of re-running it here is that the queue only advances when the renderer actually calls
     /// its resolve closure, which is renderer-owned behaviour.
     func test_coordinatorSerialisesPresents_onBothRenderers() async {
         for kind in RendererKind.allCases {
             let (harness, executor) = stack(kind)
-            executor.coordinator = RootScreenModalCoordinator(renderer: harness.renderer)
+            executor.coordinator = MainTabModalCoordinator(renderer: harness.renderer)
 
             let first = executor.present(AlertDialog(title: "A", subtitle: "S", primary: "OK"))
             let second = executor.present(AlertDialog(title: "B", subtitle: "S", primary: "OK"))
@@ -656,7 +656,7 @@ final class RendererParityTests: XCTestCase {
     func test_coordinatorDrain_resolvesShownAndQueued_onBothRenderers() async {
         for kind in RendererKind.allCases {
             let (harness, executor) = stack(kind)
-            let coordinator = RootScreenModalCoordinator(renderer: harness.renderer)
+            let coordinator = MainTabModalCoordinator(renderer: harness.renderer)
             executor.coordinator = coordinator
 
             let shown = executor.present(AlertDialog(title: "A", subtitle: "S", primary: "OK"))
@@ -682,7 +682,7 @@ final class RendererParityTests: XCTestCase {
         }
     }
 
-    /// Hide/show against a REAL renderer: `RootScreenModalCoordinatorTests` proves the
+    /// Hide/show against a REAL renderer: `MainTabModalCoordinatorTests` proves the
     /// queue-pausing and non-resolving behaviour against `SpyRenderer`; that only proves the
     /// COORDINATOR side of the contract. This re-runs it here because `hide()`/`show()` pause and
     /// resume by calling the renderer's OWN `setHidden(_:_:)` — untested against any of the three
@@ -692,7 +692,7 @@ final class RendererParityTests: XCTestCase {
     func test_coordinatorHideShow_pausesQueueAdvance_andNeverResolves_onBothRenderers() async {
         for kind in RendererKind.allCases {
             let (harness, executor) = stack(kind)
-            let coordinator = RootScreenModalCoordinator(renderer: harness.renderer)
+            let coordinator = MainTabModalCoordinator(renderer: harness.renderer)
             executor.coordinator = coordinator
 
             let first = executor.present(AlertDialog(title: "A", subtitle: "S", primary: "OK"))

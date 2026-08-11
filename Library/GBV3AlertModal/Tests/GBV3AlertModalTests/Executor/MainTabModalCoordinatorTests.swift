@@ -47,12 +47,12 @@ final class SpyRenderer: ModalRenderer {
 }
 
 @MainActor
-final class RootScreenModalCoordinatorTests: XCTestCase {
+final class MainTabModalCoordinatorTests: XCTestCase {
     private func alert(_ t: String) -> AlertDialog { AlertDialog(title: t, primary: "OK") }
 
     func test_serial_secondRequestNotShownUntilFirstResolves() {
         let renderer = SpyRenderer()
-        let coordinator = RootScreenModalCoordinator(renderer: renderer)
+        let coordinator = MainTabModalCoordinator(renderer: renderer)
 
         _ = coordinator.present(alert("A"))
         _ = coordinator.present(alert("B"))
@@ -66,7 +66,7 @@ final class RootScreenModalCoordinatorTests: XCTestCase {
 
     func test_userResolution_forwardsChosenValueToToken() async {
         let renderer = SpyRenderer()
-        let coordinator = RootScreenModalCoordinator(renderer: renderer)
+        let coordinator = MainTabModalCoordinator(renderer: renderer)
 
         let token = coordinator.present(alert("A"))
         renderer.userResolveLast(AlertDialog.Result.secondary) // resolves synchronously
@@ -77,7 +77,7 @@ final class RootScreenModalCoordinatorTests: XCTestCase {
 
     func test_dedup_duplicateKeyWhileInFlight_isNeverShown() {
         let renderer = SpyRenderer()
-        let coordinator = RootScreenModalCoordinator(renderer: renderer)
+        let coordinator = MainTabModalCoordinator(renderer: renderer)
 
         _ = coordinator.present(alert("A"), dedupKey: "k")
         _ = coordinator.present(alert("A-dup"), dedupKey: "k")
@@ -89,7 +89,7 @@ final class RootScreenModalCoordinatorTests: XCTestCase {
 
     func test_dedup_droppedDuplicate_resolvesDismissed() {
         let renderer = SpyRenderer()
-        let coordinator = RootScreenModalCoordinator(renderer: renderer)
+        let coordinator = MainTabModalCoordinator(renderer: renderer)
 
         _ = coordinator.present(alert("A"), dedupKey: "k")
         let dup = coordinator.present(alert("A-dup"), dedupKey: "k")
@@ -106,7 +106,7 @@ final class RootScreenModalCoordinatorTests: XCTestCase {
 
     func test_nilDedupKey_neverDedups() {
         let renderer = SpyRenderer()
-        let coordinator = RootScreenModalCoordinator(renderer: renderer)
+        let coordinator = MainTabModalCoordinator(renderer: renderer)
 
         _ = coordinator.present(alert("A"))            // nil key
         _ = coordinator.present(alert("B"))            // nil key — must NOT be treated as a duplicate
@@ -119,7 +119,7 @@ final class RootScreenModalCoordinatorTests: XCTestCase {
     /// exit paths that exist in PR-1 (normal-resolve + dedup-drop).
     func test_conservation_normalAndDedupDrop_allResolveExactlyOnce() {
         let renderer = SpyRenderer()
-        let coordinator = RootScreenModalCoordinator(renderer: renderer)
+        let coordinator = MainTabModalCoordinator(renderer: renderer)
 
         let t1 = coordinator.present(alert("A"), dedupKey: "k")
         let t2 = coordinator.present(alert("B"), dedupKey: "k") // dropped duplicate
@@ -143,7 +143,7 @@ final class RootScreenModalCoordinatorTests: XCTestCase {
 
     func test_teardownDrain_resolvesCurrentAndQueuedDismissed() {
         let renderer = SpyRenderer()
-        let coordinator = RootScreenModalCoordinator(renderer: renderer)
+        let coordinator = MainTabModalCoordinator(renderer: renderer)
 
         let t1 = coordinator.present(alert("A")) // shown
         let t2 = coordinator.present(alert("B")) // queued
@@ -161,7 +161,7 @@ final class RootScreenModalCoordinatorTests: XCTestCase {
 
     func test_teardownDrain_dismissesTheVisibleModal() {
         let renderer = SpyRenderer()
-        let coordinator = RootScreenModalCoordinator(renderer: renderer)
+        let coordinator = MainTabModalCoordinator(renderer: renderer)
 
         let t1 = coordinator.present(alert("A")) // shown
         _ = coordinator.present(alert("B"))      // queued, never shown — no view to tear down
@@ -175,7 +175,7 @@ final class RootScreenModalCoordinatorTests: XCTestCase {
 
     func test_hidden_resolvingCurrentDoesNotAdvanceUntilShown() {
         let renderer = SpyRenderer()
-        let coordinator = RootScreenModalCoordinator(renderer: renderer)
+        let coordinator = MainTabModalCoordinator(renderer: renderer)
 
         _ = coordinator.present(alert("A")) // shown
         _ = coordinator.present(alert("B")) // queued
@@ -191,7 +191,7 @@ final class RootScreenModalCoordinatorTests: XCTestCase {
 
     func test_hide_doesNotResolveCurrentToken() {
         let renderer = SpyRenderer()
-        let coordinator = RootScreenModalCoordinator(renderer: renderer)
+        let coordinator = MainTabModalCoordinator(renderer: renderer)
 
         let t1 = coordinator.present(alert("A"))
         coordinator.hide()
@@ -209,7 +209,7 @@ final class RootScreenModalCoordinatorTests: XCTestCase {
 
     func test_show_unhidesCurrentModal() {
         let renderer = SpyRenderer()
-        let coordinator = RootScreenModalCoordinator(renderer: renderer)
+        let coordinator = MainTabModalCoordinator(renderer: renderer)
 
         let t1 = coordinator.present(alert("A"))
         coordinator.hide()
@@ -222,7 +222,7 @@ final class RootScreenModalCoordinatorTests: XCTestCase {
 
     func test_priority_higherPriorityQueuedShowsFirst() {
         let renderer = SpyRenderer()
-        let coordinator = RootScreenModalCoordinator(renderer: renderer)
+        let coordinator = MainTabModalCoordinator(renderer: renderer)
 
         _ = coordinator.present(alert("A"), priority: 0) // shown
         _ = coordinator.present(alert("B"), priority: 1) // queued
@@ -235,7 +235,7 @@ final class RootScreenModalCoordinatorTests: XCTestCase {
 
     func test_priority_higherArrivalDoesNotPreemptShownModal() {
         let renderer = SpyRenderer()
-        let coordinator = RootScreenModalCoordinator(renderer: renderer)
+        let coordinator = MainTabModalCoordinator(renderer: renderer)
 
         _ = coordinator.present(alert("A"), priority: 0)  // shown
         _ = coordinator.present(alert("B"), priority: 10) // higher, but must NOT preempt
@@ -246,7 +246,7 @@ final class RootScreenModalCoordinatorTests: XCTestCase {
 
     func test_priority_equalPriorityIsFIFO() {
         let renderer = SpyRenderer()
-        let coordinator = RootScreenModalCoordinator(renderer: renderer)
+        let coordinator = MainTabModalCoordinator(renderer: renderer)
 
         _ = coordinator.present(alert("A"), priority: 0) // shown
         _ = coordinator.present(alert("B"), priority: 0)
@@ -262,7 +262,7 @@ final class RootScreenModalCoordinatorTests: XCTestCase {
 
     func test_interrupt_preemptsShownModal() {
         let renderer = SpyRenderer()
-        let coordinator = RootScreenModalCoordinator(renderer: renderer)
+        let coordinator = MainTabModalCoordinator(renderer: renderer)
 
         let a = coordinator.present(alert("A")) // shown
         _ = coordinator.present(alert("B"), interrupt: true)
@@ -273,7 +273,7 @@ final class RootScreenModalCoordinatorTests: XCTestCase {
 
     func test_interrupt_preemptedModalResolvesDismissed() {
         let renderer = SpyRenderer()
-        let coordinator = RootScreenModalCoordinator(renderer: renderer)
+        let coordinator = MainTabModalCoordinator(renderer: renderer)
 
         let a = coordinator.present(alert("A")) // shown
         _ = coordinator.present(alert("B"), interrupt: true)
@@ -287,7 +287,7 @@ final class RootScreenModalCoordinatorTests: XCTestCase {
 
     func test_interrupt_whenIdleShowsImmediately() {
         let renderer = SpyRenderer()
-        let coordinator = RootScreenModalCoordinator(renderer: renderer)
+        let coordinator = MainTabModalCoordinator(renderer: renderer)
 
         _ = coordinator.present(alert("A"), interrupt: true)
 
@@ -298,7 +298,7 @@ final class RootScreenModalCoordinatorTests: XCTestCase {
 
     func test_priority_drainsWholeQueueInPriorityThenFIFOorder() {
         let renderer = SpyRenderer()
-        let coordinator = RootScreenModalCoordinator(renderer: renderer)
+        let coordinator = MainTabModalCoordinator(renderer: renderer)
 
         _ = coordinator.present(alert("A"), priority: 0) // shown
         _ = coordinator.present(alert("B"), priority: 1)
@@ -315,7 +315,7 @@ final class RootScreenModalCoordinatorTests: XCTestCase {
 
     func test_dedup_keyIsReusableAfterItsRequestResolves() {
         let renderer = SpyRenderer()
-        let coordinator = RootScreenModalCoordinator(renderer: renderer)
+        let coordinator = MainTabModalCoordinator(renderer: renderer)
 
         _ = coordinator.present(alert("A"), dedupKey: "k")   // shown
         renderer.userResolveLast(AlertDialog.Result.primary)  // A resolves → key frees
@@ -326,7 +326,7 @@ final class RootScreenModalCoordinatorTests: XCTestCase {
 
     func test_dedup_dropsAgainstAQueuedItemNotOnlyTheShownOne() {
         let renderer = SpyRenderer()
-        let coordinator = RootScreenModalCoordinator(renderer: renderer)
+        let coordinator = MainTabModalCoordinator(renderer: renderer)
 
         _ = coordinator.present(alert("A"))                       // shown, no key
         _ = coordinator.present(alert("B"), dedupKey: "k")       // queued
@@ -344,7 +344,7 @@ final class RootScreenModalCoordinatorTests: XCTestCase {
 
     func test_interrupt_preemptsAheadOfAHigherPriorityQueuedItem() {
         let renderer = SpyRenderer()
-        let coordinator = RootScreenModalCoordinator(renderer: renderer)
+        let coordinator = MainTabModalCoordinator(renderer: renderer)
 
         _ = coordinator.present(alert("A"), priority: 0)  // shown
         _ = coordinator.present(alert("B"), priority: 10) // queued, high priority
@@ -357,7 +357,7 @@ final class RootScreenModalCoordinatorTests: XCTestCase {
 
     func test_conservation_acrossNormalDedupInterruptAndDrain() {
         let renderer = SpyRenderer()
-        let coordinator = RootScreenModalCoordinator(renderer: renderer)
+        let coordinator = MainTabModalCoordinator(renderer: renderer)
 
         let t1 = coordinator.present(alert("A"))                  // shown
         let t2 = coordinator.present(alert("B"), dedupKey: "k")  // queued
@@ -380,7 +380,7 @@ final class RootScreenModalCoordinatorTests: XCTestCase {
 
     func test_drain_whenEmpty_isNoOp() {
         let renderer = SpyRenderer()
-        let coordinator = RootScreenModalCoordinator(renderer: renderer)
+        let coordinator = MainTabModalCoordinator(renderer: renderer)
 
         coordinator.drain()
 
@@ -390,7 +390,7 @@ final class RootScreenModalCoordinatorTests: XCTestCase {
 
     func test_hideThenShow_withNothingShown_isSafeAndResumes() {
         let renderer = SpyRenderer()
-        let coordinator = RootScreenModalCoordinator(renderer: renderer)
+        let coordinator = MainTabModalCoordinator(renderer: renderer)
 
         coordinator.hide()
         coordinator.show()

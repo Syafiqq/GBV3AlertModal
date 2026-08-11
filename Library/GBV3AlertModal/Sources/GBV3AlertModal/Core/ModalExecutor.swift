@@ -33,7 +33,7 @@ public final class DefaultModalExecutor: ModalExecutor {
     /// Optional serial/dedup policy. `nil` = the direct path below (today's unbounded behavior).
     /// Replacing or clearing it drains the outgoing coordinator (resolves its pending tokens) so no
     /// queued request is stranded across the handoff.
-    public var coordinator: RootScreenModalCoordinator? {
+    public var coordinator: MainTabModalCoordinator? {
         didSet { oldValue?.drain() }
     }
 
@@ -42,7 +42,7 @@ public final class DefaultModalExecutor: ModalExecutor {
     @discardableResult
     public func present<D: ModalDescriptor>(_ descriptor: D, dedupKey: AnyHashable? = nil, priority: Int = 0, interrupt: Bool = false) -> ModalToken<D.Result> {
         if let coordinator {
-            // The coordinator wires `token.onDrop` itself (see `RootScreenModalCoordinator.present`),
+            // The coordinator wires `token.onDrop` itself (see `MainTabModalCoordinator.present`),
             // so a cancelled `presentAndWait` tears the shown modal down and ADVANCES the queue on
             // this path too — the same guarantee the direct path below gives.
             return coordinator.present(descriptor, dedupKey: dedupKey, priority: priority, interrupt: interrupt)
