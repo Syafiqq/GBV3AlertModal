@@ -327,7 +327,7 @@ final class SwiftUIAlertModalSnapshotTests: XCTestCase {
 ///
 /// `RendererParityTests` already proves coordinator semantics against both renderers with a spy.
 /// What it cannot show is the chain assembled the way a product screen assembles it: a VM owning a
-/// `SwiftUIModalRenderer`, a `DefaultModalExecutor` over it, a `RootScreenModalCoordinator` behind
+/// `SwiftUIModalRenderer`, a `DefaultModalExecutor` over it, a `MainTabModalCoordinator` behind
 /// that, and `ModalHost` rendering the result inside a real view hierarchy. That is what
 /// `AdoptionScreen` is, and this is its gate.
 @MainActor
@@ -406,7 +406,7 @@ final class AdoptionScreenTests: XCTestCase {
 /// **`EmbeddedAdoptionScreen`, exercised as a consumer would use it — the same gate
 /// `AdoptionScreenTests` runs for `AdoptionScreen`, closing the "does it actually run" gap that
 /// unit tests alone (`EmbeddedModalRendererTests`) can't: real window, real `UIHostingController`,
-/// real `RootScreenModalCoordinator` serialisation, resolved through the same `onAction` handle a
+/// real `MainTabModalCoordinator` serialisation, resolved through the same `onAction` handle a
 /// rendered button's tap calls.**
 @MainActor
 final class EmbeddedAdoptionScreenTests: XCTestCase {
@@ -426,7 +426,7 @@ final class EmbeddedAdoptionScreenTests: XCTestCase {
     }
 
     /// Same proof `AdoptionScreenTests.test_twoPresentationsAtOnce_serialise` runs for the UIKit-typed
-    /// renderer: `RootScreenModalCoordinator` needs zero code changes to arbitrate `EmbeddedModalRenderer`
+    /// renderer: `MainTabModalCoordinator` needs zero code changes to arbitrate `EmbeddedModalRenderer`
     /// — this is that claim, exercised end to end rather than assumed from the type signature matching.
     func test_twoPresentationsAtOnce_serialise() async {
         let vm = EmbeddedAdoptionViewModel()

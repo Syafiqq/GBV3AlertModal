@@ -8,7 +8,7 @@
 import Foundation
 import UIKit
 
-@UIApplicationMain
+@main
 class AppDelegate: UIResponder, UIApplicationDelegate {
 
     var window: UIWindow?
@@ -28,7 +28,49 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
             didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
             // swiftlint:disable:previous discouraged_optional_collection
     ) -> Bool {
-        true
+        let window = UIWindow(frame: UIScreen.main.bounds)
+        let gallery = GalleryViewController()
+        window.rootViewController = UINavigationController(rootViewController: gallery)
+        window.makeKeyAndVisible()
+        self.window = window
+
+        let floatingControl = FloatingTraversalControl()
+        window.addSubview(floatingControl)
+        NSLayoutConstraint.activate([
+            floatingControl.centerXAnchor.constraint(equalTo: window.centerXAnchor),
+            floatingControl.bottomAnchor.constraint(equalTo: window.safeAreaLayoutGuide.bottomAnchor, constant: -12),
+            floatingControl.leadingAnchor.constraint(greaterThanOrEqualTo: window.leadingAnchor, constant: 16),
+            floatingControl.trailingAnchor.constraint(lessThanOrEqualTo: window.trailingAnchor, constant: -16)
+        ])
+
+        gallery.floatingControl = floatingControl
+        floatingControl.onPrev = { [weak gallery] in gallery?.step(by: -1) }
+        floatingControl.onNext = { [weak gallery] in gallery?.step(by: 1) }
+        gallery.syncFloatingControl()
+
+        // Debug-only hook: `SIMCTL_CHILD_GB_STRESS_ENTRY=<entry-name> xcrun simctl launch ...`
+        // presents that entry immediately on launch, so a specific gallery entry (e.g. a
+        // Stress shape) can be screenshotted from a script without UI automation.
+        if let entryName = ProcessInfo.processInfo.environment["GB_STRESS_ENTRY"] {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [weak gallery] in
+                gallery?.presentEntry(named: entryName)
+            }
+        }
+
+        // The SwiftUI twin of the hook above:
+        // `SIMCTL_CHILD_GB_SWIFTUI_ENTRY=<entry-name> xcrun simctl launch ...`
+        // pushes the SwiftUI catalog and presents that shape through
+        // `SwiftUIModalRenderer` + `ModalHost`, so the same named shape can be
+        // screenshotted on BOTH backends from a script, without UI automation.
+        // Names are the `SwiftUICatalog.entries` names, which are the same
+        // strings as `DialogCatalog`'s (e.g. `badge-unlock-multi`).
+        if let entryName = ProcessInfo.processInfo.environment["GB_SWIFTUI_ENTRY"] {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [weak gallery] in
+                gallery?.openSwiftUICatalog(entryNamed: entryName)
+            }
+        }
+
+        return true
     }
 
     func applicationDidBecomeActive(_ application: UIApplication) {
@@ -128,7 +170,6 @@ extension FontHelper.DMSans {
         case .mediumItalic: return FontHelper.create(name: "DMSans-MediumItalic", withSize: size)
         case .bold: return FontHelper.create(name: "DMSans-Bold", withSize: size)
         case .boldItalic: return FontHelper.create(name: "DMSans-BoldItalic", withSize: size)
-        default: return FontHelper.create(name: "null", withSize: size)
         }
     }
 
@@ -152,7 +193,6 @@ extension FontHelper.OpenSans {
         case .extraBoldItalic: return FontHelper.create(name: "OpenSans-ExtraBoldItalic", withSize: size)
         case .light: return FontHelper.create(name: "OpenSans-Light", withSize: size)
         case .lightItalic: return FontHelper.create(name: "OpenSans-LightItalic", withSize: size)
-        default: return FontHelper.create(name: "null", withSize: size)
         }
     }
 
@@ -325,13 +365,13 @@ extension UIColor {
 
 extension UIStackView {
     // MARK: Manipulate Subview
-    @discardableResult
     func removeAllArrangedSubviews() {
         arrangedSubviews.forEach {
             removeArrangedSubViewProperly($0)
         }
     }
 
+    @discardableResult
     func removeArrangedSubViewProperly(_ view: UIView) -> UIView {
         removeArrangedSubview(view)
         NSLayoutConstraint.deactivate(view.constraints)
@@ -339,13 +379,13 @@ extension UIStackView {
         return view
     }
 
-    @discardableResult
     func removeAllArrangedSubviewsSafe() {
         arrangedSubviews.forEach {
             removeArrangedSubViewProperlySafe($0)
         }
     }
 
+    @discardableResult
     func removeArrangedSubViewProperlySafe(_ view: UIView) -> UIView {
         removeArrangedSubview(view)
         view.removeFromSuperview()
@@ -362,6 +402,7 @@ extension UIStackView {
 }
 
 extension UIImage {
+    @MainActor
     func tinted(color: UIColor) -> UIImage? {
         let image = withRenderingMode(.alwaysTemplate)
         let imageView = UIImageView(image: image)
@@ -470,20 +511,13 @@ extension UIEdgeInsets {
     }
 }
 
+@MainActor
 enum AppCompatHelper {
     static weak var keyWindow: UIWindow? {
-        #if swift(>=5.1)
-        if #available(iOS 13, *) {
-            return UIApplication.shared.connectedScenes
-                    .compactMap({ $0 as? UIWindowScene })
-                    .flatMap({ $0.windows })
-                    .first(where: { $0.isKeyWindow })
-        } else {
-            return UIApplication.shared.keyWindow
-        }
-        #else
-        return UIApplication.shared.keyWindow
-        #endif
+        UIApplication.shared.connectedScenes
+                .compactMap({ $0 as? UIWindowScene })
+                .flatMap({ $0.windows })
+                .first(where: { $0.isKeyWindow })
     }
 }
 

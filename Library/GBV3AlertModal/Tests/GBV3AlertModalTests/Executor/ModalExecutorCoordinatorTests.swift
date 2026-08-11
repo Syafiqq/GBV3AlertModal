@@ -20,7 +20,7 @@ final class ModalExecutorCoordinatorTests: XCTestCase {
     func test_withCoordinator_presentsRouteThroughSerialQueue() {
         let renderer = SpyRenderer()
         let executor = DefaultModalExecutor(renderer: renderer)
-        executor.coordinator = RootScreenModalCoordinator(renderer: renderer)
+        executor.coordinator = MainTabModalCoordinator(renderer: renderer)
 
         _ = executor.present(alert("A"))
         _ = executor.present(alert("B"))
@@ -31,7 +31,7 @@ final class ModalExecutorCoordinatorTests: XCTestCase {
     func test_withCoordinator_dedupKeyDropsDuplicate() {
         let renderer = SpyRenderer()
         let executor = DefaultModalExecutor(renderer: renderer)
-        executor.coordinator = RootScreenModalCoordinator(renderer: renderer)
+        executor.coordinator = MainTabModalCoordinator(renderer: renderer)
 
         _ = executor.present(alert("A"), dedupKey: "k")
         let dup = executor.present(alert("A-dup"), dedupKey: "k")
@@ -48,7 +48,7 @@ final class ModalExecutorCoordinatorTests: XCTestCase {
     func test_withCoordinator_priorityRoutedThroughFrontDoor() {
         let renderer = SpyRenderer()
         let executor = DefaultModalExecutor(renderer: renderer)
-        executor.coordinator = RootScreenModalCoordinator(renderer: renderer)
+        executor.coordinator = MainTabModalCoordinator(renderer: renderer)
 
         _ = executor.present(alert("A"), priority: 0) // shown
         _ = executor.present(alert("B"), priority: 1)
@@ -61,7 +61,7 @@ final class ModalExecutorCoordinatorTests: XCTestCase {
     func test_withCoordinator_interruptRoutedThroughFrontDoor() {
         let renderer = SpyRenderer()
         let executor = DefaultModalExecutor(renderer: renderer)
-        executor.coordinator = RootScreenModalCoordinator(renderer: renderer)
+        executor.coordinator = MainTabModalCoordinator(renderer: renderer)
 
         let a = executor.present(alert("A")) // shown
         _ = executor.present(alert("B"), interrupt: true)
@@ -73,7 +73,7 @@ final class ModalExecutorCoordinatorTests: XCTestCase {
     func test_clearingCoordinator_drainsPreviousQueue() {
         let renderer = SpyRenderer()
         let executor = DefaultModalExecutor(renderer: renderer)
-        executor.coordinator = RootScreenModalCoordinator(renderer: renderer)
+        executor.coordinator = MainTabModalCoordinator(renderer: renderer)
 
         let t1 = executor.present(alert("A")) // shown via coordinator
         let t2 = executor.present(alert("B")) // queued
@@ -104,7 +104,7 @@ final class ModalExecutorCoordinatorTests: XCTestCase {
     func test_withCoordinator_dismissShownToken_resolvesAndAdvances() {
         let renderer = SpyRenderer()
         let executor = DefaultModalExecutor(renderer: renderer)
-        executor.coordinator = RootScreenModalCoordinator(renderer: renderer)
+        executor.coordinator = MainTabModalCoordinator(renderer: renderer)
 
         let ta = executor.present(alert("A")) // shown
         _ = executor.present(alert("B"))      // queued
@@ -122,7 +122,7 @@ final class ModalExecutorCoordinatorTests: XCTestCase {
     func test_withCoordinator_dismissQueuedToken_resolvesAndNeverShows() {
         let renderer = SpyRenderer()
         let executor = DefaultModalExecutor(renderer: renderer)
-        executor.coordinator = RootScreenModalCoordinator(renderer: renderer)
+        executor.coordinator = MainTabModalCoordinator(renderer: renderer)
 
         _ = executor.present(alert("A"))      // shown
         let tb = executor.present(alert("B")) // queued
