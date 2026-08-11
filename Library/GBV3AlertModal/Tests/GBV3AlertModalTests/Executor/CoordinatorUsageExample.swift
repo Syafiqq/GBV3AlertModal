@@ -2,14 +2,14 @@
 //  CoordinatorUsageExample.swift
 //  GBV3AlertModalTests
 //
-//  A runnable, tutorial-style tour of the modal executor + RootScreenModalCoordinator API — the
+//  A runnable, tutorial-style tour of the modal executor + MainTabModalCoordinator API — the
 //  same "host a real modal in a throwaway window and drive it" shape as the Example app's
 //  DialogCatalogSmokeTests, but focused on *how a screen/VM calls the new API* rather than on any
 //  one dialog's layout.
 //
 //  The consumer-facing lines are the ones to copy:
 //    - `executor.present(descriptor, dedupKey:, priority:, interrupt:)` / `presentAndWait`
-//    - `executor.coordinator = RootScreenModalCoordinator(renderer:)`  (install / uninstall)
+//    - `executor.coordinator = MainTabModalCoordinator(renderer:)`  (install / uninstall)
 //    - `coordinator.hide()` / `.show()`  (tab push / pop)
 //    - `await token.result`, `executor.dismiss(token)`
 //  `tap(...)` is demo scaffolding: in the real app the user taps the button; a headless test emits
@@ -60,7 +60,7 @@ final class CoordinatorUsageExample: XCTestCase {
         let (executor, renderer, window) = makeStack(); defer { teardown(window) }
 
         // A root/tab screen installs one coordinator. Now presents queue instead of overlapping.
-        executor.coordinator = RootScreenModalCoordinator(renderer: renderer)
+        executor.coordinator = MainTabModalCoordinator(renderer: renderer)
 
         let first = executor.present(AlertDialog(title: "First", primary: "OK"))
         let second = executor.present(AlertDialog(title: "Second", primary: "OK"))
@@ -78,7 +78,7 @@ final class CoordinatorUsageExample: XCTestCase {
 
     func test_example_dedupByKeyCollapsesDuplicates() async {
         let (executor, renderer, window) = makeStack(); defer { teardown(window) }
-        executor.coordinator = RootScreenModalCoordinator(renderer: renderer)
+        executor.coordinator = MainTabModalCoordinator(renderer: renderer)
 
         // Several failing requests each try to show the same "no internet" alert at once.
         let a = executor.present(AlertDialog(title: "No internet", primary: "Retry"), dedupKey: "no-internet")
@@ -95,7 +95,7 @@ final class CoordinatorUsageExample: XCTestCase {
 
     func test_example_priorityShowsUrgentModalsFirst() async {
         let (executor, renderer, window) = makeStack(); defer { teardown(window) }
-        executor.coordinator = RootScreenModalCoordinator(renderer: renderer)
+        executor.coordinator = MainTabModalCoordinator(renderer: renderer)
 
         let tip = executor.present(AlertDialog(title: "Reading tip", primary: "OK"), priority: 0)      // shown
         let urgent = executor.present(AlertDialog(title: "Session expiring", primary: "Extend"), priority: 10)
@@ -112,7 +112,7 @@ final class CoordinatorUsageExample: XCTestCase {
 
     func test_example_interruptPreemptsTheShownModal() async {
         let (executor, renderer, window) = makeStack(); defer { teardown(window) }
-        executor.coordinator = RootScreenModalCoordinator(renderer: renderer)
+        executor.coordinator = MainTabModalCoordinator(renderer: renderer)
 
         let reading = executor.present(AlertDialog(title: "Reading tips", primary: "Got it"))
         // A session-end dialog must appear NOW, replacing whatever is on screen.
@@ -129,7 +129,7 @@ final class CoordinatorUsageExample: XCTestCase {
 
     func test_example_hideOnTabPushShowOnTabPop() async {
         let (executor, renderer, window) = makeStack(); defer { teardown(window) }
-        let coordinator = RootScreenModalCoordinator(renderer: renderer)
+        let coordinator = MainTabModalCoordinator(renderer: renderer)
         executor.coordinator = coordinator
 
         let token = executor.present(AlertDialog(title: "Welcome back", primary: "Continue"))
@@ -147,7 +147,7 @@ final class CoordinatorUsageExample: XCTestCase {
 
     func test_example_uninstallingCoordinatorDrainsPending() async {
         let (executor, renderer, window) = makeStack(); defer { teardown(window) }
-        executor.coordinator = RootScreenModalCoordinator(renderer: renderer)
+        executor.coordinator = MainTabModalCoordinator(renderer: renderer)
 
         let shown = executor.present(AlertDialog(title: "A", primary: "OK"))
         let queued = executor.present(AlertDialog(title: "B", primary: "OK"))
@@ -164,7 +164,7 @@ final class CoordinatorUsageExample: XCTestCase {
 
     func test_example_fireAndForgetThenDismissProgrammatically() async {
         let (executor, renderer, window) = makeStack(); defer { teardown(window) }
-        executor.coordinator = RootScreenModalCoordinator(renderer: renderer)
+        executor.coordinator = MainTabModalCoordinator(renderer: renderer)
 
         _ = executor.present(AlertDialog(title: "Busy", primary: "OK"))         // occupies the slot
         let loading = executor.present(AlertDialog(title: "Loading…", primary: "Cancel")) // queued

@@ -1,16 +1,18 @@
 import Foundation
 
 /// Serial, screen-owned policy layer between `ModalExecutor` and `ModalRenderer`. One modal at a
-/// time (dimmed-fullscreen geometry — two would be visual garbage); the rest queue. Installed by a
-/// root/tab screen that also drives its visibility lifecycle. `nil` coordinator on the executor =
-/// today's unbounded direct path; this type is the opt-in ordering policy.
+/// time (dimmed-fullscreen geometry — two would be visual garbage); the rest queue. Installed by the
+/// main-tab screen that also drives its visibility lifecycle — not the app's true root (splash/auth,
+/// before the tab bar exists, has no coordinator at all). `nil` coordinator on the executor = today's
+/// unbounded direct path; this type is the opt-in ordering policy. A per-tab/per-screen instance is a
+/// real future refinement if that's ever needed — nothing here hardcodes "main tab" specifically.
 ///
 /// Owns each pending request's token STRONGLY until it resolves: a fire-and-forget `present()` whose
 /// token the caller discards must still show and resolve when its turn comes. That ownership is why
 /// teardown must drain (resolve every still-pending token) — otherwise a queued request could never
 /// resolve and `await token.result` would hang. Every entered request resolves exactly once.
 @MainActor
-public final class RootScreenModalCoordinator {
+public final class MainTabModalCoordinator {
     private let renderer: ModalRenderer
 
     /// One queued request. Closures strongly retain the descriptor + token, so the coordinator owns

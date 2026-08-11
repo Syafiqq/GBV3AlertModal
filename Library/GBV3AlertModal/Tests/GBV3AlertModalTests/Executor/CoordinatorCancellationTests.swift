@@ -9,9 +9,9 @@ import XCTest
 /// cancelled `presentAndWait` under a coordinator resolved its token but never tore the modal down —
 /// the queue's `current` stayed populated forever and every later `present` on that screen queued
 /// behind an orphaned modal, unrecoverably (the caller discarded the token, so it could not even
-/// `dismiss` it). `RootScreenModalCoordinator.present` now wires `onDrop` itself.
+/// `dismiss` it). `MainTabModalCoordinator.present` now wires `onDrop` itself.
 ///
-/// Reuses `SpyRenderer` from `RootScreenModalCoordinatorTests`.
+/// Reuses `SpyRenderer` from `MainTabModalCoordinatorTests`.
 @MainActor
 final class CoordinatorCancellationTests: XCTestCase {
     private func alert(_ title: String) -> AlertDialog { AlertDialog(title: title, primary: "OK") }
@@ -19,14 +19,14 @@ final class CoordinatorCancellationTests: XCTestCase {
     private func makeCoordinated() -> (DefaultModalExecutor, SpyRenderer) {
         let renderer = SpyRenderer()
         let executor = DefaultModalExecutor(renderer: renderer)
-        executor.coordinator = RootScreenModalCoordinator(renderer: renderer)
+        executor.coordinator = MainTabModalCoordinator(renderer: renderer)
         return (executor, renderer)
     }
 
     /// THE regression that matters: a cancelled `presentAndWait` must free the coordinator's
     /// `current` slot so the NEXT `present` reaches the renderer.
     ///
-    /// DISCRIMINATION — revert the `token.onDrop` wiring in `RootScreenModalCoordinator.present` and
+    /// DISCRIMINATION — revert the `token.onDrop` wiring in `MainTabModalCoordinator.present` and
     /// this test fails on its last assertion: `drop?()` becomes nil, so the renderer's gate never
     /// fires, `finish()` never runs, `current` stays "A" and "B" sits in the queue forever, giving
     /// `shownTitles == ["A"]`. (Note that the `.dismissed` assertion below would still pass in that
