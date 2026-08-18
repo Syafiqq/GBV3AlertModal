@@ -12,3 +12,5 @@ Which implementation shape should turn the current monolithic package into indep
 - **C. Parallel replacement:** build new Core and SwiftUI targets beside the monolith, then switch consumers and remove duplicate implementations.
 
 Recommendation rationale: A follows the brief's forced order, keeps each failure attributable, minimizes duplicate logic, and gives every stage a green build and atomic commit boundary.
+
+**Answer:** A. Boundary-first staged extraction. *(auto-accepted — lazy/away)*
