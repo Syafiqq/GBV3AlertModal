@@ -12,13 +12,8 @@ for owner in "${SUITES[@]}"; do
     output_file=$(mktemp)
     trap 'rm -f "$output_file"' EXIT
 
-    scheme="GBV3AlertModal${owner}"
-    if [ "$owner" = Architecture ]; then
-        scheme="GBV3AlertModal-Package"
-    fi
-
     xcodebuild test \
-        -scheme "$scheme" \
+        -scheme GBV3AlertModal-Package \
         -destination "platform=iOS Simulator,name=${SIMULATOR_NAME}" \
         -only-testing:"${target}" | tee "$output_file"
 
@@ -34,7 +29,7 @@ done
 output_file=$(mktemp)
 trap 'rm -f "$output_file"' EXIT
 xcodebuild test \
-    -scheme GBV3AlertModal \
+    -scheme GBV3AlertModal-Package \
     -destination "platform=iOS Simulator,name=${SIMULATOR_NAME}" \
     -only-testing:GBV3AlertModalCompatibilityTests | tee "$output_file"
 grep -Eq "Executed [1-9][0-9]* tests?|Test Suite .+ passed" "$output_file"
