@@ -21,7 +21,11 @@ final class CatalogSnapshotComparisonTests: XCTestCase {
                 rootView.setNeedsLayout()
                 rootView.layoutIfNeeded()
 
-                assertSnapshot(of: renderedImage(of: rootView), as: .image, named: entry.name)
+                verifyCatalogSnapshot(
+                    renderedImage(of: rootView),
+                    entryName: entry.name,
+                    testName: "testEveryUIKitExample"
+                )
                 modal.removeFromSuperview()
             }
         }
@@ -42,10 +46,10 @@ final class CatalogSnapshotComparisonTests: XCTestCase {
         }
 
         host.rootView = AnyView(EmptyView())
-        RunLoop.main.run(until: Date.now.addingTimeInterval(0.1))
+        advanceMainRunLoop()
         window.isHidden = true
         window.rootViewController = nil
-        RunLoop.main.run(until: Date.now.addingTimeInterval(0.1))
+        advanceMainRunLoop()
     }
 
     private func snapshotSwiftUI(
@@ -69,10 +73,9 @@ final class CatalogSnapshotComparisonTests: XCTestCase {
         .ignoresSafeArea()
 
         let image = renderedImage(of: view, using: host, in: window)
-        assertSnapshot(
-            of: image,
-            as: .image,
-            named: entry.name,
+        verifyCatalogSnapshot(
+            image,
+            entryName: entry.name,
             testName: "testEverySwiftUIExample"
         )
         model.dismissCurrent()
@@ -107,9 +110,9 @@ final class CatalogSnapshotComparisonTests: XCTestCase {
         host.view.setNeedsLayout()
         host.view.layoutIfNeeded()
 
-        // `SubtitleSlot` measures through a preference and updates its ideal size on the next
-        // main-run-loop turn. A single synchronous render captures only its empty first pass.
-        RunLoop.main.run(until: Date.now.addingTimeInterval(0.01))
+        // `SubtitleSlot` publishes its measured ideal size on the next main-run-loop turn. Await
+        // that event explicitly instead of guessing how many milliseconds the simulator needs.
+        advanceMainRunLoop()
         host.view.setNeedsLayout()
         host.view.layoutIfNeeded()
         window.layoutIfNeeded()
@@ -123,10 +126,26 @@ final class CatalogSnapshotComparisonTests: XCTestCase {
     }
 
     private func waitForPresentation(in renderer: SwiftUIModalRenderer, key: String) {
-        let deadline = Date.now.addingTimeInterval(1)
-        while renderer.presentations.isEmpty, Date.now < deadline {
-            RunLoop.main.run(until: Date.now.addingTimeInterval(0.01))
+        for _ in 0..<100 where renderer.presentations.isEmpty {
+            advanceMainRunLoop()
         }
         XCTAssertEqual(renderer.presentations.count, 1, "\(key) did not publish one presentation")
+    }
+
+    private func advanceMainRunLoop() {
+        let advanced = expectation(description: "Advance the main run loop")
+        DispatchQueue.main.async { advanced.fulfill() }
+        wait(for: [advanced], timeout: 1)
+    }
+
+    private func verifyCatalogSnapshot(_ image: UIImage, entryName: String, testName: String) {
+        if let failure = verifySnapshot(
+            of: image,
+            as: .image,
+            named: entryName,
+            testName: testName
+        ) {
+            XCTFail("Catalog entry '\(entryName)' failed snapshot verification:\n\(failure)")
+        }
     }
 }
