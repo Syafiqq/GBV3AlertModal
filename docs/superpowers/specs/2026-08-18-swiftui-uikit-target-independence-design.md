@@ -182,10 +182,12 @@ with reviewed SwiftUI-native pins and document regenerated snapshots.
 4. Move legacy attributed-text conversion to Migration ownership.
 5. Remove `GBAlertModal` and UIKit integration from the SwiftUI renderer/view graph.
 6. Introduce `MinMaxEdgeInsets`, move all neutral files, and keep the one-target build green.
-7. Declare split targets/products and assign resources and SnapKit ownership.
-8. Split examples and tests and add architecture gates.
-9. Add and run a SwiftUI-only build plus a temporary deletion simulation.
-10. Hand off consumer migration and eventual UIKit/Migration retirement as later work.
+7. Inventory every future cross-module API, widen access with the narrowest viable visibility, and
+   prove the proposed boundaries with a disposable split-target build before moving backends.
+8. Declare split targets/products and assign resources and SnapKit ownership.
+9. Split examples and tests and add architecture gates.
+10. Add and run a SwiftUI-only build plus a temporary deletion simulation.
+11. Hand off consumer migration and eventual UIKit/Migration retirement as later work.
 
 Each numbered stage is an atomic verified commit. Behavioral refactors do not share a commit with
 bulk source moves or manifest target declaration.
