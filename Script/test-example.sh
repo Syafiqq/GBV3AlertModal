@@ -86,7 +86,7 @@ assert_stage_executed() {
                 rg -q "testEverySwiftUIExample.*passed" "$output_file"
             ;;
         ui-smoke)
-            rg -q "GBV3AlertModalExampleUITests.testExample.*passed" "$output_file"
+            rg -q "testApplicationLaunches.*passed" "$output_file"
             ;;
         *)
             return 1
@@ -153,7 +153,7 @@ run_test_stage snapshots 900 \
     -only-testing:GBV3AlertModalExampleTests/CatalogSnapshotComparisonTests/testEverySwiftUIExample
 
 run_test_stage ui-smoke 180 \
-    -only-testing:GBV3AlertModalExampleUITests/GBV3AlertModalExampleUITests/testExample
+    -only-testing:GBV3AlertModalExampleUITests/GBV3AlertModalExampleUITests/testApplicationLaunches
 
 print "Building the standalone SwiftUI-only example."
 BUILD_LOG="$OUTPUT_DIRECTORY/swiftui-build.log"

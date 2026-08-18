@@ -18,7 +18,6 @@
 		01B9BAB389F03BF4E18FF491 /* GenerationGuardTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE42C37D4823D8857ABCACE7 /* GenerationGuardTests.swift */; };
 		CA10A0010000000000000001 /* CatalogSnapshotComparisonTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA10A0020000000000000001 /* CatalogSnapshotComparisonTests.swift */; };
 		5962A4D42935DFA200183658 /* GBV3AlertModalExampleUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5962A4D32935DFA200183658 /* GBV3AlertModalExampleUITests.swift */; };
-		5962A4D62935DFA200183658 /* GBV3AlertModalExampleUITestsLaunchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5962A4D52935DFA200183658 /* GBV3AlertModalExampleUITestsLaunchTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -49,7 +48,6 @@
 		CA10A0020000000000000001 /* CatalogSnapshotComparisonTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CatalogSnapshotComparisonTests.swift; sourceTree = "<group>"; };
 		5962A4CF2935DFA200183658 /* GBV3AlertModalExampleUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = GBV3AlertModalExampleUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		5962A4D32935DFA200183658 /* GBV3AlertModalExampleUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GBV3AlertModalExampleUITests.swift; sourceTree = "<group>"; };
-		5962A4D52935DFA200183658 /* GBV3AlertModalExampleUITestsLaunchTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GBV3AlertModalExampleUITestsLaunchTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -165,7 +163,6 @@
 			isa = PBXGroup;
 			children = (
 				5962A4D32935DFA200183658 /* GBV3AlertModalExampleUITests.swift */,
-				5962A4D52935DFA200183658 /* GBV3AlertModalExampleUITestsLaunchTests.swift */,
 			);
 			path = GBV3AlertModalExampleUITests;
 			sourceTree = "<group>";
@@ -366,7 +363,6 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				5962A4D62935DFA200183658 /* GBV3AlertModalExampleUITestsLaunchTests.swift in Sources */,
 				5962A4D42935DFA200183658 /* GBV3AlertModalExampleUITests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
