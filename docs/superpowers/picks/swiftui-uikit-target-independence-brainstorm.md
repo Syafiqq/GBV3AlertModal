@@ -68,3 +68,5 @@ Options:
 - **C. Defer:** retain the source brief without producing an execution plan.
 
 Recommendation rationale: A directly satisfies the release gate—UIKit and Migration can later be removed without editing Core or SwiftUI production files—and preserves the brief's forced implementation order.
+
+**Answer:** A. Approve the proposed design. *(auto-accepted — lazy/away)*
