@@ -26,3 +26,13 @@ How should the existing `GBV3AlertModal` product behave after the package is spl
 Recommendation rationale: A honors the brief's compatibility allowance, separates migration timing from architectural extraction, and gives the SwiftUI-only example a product that proves it does not inherit UIKit or SnapKit transitively.
 
 **Answer:** A. Preserve `GBV3AlertModal` as an explicit compatibility umbrella during coexistence. *(auto-accepted — lazy/away)*
+
+## Decision 3 — Neutral inset vocabulary
+
+How should the misleading but Foundation-only `UIMinMaxEdgeInsets` type cross the Core boundary?
+
+- **A. Add `MinMaxEdgeInsets` in Core and keep a deprecated UIKit-side typealias (Recommended):** migrate neutral and SwiftUI code to the new name while retaining source compatibility for legacy UIKit callers during coexistence.
+- **B. Move `UIMinMaxEdgeInsets` unchanged into Core:** avoid API churn now, despite leaving a UIKit-prefixed name in the platform-neutral module.
+- **C. Replace it separately in each backend:** use SwiftUI `EdgeInsets` and a UIKit-local min/max type, accepting duplicated range semantics and adapters.
+
+Recommendation rationale: A makes Core vocabulary honest without coupling backend extraction to a consumer flag day; the alias can disappear with UIKit/Migration retirement.
