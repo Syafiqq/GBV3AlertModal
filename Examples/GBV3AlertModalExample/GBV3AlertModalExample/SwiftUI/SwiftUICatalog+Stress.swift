@@ -23,7 +23,8 @@
 
 import Foundation
 import Foundation
-import GBV3AlertModal
+import GBV3AlertModalCore
+import GBV3AlertModalSwiftUI
 
 // MARK: - Style tokens
 
@@ -94,14 +95,14 @@ extension SwiftUICatalog {
     // MARK: A. Per-axis sweep
 
     static var stressSweepEntries: [SwiftUICatalogEntry] {
-        let category = StressCatalog.sweepCategory
+        let category = CatalogFixtures.sweepCategory
         return [
             SwiftUICatalogEntry.renderable("stress-baseline", category: category) {
                 AlertDialog(
-                    title: StressCatalog.title10Line,
-                    subtitle: StressCatalog.subtitle10Line,
-                    primary: StressCatalog.primaryFull,
-                    secondary: StressCatalog.secondaryFull,
+                    title: CatalogFixtures.title10Line,
+                    subtitle: CatalogFixtures.subtitle10Line,
+                    primary: CatalogFixtures.primaryFull,
+                    secondary: CatalogFixtures.secondaryFull,
                     closeOnTapOverlay: true
                 )
             },
@@ -112,10 +113,10 @@ extension SwiftUICatalog {
             ) {
                 AlertDialog(
                     image: ModalImage("banner_ultrawide"),
-                    title: StressCatalog.title10Line,
-                    subtitle: StressCatalog.subtitle10Line,
-                    primary: StressCatalog.primaryFull,
-                    secondary: StressCatalog.secondaryFull,
+                    title: CatalogFixtures.title10Line,
+                    subtitle: CatalogFixtures.subtitle10Line,
+                    primary: CatalogFixtures.primaryFull,
+                    secondary: CatalogFixtures.secondaryFull,
                     closeOnTapOverlay: true,
                     style: .stressWideBanner
                 )
@@ -127,10 +128,10 @@ extension SwiftUICatalog {
             ) {
                 AlertDialog(
                     image: ModalImage("banner_ultratall"),
-                    title: StressCatalog.title10Line,
-                    subtitle: StressCatalog.subtitle10Line,
-                    primary: StressCatalog.primaryFull,
-                    secondary: StressCatalog.secondaryFull,
+                    title: CatalogFixtures.title10Line,
+                    subtitle: CatalogFixtures.subtitle10Line,
+                    primary: CatalogFixtures.primaryFull,
+                    secondary: CatalogFixtures.secondaryFull,
                     closeOnTapOverlay: true,
                     style: .stressTallBanner
                 )
@@ -138,62 +139,62 @@ extension SwiftUICatalog {
             SwiftUICatalogEntry.renderable("stress-title-none", category: category) {
                 AlertDialog(
                     title: String?.none,
-                    subtitle: StressCatalog.subtitle10Line,
-                    primary: StressCatalog.primaryFull,
-                    secondary: StressCatalog.secondaryFull,
+                    subtitle: CatalogFixtures.subtitle10Line,
+                    primary: CatalogFixtures.primaryFull,
+                    secondary: CatalogFixtures.secondaryFull,
                     closeOnTapOverlay: true
                 )
             },
             SwiftUICatalogEntry.renderable("stress-subtitle-none", category: category) {
                 AlertDialog(
-                    title: StressCatalog.title10Line,
+                    title: CatalogFixtures.title10Line,
                     subtitle: String?.none,
-                    primary: StressCatalog.primaryFull,
-                    secondary: StressCatalog.secondaryFull,
+                    primary: CatalogFixtures.primaryFull,
+                    secondary: CatalogFixtures.secondaryFull,
                     closeOnTapOverlay: true
                 )
             },
             SwiftUICatalogEntry.renderable("stress-primary-none", category: category) {
                 AlertDialog(
-                    title: StressCatalog.title10Line,
-                    subtitle: StressCatalog.subtitle10Line,
+                    title: CatalogFixtures.title10Line,
+                    subtitle: CatalogFixtures.subtitle10Line,
                     primary: nil,
-                    secondary: StressCatalog.secondaryFull,
+                    secondary: CatalogFixtures.secondaryFull,
                     closeOnTapOverlay: true
                 )
             },
             SwiftUICatalogEntry.renderable("stress-primary-wrapped", category: category) {
                 AlertDialog(
-                    title: StressCatalog.title10Line,
-                    subtitle: StressCatalog.subtitle10Line,
-                    primary: StressCatalog.primaryWrapped,
-                    secondary: StressCatalog.secondaryFull,
+                    title: CatalogFixtures.title10Line,
+                    subtitle: CatalogFixtures.subtitle10Line,
+                    primary: CatalogFixtures.primaryWrapped,
+                    secondary: CatalogFixtures.secondaryFull,
                     closeOnTapOverlay: true
                 )
             },
             SwiftUICatalogEntry.renderable("stress-secondary-none", category: category) {
                 AlertDialog(
-                    title: StressCatalog.title10Line,
-                    subtitle: StressCatalog.subtitle10Line,
-                    primary: StressCatalog.primaryFull,
+                    title: CatalogFixtures.title10Line,
+                    subtitle: CatalogFixtures.subtitle10Line,
+                    primary: CatalogFixtures.primaryFull,
                     closeOnTapOverlay: true
                 )
             },
             SwiftUICatalogEntry.renderable("stress-secondary-wrapped", category: category) {
                 AlertDialog(
-                    title: StressCatalog.title10Line,
-                    subtitle: StressCatalog.subtitle10Line,
-                    primary: StressCatalog.primaryFull,
-                    secondary: StressCatalog.secondaryWrapped,
+                    title: CatalogFixtures.title10Line,
+                    subtitle: CatalogFixtures.subtitle10Line,
+                    primary: CatalogFixtures.primaryFull,
+                    secondary: CatalogFixtures.secondaryWrapped,
                     closeOnTapOverlay: true
                 )
             },
             SwiftUICatalogEntry.renderable("stress-buttons-horizontal", category: category) {
                 AlertDialog(
-                    title: StressCatalog.title10Line,
-                    subtitle: StressCatalog.subtitle10Line,
-                    primary: StressCatalog.primaryFull,
-                    secondary: StressCatalog.secondaryFull,
+                    title: CatalogFixtures.title10Line,
+                    subtitle: CatalogFixtures.subtitle10Line,
+                    primary: CatalogFixtures.primaryFull,
+                    secondary: CatalogFixtures.secondaryFull,
                     closeOnTapOverlay: true,
                     style: .stressHorizontal
                 )
@@ -204,10 +205,10 @@ extension SwiftUICatalog {
                 divergences: [.unbreakableToken]
             ) {
                 AlertDialog(
-                    title: StressCatalog.titleUnbreakable,
-                    subtitle: StressCatalog.subtitle10Line,
-                    primary: StressCatalog.primaryFull,
-                    secondary: StressCatalog.secondaryFull,
+                    title: CatalogFixtures.titleUnbreakable,
+                    subtitle: CatalogFixtures.subtitle10Line,
+                    primary: CatalogFixtures.primaryFull,
+                    secondary: CatalogFixtures.secondaryFull,
                     closeOnTapOverlay: true
                 )
             },
@@ -217,10 +218,10 @@ extension SwiftUICatalog {
                 divergences: [.unbreakableToken]
             ) {
                 AlertDialog(
-                    title: StressCatalog.title10Line,
-                    subtitle: StressCatalog.subtitleUnbreakable,
-                    primary: StressCatalog.primaryFull,
-                    secondary: StressCatalog.secondaryFull,
+                    title: CatalogFixtures.title10Line,
+                    subtitle: CatalogFixtures.subtitleUnbreakable,
+                    primary: CatalogFixtures.primaryFull,
+                    secondary: CatalogFixtures.secondaryFull,
                     closeOnTapOverlay: true
                 )
             }
@@ -230,7 +231,7 @@ extension SwiftUICatalog {
     // MARK: B. Everything maxed
 
     static var stressMaxedEntries: [SwiftUICatalogEntry] {
-        let category = StressCatalog.maxedCategory
+        let category = CatalogFixtures.maxedCategory
         return [
             SwiftUICatalogEntry.renderable(
                 "stress-maxed-vertical",
@@ -239,10 +240,10 @@ extension SwiftUICatalog {
             ) {
                 AlertDialog(
                     image: ModalImage("banner_ultratall"),
-                    title: StressCatalog.title10Line,
-                    subtitle: StressCatalog.subtitle10Line,
-                    primary: StressCatalog.primaryWrapped,
-                    secondary: StressCatalog.secondaryWrapped,
+                    title: CatalogFixtures.title10Line,
+                    subtitle: CatalogFixtures.subtitle10Line,
+                    primary: CatalogFixtures.primaryWrapped,
+                    secondary: CatalogFixtures.secondaryWrapped,
                     closeOnTapOverlay: true,
                     style: .stressTallBanner
                 )
@@ -254,10 +255,10 @@ extension SwiftUICatalog {
             ) {
                 AlertDialog(
                     image: ModalImage("banner_ultratall"),
-                    title: StressCatalog.title10Line,
-                    subtitle: StressCatalog.subtitle10Line,
-                    primary: StressCatalog.primaryWrapped,
-                    secondary: StressCatalog.secondaryWrapped,
+                    title: CatalogFixtures.title10Line,
+                    subtitle: CatalogFixtures.subtitle10Line,
+                    primary: CatalogFixtures.primaryWrapped,
+                    secondary: CatalogFixtures.secondaryWrapped,
                     closeOnTapOverlay: true,
                     style: .stressTallBannerHorizontal
                 )
@@ -268,7 +269,7 @@ extension SwiftUICatalog {
     // MARK: C. Degenerate
 
     static var stressDegenerateEntries: [SwiftUICatalogEntry] {
-        let category = StressCatalog.degenerateCategory
+        let category = CatalogFixtures.degenerateCategory
         return [
             SwiftUICatalogEntry.renderable("stress-all-none", category: category) {
                 AlertDialog(
@@ -296,14 +297,14 @@ extension SwiftUICatalog {
                 AlertDialog(
                     title: String?.none,
                     subtitle: String?.none,
-                    primary: StressCatalog.primaryFull,
-                    secondary: StressCatalog.secondaryFull,
+                    primary: CatalogFixtures.primaryFull,
+                    secondary: CatalogFixtures.secondaryFull,
                     closeOnTapOverlay: true
                 )
             },
             SwiftUICatalogEntry.renderable("stress-title-only", category: category) {
                 AlertDialog(
-                    title: StressCatalog.title10Line,
+                    title: CatalogFixtures.title10Line,
                     subtitle: String?.none,
                     primary: nil,
                     closeOnTapOverlay: true
@@ -315,7 +316,7 @@ extension SwiftUICatalog {
     // MARK: D. Nasty interactions
 
     static var stressNastyEntries: [SwiftUICatalogEntry] {
-        let category = StressCatalog.nastyCategory
+        let category = CatalogFixtures.nastyCategory
         return [
             SwiftUICatalogEntry.renderable(
                 "stress-nasty-widebanner-horizontal-wrapped",
@@ -326,8 +327,8 @@ extension SwiftUICatalog {
                     image: ModalImage("banner_ultrawide"),
                     title: String?.none,
                     subtitle: String?.none,
-                    primary: StressCatalog.primaryWrapped,
-                    secondary: StressCatalog.secondaryWrapped,
+                    primary: CatalogFixtures.primaryWrapped,
+                    secondary: CatalogFixtures.secondaryWrapped,
                     closeOnTapOverlay: true,
                     style: .stressWideBannerHorizontal
                 )
@@ -339,8 +340,8 @@ extension SwiftUICatalog {
                 AlertDialog(
                     title: String?.none,
                     subtitle: String?.none,
-                    primary: StressCatalog.primaryWrapped,
-                    secondary: StressCatalog.secondaryWrapped,
+                    primary: CatalogFixtures.primaryWrapped,
+                    secondary: CatalogFixtures.secondaryWrapped,
                     closeOnTapOverlay: true,
                     style: .stressHorizontal
                 )
@@ -353,8 +354,8 @@ extension SwiftUICatalog {
                 AlertDialog(
                     image: ModalImage("banner_ultratall"),
                     title: String?.none,
-                    subtitle: StressCatalog.subtitle10Line,
-                    primary: StressCatalog.primaryFull,
+                    subtitle: CatalogFixtures.subtitle10Line,
+                    primary: CatalogFixtures.primaryFull,
                     closeOnTapOverlay: true,
                     style: .stressTallBanner
                 )
@@ -368,12 +369,12 @@ extension SwiftUICatalog {
         [
             SwiftUICatalogEntry.renderable(
                 "stress-close-button-title",
-                category: StressCatalog.closeButtonCategory
+                category: CatalogFixtures.closeButtonCategory
             ) {
                 AlertDialog(
-                    title: StressCatalog.title10Line,
+                    title: CatalogFixtures.title10Line,
                     subtitle: String?.none,
-                    primary: StressCatalog.primaryFull,
+                    primary: CatalogFixtures.primaryFull,
                     closeOnTapOverlay: true,
                     showCloseButton: true
                 )
@@ -384,23 +385,23 @@ extension SwiftUICatalog {
     // MARK: F. Extra combos
 
     static var stressExtraEntries: [SwiftUICatalogEntry] {
-        let category = StressCatalog.extraCategory
+        let category = CatalogFixtures.extraCategory
         return [
             // The landscape subtitle-slicing shape. Rotate to see it: this is the one title
             // short enough that UIKit's subtitle floor ALMOST holds, which is the condition
             // that draws half a line of body text under the button.
             SwiftUICatalogEntry.renderable("stress-title-4x-sliced-subtitle", category: category) {
                 AlertDialog(
-                    title: StressCatalog.title4Repeat,
-                    subtitle: StressCatalog.subtitleOneLine,
+                    title: CatalogFixtures.title4Repeat,
+                    subtitle: CatalogFixtures.subtitleOneLine,
                     primary: "Okay",
                     closeOnTapOverlay: true
                 )
             },
             SwiftUICatalogEntry.renderable("stress-no-buttons", category: category) {
                 AlertDialog(
-                    title: StressCatalog.title10Line,
-                    subtitle: StressCatalog.subtitle10Line,
+                    title: CatalogFixtures.title10Line,
+                    subtitle: CatalogFixtures.subtitle10Line,
                     primary: nil,
                     closeOnTapOverlay: true
                 )
@@ -409,8 +410,8 @@ extension SwiftUICatalog {
                 AlertDialog(
                     title: String?.none,
                     subtitle: String?.none,
-                    primary: StressCatalog.primaryWrapped,
-                    secondary: StressCatalog.secondaryWrapped,
+                    primary: CatalogFixtures.primaryWrapped,
+                    secondary: CatalogFixtures.secondaryWrapped,
                     closeOnTapOverlay: true
                 )
             },
@@ -421,7 +422,7 @@ extension SwiftUICatalog {
             ) {
                 AlertDialog(
                     image: ModalImage("banner_ultrawide"),
-                    title: StressCatalog.title10Line,
+                    title: CatalogFixtures.title10Line,
                     subtitle: String?.none,
                     primary: nil,
                     closeOnTapOverlay: true,
@@ -435,8 +436,8 @@ extension SwiftUICatalog {
                 AlertDialog(
                     title: String?.none,
                     subtitle: String?.none,
-                    primary: StressCatalog.primaryWrapped,
-                    secondary: StressCatalog.secondaryWrapped,
+                    primary: CatalogFixtures.primaryWrapped,
+                    secondary: CatalogFixtures.secondaryWrapped,
                     closeOnTapOverlay: true,
                     showCloseButton: true,
                     style: .stressHorizontal
@@ -449,10 +450,10 @@ extension SwiftUICatalog {
             ) {
                 AlertDialog(
                     image: ModalImage("banner_ultrawide"),
-                    title: StressCatalog.title10Line,
-                    subtitle: StressCatalog.subtitle10Line,
-                    primary: StressCatalog.primaryWrapped,
-                    secondary: StressCatalog.secondaryWrapped,
+                    title: CatalogFixtures.title10Line,
+                    subtitle: CatalogFixtures.subtitle10Line,
+                    primary: CatalogFixtures.primaryWrapped,
+                    secondary: CatalogFixtures.secondaryWrapped,
                     closeOnTapOverlay: true,
                     style: .stressWideBannerHorizontal
                 )

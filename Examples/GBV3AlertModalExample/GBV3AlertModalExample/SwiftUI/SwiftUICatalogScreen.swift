@@ -20,7 +20,8 @@
 //
 
 import SwiftUI
-import GBV3AlertModal
+import GBV3AlertModalCore
+import GBV3AlertModalSwiftUI
 
 // MARK: - Model
 

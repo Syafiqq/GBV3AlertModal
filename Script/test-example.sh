@@ -50,4 +50,16 @@ if [ $STATUS -ne 0 ] && ! grep -qi "Test case '.*' \(passed\|failed\)" "$OUTPUT_
     fi
 fi
 
+if [ $STATUS -eq 0 ] && ! grep -Eqi "Test case '.*' (passed|failed)|Executed [1-9][0-9]* tests?" "$OUTPUT_FILE"; then
+    echo "The example test command succeeded without executing an expected test suite." >&2
+    STATUS=1
+fi
+
+if [ $STATUS -eq 0 ]; then
+    xcodebuild build \
+        -project Examples/GBV3AlertModalExample/GBV3AlertModalExample.xcodeproj \
+        -scheme GBV3AlertModalSwiftUIExample \
+        -destination "generic/platform=iOS Simulator"
+fi
+
 exit $STATUS

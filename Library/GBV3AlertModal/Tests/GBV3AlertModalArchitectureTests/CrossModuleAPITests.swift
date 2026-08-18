@@ -162,6 +162,7 @@ final class CrossModuleAPITests: XCTestCase {
 
     private func declaredBoundaryTypes(in source: String) -> [String] {
         source.split(separator: "\n").compactMap { line in
+            guard line.first?.isWhitespace == false else { return nil }
             let words = line.split { $0 == " " || $0 == "\t" || $0 == ":" || $0 == "<" }
             guard let accessIndex = words.firstIndex(where: { $0 == "public" || $0 == "package" }),
                   words.indices.contains(accessIndex + 2),

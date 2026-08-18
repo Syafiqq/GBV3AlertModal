@@ -47,33 +47,19 @@ enum StressCatalog {
 extension StressCatalog {
     /// A single unbroken string (no `\n`) long enough to wrap to ~10 lines at
     /// the 24pt bold title font inside the gallery's 256pt-wide card.
-    static let title10Line =
-        "This is an intentionally long title string engineered to stress test the wrapping behavior of " +
-        "the alert modal across many lines without any manual line breaks so the layout engine must " +
-        "handle natural word wrapping consistently across roughly ten lines of bold twenty four point " +
-        "text inside a narrow content card which forces frequent word wraps and exercises the vertical " +
-        "growth of the title label region within the alert content stack and its surrounding padding " +
-        "and spacing constraints under sustained load"
+    static let title10Line = CatalogFixtures.title10Line
 
     /// Same idea, longer (smaller 16pt font fits more per line) so it also
     /// wraps to ~10 lines.
-    static let subtitle10Line =
-        "This subtitle exists purely to stress test long form body copy wrapping inside the alert modal " +
-        "without any manual line breaks whatsoever so that the rendering engine is forced to reflow " +
-        "every single word naturally across roughly ten lines of regular sixteen point text set inside " +
-        "a narrow two hundred fifty six point wide content card which in turn forces frequent word " +
-        "wraps and thoroughly exercises the vertical growth behavior of the subtitle label region " +
-        "within the alert content stack along with its surrounding padding insets interbutton spacing " +
-        "and overall scroll container sizing logic under sustained stress conditions"
+    static let subtitle10Line = CatalogFixtures.subtitle10Line
 
     /// The LayerC `test_longTitle_*` fixture verbatim (`GeniePresets.longTitle()`), so the
     /// gallery and the library baseline are exercising ONE string rather than two similar ones.
-    static let title4Repeat = String(repeating: "Long title wraps across many lines ", count: 4)
-        .trimmingCharacters(in: .whitespaces)
+    static let title4Repeat = CatalogFixtures.title4Repeat
 
     /// The LayerC fixture's subtitle (`GeniePresets.base()`), which wraps to two lines in the
     /// 256pt card — enough that the slot has something to yield, which the artifact needs.
-    static let subtitleOneLine = "This is the subtitle text for the alert modal."
+    static let subtitleOneLine = CatalogFixtures.subtitleOneLine
 
     /// **A single token with NO break opportunity** — no spaces, no hyphens, no soft hyphens.
     ///
@@ -83,34 +69,27 @@ extension StressCatalog {
     /// something else — glyph shrinking (rung 2), mid-word character wrapping, truncation, or
     /// simply overflowing the card. Which one it picks, and whether the two backends pick the
     /// same one, is the point of the entry.
-    static let titleUnbreakable =
-        "Pneumonoultramicroscopicsilicovolcanoconiosisantidisestablishmentarianism"
+    static let titleUnbreakable = CatalogFixtures.titleUnbreakable
 
     /// The same idea for the subtitle. Longer, because 16pt regular fits more glyphs per line —
     /// this has to overflow a 256pt column just as decisively as the title above does.
-    static let subtitleUnbreakable =
-        "Floccinaucinihilipilificationhippopotomonstrosesquippedaliophobiapseudopseudohypoparathyroidism"
-        + "Thyroparathyroidectomizedradioimmunoelectrophoresisspectrophotofluorometrically"
+    static let subtitleUnbreakable = CatalogFixtures.subtitleUnbreakable
 
-    static let primaryFull = "Continue"
-    static let secondaryFull = "Not Now"
+    static let primaryFull = CatalogFixtures.primaryFull
+    static let secondaryFull = CatalogFixtures.secondaryFull
 
-    static let primaryWrapped =
-        "This Extremely Long Primary Action Button Label Is Designed To Force Multi-Line Wrapping " +
-        "Inside The Button Bounds"
-    static let secondaryWrapped =
-        "This Equally Long Secondary Action Button Label Also Forces The Button To Wrap Across " +
-        "Several Lines"
+    static let primaryWrapped = CatalogFixtures.primaryWrapped
+    static let secondaryWrapped = CatalogFixtures.secondaryWrapped
 
     // The six section names. INTERNAL and gathered here for the same reason the strings above
     // are: `SwiftUICatalog+Stress.swift` files its twin entries under the SAME categories, and
     // two copies of "Stress · Axis Sweep" is two things to keep spelled identically.
-    static let sweepCategory = "Stress · Axis Sweep"
-    static let maxedCategory = "Stress · Everything Maxed"
-    static let degenerateCategory = "Stress · Degenerate"
-    static let nastyCategory = "Stress · Nasty Interactions"
-    static let closeButtonCategory = "Stress · Close Button"
-    static let extraCategory = "Stress · Extra"
+    static let sweepCategory = CatalogFixtures.sweepCategory
+    static let maxedCategory = CatalogFixtures.maxedCategory
+    static let degenerateCategory = CatalogFixtures.degenerateCategory
+    static let nastyCategory = CatalogFixtures.nastyCategory
+    static let closeButtonCategory = CatalogFixtures.closeButtonCategory
+    static let extraCategory = CatalogFixtures.extraCategory
 
     /// The two ultra-aspect banner assets added for this stress matrix.
     ///

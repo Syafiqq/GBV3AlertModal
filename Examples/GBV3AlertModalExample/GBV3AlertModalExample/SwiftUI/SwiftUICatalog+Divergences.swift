@@ -43,7 +43,8 @@
 //
 
 import Foundation
-import GBV3AlertModal
+import GBV3AlertModalCore
+import GBV3AlertModalSwiftUI
 
 // MARK: - Style tokens
 
@@ -154,7 +155,7 @@ extension SwiftUICatalog {
     /// Five shapes, one per recorded divergence, in the order the design spec discusses them —
     /// the obedience gap last, because it is the one that is not geometry.
     static var divergenceEntries: [SwiftUICatalogEntry] {
-        let category = DivergenceCatalog.category
+        let category = CatalogFixtures.divergenceCategory
         return [
             // D-A — tall uncapped artwork.
             SwiftUICatalogEntry.renderable(
@@ -165,7 +166,7 @@ extension SwiftUICatalog {
                 AlertDialog(
                     image: ModalImage("banner_ultratall"),
                     title: "Tall uncapped artwork",
-                    subtitle: DivergenceCatalog.comparableSubtitle,
+                    subtitle: CatalogFixtures.comparableSubtitle,
                     primary: "Okay",
                     closeOnTapOverlay: true,
                     style: .divergenceTallUncapped
@@ -181,7 +182,7 @@ extension SwiftUICatalog {
                 AlertDialog(
                     image: ModalImage("banner_wide_320x190"),
                     title: "Ratio vs aspect",
-                    subtitle: DivergenceCatalog.comparableSubtitle,
+                    subtitle: CatalogFixtures.comparableSubtitle,
                     primary: "Okay",
                     closeOnTapOverlay: true
                 )
@@ -196,7 +197,7 @@ extension SwiftUICatalog {
                 AlertDialog(
                     image: ModalImage("banner_wide_320x190"),
                     title: "Heads up",
-                    subtitle: DivergenceCatalog.comparableSubtitle,
+                    subtitle: CatalogFixtures.comparableSubtitle,
                     primary: "Okay",
                     closeOnTapOverlay: true,
                     style: .divergenceBannerWide
@@ -213,7 +214,7 @@ extension SwiftUICatalog {
                 AlertDialog(
                     image: ModalImage("img_badge_multi_achievement"),
                     title: "Heads up",
-                    subtitle: DivergenceCatalog.comparableSubtitle,
+                    subtitle: CatalogFixtures.comparableSubtitle,
                     primary: "Okay",
                     closeOnTapOverlay: true
                 )
@@ -228,7 +229,7 @@ extension SwiftUICatalog {
             ) {
                 AlertDialog(
                     title: "No primary style",
-                    subtitle: DivergenceCatalog.comparableSubtitle,
+                    subtitle: CatalogFixtures.comparableSubtitle,
                     primary: "Okay",
                     closeOnTapOverlay: true,
                     style: .divergenceNilPrimaryStyle

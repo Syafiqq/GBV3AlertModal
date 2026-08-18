@@ -117,7 +117,7 @@ enum GeniePresets {
             margin: EdgeInsets(top: 0, leading: 20, bottom: 0, trailing: 20),
             padding: UIMinMaxEdgeInsets(top: (16, 24), left: (16, 32), bottom: (16, 24), right: (16, 32)),
             banner: ModalBannerConfiguration(),
-            titleFont: .system(size: 24, weight: .bold),
+            titleFont: .system(size: 24, weight: .semibold),
             titleColor: Color(uiColor: .label),
             subtitleFont: .system(size: 16),
             subtitleColor: Color(uiColor: .secondaryLabel),

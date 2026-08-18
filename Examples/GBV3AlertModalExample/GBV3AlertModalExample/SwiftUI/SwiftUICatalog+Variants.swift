@@ -12,7 +12,8 @@
 
 import Foundation
 import SwiftUI
-import GBV3AlertModal
+import GBV3AlertModalCore
+import GBV3AlertModalSwiftUI
 
 struct CatalogCustomSubtitleDialog: ModalDescriptor {
     enum Result: Sendable { case accepted, dismissed }

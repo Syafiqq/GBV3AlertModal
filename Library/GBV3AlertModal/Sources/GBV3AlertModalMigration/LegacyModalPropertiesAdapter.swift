@@ -82,19 +82,25 @@ extension ModalFont {
     }
 
     private static func weight(adapting font: UIFont) -> Weight {
+        let fontName = font.fontName.lowercased()
+        let namedWeights: [(String, Weight)] = [
+            ("ultralight", .ultraLight), ("semibold", .semibold), ("black", .black),
+            ("heavy", .heavy), ("bold", .bold), ("medium", .medium),
+            ("thin", .thin), ("light", .light),
+        ]
+        if let named = namedWeights.first(where: { fontName.contains($0.0) }) {
+            return named.1
+        }
         let traits = font.fontDescriptor.object(forKey: .traits) as? [UIFontDescriptor.TraitKey: Any]
         let value = traits?[.weight] as? CGFloat ?? 0
-        switch value {
-        case ..<(-0.7): return .ultraLight
-        case ..<(-0.5): return .thin
-        case ..<(-0.2): return .light
-        case ..<0.115: return .regular
-        case ..<0.265: return .medium
-        case ..<0.35: return .semibold
-        case ..<0.48: return .bold
-        case ..<0.59: return .heavy
-        default: return .black
-        }
+        let candidates: [(UIFont.Weight, Weight)] = [
+            (.ultraLight, .ultraLight), (.thin, .thin), (.light, .light),
+            (.regular, .regular), (.medium, .medium), (.semibold, .semibold),
+            (.bold, .bold), (.heavy, .heavy), (.black, .black),
+        ]
+        return candidates.min { lhs, rhs in
+            abs(lhs.0.rawValue - value) < abs(rhs.0.rawValue - value)
+        }?.1 ?? .regular
     }
 }
 

@@ -41,7 +41,11 @@ final class SubtitleCustomViewLifetimeTests: XCTestCase {
         // the fix, the modal) does.
         let holder = makeHolderWithInlineCustomView()
         let modal = GBAlertModal(holder: holder)
-        _ = renderForSnapshot(modal, size: CGSize(width: 390, height: 844))
+        let window = UIWindow(frame: CGRect(x: 0, y: 0, width: 390, height: 844))
+        window.isHidden = false
+        modal.show(parent: window, completion: {})
+        window.layoutIfNeeded()
+        defer { window.isHidden = true }
 
         XCTAssertNotNil(
             modal.vwSubtitle,

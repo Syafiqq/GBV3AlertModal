@@ -60,7 +60,22 @@ let package = Package(
             path: "Library/GBV3AlertModal/Sources/GBV3AlertModal"
         ),
         .testTarget(
-            name: "GBV3AlertModalTests",
+            name: "GBV3AlertModalCoreTests",
+            dependencies: ["GBV3AlertModalCore"],
+            path: "Library/GBV3AlertModal/Tests/GBV3AlertModalCoreTests"
+        ),
+        .testTarget(
+            name: "GBV3AlertModalSwiftUITests",
+            dependencies: ["GBV3AlertModalCore", "GBV3AlertModalSwiftUI"],
+            path: "Library/GBV3AlertModal/Tests/GBV3AlertModalSwiftUITests"
+        ),
+        .testTarget(
+            name: "GBV3AlertModalUIKitTests",
+            dependencies: ["GBV3AlertModalCore", "GBV3AlertModalUIKit"],
+            path: "Library/GBV3AlertModal/Tests/GBV3AlertModalUIKitTests"
+        ),
+        .testTarget(
+            name: "GBV3AlertModalMigrationTests",
             dependencies: [
                 "GBV3AlertModalCore",
                 "GBV3AlertModalSwiftUI",
@@ -68,12 +83,18 @@ let package = Package(
                 "GBV3AlertModalMigration",
                 .product(name: "SnapshotTesting", package: "swift-snapshot-testing"),
             ],
-            path: "Library/GBV3AlertModal/Tests/GBV3AlertModalTests",
-            // An asset catalog the TEST bundle owns, so a banner can finally be compared. Both
-            // renderers resolve artwork from the main bundle by default and this target has none,
-            // which is why `bannerIsUnresolvableInTheLibraryBundle` excluded every banner from the
-            // one gate that measures the two backends against each other.
-            resources: [.process("Resources")],
+            path: "Library/GBV3AlertModal/Tests/GBV3AlertModalMigrationTests",
+            resources: [.process("Resources")]
+        ),
+        .testTarget(
+            name: "GBV3AlertModalArchitectureTests",
+            dependencies: [
+                "GBV3AlertModalCore",
+                "GBV3AlertModalSwiftUI",
+                "GBV3AlertModalUIKit",
+                "GBV3AlertModalMigration",
+            ],
+            path: "Library/GBV3AlertModal/Tests/GBV3AlertModalArchitectureTests"
         ),
         .testTarget(
             name: "GBV3AlertModalCompatibilityTests",

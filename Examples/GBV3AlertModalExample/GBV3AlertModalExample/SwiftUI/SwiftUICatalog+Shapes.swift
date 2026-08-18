@@ -17,7 +17,8 @@
 import Foundation
 import Foundation
 import SwiftUI
-import GBV3AlertModal
+import GBV3AlertModalCore
+import GBV3AlertModalSwiftUI
 
 // MARK: - Cross-cutting (#1–#8)
 

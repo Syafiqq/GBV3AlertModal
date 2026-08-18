@@ -125,7 +125,7 @@ struct ModalPropertiesAdapterTests {
             backgroundDisableColor: Color(uiColor: .gray),
             titleColor: Color(uiColor: .white),
             titleDisableColor: Color(uiColor: .lightGray),
-            titleFont: .system(size: 17, weight: .bold)
+            titleFont: .system(size: 17, weight: .semibold)
         )))
         #expect(adapted.secondaryActionStyle == .capsuleOutlined(.init(
             backgroundColor: Color(uiColor: .clear),

@@ -482,20 +482,6 @@ extension UIColor {
     }
 }
 
-extension Array {
-    subscript(safeIndex index: Int) -> Element? {
-        if isSafe(index: index) {
-            return self[index]
-        } else {
-            return nil
-        }
-    }
-
-    @inlinable func isSafe(index: Int) -> Bool {
-        index >= 0 && index < endIndex
-    }
-}
-
 extension UICollectionViewCell {
     static var reuseIdentifier: String {
         String(describing: Self.self)

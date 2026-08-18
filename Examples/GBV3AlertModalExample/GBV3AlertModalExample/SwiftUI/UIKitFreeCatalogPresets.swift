@@ -10,7 +10,8 @@
 //
 
 import SwiftUI
-import GBV3AlertModal
+import GBV3AlertModalCore
+import GBV3AlertModalSwiftUI
 
 @MainActor
 enum SwiftUICatalogPresets {
@@ -30,7 +31,7 @@ enum SwiftUICatalogPresets {
             childShouldMatchParent: true
         ),
         margin: EdgeInsets(top: 40, leading: 20, bottom: 40, trailing: 20),
-        padding: UIMinMaxEdgeInsets(
+        padding: MinMaxEdgeInsets(
             top: (16, 24),
             left: (16, 32),
             bottom: (16, 24),
@@ -183,7 +184,7 @@ enum SwiftUICatalogPresets {
 
     static var permissionAlert: ModalProperties {
         var properties = standard
-        properties.padding = UIMinMaxEdgeInsets(top: (20, 20), left: (30, 30), bottom: (12, 12), right: (30, 30))
+        properties.padding = MinMaxEdgeInsets(top: (20, 20), left: (30, 30), bottom: (12, 12), right: (30, 30))
         properties.space = ModalProperties.ComponentSpace(banner: 8, title: 12, subtitle: 20, interButton: 8)
         return properties
     }
@@ -215,7 +216,7 @@ enum SwiftUICatalogPresets {
 
     static var streak: ModalProperties {
         var properties = standard
-        properties.padding = UIMinMaxEdgeInsets(top: (20, 40), left: (20, 48), bottom: (20, 32), right: (20, 48))
+        properties.padding = MinMaxEdgeInsets(top: (20, 40), left: (20, 48), bottom: (20, 32), right: (20, 48))
         properties.banner = ModalBannerConfiguration(maximumHeight: 168)
         properties.space = ModalProperties.ComponentSpace(banner: 16, title: 12, subtitle: 24, interButton: 8)
         return properties
@@ -223,7 +224,7 @@ enum SwiftUICatalogPresets {
 
     static var timerBanner: ModalProperties {
         var properties = standard
-        properties.padding = UIMinMaxEdgeInsets(top: (32, 32), left: (32, 32), bottom: (32, 32), right: (32, 32))
+        properties.padding = MinMaxEdgeInsets(top: (32, 32), left: (32, 32), bottom: (32, 32), right: (32, 32))
         properties.banner = ModalBannerConfiguration(maximumHeight: 170)
         return properties
     }
@@ -236,7 +237,7 @@ enum SwiftUICatalogPresets {
 
     static var renameInput: ModalProperties {
         var properties = standard
-        properties.padding = UIMinMaxEdgeInsets(top: (20, 32), left: (16, 32), bottom: (16, 16), right: (16, 32))
+        properties.padding = MinMaxEdgeInsets(top: (20, 32), left: (16, 32), bottom: (16, 16), right: (16, 32))
         properties.titleFont = .system(size: 24, weight: .heavy)
         properties.space = ModalProperties.ComponentSpace(banner: 8, title: 16, subtitle: 32, interButton: 8)
         return properties
@@ -249,7 +250,7 @@ enum SwiftUICatalogPresets {
         // read this number in any direction (see `DatePickerModalView`'s doc). Left at `standard`'s
         // real 256pt production column rather than kept at an unmotivated 320 that never did
         // anything.
-        properties.padding = UIMinMaxEdgeInsets(top: (20, 32), left: (12, 40), bottom: (16, 16), right: (12, 40))
+        properties.padding = MinMaxEdgeInsets(top: (20, 32), left: (12, 40), bottom: (16, 16), right: (12, 40))
         properties.titleFont = .system(size: 24, weight: .heavy)
         properties.space = ModalProperties.ComponentSpace(banner: 8, title: 0, subtitle: 8, interButton: 8)
         return properties
@@ -257,7 +258,7 @@ enum SwiftUICatalogPresets {
 
     static var badgeUnlock: ModalProperties {
         var properties = standard
-        properties.padding = UIMinMaxEdgeInsets(top: (20, 40), left: (20, 48), bottom: (20, 32), right: (20, 48))
+        properties.padding = MinMaxEdgeInsets(top: (20, 40), left: (20, 48), bottom: (20, 32), right: (20, 48))
         properties.banner = ModalBannerConfiguration(maximumHeight: 144)
         properties.space = ModalProperties.ComponentSpace(banner: 16, title: 12, subtitle: 24, interButton: 8)
         return properties
@@ -271,7 +272,7 @@ enum SwiftUICatalogPresets {
 
     static var badgeDetail: ModalProperties {
         var properties = standard
-        properties.padding = UIMinMaxEdgeInsets(top: (20, 36), left: (20, 48), bottom: (20, 36), right: (20, 48))
+        properties.padding = MinMaxEdgeInsets(top: (20, 36), left: (20, 48), bottom: (20, 36), right: (20, 48))
         properties.space = ModalProperties.ComponentSpace(banner: 0, title: 0, subtitle: 24, interButton: 0)
         return properties
     }

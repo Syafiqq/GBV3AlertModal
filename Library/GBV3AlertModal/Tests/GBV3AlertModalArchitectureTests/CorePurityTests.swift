@@ -9,8 +9,7 @@ final class CorePurityTests: XCTestCase {
     /// `.../Library/GBV3AlertModal` — four levels up from this file.
     private var packageRoot: URL {
         URL(fileURLWithPath: #filePath)
-            .deletingLastPathComponent()  // Architecture/
-            .deletingLastPathComponent()  // GBV3AlertModalTests/
+            .deletingLastPathComponent()  // GBV3AlertModalArchitectureTests/
             .deletingLastPathComponent()  // Tests/
             .deletingLastPathComponent()  // GBV3AlertModal/
     }
@@ -47,6 +46,9 @@ final class CorePurityTests: XCTestCase {
             "Sources/GBV3AlertModalCore/ResolvedModal.swift"
         )
         let source = try String(contentsOf: file, encoding: .utf8)
+            .split(separator: "\n")
+            .filter { !$0.trimmingCharacters(in: .whitespaces).hasPrefix("//") }
+            .joined(separator: "\n")
         let forbidden = ["UIKit", "SwiftUI", "NSLayoutConstraint", "UIView", "UIStackView"]
 
         for symbol in forbidden {
