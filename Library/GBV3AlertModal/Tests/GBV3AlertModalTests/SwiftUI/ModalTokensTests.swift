@@ -313,6 +313,20 @@ final class ModalTokensProvenanceTests: XCTestCase {
         XCTAssertEqual(ModalTokens(from: properties).secondaryButtonFont, Font(font))
     }
 
+    func test_primaryPlainStyle_isPreservedForSwiftUIRendering() {
+        let theme = GBAlertModal.ActionStyle.PlainTheme(
+            titleColor: .systemTeal,
+            titleDisableColor: .systemGray,
+            titleFont: .systemFont(ofSize: 15, weight: .semibold)
+        )
+        let tokens = ModalTokens(from: GBAlertModal.Properties(primaryActionStyle: .plain(theme)))
+
+        XCTAssertTrue(tokens.primaryIsPlain)
+        XCTAssertNil(tokens.primaryCapsule)
+        XCTAssertNil(tokens.primaryCapsuleOutlined)
+        XCTAssertEqual(tokens.palette.secondaryLabel, Color(uiColor: .systemTeal))
+    }
+
     /// **S3.** The secondary label colour must come from the SECONDARY style's own `PlainTheme`,
     /// never from `palette.accent` (the PRIMARY oblique theme's colour).
     ///

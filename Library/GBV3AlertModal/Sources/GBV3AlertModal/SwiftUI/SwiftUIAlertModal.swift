@@ -417,6 +417,7 @@ private struct SubtitleSlot<Content: View>: View {
     /// row wants exactly the greed it already has.
     let fillsWidth: Bool
     @ViewBuilder let content: () -> Content
+    @Environment(\.modalUsesExternalContentScroll) private var usesExternalScroll
 
     /// The content's ideal size, measured from inside the scroll — where the height proposal is
     /// unbounded and the content therefore reports what it WANTS. `nil` until the first measurement
@@ -424,24 +425,31 @@ private struct SubtitleSlot<Content: View>: View {
     /// same layout cycle, so the settled layout is the capped one.
     @State private var ideal: CGSize?
 
+    @ViewBuilder
     var body: some View {
-        ScrollView(.vertical, showsIndicators: true) {
+        if usesExternalScroll {
             content()
-                // A BACKGROUND reader, not a wrapping `GeometryReader`: a wrapping one would impose
-                // its own sizing on the very thing being measured.
-                .background(
-                    GeometryReader { proxy in
-                        Color.clear.preference(key: SubtitleIdealSizeKey.self, value: proxy.size)
-                    }
-                )
-        }
-        .frame(maxWidth: fillsWidth ? .infinity : ideal?.width)
-        .frame(minHeight: floor, maxHeight: ideal?.height)
-        .onPreferenceChange(SubtitleIdealSizeKey.self) { size in
-            // Guarded: an unconditional write re-renders with the same value on every pass, which is
-            // a layout loop rather than a settled layout.
-            if size.height > 0, ideal != size {
-                ideal = size
+                .frame(maxWidth: fillsWidth ? .infinity : nil)
+                .frame(minHeight: floor)
+        } else {
+            ScrollView(.vertical, showsIndicators: true) {
+                content()
+                    // A BACKGROUND reader, not a wrapping `GeometryReader`: a wrapping one would impose
+                    // its own sizing on the very thing being measured.
+                    .background(
+                        GeometryReader { proxy in
+                            Color.clear.preference(key: SubtitleIdealSizeKey.self, value: proxy.size)
+                        }
+                    )
+            }
+            .frame(maxWidth: fillsWidth ? .infinity : ideal?.width)
+            .frame(minHeight: floor, maxHeight: ideal?.height)
+            .onPreferenceChange(SubtitleIdealSizeKey.self) { size in
+                // Guarded: an unconditional write re-renders with the same value on every pass, which is
+                // a layout loop rather than a settled layout.
+                if size.height > 0, ideal != size {
+                    ideal = size
+                }
             }
         }
     }

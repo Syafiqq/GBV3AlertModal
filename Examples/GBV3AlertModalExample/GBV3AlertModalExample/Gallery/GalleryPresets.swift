@@ -31,8 +31,7 @@ enum GalleryPresets {
     )
 
     /// Mirrors `Presentation.UiKit.V3AlertModal.margin` (`UIEdgeInsets(vertical: 40, horizontal: 20)`).
-    /// Vertical margin 0 — see `GeniePresets.margin` for the reasoning and the measured effect.
-    static let margin = UIEdgeInsets(top: 0, left: 20, bottom: 0, right: 20)
+    static let margin = UIEdgeInsets(top: 40, left: 20, bottom: 40, right: 20)
 
     /// Mirrors `Presentation.UiKit.V3AlertModal.padding`.
     static let padding = UIMinMaxEdgeInsets(
@@ -237,7 +236,7 @@ enum GalleryPresets {
             maxWidthLandscape: 256,
             childShouldMatchParent: true
         ),
-        margin: EdgeInsets(top: 0, leading: 20, bottom: 0, trailing: 20),
+        margin: EdgeInsets(top: 40, leading: 20, bottom: 40, trailing: 20),
         padding: UIMinMaxEdgeInsets(top: (16, 24), left: (16, 32), bottom: (16, 24), right: (16, 32)),
         banner: ModalBannerConfiguration(),
         // Weight only — family stays `.system`, not `GallerySHSans`/OpenSans (declared, cross-cutting

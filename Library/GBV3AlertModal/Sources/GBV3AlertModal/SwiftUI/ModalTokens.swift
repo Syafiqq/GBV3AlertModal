@@ -208,6 +208,8 @@ public struct ModalTokens: Sendable, Equatable {
     /// implementation would not be a source break. This is that implementation.
     public var primaryCapsule: CapsuleVisual?
     public var primaryCapsuleOutlined: CapsuleOutlinedVisual?
+    /// The primary action uses UIKit's borderless `.plain` presentation.
+    public var primaryIsPlain = false
     public var secondaryCapsule: CapsuleVisual?
     public var secondaryCapsuleOutlined: CapsuleOutlinedVisual?
 
@@ -705,6 +707,14 @@ public struct ModalTokens: Sendable, Equatable {
         if case let .capsuleOutlined(theme)? = properties.primaryActionStyle {
             primaryCapsuleOutlined = CapsuleOutlinedVisual(theme: theme, fallbackFont: primaryButtonFont)
         }
+        if case let .plain(theme)? = properties.primaryActionStyle {
+            primaryIsPlain = true
+            if let titleColor = theme.titleColor { palette.secondaryLabel = Color(uiColor: titleColor) }
+            if let titleDisableColor = theme.titleDisableColor {
+                palette.secondaryDisabled = Color(uiColor: titleDisableColor)
+            }
+            if let titleFont = theme.titleFont { secondaryButtonFont = Font(titleFont) }
+        }
 
         // `PlainSecondaryStyle`'s real counterpart is `ActionStyle.plain` (a borderless text
         // button) — the same case `SwiftUIAlertModal`'s sentinel `Properties` already uses for
@@ -1176,6 +1186,12 @@ extension ModalTokens {
         }
         if case let .capsuleOutlined(theme)? = properties.primaryActionStyle {
             primaryCapsuleOutlined = CapsuleOutlinedVisual(theme: theme, fallbackFont: primaryButtonFont)
+        }
+        if case let .plain(theme)? = properties.primaryActionStyle {
+            primaryIsPlain = true
+            if let titleColor = theme.titleColor { palette.secondaryLabel = titleColor }
+            if let titleDisableColor = theme.titleDisableColor { palette.secondaryDisabled = titleDisableColor }
+            if let titleFont = theme.titleFont { secondaryButtonFont = titleFont.font }
         }
 
         // The secondary's colours come from the SECONDARY theme and must never be re-pointed at

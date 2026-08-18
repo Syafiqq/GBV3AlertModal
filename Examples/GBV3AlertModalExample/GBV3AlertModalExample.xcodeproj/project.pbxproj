@@ -15,6 +15,7 @@
 		368CAF3A43206A9CDAA09FAB /* SwiftUIAlertModalSmokeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E57904A58A5B83CC314F570 /* SwiftUIAlertModalSmokeTests.swift */; };
 		16EF31E2A1BDDBAEC29CA9AC /* SwiftUIDemoScreenSmokeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E2CF600334B8B8CA32375C4B /* SwiftUIDemoScreenSmokeTests.swift */; };
 		01B9BAB389F03BF4E18FF491 /* GenerationGuardTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE42C37D4823D8857ABCACE7 /* GenerationGuardTests.swift */; };
+		CA10A0010000000000000001 /* CatalogSnapshotComparisonTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA10A0020000000000000001 /* CatalogSnapshotComparisonTests.swift */; };
 		5962A4D42935DFA200183658 /* GBV3AlertModalExampleUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5962A4D32935DFA200183658 /* GBV3AlertModalExampleUITests.swift */; };
 		5962A4D62935DFA200183658 /* GBV3AlertModalExampleUITestsLaunchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5962A4D52935DFA200183658 /* GBV3AlertModalExampleUITestsLaunchTests.swift */; };
 /* End PBXBuildFile section */
@@ -44,6 +45,7 @@
 		0E57904A58A5B83CC314F570 /* SwiftUIAlertModalSmokeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SwiftUIAlertModalSmokeTests.swift; sourceTree = "<group>"; };
 		E2CF600334B8B8CA32375C4B /* SwiftUIDemoScreenSmokeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SwiftUIDemoScreenSmokeTests.swift; sourceTree = "<group>"; };
 		EE42C37D4823D8857ABCACE7 /* GenerationGuardTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GenerationGuardTests.swift; sourceTree = "<group>"; };
+		CA10A0020000000000000001 /* CatalogSnapshotComparisonTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CatalogSnapshotComparisonTests.swift; sourceTree = "<group>"; };
 		5962A4CF2935DFA200183658 /* GBV3AlertModalExampleUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = GBV3AlertModalExampleUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		5962A4D32935DFA200183658 /* GBV3AlertModalExampleUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GBV3AlertModalExampleUITests.swift; sourceTree = "<group>"; };
 		5962A4D52935DFA200183658 /* GBV3AlertModalExampleUITestsLaunchTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GBV3AlertModalExampleUITestsLaunchTests.swift; sourceTree = "<group>"; };
@@ -126,6 +128,7 @@
 				0E57904A58A5B83CC314F570 /* SwiftUIAlertModalSmokeTests.swift */,
 				E2CF600334B8B8CA32375C4B /* SwiftUIDemoScreenSmokeTests.swift */,
 				EE42C37D4823D8857ABCACE7 /* GenerationGuardTests.swift */,
+				CA10A0020000000000000001 /* CatalogSnapshotComparisonTests.swift */,
 			);
 			path = GBV3AlertModalExampleTests;
 			sourceTree = "<group>";
@@ -291,6 +294,7 @@
 				368CAF3A43206A9CDAA09FAB /* SwiftUIAlertModalSmokeTests.swift in Sources */,
 				16EF31E2A1BDDBAEC29CA9AC /* SwiftUIDemoScreenSmokeTests.swift in Sources */,
 				01B9BAB389F03BF4E18FF491 /* GenerationGuardTests.swift in Sources */,
+				CA10A0010000000000000001 /* CatalogSnapshotComparisonTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

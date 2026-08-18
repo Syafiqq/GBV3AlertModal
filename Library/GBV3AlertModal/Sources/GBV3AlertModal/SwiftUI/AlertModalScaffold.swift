@@ -1,11 +1,33 @@
 import SwiftUI
 
+/// The only SwiftUI layout variants. Ordinary spacing and inset changes belong in `.default`;
+/// these extra presets exist because their subtitle is a control or an arbitrary view.
+public enum ModalLayoutPreset: Sendable, Equatable {
+    case `default`
+    case datePickerSubtitle
+    case customSubtitle
+}
+
+private struct ModalUsesExternalContentScrollKey: EnvironmentKey {
+    static let defaultValue = false
+}
+
+extension EnvironmentValues {
+    var modalUsesExternalContentScroll: Bool {
+        get { self[ModalUsesExternalContentScrollKey.self] }
+        set { self[ModalUsesExternalContentScrollKey.self] = newValue }
+    }
+}
+
 /// The shared modal chrome (spec D1's bespoke-content surface): full-screen scrim + centered card +
 /// primary/secondary buttons + optional close, wrapped around a caller-supplied `@ViewBuilder` body.
 /// Never dismisses itself. `SwiftUIAlertModal` is this with a built-in standard body; bespoke dialogs
 /// (satisfaction picker, badge grid, worksheet) supply their own content instead of a `subtitleCustomView`.
 public struct AlertModalScaffold<Content: View>: View {
+    @State private var modalContentIdealHeight: CGFloat?
+    @State private var cardRowsIdealHeight: CGFloat?
     public let tokens: ModalTokens
+    public let layoutPreset: ModalLayoutPreset
     public var scrim: Color
     /// `nil` → NO primary button, mirroring `svMainActionContainer` simply not being handed a
     /// `vwPrimaryAction`. Optional since Pass 2; see `StandardAlertContent.primary`.
@@ -50,13 +72,13 @@ public struct AlertModalScaffold<Content: View>: View {
     /// Defaults to `true`, which is what every real Genie preset sets and what this scaffold did
     /// unconditionally before the flag was threaded (task 17, finding D-4).
     public var buttonsMatchParent: Bool = true
-    /// The banner artwork's point size, or `.zero` when this modal has no banner. Drives
-    /// `ModalTokens.bannerGeometry`, which the banner row reads back out of the environment.
+    /// Whether the content contains a banner. Its size and aspect remain owned by SwiftUI's Image.
     public let hasBanner: Bool
-    @ViewBuilder public let content: () -> Content
+    public let content: Content
 
     public init(
         tokens: ModalTokens = .standard,
+        layoutPreset: ModalLayoutPreset = .default,
         scrim: Color? = nil,
         primaryTitle: String?,
         isPrimaryLoading: Bool = false,
@@ -71,9 +93,12 @@ public struct AlertModalScaffold<Content: View>: View {
         buttonAxis: Axis = .vertical,
         buttonsMatchParent: Bool = true,
         hasBanner: Bool = false,
-        @ViewBuilder content: @escaping () -> Content
+        @ViewBuilder content: () -> Content
     ) {
         self.tokens = tokens
+        self._modalContentIdealHeight = State(initialValue: nil)
+        self._cardRowsIdealHeight = State(initialValue: nil)
+        self.layoutPreset = layoutPreset
         // `scrim`'s default depends on `tokens`, which a default *argument* expression can't
         // reference (Swift default args can't read other parameters) — resolved here instead.
         self.scrim = scrim ?? tokens.palette.scrim
@@ -90,7 +115,7 @@ public struct AlertModalScaffold<Content: View>: View {
         self.buttonAxis = buttonAxis
         self.buttonsMatchParent = buttonsMatchParent
         self.hasBanner = hasBanner
-        self.content = content
+        self.content = content()
     }
 
     public var body: some View {
@@ -115,7 +140,7 @@ public struct AlertModalScaffold<Content: View>: View {
                 // read an environment value it publishes on its own descendant. The `.environment`
                 // injection stays for `BannerSlot`, which is built inside the caller's `content`
                 // closure and so is a genuine descendant.
-                card()
+                card(availableHeight: max(0, proxy.size.height - tokens.cardMarginV * 2))
                 // The CARD's cap — `contentMaxWidth + leftMax + rightMax`, i.e. the width UIKit's
                 // `vwContainer` ends up with, NOT the width `ContentProperty` states (that one caps
                 // the content container inside `card`). Feeding the content width in here is the
@@ -263,48 +288,12 @@ public struct AlertModalScaffold<Content: View>: View {
     /// the scaffold's OWN ambient environment — the one fixed before it published anything — and read
     /// `.zero` forever. Threading it as a parameter is the only way `card` can see the same number
     /// `BannerSlot` does. (Same trap, opposite side, as the one `BannerSlot`'s doc records.)
-    private func card() -> some View {
+    private func card(availableHeight: CGFloat) -> some View {
         // `buttonAxis` is the resolver's decision (`Properties.buttonActionOrientation`), obeyed
         // here the way the UIKit main-action `UIStackView` obeys it: `.horizontal` → HStack,
         // `.vertical` → the (default) vertical run. The vertical branch is spelled inline rather
         // than in a nested VStack so it stays byte-for-byte the layout that shipped before.
-        VStack(spacing: 0) {
-            content()
-            // The whole run is gated on "is there at least one button", mirroring
-            // `buildActionComponents`: `svMainActionContainer` is built ONLY `if resolved.showsPrimary
-            // || resolved.showsSecondary`, and is `nil` otherwise. An empty `HStack` would be
-            // zero-sized and look equivalent, but it is not — see `trailingGap` in
-            // `SwiftUIAlertModal`, which has to know whether this row exists at all.
-            if primaryTitle != nil || secondaryTitle != nil {
-                if buttonAxis == .horizontal {
-                    // FALLBACK-POLICY NOTE (pre-existing, deliberately unchanged): `tokens.interButton`
-                    // falls back to `standard`'s literal 8 when `Properties.space` is nil, whereas the
-                    // UIKit main-action stack uses `properties?.space?.interButton ?? .zero`. Inert for
-                    // the real preset (which supplies `space`), but `buttonAxis` is load-bearing now,
-                    // so the difference is recorded here rather than silently inherited.
-                    //
-                    // `HStack(spacing:)` puts the gap only BETWEEN children, so a lone secondary gets
-                    // no leading gap — the same arithmetic `UIStackView.spacing` does over one
-                    // arranged subview. The vertical branch below has to say that out loud instead.
-                    HStack(spacing: tokens.interButton) {
-                        if let primaryTitle { primaryButton(primaryTitle) }
-                        if let secondaryTitle { secondaryButton(secondaryTitle) }
-                    }
-                } else {
-                    if let primaryTitle { primaryButton(primaryTitle) }
-                    if let secondaryTitle {
-                        // The gap is BETWEEN the two buttons, so it must vanish when the secondary is
-                        // alone. Spelled as a conditional because this branch hand-rolls the stack
-                        // spacing (the run is inline in the card's `VStack(spacing: 0)`, not a nested
-                        // VStack) — `UIStackView` gets this for free, and a bare
-                        // `.padding(.top, interButton)` would leave an 8pt hole above a lone
-                        // secondary that UIKit does not have.
-                        secondaryButton(secondaryTitle)
-                            .padding(.top, primaryTitle == nil ? 0 : tokens.interButton)
-                    }
-                }
-            }
-        }
+        fittingCardRows(availableHeight: availableHeight)
         // (1) the CONTENT cap — `ContentProperty`'s stated width, applied to the content container
         //     exactly as UIKit applies it to `svContentContainer`. TWO frames, because "fill, but
         //     never past the cap" is not expressible as one: the inner `.infinity` is UIKit's
@@ -343,6 +332,99 @@ public struct AlertModalScaffold<Content: View>: View {
         // `vwContainer.layer.cornerRadius` against, so the test cannot drift from what draws.
         .clipShape(RoundedRectangle(cornerRadius: tokens.cardVisual.cornerRadius, style: .continuous))
         .modalGeometryProbe(.card)
+    }
+
+    @ViewBuilder
+    private func fittingCardRows(availableHeight: CGFloat) -> some View {
+        if hasBanner {
+            // BannerSlot is already the pressure valve for banner dialogs: its flexible height
+            // yields to the title, subtitle, and actions. An outer scroll removes that proposal
+            // and can collapse ultra-tall artwork to a nearly invisible mark.
+            cardRows
+        } else if let cardRowsIdealHeight, cardRowsIdealHeight > availableHeight {
+            pressuredCardRows
+                .frame(maxHeight: availableHeight)
+        } else {
+            cardRows
+                .background {
+                    GeometryReader { proxy in
+                        Color.clear.preference(
+                            key: ModalCardRowsIdealHeightKey.self,
+                            value: proxy.size.height
+                        )
+                    }
+                }
+                .onPreferenceChange(ModalCardRowsIdealHeightKey.self) { height in
+                    if height > 0, cardRowsIdealHeight != height {
+                        cardRowsIdealHeight = height
+                    }
+                }
+        }
+    }
+
+    private var cardRows: some View {
+        VStack(spacing: 0) {
+            modalContent
+            buttonRows
+        }
+    }
+
+    /// When the full card cannot fit, only the descriptive content scrolls. Actions remain visible
+    /// and reachable at the bottom of the card, matching their role as persistent modal controls.
+    private var pressuredCardRows: some View {
+        VStack(spacing: 0) {
+            ScrollView(.vertical) {
+                modalContent
+                    .environment(\.modalUsesExternalContentScroll, true)
+                    .background {
+                        GeometryReader { proxy in
+                            Color.clear.preference(
+                                key: ModalContentIdealHeightKey.self,
+                                value: proxy.size.height
+                            )
+                        }
+                    }
+            }
+            // Scroll only when needed. A bare ScrollView greedily consumes the whole card-height
+            // proposal even for short content, which stretched every ordinary dialog and created
+            // the large empty region reported in the badge modal.
+            .frame(maxHeight: modalContentIdealHeight)
+            .onPreferenceChange(ModalContentIdealHeightKey.self) { height in
+                if height > 0, modalContentIdealHeight != height {
+                    modalContentIdealHeight = height
+                }
+            }
+            buttonRows
+        }
+    }
+
+    private var modalContent: some View {
+        // `Content` may be a multi-child `@ViewBuilder` tuple (banner, title, subtitle). Keep its
+        // vertical layout explicit before applying a frame or environment modifier. A naked tuple
+        // can be flattened by its immediate VStack, but once wrapped for the pressured scroll path
+        // those children otherwise share the same origin and visually overlap.
+        VStack(spacing: 0) {
+            content
+        }
+            .frame(maxWidth: layoutPreset == .customSubtitle ? .infinity : nil, alignment: .center)
+    }
+
+    @ViewBuilder
+    private var buttonRows: some View {
+        if primaryTitle != nil || secondaryTitle != nil {
+            if buttonAxis == .horizontal {
+                HStack(spacing: tokens.interButton) {
+                    if let primaryTitle { primaryButton(primaryTitle) }
+                    if let secondaryTitle { secondaryButton(secondaryTitle) }
+                }
+            } else {
+                if let primaryTitle { primaryButton(primaryTitle) }
+                if let secondaryTitle {
+                    secondaryButton(secondaryTitle)
+                        .padding(.top, primaryTitle == nil ? 0 : tokens.interButton)
+                }
+            }
+        }
     }
 
     /// The oblique primary button, displaced inside its slot the way UIKit displaces it.
@@ -384,6 +466,11 @@ public struct AlertModalScaffold<Content: View>: View {
         } else if let capsule = tokens.primaryCapsule {
             Button(action: onPrimary) { primaryLabel(title, tint: capsule.title) }
                 .buttonStyle(CapsuleButtonStyle(visual: capsule, tokens: tokens, fillsWidth: buttonsMatchParent))
+                .disabled(!primaryEnabled || isPrimaryLoading)
+                .modalGeometryProbe(.primaryButton)
+        } else if tokens.primaryIsPlain {
+            Button(action: onPrimary) { Text(title) }
+                .buttonStyle(PlainSecondaryStyle(tokens: tokens))
                 .disabled(!primaryEnabled || isPrimaryLoading)
                 .modalGeometryProbe(.primaryButton)
         } else {
@@ -446,6 +533,22 @@ public struct AlertModalScaffold<Content: View>: View {
                 // likewise excludes the main-action stack's spacing).
                 .modalGeometryProbe(.secondaryButton)
         }
+    }
+}
+
+private struct ModalContentIdealHeightKey: PreferenceKey {
+    static let defaultValue: CGFloat = 0
+
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+        value = max(value, nextValue())
+    }
+}
+
+private struct ModalCardRowsIdealHeightKey: PreferenceKey {
+    static let defaultValue: CGFloat = 0
+
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+        value = max(value, nextValue())
     }
 }
 

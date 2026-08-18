@@ -29,7 +29,7 @@ final class GalleryViewController: UITableViewController {
     /// button-state variants, followed by the divergence shapes (the UIKit
     /// halves of the recorded UIKit-vs-SwiftUI differences) — combined into one
     /// list so `step(by:)` wraps across all four groups uniformly.
-    private static let allEntries: [DialogEntry] =
+    static let allEntries: [DialogEntry] =
         DialogCatalog.entries
             + StressCatalog.entries
             + VariantsCatalog.entries

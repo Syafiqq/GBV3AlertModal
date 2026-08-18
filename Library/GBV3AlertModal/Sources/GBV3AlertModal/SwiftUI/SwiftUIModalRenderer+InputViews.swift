@@ -105,8 +105,14 @@ public struct TextInputModalView: View {
             // `RoundedBorderTextFieldStyle()` spelled out rather than `.roundedBorder`: the concrete
             // style type is iOS 13+, which is unambiguously inside the iOS 15 floor.
             TextField(descriptor.placeholder, text: $text)
-                .textFieldStyle(RoundedBorderTextFieldStyle())
-                .frame(height: 44)               // same 44pt the UIKit holder constrains the field to
+                .textFieldStyle(PlainTextFieldStyle())
+                .padding(.horizontal, 12)
+                .frame(height: 44)
+                .background(tokens.palette.cardBackground)
+                .overlay {
+                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                        .stroke(tokens.palette.subtitleText.opacity(0.25))
+                }
                 .padding(.bottom, tokens.gapBelowSubtitle)
         }
     }
@@ -229,6 +235,7 @@ public struct DatePickerModalView: View {
     public var body: some View {
         AlertModalScaffold(
             tokens: tokens,
+            layoutPreset: .datePickerSubtitle,
             primaryTitle: descriptor.primary,
             onPrimary: { resolve(Self.result(for: .primary, date: date)) },
             secondaryTitle: descriptor.secondary,

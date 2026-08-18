@@ -28,6 +28,13 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
             didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
             // swiftlint:disable:previous discouraged_optional_collection
     ) -> Bool {
+        // Unit tests build their own explicit view hierarchy. Launching the interactive gallery
+        // here leaves UIKit scroll-view callbacks pending when XCTest tears down the host process,
+        // which crashes inside `UIWindow.dealloc` on Xcode 26. Keep normal app launches unchanged.
+        if ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil {
+            return true
+        }
+
         let window = UIWindow(frame: UIScreen.main.bounds)
         let gallery = GalleryViewController()
         window.rootViewController = UINavigationController(rootViewController: gallery)

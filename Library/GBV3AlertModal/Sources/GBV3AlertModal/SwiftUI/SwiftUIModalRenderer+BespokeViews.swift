@@ -85,6 +85,7 @@ public struct BadgeModalView: View {
     public var body: some View {
         AlertModalScaffold(
             tokens: tokens,
+            layoutPreset: descriptor.badges.contains(where: { $0.detail != nil }) ? .customSubtitle : .default,
             primaryTitle: descriptor.primary,
             onPrimary: { resolve(Self.result(for: .primary)) },
             secondaryTitle: descriptor.secondary,
@@ -199,9 +200,14 @@ public struct BadgeModalView: View {
 
     @ViewBuilder
     private var badgeGrid: some View {
-        if !descriptor.badges.isEmpty {
-            // `LazyVGrid` is iOS 14+, inside the iOS 15 floor. `.adaptive` so one badge centres and
-            // several wrap — the single/multi/detail shapes differ only in how many they pass.
+        if descriptor.badges.count == 1, let badge = descriptor.badges.first {
+            badgeCell(badge)
+                .frame(maxWidth: .infinity, alignment: .center)
+                .padding(.bottom, tokens.gapBelowSubtitle)
+        } else if !descriptor.badges.isEmpty {
+            // `LazyVGrid` is iOS 14+, inside the iOS 15 floor. `.adaptive` lets several badges
+            // wrap — the single-badge case above must bypass it because an adaptive grid
+            // resolves this card width to two columns and places its only item in the leading one.
             LazyVGrid(
                 columns: [GridItem(.adaptive(minimum: 96), spacing: 12)],
                 spacing: 12
@@ -221,9 +227,13 @@ public struct BadgeModalView: View {
                     .resizable()
                     .scaledToFit()
                     .frame(width: 72, height: 72)
+            } else if badge.detail != nil {
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .fill(Color(red: 1, green: 0.65, blue: 0.25))
+                    .frame(width: 96, height: 96)
             }
             Text(badge.name)
-                .font(tokens.subtitleFont.font)
+                .font(badge.detail == nil ? tokens.subtitleFont.font : .system(size: 16, weight: .bold))
                 .foregroundColor(tokens.palette.titleText)
                 .multilineTextAlignment(.center)
             if let detail = badge.detail {
@@ -235,6 +245,7 @@ public struct BadgeModalView: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
         }
+        .frame(maxWidth: .infinity, alignment: .center)
     }
 
     /// `ActionType` → the descriptor's result vocabulary. Kept out of the body (the same split

@@ -101,21 +101,10 @@ final class SwiftUIDemoScreenSmokeTests: XCTestCase {
         )
     }
 
-    /// **Exactly ONE `notRenderable` row remains, and it is a decision rather than a limit.**
-    ///
-    /// There were nine. Six were `StandardAlertContent.primary` being a non-optional `String`, two
-    /// were a descriptor having nowhere to put button enable-state; Pass 2 closed both. The ninth,
-    /// `variant-subtitle-customview`, is left deliberately: fixing it means a `ModalDescriptor` that
-    /// carries a live `UIView`, which costs the `Sendable` conformance the whole descriptor design
-    /// rests on, and `register(_:view:)` already serves the real use case.
-    ///
-    /// Asserted BY NAME, not by count. A count alone passes if this row is quietly fixed while some
-    /// other row breaks — which is the exact substitution the gallery's honesty rule exists to stop.
-    func test_theOnlyUnrenderableShape_isTheOneWeDecidedNotToBuild() {
-        XCTAssertEqual(
-            SwiftUICatalog.entries.filter { $0.notRenderableReason != nil }.map(\.name),
-            ["variant-subtitle-customview"]
-        )
+    /// Custom subtitle content is supplied by the consumer's registered SwiftUI view; no descriptor
+    /// carries a `UIView`, so the entire catalog remains `Sendable` and renderable.
+    func test_everyCatalogShapeIsRenderable() {
+        XCTAssertTrue(SwiftUICatalog.entries.allSatisfy { $0.notRenderableReason == nil })
     }
 
     /// Tier 0: the SwiftUI screen builds with a real executor injected (no SwiftUI modal of its own).

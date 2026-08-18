@@ -286,6 +286,9 @@ enum SwiftUICatalog {
         }
         registerInputDialogs(on: renderer)
         registerBespokeContent(on: renderer)
+        renderer.register(CatalogCustomSubtitleDialog.self, view: { descriptor, resolve in
+            AnyView(CatalogCustomSubtitleModalView(descriptor: descriptor, resolve: resolve))
+        })
         return renderer
     }
 
