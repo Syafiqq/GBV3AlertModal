@@ -23,11 +23,11 @@ final class EmbeddedAdoptionViewModel: ObservableObject {
     private let executor: DefaultModalExecutor
 
     init() {
-        // GalleryPresets.standardModalProperties/.popupModalProperties — a minimal, UIKit-free
+        // GalleryPresets.standardModalProperties — the single UIKit-free example preset
         // preset shared with the "Window" gallery demo (rootRenderer's own sanity check).
         let renderer = EmbeddedModalRenderer(
             alertProperties: GalleryPresets.standardModalProperties,
-            popupProperties: GalleryPresets.popupModalProperties
+            popupProperties: GalleryPresets.standardModalProperties
         )
         self.renderer = renderer
 
@@ -56,7 +56,7 @@ final class EmbeddedAdoptionViewModel: ObservableObject {
             await executor.presentAndWait(
                 PopupDialog(
                     title: "Popup style",
-                    subtitle: "A different descriptor resolves to the popup preset.",
+                    subtitle: "PopupDialog resolves through the same consolidated standard configuration.",
                     primary: "Got it"
                 )
             )

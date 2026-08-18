@@ -25,7 +25,7 @@ final class WindowCatalogModel: ObservableObject {
     init() {
         let renderer = WindowModalRenderer(
             alertProperties: GalleryPresets.standardModalProperties,
-            popupProperties: GalleryPresets.popupModalProperties
+            popupProperties: GalleryPresets.standardModalProperties
         )
         let presets = UIKitFreeCatalogPresets.stylePresets
             + UIKitFreeCatalogPresets.stressPresets

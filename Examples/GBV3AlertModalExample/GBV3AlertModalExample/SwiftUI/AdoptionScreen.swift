@@ -67,7 +67,7 @@ final class AdoptionViewModel: ObservableObject {
             await executor.presentAndWait(
                 PopupDialog(
                     title: "Popup style",
-                    subtitle: "A different descriptor resolves to the popup preset.",
+                    subtitle: "PopupDialog resolves through the same consolidated standard configuration.",
                     primary: "Got it"
                 )
             )

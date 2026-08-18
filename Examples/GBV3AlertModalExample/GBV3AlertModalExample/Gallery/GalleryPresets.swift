@@ -129,35 +129,17 @@ enum GalleryPresets {
         bannerMaxHeight: nil,
         bannerFixedHeight: nil,
         titleFont: GallerySHSans.bold.font(24),
-        titleColor: GalleryColor.primary,
+        // One catalog base preset. Preserve the former popup typography while removing its
+        // separate padding and spacing configuration.
+        titleColor: GalleryColor.gbpNavy,
         subtitleFont: GallerySHSans.regular.font(16),
-        subtitleColor: GalleryColor.textPrimaryDark,
+        subtitleColor: GalleryColor.labelSubtitle,
         buttonActionShouldMatchParent: true,
         buttonActionOrientation: .vertical,
         primaryActionStyle: .obliqueBottomLeft(obliqueBottomLeftTheme),
         secondaryActionStyle: .plain(plainTheme),
         closeButtonTint: .black,
         space: space
-    )
-
-    /// Mirrors `Presentation.UiKit.V3AlertModal.popupProperties` (banner popup preset).
-    static let popupProperties = properties.copy(
-        padding: UIMinMaxEdgeInsets(
-            top: (20, 32),
-            left: (20, 32),
-            bottom: (20, 32),
-            right: (20, 32)
-        ),
-        titleFont: GallerySHSans.heavy.font(24),
-        titleColor: GalleryColor.gbpNavy,
-        subtitleFont: GallerySHSans.regular.font(16),
-        subtitleColor: GalleryColor.labelSubtitle,
-        space: GBAlertModal.Properties.ComponentSpace(
-            banner: 16,
-            title: 16,
-            subtitle: 24,
-            interButton: 8
-        )
     )
 
     /// Mirrors the `private static var badgeProperties` in
@@ -261,9 +243,10 @@ enum GalleryPresets {
         // Weight only — family stays `.system`, not `GallerySHSans`/OpenSans (declared, cross-cutting
         // divergence: `SwiftUIDivergence.global`'s "Fonts" note). Real preset is bold 24 / regular 16.
         titleFont: .system(size: 24, weight: .bold),
-        titleColor: Color(uiColor: GalleryColor.primary),
+        // Match `properties`: standard geometry with the former popup title/subtitle typography.
+        titleColor: Color(uiColor: GalleryColor.gbpNavy),
         subtitleFont: .system(size: 16),
-        subtitleColor: Color(uiColor: GalleryColor.textPrimaryDark),
+        subtitleColor: Color(uiColor: GalleryColor.labelSubtitle),
         buttonActionShouldMatchParent: true,
         buttonActionOrientation: .vertical,
         primaryActionStyle: .obliqueBottomLeft(
@@ -293,24 +276,6 @@ enum GalleryPresets {
         ),
         closeButtonTint: .black,
         space: ModalProperties.ComponentSpace(banner: 8, title: 8, subtitle: 16, interButton: 8)
-    )
-
-    static let popupModalProperties = ModalProperties(
-        baseTint: standardModalProperties.baseTint,
-        overlayColor: standardModalProperties.overlayColor,
-        contentProperty: standardModalProperties.contentProperty,
-        margin: standardModalProperties.margin,
-        padding: UIMinMaxEdgeInsets(top: (20, 32), left: (20, 32), bottom: (20, 32), right: (20, 32)),
-        titleFont: standardModalProperties.titleFont,
-        titleColor: standardModalProperties.titleColor,
-        subtitleFont: standardModalProperties.subtitleFont,
-        subtitleColor: standardModalProperties.subtitleColor,
-        buttonActionShouldMatchParent: standardModalProperties.buttonActionShouldMatchParent,
-        buttonActionOrientation: standardModalProperties.buttonActionOrientation,
-        primaryActionStyle: standardModalProperties.primaryActionStyle,
-        secondaryActionStyle: standardModalProperties.secondaryActionStyle,
-        closeButtonTint: standardModalProperties.closeButtonTint,
-        space: ModalProperties.ComponentSpace(banner: 16, title: 16, subtitle: 24, interButton: 8)
     )
 
     // MARK: - Data Holder

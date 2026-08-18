@@ -279,7 +279,9 @@ enum SwiftUICatalog {
     static func makeRenderer() -> SwiftUIModalRenderer {
         let renderer = SwiftUIModalRenderer(
             alertProperties: GalleryPresets.properties,
-            popupProperties: GalleryPresets.popupProperties
+            // `PopupDialog` remains source-compatible, but the example intentionally gives
+            // `.popup` the same consolidated configuration as `.standard`.
+            popupProperties: GalleryPresets.properties
         )
         let presets = SwiftUICatalogPresets.stylePresets
             + SwiftUICatalogPresets.stressPresets

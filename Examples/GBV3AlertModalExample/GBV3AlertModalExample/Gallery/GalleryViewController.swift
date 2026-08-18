@@ -122,7 +122,7 @@ final class GalleryViewController: UITableViewController {
         let properties = GalleryPresets.properties
         let renderer = UIKitModalRenderer(
             alertProperties: properties,
-            popupProperties: GalleryPresets.popupProperties
+            popupProperties: GalleryPresets.properties
         )
         // Custom-content input descriptors — registered by the consumer with the library's holders.
         renderer.register(TextInputDialog.self) { descriptor, resolve in
@@ -143,7 +143,7 @@ final class GalleryViewController: UITableViewController {
         let host = UIHostingController(
             rootView: AdoptionScreen(
                 properties: GalleryPresets.properties,
-                popupProperties: GalleryPresets.popupProperties
+                popupProperties: GalleryPresets.properties
             )
         )
         navigationController?.pushViewController(host, animated: true)
@@ -168,7 +168,7 @@ final class GalleryViewController: UITableViewController {
     @objc private func openWindowDemo() {
         let renderer = WindowModalRenderer(
             alertProperties: GalleryPresets.standardModalProperties,
-            popupProperties: GalleryPresets.popupModalProperties
+            popupProperties: GalleryPresets.standardModalProperties
         )
         renderer.registerBuiltInDescriptors()
         let executor = DefaultModalExecutor(renderer: renderer)

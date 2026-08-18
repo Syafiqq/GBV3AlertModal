@@ -25,7 +25,7 @@ extension DialogCatalog {
     private static var quizInfoBanner: DialogEntry {
         DialogEntry(name: "quiz-info-banner", category: "GenieClass") {
             SampleAlertModal(
-                properties: GalleryPresets.popupProperties.copy(
+                properties: GalleryPresets.properties.copy(
                     bannerRatio: 320.0 / 229.0,
                     bannerMaxHeight: 216,
                     bannerFixedHeight: 184
@@ -48,7 +48,7 @@ extension DialogCatalog {
     private static var quizBeginBanner: DialogEntry {
         DialogEntry(name: "quiz-begin-banner", category: "GenieClass") {
             SampleAlertModal(
-                properties: GalleryPresets.popupProperties.copy(
+                properties: GalleryPresets.properties.copy(
                     bannerRatio: 320.0 / 229.0,
                     bannerMaxHeight: 216,
                     bannerFixedHeight: 184
@@ -73,7 +73,7 @@ extension DialogCatalog {
     private static var creditDeductionPopup: DialogEntry {
         DialogEntry(name: "credit-deduction-popup", category: "GenieClass") {
             SampleAlertModal(
-                properties: GalleryPresets.popupProperties.copy(
+                properties: GalleryPresets.properties.copy(
                     titleFont: GallerySHSans.heavy.font(24)
                 ),
                 holder: GalleryPresets.holder.copy(
@@ -95,7 +95,7 @@ extension DialogCatalog {
     private static var aiNotesReadyBanner: DialogEntry {
         DialogEntry(name: "ai-notes-ready-banner", category: "GenieClass/AiNotes") {
             SampleAlertModal(
-                properties: GalleryPresets.popupProperties.copy(
+                properties: GalleryPresets.properties.copy(
                     bannerRatio: 960.0 / 681.0,
                     bannerMaxHeight: 320,
                     bannerFixedHeight: 256

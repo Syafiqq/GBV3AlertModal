@@ -147,7 +147,7 @@ extension DialogCatalog {
     private static var databaseErrorBanner: DialogEntry {
         DialogEntry(name: "database-error-banner", category: "Common/ErrorHandling") {
             SampleAlertModal(
-                properties: GalleryPresets.popupProperties.copy(
+                properties: GalleryPresets.properties.copy(
                     bannerRatio: 295.0 / 256.0,
                     bannerMaxHeight: 320,
                     bannerFixedHeight: 256
@@ -175,7 +175,7 @@ extension DialogCatalog {
     private static var forceUpdateBanner: DialogEntry {
         DialogEntry(name: "force-update-banner", category: "App-level") {
             SampleAlertModal(
-                properties: GalleryPresets.popupProperties.copy(
+                properties: GalleryPresets.properties.copy(
                     bannerRatio: 320.0 / 320.0,
                     bannerMaxHeight: 320,
                     bannerFixedHeight: 256

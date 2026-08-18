@@ -29,7 +29,7 @@ final class EmbeddedCatalogModel: ObservableObject {
     init() {
         let renderer = EmbeddedModalRenderer(
             alertProperties: GalleryPresets.standardModalProperties,
-            popupProperties: GalleryPresets.popupModalProperties
+            popupProperties: GalleryPresets.standardModalProperties
         )
         let presets = UIKitFreeCatalogPresets.stylePresets
             + UIKitFreeCatalogPresets.stressPresets

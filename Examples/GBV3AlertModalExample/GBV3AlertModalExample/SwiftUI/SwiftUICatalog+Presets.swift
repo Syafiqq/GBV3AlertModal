@@ -13,7 +13,7 @@
 //  over identical `Properties` — which is exactly what the screen is for.
 //
 //  Where the UIKit entry applies its override at the CALL SITE (e.g.
-//  `GalleryPresets.popupProperties.copy(bannerRatio: 295/256, …)`), the
+//  `GalleryPresets.properties.copy(bannerRatio: 295/256, …)`), the
 //  descriptor path has no call-site `Properties`, so the same override becomes a
 //  named style token. That is the documented trade in `ModalStyle`: a preset per
 //  design variant, registered once, asked for by name.
@@ -26,8 +26,8 @@ import GBV3AlertModal
 enum SwiftUICatalogPresets {
 
     /// The style→preset pairs registered on every catalog renderer. `.standard`
-    /// (`GalleryPresets.properties`) and `.popup` (`GalleryPresets.popupProperties`)
-    /// are already seeded by `SwiftUIModalRenderer.init`, so they are not repeated.
+    /// Both `.standard` and `.popup` are seeded with `GalleryPresets.properties`: the example has
+    /// one base preset, retaining the former popup title/subtitle typography. They are not repeated.
     static var stylePresets: [(ModalStyle, GBAlertModal.Properties)] {
         [
             (.geniePermissionAlert, GalleryPresets.permissionAlertProperties),
@@ -92,7 +92,7 @@ enum SwiftUICatalogPresets {
 
     /// `database-error-banner`.
     static var errorBanner: GBAlertModal.Properties {
-        GalleryPresets.popupProperties.copy(
+        GalleryPresets.properties.copy(
             bannerRatio: 295.0 / 256.0,
             bannerMaxHeight: 320,
             bannerFixedHeight: 256
@@ -101,7 +101,7 @@ enum SwiftUICatalogPresets {
 
     /// `force-update-banner`.
     static var forceUpdateBanner: GBAlertModal.Properties {
-        GalleryPresets.popupProperties.copy(
+        GalleryPresets.properties.copy(
             bannerRatio: 320.0 / 320.0,
             bannerMaxHeight: 320,
             bannerFixedHeight: 256
@@ -112,7 +112,7 @@ enum SwiftUICatalogPresets {
 
     /// `worksheet-abused-cap-banner`.
     static var capBanner: GBAlertModal.Properties {
-        GalleryPresets.popupProperties.copy(
+        GalleryPresets.properties.copy(
             bannerRatio: 320.0 / 197.0,
             bannerMaxHeight: 216,
             bannerFixedHeight: 184
@@ -162,7 +162,7 @@ enum SwiftUICatalogPresets {
 
     /// `quiz-info-banner` and `quiz-begin-banner`.
     static var quizBanner: GBAlertModal.Properties {
-        GalleryPresets.popupProperties.copy(
+        GalleryPresets.properties.copy(
             bannerRatio: 320.0 / 229.0,
             bannerMaxHeight: 216,
             bannerFixedHeight: 184
@@ -177,16 +177,16 @@ enum SwiftUICatalogPresets {
 
     /// `ai-notes-ready-banner`.
     static var aiNotesBanner: GBAlertModal.Properties {
-        GalleryPresets.popupProperties.copy(
+        GalleryPresets.properties.copy(
             bannerRatio: 960.0 / 681.0,
             bannerMaxHeight: 320,
             bannerFixedHeight: 256
         )
     }
 
-    /// `credit-deduction-popup` — popup preset with the heavy title.
+    /// `credit-deduction-popup` — consolidated standard preset with the heavy title.
     static var creditDeduction: GBAlertModal.Properties {
-        GalleryPresets.popupProperties.copy(
+        GalleryPresets.properties.copy(
             titleFont: GallerySHSans.heavy.font(24)
         )
     }

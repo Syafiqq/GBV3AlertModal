@@ -139,7 +139,7 @@ enum UIKitFreeCatalogPresets {
     }
 
     private static func popupBanner(ratio: CGFloat, maxHeight: CGFloat) -> ModalProperties {
-        var properties = GalleryPresets.popupModalProperties
+        var properties = GalleryPresets.standardModalProperties
         properties.bannerRatio = ratio
         properties.bannerMaxHeight = maxHeight
         return properties
@@ -174,7 +174,7 @@ enum UIKitFreeCatalogPresets {
     static var aiNotesBanner: ModalProperties { popupBanner(ratio: 960.0 / 681.0, maxHeight: 320) }
 
     static var creditDeduction: ModalProperties {
-        var properties = GalleryPresets.popupModalProperties
+        var properties = GalleryPresets.standardModalProperties
         properties.titleFont = .system(size: 24, weight: .heavy)
         return properties
     }

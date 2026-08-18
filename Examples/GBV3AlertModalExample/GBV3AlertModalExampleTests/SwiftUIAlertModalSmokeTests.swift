@@ -336,14 +336,14 @@ final class AdoptionScreenTests: XCTestCase {
     private func viewModel() -> AdoptionViewModel {
         AdoptionViewModel(
             properties: GalleryPresets.properties,
-            popupProperties: GalleryPresets.popupProperties
+            popupProperties: GalleryPresets.properties
         )
     }
 
     func test_theScreenBuildsAndHostsItsRenderer() {
         let screen = AdoptionScreen(
             properties: GalleryPresets.properties,
-            popupProperties: GalleryPresets.popupProperties
+            popupProperties: GalleryPresets.properties
         )
         let host = UIHostingController(rootView: screen)
         let window = UIWindow(frame: CGRect(x: 0, y: 0, width: 390, height: 844))
