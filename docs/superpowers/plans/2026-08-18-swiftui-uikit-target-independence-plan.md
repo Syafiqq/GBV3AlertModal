@@ -200,7 +200,47 @@ Migration, or SnapKit while preserving UIKit through an explicit compatibility s
    are detected as moves and no behavior changed.
 5. Commit: `Move platform-neutral modal sources`.
 
-## Task 7 — Declare products, targets, compatibility shim, and resources
+## Task 7 — Expose the cross-module API before moving backends
+
+**Files:**
+
+- Update declarations in `Library/GBV3AlertModal/Sources/GBV3AlertModalCore/` that are consumed by
+  the future SwiftUI, UIKit, or Migration targets.
+- Update declarations in the existing `SwiftUI/`, UIKit-owned, and `Migration/` directories that
+  will be consumed by another future target.
+- Add `Tests/Architecture/CrossModuleAPITests.swift`, a checked-in symbol-ownership inventory, and
+  `Script/validate-cross-module-api.sh`.
+
+**Steps:**
+
+1. Build a symbol-level inventory from every reference that will cross a target boundary after the
+   split: Core -> SwiftUI/UIKit/Migration, SwiftUI/UIKit -> Migration, and backend modules -> the
+   compatibility shim. Include initializers, methods, properties, nested types, protocol
+   requirements, conformances, and generic constraints—not only top-level type declarations.
+2. Classify each referenced declaration as `public` when it belongs to a product's supported
+   consumer surface, or `package` when it is implementation-only cooperation between targets in
+   this package. Do not expose backend implementation details merely to make the split compile.
+   Record the owner, consumers, chosen access, and rationale in the inventory.
+3. Apply the access-control changes while sources still build in the single compatibility target.
+   In particular, expose `ModalDiagnostics.logUnregisteredDescriptor` to sibling backend targets
+   with the narrowest viable access, and audit all renderer dependencies rather than treating that
+   known call as the complete list. Check memberwise initializers explicitly because promoting a
+   struct does not promote its synthesized initializer.
+4. Add compile witnesses for representative supported `public` APIs without `@testable import`.
+   Add an architecture test that compares the checked-in inventory with cross-owner symbol scans
+   and fails when a newly referenced boundary declaration has no classification.
+5. Make `validate-cross-module-api.sh` assemble a disposable package under `/tmp` by copying the
+   current sources into their proposed Task 8 ownership roots and applying the proposed target
+   graph. Build Core, SwiftUI, UIKit, and Migration separately there. The script must exercise the
+   actual compiler access checks, clean up its temporary package, and make no source move or
+   manifest change in the developer checkout. Fix every access-control failure in this task and
+   rerun until all four targets build.
+6. Run the full library suite, generic example build, the boundary-validation script twice, and
+   `git diff --check`. Inspect every access-level widening and confirm this commit contains no source
+   moves or production manifest target split.
+7. Commit: `Prepare cross-module modal APIs`.
+
+## Task 8 — Declare products, targets, compatibility shim, and resources
 
 **Files:**
 
@@ -213,7 +253,9 @@ Migration, or SnapKit while preserving UIKit through an explicit compatibility s
 **Steps:**
 
 1. Move SwiftUI, UIKit, and Migration files into non-overlapping roots. Keep
-   `WindowModalRenderer` with UIKit integration.
+   `WindowModalRenderer` with UIKit integration. Restrict production Swift changes to mechanical
+   moves; any newly required access-control edit means Task 7's audit is incomplete and must be
+   corrected in a separate preceding commit before continuing this task.
 2. Declare four backend products and targets. Core has no UI dependency; SwiftUI depends only on
    Core; UIKit depends on Core + SnapKit; Migration depends on Core + SwiftUI + UIKit.
 3. Add a tiny `GBV3AlertModal` compatibility target/product that transitionally uses
@@ -225,11 +267,11 @@ Migration, or SnapKit while preserving UIKit through an explicit compatibility s
    close asset if both need it rather than sharing a backend bundle.
 5. Run `swift package describe --type json` and inspect the dependency graph. Then build each scheme
    for a generic iOS Simulator, including Core and SwiftUI independently. Confirm only UIKit has a
-   SnapKit edge.
+   SnapKit edge, and compare the result with Task 7's disposable boundary-validation build.
 6. Run the full existing library suite through the compatibility product and the example build.
 7. Commit: `Split alert modal package targets`.
 
-## Task 8 — Split tests and the example by ownership
+## Task 9 — Split tests and the example by ownership
 
 **Files:**
 
@@ -258,7 +300,7 @@ Migration, or SnapKit while preserving UIKit through an explicit compatibility s
    only in Migration/comparison tests.
 7. Commit: `Split backend tests and examples`.
 
-## Task 9 — Add the authoritative SwiftUI-only deletion proof
+## Task 10 — Add the authoritative SwiftUI-only deletion proof
 
 **Files:**
 
@@ -281,7 +323,7 @@ Migration, or SnapKit while preserving UIKit through an explicit compatibility s
 5. Run the script twice to prove cleanup/idempotence, followed by the normal full-backend suites.
 6. Commit: `Prove SwiftUI builds without UIKit backend`.
 
-## Task 10 — Final verification and documentation handoff
+## Task 11 — Final verification and documentation handoff
 
 **Files:**
 
@@ -305,7 +347,7 @@ Migration, or SnapKit while preserving UIKit through an explicit compatibility s
 
 ## Completion criteria
 
-- Tasks 1–10 are individually committed and green.
+- Tasks 1–11 are individually committed and green.
 - Core + SwiftUI build/test in the deletion-proof configuration without resolving or linking UIKit,
   Migration, compatibility, or SnapKit.
 - The compatibility product keeps existing consumers compiling during coexistence.
@@ -323,16 +365,20 @@ Findings resolved:
 1. **No-go — invalid intermediate SwiftPM source layout.** A target cannot include a sibling outside
    its `path`. Task 6 now moves the temporary target path to the common `Sources` parent and lists
    both child roots explicitly.
-2. **No-go — product composition did not prove old import compatibility.** Task 7 now specifies a
+2. **No-go — cross-module access control was deferred until the move-only split.** Task 7 now
+   inventories and classifies every future cross-target reference, applies narrowly scoped
+   `public`/`package` access before moving files, explicitly covers `ModalDiagnostics`, and reserves
+   compiler proof for the immediately following per-target builds.
+3. **No-go — product composition did not prove old import compatibility.** Task 8 now specifies a
    transitional `@_exported import` shim, records the underscored-attribute risk, and requires a
    compile fixture that imports only the legacy module.
-3. **No-go — the mixed example could link UIKit while appearing SwiftUI-pure.** Tasks 8–9 now require
+4. **No-go — the mixed example could link UIKit while appearing SwiftUI-pure.** Tasks 9–10 now require
    a separate SwiftUI-only application target/scheme and build it with UIKit, Migration,
    compatibility, and SnapKit absent.
-4. **No-go — attributed-text ownership could force UIKit to import SwiftUI or Core to import a UI
+5. **No-go — attributed-text ownership could force UIKit to import SwiftUI or Core to import a UI
    framework.** Task 4 now keeps Foundation `AttributedString` in Core, a Foundation/UIKit-only
    adapter in UIKit, and true cross-backend scope conversion in Migration.
-5. **Medium — a detached task was unnecessary proof of resolver isolation.** Task 1 now uses a
+6. **Medium — a detached task was unnecessary proof of resolver isolation.** Task 1 now uses a
    synchronous nonisolated compile witness, avoiding unstructured concurrency in the test.
 
 Accepted risk:
