@@ -1,6 +1,5 @@
 import SwiftUI
 import Testing
-import UIKit
 @testable import GBV3AlertModal
 
 struct ModalFontTests {
@@ -51,20 +50,6 @@ struct ModalFontTests {
 
         #expect(lhs == rhs)
         acceptSendable(lhs)
-    }
-
-    @Test
-    func legacySystemAdapterPreservesEveryWeight() {
-        let cases: [(UIFont.Weight, ModalFont.Weight)] = [
-            (.ultraLight, .ultraLight), (.thin, .thin), (.light, .light),
-            (.regular, .regular), (.medium, .medium), (.semibold, .semibold),
-            (.bold, .bold), (.heavy, .heavy), (.black, .black)
-        ]
-
-        for (uiWeight, expected) in cases {
-            let adapted = ModalFont(UIFont.systemFont(ofSize: 18, weight: uiWeight))
-            #expect(adapted.weight == expected)
-        }
     }
 
     private func acceptSendable<T: Sendable>(_: T) {}
