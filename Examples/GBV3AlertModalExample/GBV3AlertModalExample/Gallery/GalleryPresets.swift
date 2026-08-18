@@ -239,7 +239,7 @@ enum GalleryPresets {
         ),
         margin: EdgeInsets(top: 0, leading: 20, bottom: 0, trailing: 20),
         padding: UIMinMaxEdgeInsets(top: (16, 24), left: (16, 32), bottom: (16, 24), right: (16, 32)),
-        bannerRatio: 1,
+        banner: ModalBannerConfiguration(),
         // Weight only — family stays `.system`, not `GallerySHSans`/OpenSans (declared, cross-cutting
         // divergence: `SwiftUIDivergence.global`'s "Fonts" note). Real preset is bold 24 / regular 16.
         titleFont: .system(size: 24, weight: .bold),

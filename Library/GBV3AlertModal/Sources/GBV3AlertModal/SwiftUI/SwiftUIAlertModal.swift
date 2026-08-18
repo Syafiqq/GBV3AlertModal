@@ -138,34 +138,11 @@ public struct SwiftUIAlertModal: View {
     }
 
     private func content(isLandscape: Bool) -> some View {
-        // Computed exactly once per render: both `modalContent` and `resolved` are otherwise
-        // re-derived (re-running `UIImage(named:)` / `ModalText.split` / the resolver) on every access.
+        // Computed exactly once per render so text splitting and resolution are not repeated.
         let content = self.modalContent
         let resolved = self.resolved(from: content, isLandscape: isLandscape)
-        // **The banner's EXISTENCE, decided here and only here.**
-        //
-        // Two facts, both known before any layout runs: the resolver said this modal shows a banner,
-        // and the named artwork actually resolves to a non-degenerate image. That second half is the
-        // same predicate `DifferentialGeometry.bannerIsUnresolvableInTheLibraryBundle` applies, and
-        // it is what makes an unresolvable asset `absentOnBoth` rather than SwiftUI-only.
-        //
-        // It used to be `BannerSlot` that decided, by gating its whole body on
-        // `bannerGeometry.height > 0` — which made EXISTENCE a function of LAYOUT, because that
-        // geometry only arrives once `AlertModalScaffold`'s `GeometryReader` has run. Anywhere the
-        // reader does not run (a structural `inspect()`, a preview that never gets a size) the banner
-        // vanished from the view tree altogether rather than merely being unsized. Existence is a
-        // resolver decision; only SIZE is a layout decision, and the two are separated here.
-        //
-        // `resolved.showsBanner` is the WHOLE answer, and this used to ask half of it twice. The
-        // shared resolver computes that flag from `content.hasBanner`, which `ModalContent.make`
-        // produces with the SAME `UIImage(named:in:compatibleWith:)` probe `ModalImage.pointSize`
-        // runs — non-nil AND non-degenerate. Re-deriving `drawsBanner` from the point size therefore
-        // recomputed a decision the resolver had made, from a second copy of the same fact.
+        // Banner existence is a content decision; SwiftUI resolves and lays out the Image itself.
         let drawsBanner = resolved.showsBanner
-        // The SIZE is the one thing the flag cannot carry, and `ModalTokens.bannerGeometry` needs
-        // it before any layout runs (`.resizable()` discards it). Short-circuited on the flag, so a
-        // modal with no banner never pays for the lookup at all.
-        let bannerArtworkSize = drawsBanner ? (config.image?.pointSize ?? .zero) : .zero
         // Every row's TRAILING gap is conditional on something existing below it, because UIKit's
         // are: `buildDividers` creates `vwBannerAndBelowDivider` / `vwTitleAndBelowDivider` /
         // `vwSubtitleAndBelowDivider` only when a later component was actually built. That was
@@ -211,11 +188,7 @@ public struct SwiftUIAlertModal: View {
             // UIKit turns into `svMainActionContainer.alignment`. Resolved AND obeyed now; it used to
             // be resolved and dropped (task 17, finding D-4).
             buttonsMatchParent: resolved.buttonsMatchParent,
-            // Drives `ModalTokens.bannerGeometry` inside the scaffold's `GeometryReader`, which needs
-            // the artwork's POINT size BEFORE layout — `.resizable()` throws it away. `.zero` when
-            // this modal shows no banner, which collapses `bannerGeometry` to `.zero` and leaves
-            // every non-banner shape's layout untouched.
-            bannerArtworkSize: bannerArtworkSize
+            hasBanner: drawsBanner
         ) {
             if drawsBanner, let image = config.image {
                 BannerSlot(
@@ -365,133 +338,18 @@ public struct SwiftUIAlertModal: View {
     }
 }
 
-/// **The banner SLOT + picture, mirroring UIKit's `vwBanner`/`ivBanner` split.**
-///
-/// A dedicated `View`, not inline content in `SwiftUIAlertModal.content(isLandscape:)`, and that is
-/// load-bearing rather than stylistic. `bannerGeometry` is published by `AlertModalScaffold` as an
-/// `.environment(...)` modifier on `card` — a DESCENDANT of `SwiftUIAlertModal` in the render tree,
-/// since `AlertModalScaffold` is what `SwiftUIAlertModal.body` returns. `@Environment` only flows
-/// ancestor → descendant, so reading `\.modalBannerGeometry` as a stored property ON
-/// `SwiftUIAlertModal` itself cannot see it: that property would be resolved from
-/// `SwiftUIAlertModal`'s OWN ambient environment, fixed before `AlertModalScaffold` — its child —
-/// ever computes anything, and permanently `.zero`. Worse, gating with a plain `if` inside the
-/// `content` closure bakes that stale value in at closure-CONSTRUCTION time (when
-/// `SwiftUIAlertModal.body` runs), not at the later point `card`'s `VStack` actually calls the
-/// closure.
-///
-/// This type sidesteps both problems: it is constructed inside `content()`, so it becomes a genuine
-/// descendant of `card` in the tree, and its OWN `@Environment` is resolved at ITS position — after
-/// the scaffold has already published the real geometry.
-///
-/// **What this view decides is SIZE, never EXISTENCE.** The body used to be wrapped in
-/// `if bannerGeometry.height > 0`, which read as a harmless "nothing measured yet, draw nothing" —
-/// and was not. The geometry only becomes non-`.zero` once `AlertModalScaffold`'s `GeometryReader`
-/// has run, so that guard made the banner's very presence in the view tree a consequence of layout:
-/// under a structural (non-hosted) `inspect()`, where no reader evaluates, the `Image` was never
-/// constructed at all and a wired-up banner read as a missing one. Whether there IS a banner is a
-/// resolver decision plus a resolvable asset, and `SwiftUIAlertModal.content(isLandscape:)` makes it
-/// there, before this view is built; by the time this body runs the answer is already yes. The
-/// zero-artwork collapse that guard was reaching for is served by the SAME call-site check, on the
-/// artwork's point size, which is known without measuring anything.
-///
-/// **One behavioural difference that removal left behind, recorded because it is real and
-/// unreachable rather than because it needs fixing.** There is a narrow case where the artwork
-/// RESOLVES with a non-zero point size — so the call site says yes and this view is built — and
-/// `ModalTokens.bannerGeometry` still returns `.zero`: it does that when the ratio is not a usable
-/// number, i.e. when `Properties.bannerRatio` is explicitly zero, negative, NaN or infinite (a
-/// natural ratio derived from a non-zero size never is). The old `if bannerGeometry.height > 0`
-/// guard skipped the whole body there and published NO `.banner` probe; this version emits a
-/// zero-SIZE one instead. Downstream that is a `verdict: .onlySwiftUI` row in the differential
-/// harness rather than an `absent (both)` — a visible, honest disagreement, and the harness's own
-/// `assertNonDegenerate` would report the zero rect.
-///
-/// It is not reachable from any preset in the app: every one of them either omits `bannerRatio`
-/// (natural aspect) or spells it as a ratio of two positive asset dimensions. No guard is added for
-/// it — a branch nothing can reach is a branch nothing can test, and the honest zero-size probe is a
-/// better failure mode than a silently absent one.
-///
-/// **This row does NOT honour `contentChildrenFillWidth`** — it applies no `ContentRowWidth`, where
-/// the title and subtitle rows both do. Its width is the banner column, always, because that is
-/// what UIKit's `vwBanner` resolves to. Inert for every shipping preset (all of them set the flag
-/// `true`, so filling is what the other rows do anyway) and recorded here because it was recorded
-/// nowhere: a preset that set it `false` would hug the title and subtitle while this row still
-/// spanned the column.
+/// Banner artwork that flows within the proposed content width using its intrinsic aspect ratio.
 private struct BannerSlot: View {
     let image: ModalImage
     let tokens: ModalTokens
-    /// UIKit's `vwBannerAndBelowDivider` condition — `lbTitle != nil || svSubtitleContainer != nil
-    /// || svMainActionContainer != nil`. A banner with nothing under it gets no trailing gap.
+    /// A banner with nothing below it needs no trailing gap.
     let hasContentBelow: Bool
-    @Environment(\.modalBannerGeometry) private var bannerGeometry
-
     var body: some View {
-        // UIKit models the banner as TWO views and so does this: `Color.clear` is the SLOT
-        // (`vwBanner`), sized by `ModalTokens.bannerGeometry`; the image is `ivBanner`,
-        // letterboxed inside it by `scaledToFit()` and imposing no size of its own.
-        //
-        // This used to be ONE view — `.resizable().scaledToFit()` with the aspect ratio applied
-        // to the image and the width frame applied OUTSIDE it, so the ratio never received the
-        // content column and settled on whatever vertical scrap the VStack offered: 26.8pt
-        // against UIKit's 160.
-        //
-        // **The height frame is a `maxHeight`, and that is UIKit's yield semantics — not a
-        // weaker version of them.** This was `.frame(width:height:)`, rigid, on the stated
-        // reasoning that "the height must be REACHED, not merely bounded" and that
-        // `.frame(maxHeight:)` therefore could not work here. Measured, that is false, and the
-        // reason it is false is a property of THIS view specifically: `Color.clear` is GREEDY. It
-        // expands to fill whatever it is offered, up to its `maxHeight`. So:
-        //
-        // * where the card is free to grow (portrait, and any roomy landscape card), the slot is
-        //   offered at least `bannerGeometry.height` and takes exactly it — a `maxHeight` frame and
-        //   a rigid one are indistinguishable, and every portrait frame is bit-identical under the
-        //   two (`DifferentialGeometryTests`' portrait banner rows, unchanged across the switch);
-        // * where the card is against its ceiling (landscape, every banner shape), the slot is
-        //   offered only the residual and takes THAT.
-        //
-        // Which is `banner = min(itsOwnDesire, whateverIsLeft)` — exactly what UIKit's priority
-        // ladder produces by putting every banner driver (`bannerNaturalAspect` 245,
-        // `bannerFixedHeight` 243, `bannerImageIntrinsic` 241) below the card's `.low` 250 hugging.
-        // Measured against the real `GBAlertModal` at 844x390: `banner-wide` 102.0 against UIKit's
-        // 102.33, and the card lands on its cap (294.0) instead of reporting a 374.6pt ideal into a
-        // 294pt slot and bleeding ~40pt past each vertical margin.
-        //
-        // **`.layoutPriority(-1)` is deliberately NOT here** — it was tried and is inert, to the
-        // last decimal, on every probed shape in both orientations. The banner already yields
-        // first without it: `Color.clear.frame(maxHeight:)` is the only child in the column with a
-        // [0, h] range, and SwiftUI's `VStack` serves its stiffest children first. The evidence
-        // that the ordering is right is the TITLE — under the rigid frame it was squeezed to 21.5pt
-        // by `minimumScaleFactor`, and under `maxHeight` it returns to its natural 28.7 while the
-        // banner absorbs the whole squeeze. Adding an inert modifier that would also put the banner
-        // on the same rung as `CompressibleVerticalPadding`'s strips (which ARE at -1) is a change
-        // with no measurement behind it.
-        //
-        // **What this does NOT fix, and what is gated because of it.** `ModalTokens.bannerGeometry`
-        // is still a PORTRAIT rule for the COLUMN (see its doc). UIKit's height-constrained
-        // residual arbitration also shrinks the banner's WIDTH demand, through the required
-        // `ivBanner.width == ivBanner.height * ratio` tie: measured in landscape, `ivBanner` is
-        // 172pt wide inside a 256pt `vwBanner`, so the image never asks for more than
-        // `contentMaxWidth` and UIKit's column does not grow at all there.
-        //
-        // The rule for that IS known — `column = clamp(max(contentMaxWidth, resolvedHeight * ratio))`,
-        // measured to 0.17pt over 264 configurations — and it is unreachable HERE for an ordering
-        // reason rather than an arithmetic one: `resolvedHeight` is the number the frame below
-        // yields to, produced bottom-up during layout, while the column is proposed top-down by
-        // `AlertModalScaffold` on `card`, this view's ANCESTOR. The full argument, and the two
-        // measurements that close off the escapes, are in `ModalTokens.bannerGeometry`'s doc.
-        //
-        // `banner-wide` is gated in landscape on every ORIGIN and every HEIGHT
-        // (`test_geometry_landscape_bannerWide_agreesOnEveryOriginAndHeight`), with the width
-        // exclusion's mechanism pinned separately; `banner-comparable` is gated there in full.
-        Color.clear
-            .frame(width: bannerGeometry.column)
-            .frame(maxHeight: bannerGeometry.height)
-            .overlay {
-                // `Image(_:bundle:)` with a nil bundle IS `Image(_:)`, so the default path is
-                // unchanged — this only adds the ability to name a non-main bundle.
-                Image(image.assetName, bundle: image.bundle)
-                    .resizable()
-                    .scaledToFit()   // preserve the artwork's aspect (no distortion)
-            }
+        Image(image.assetName, bundle: image.bundle)
+            .resizable()
+            .scaledToFit()
+            .frame(maxWidth: .infinity)
+            .frame(maxHeight: tokens.bannerMaxHeight)
             // NO `.clipped()`, and its removal is deliberate rather than an oversight. It was inert
             // TWICE OVER: an `.overlay` is proposed its host's size and `scaledToFit` only ever
             // shrinks inside that, so the picture cannot leave the slot at any resolved height; and
@@ -507,7 +365,7 @@ private struct BannerSlot: View {
             // Paired with the slot, so an unmeasured slot carries no gap either: a `.zero`
             // geometry must occupy no vertical space at all, exactly as UIKit's `vwBanner`
             // collapses rather than leaving a 12pt hole under nothing.
-            .padding(.bottom, bannerGeometry.height > 0 && hasContentBelow ? tokens.gapBelowBanner : 0)
+            .padding(.bottom, hasContentBelow ? tokens.gapBelowBanner : 0)
     }
 }
 

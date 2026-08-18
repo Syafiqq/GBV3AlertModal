@@ -43,26 +43,4 @@ final class TestBundleAssetTests: XCTestCase {
         XCTAssertNil(image.bundle, "an unknown identifier must resolve to nil, i.e. the main bundle")
     }
 
-    /// **`ModalImage.pointSize` directly, not just transitively through the differential shape.**
-    ///
-    /// `gb_test_banner.imageset` only ships a "1x" file (`Contents.json` has no filename for the 2x
-    /// or 3x slots), so it resolves at 1x on every simulator regardless of the run's display scale —
-    /// which means POINTS and PIXELS are the same 160x90 here. That is exactly what makes this a weak
-    /// points-vs-pixels check: it cannot fail in a way that would distinguish "reports points" from
-    /// "reports pixels". It still proves `pointSize` reads a real, non-zero size off the resolved
-    /// asset through the bundle-scoped `ModalImage` path — see `BannerGeometryTruthTests`' doc for
-    /// why the points/pixels distinction matters for a REAL (multi-scale) asset.
-    func test_pointSize_reportsTheTestBannersSize() {
-        let image = ModalImage("gb_test_banner", bundleIdentifier: Self.testBundleIdentifier)
-        XCTAssertEqual(image.pointSize, CGSize(width: 160, height: 90))
-    }
-
-    /// The other half of `pointSize`'s doc contract: a name that does not resolve collapses to
-    /// `.zero`, mirroring `UIImage(named:)` returning `nil` rather than crashing or fabricating a
-    /// size. This is what lets `ModalTokens.bannerGeometry` collapse the slot instead of measuring a
-    /// missing asset as if it had geometry.
-    func test_pointSize_isZero_whenTheAssetDoesNotResolve() {
-        let image = ModalImage("gb_this_asset_does_not_exist", bundleIdentifier: Self.testBundleIdentifier)
-        XCTAssertEqual(image.pointSize, .zero)
-    }
 }

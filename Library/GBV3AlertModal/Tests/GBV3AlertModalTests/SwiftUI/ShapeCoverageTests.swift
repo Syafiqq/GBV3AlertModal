@@ -645,12 +645,9 @@ final class ShapeCoverageTests: XCTestCase {
         )
     }
 
-    /// Pins the blast radius of the banner-asset substitution (see
-    /// `GenieShapeCatalog.registerStandardFamily`): with the production registration, the SAME
-    /// descriptor resolves identically EXCEPT `showsBanner`, which is false only because the asset
-    /// file is not in this bundle. If the substitution ever started changing anything else, this
-    /// fails.
-    func test_bannerSubstitution_isTheOnlyDeviationFromProduction() throws {
+    /// Banner existence comes from the descriptor, not a UIKit asset-resolution probe. Substituting
+    /// test artwork therefore leaves the resolved presentation unchanged.
+    func test_bannerSubstitution_doesNotChangeResolution() throws {
         let descriptor = AlertDialog(
             image: ModalImage("img_database_error"),
             title: "Something went wrong :(",
@@ -659,7 +656,7 @@ final class ShapeCoverageTests: XCTestCase {
             style: .errorBanner
         )
 
-        // Production registration: no substitution, so `UIImage(named:)` returns nil here.
+        // Production registration: the app artwork is intentionally absent from this test bundle.
         let production = SwiftUIModalRenderer(alertProperties: GeniePresets.standardProperties())
         for (style, properties) in GenieShapeCatalog.stylePresets {
             production.register(style: style, properties: properties)
@@ -677,17 +674,8 @@ final class ShapeCoverageTests: XCTestCase {
             substituted.presentations.first(where: { $0.id == substitutedID })
         ).resolved
 
-        XCTAssertFalse(
-            productionResolved.showsBanner,
-            "the app's banner assets are not in this bundle — this is the gap the substitution fills"
-        )
+        XCTAssertTrue(productionResolved.showsBanner)
         XCTAssertTrue(substitutedResolved.showsBanner)
-
-        var normalised = substitutedResolved
-        normalised.showsBanner = productionResolved.showsBanner
-        XCTAssertEqual(
-            normalised, productionResolved,
-            "substituting the banner image must change NOTHING except the banner slot"
-        )
+        XCTAssertEqual(substitutedResolved, productionResolved)
     }
 }

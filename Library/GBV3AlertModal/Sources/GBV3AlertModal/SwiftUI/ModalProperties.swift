@@ -1,24 +1,16 @@
 import Foundation
 import SwiftUI
 
-/// **`GBAlertModal.Properties`' vocabulary, in SwiftUI's language — a parallel type, not a
-/// translation layer.**
+/// SwiftUI-native configuration for the alert modal.
 ///
-/// Same field names, same concepts, same nesting, so a call site moving off the UIKit backend
-/// recognises every line and only the types change (spec §3a). Nothing converts at runtime and
-/// neither side imports the other: `Properties` keeps taking `UIColor`/`UIFont`/`UIEdgeInsets`
-/// because the UIKit renderer is frozen and the app depends on it (§6a), and this takes
-/// `Color`/`ModalFont`/`EdgeInsets`. Both derive the SAME `ModalTokens`, which is where the two
-/// paths meet — see `ModalTokens.init(from: ModalProperties)` and the equivalence test that pins
-/// the two derivations against each other.
+/// This type intentionally models SwiftUI capabilities instead of mirroring
+/// `GBAlertModal.Properties`. In particular, banner artwork uses its `Image`'s intrinsic aspect
+/// ratio and needs only an optional SwiftUI maximum-height cap.
 ///
 /// ## What is deliberately different, and why
 ///
-/// - **`bannerFixedHeight` is NOT carried over.** Measured inert on BOTH UIKit paths at every size
-///   tried (`BannerGeometryTruthTests.test_bannerFixedHeight_isInert_*`): it loses to hugging (250)
-///   going up and to compression resistance (750) coming down, and nothing lays out with it. It is
-///   dead vocabulary and this type should never have it. It stays on `Properties`, public and
-///   working, because removing it there is a source break for a consumer this repo cannot edit.
+/// - UIKit banner ratio and fixed-height constraints are not carried over. They duplicate image
+///   metadata or fight SwiftUI's proposal-based layout.
 /// - **`padding` reuses `UIMinMaxEdgeInsets`.** SwiftUI has no min/max inset type, so this one is
 ///   genuinely ours either way — it is `import Foundation`, eight `let CGFloat`s, already
 ///   `Sendable`. The `UI` prefix is a misnomer it has carried since before this work; renaming it
@@ -51,8 +43,7 @@ public struct ModalProperties: Sendable {
     public var margin: EdgeInsets?
     public var padding: UIMinMaxEdgeInsets?
 
-    public var bannerRatio: CGFloat?
-    public var bannerMaxHeight: CGFloat?
+    public var banner: ModalBannerConfiguration?
     public var titleFont: ModalFont?
     public var titleColor: Color?
     public var subtitleFont: ModalFont?
@@ -75,8 +66,7 @@ public struct ModalProperties: Sendable {
         contentProperty: ContentProperty? = nil,
         margin: EdgeInsets? = nil,
         padding: UIMinMaxEdgeInsets? = nil,
-        bannerRatio: CGFloat? = nil,
-        bannerMaxHeight: CGFloat? = nil,
+        banner: ModalBannerConfiguration? = nil,
         titleFont: ModalFont? = nil,
         titleColor: Color? = nil,
         subtitleFont: ModalFont? = nil,
@@ -93,8 +83,7 @@ public struct ModalProperties: Sendable {
         self.contentProperty = contentProperty
         self.margin = margin
         self.padding = padding
-        self.bannerRatio = bannerRatio
-        self.bannerMaxHeight = bannerMaxHeight
+        self.banner = banner
         self.titleFont = titleFont
         self.titleColor = titleColor
         self.subtitleFont = subtitleFont

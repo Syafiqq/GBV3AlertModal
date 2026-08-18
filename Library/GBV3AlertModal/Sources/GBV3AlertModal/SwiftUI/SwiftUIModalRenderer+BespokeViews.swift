@@ -114,7 +114,7 @@ public struct BadgeModalView: View {
             // `img_badge_multi_achievement`, is 160x160pt inside a 256pt column, and
             // `badge-unlock-single` carries no banner at all. `.zero` in, `.zero` out, for the
             // no-banner shapes. What changes is only the case that was WRONG.
-            bannerArtworkSize: descriptor.banner?.pointSize ?? .zero
+            hasBanner: descriptor.banner != nil
         ) {
             bannerView
             titleView
@@ -134,7 +134,9 @@ public struct BadgeModalView: View {
             // every asset the app ships.
             Image(banner.assetName, bundle: banner.bundle)
                 .resizable()
-                .scaledToFit()                       // natural aspect, same as `SwiftUIAlertModal`
+                .scaledToFit()
+                .frame(maxWidth: .infinity)
+                .frame(maxHeight: tokens.bannerMaxHeight)
                 // `ModalBannerGeometry` (the `ViewModifier`) is gone — Task 3 dropped it, and
                 // neutralised `bannerLayout.height` (measured inert in UIKit,
                 // `BannerGeometryTruthTests`); the field itself has since been deleted. This
@@ -161,7 +163,6 @@ public struct BadgeModalView: View {
                 // `descriptor.banner?.pointSize`, so wide artwork widens this card exactly as it
                 // widens `SwiftUIAlertModal`'s. Covered by `BespokeBannerColumnTests`, which hosts
                 // this view and measures the card probe rather than trusting the wiring.
-                .modifier(BespokeBannerLayout(layout: tokens.bannerLayout))
                 .padding(.bottom, tokens.gapBelowBanner)
         }
     }
@@ -426,28 +427,3 @@ public struct SatisfactionModalView: View {
 /// SwiftUI's flexible-frame behaviour; branching states the intent instead." `BadgeModalView` has no
 /// differential test to catch that assumption being wrong, so the branching is restored rather than
 /// re-introduced as an implicit nil-pass-through.
-private struct BespokeBannerLayout: ViewModifier {
-    let layout: ModalTokens.BannerLayout
-
-    func body(content: Content) -> some View {
-        cap(shape(content))
-    }
-
-    @ViewBuilder
-    private func shape<V: View>(_ view: V) -> some View {
-        if let aspectRatio = layout.aspectRatio {
-            view.aspectRatio(aspectRatio, contentMode: .fit)
-        } else {
-            view
-        }
-    }
-
-    @ViewBuilder
-    private func cap<V: View>(_ view: V) -> some View {
-        if let maxHeight = layout.maxHeight {
-            view.frame(maxHeight: maxHeight)
-        } else {
-            view
-        }
-    }
-}

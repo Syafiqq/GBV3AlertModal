@@ -1,4 +1,4 @@
-import UIKit
+import Foundation
 
 /// **The SwiftUI half's own holder — `Sendable`, and carrying no `UIImage`/`UIView`/
 /// `NSAttributedString`.**
@@ -65,12 +65,9 @@ extension ModalContent {
     public static func make(for descriptor: StandardAlertContent) -> ModalContent {
         let (titlePlain, titleAttr) = ModalText.split(descriptor.title)
         let (subtitlePlain, subtitleAttr) = ModalText.split(descriptor.subtitle)
-        let hasBanner = descriptor.image.flatMap {
-            UIImage(named: $0.assetName, in: $0.bundle, compatibleWith: nil)
-        } != nil
         return ModalContent(
             closeOnTapOverlay: descriptor.closeOnTapOverlay,
-            hasBanner: hasBanner,
+            hasBanner: descriptor.image != nil,
             title: titlePlain,
             hasAttributedTitle: (titleAttr?.length ?? 0) > 0,
             subtitle: subtitlePlain,
@@ -123,12 +120,9 @@ extension ModalContent {
     public static func make(for descriptor: BadgeDialog) -> ModalContent {
         let (titlePlain, titleAttr) = ModalText.split(descriptor.title)
         let (subPlain, subAttr) = ModalText.split(descriptor.subtitle)
-        let hasBanner = descriptor.banner.flatMap {
-            UIImage(named: $0.assetName, in: $0.bundle, compatibleWith: nil)
-        } != nil
         return ModalContent(
             closeOnTapOverlay: descriptor.closeOnTapOverlay,
-            hasBanner: hasBanner,
+            hasBanner: descriptor.banner != nil,
             title: titlePlain,
             hasAttributedTitle: (titleAttr?.length ?? 0) > 0,
             subtitle: subPlain,

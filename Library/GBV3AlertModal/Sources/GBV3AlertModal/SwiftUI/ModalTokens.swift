@@ -1115,10 +1115,9 @@ extension ModalTokens {
             contentPadding = padding
         }
 
-        // Unconditional, for the reason spelled out on the UIKit derivation: `nil` here is a
-        // POSITIVE statement (install no such constraint), not "this config has no opinion".
-        bannerRatio = properties.bannerRatio
-        bannerMaxHeight = properties.bannerMaxHeight
+        // SwiftUI gets the aspect ratio from Image itself. Only the optional safety cap is a token.
+        bannerRatio = nil
+        bannerMaxHeight = properties.banner?.maximumHeight
 
         if let space = properties.space {
             gapBelowBanner = space.banner

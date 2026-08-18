@@ -96,8 +96,7 @@ final class ModalPropertiesEquivalenceTests: XCTestCase {
         ),
         margin: EdgeInsets(top: 21, leading: 22, bottom: 23, trailing: 24),
         padding: UIMinMaxEdgeInsets(top: (1, 2), left: (3, 4), bottom: (5, 6), right: (7, 8)),
-        bannerRatio: 1.75,
-        bannerMaxHeight: 161,
+        banner: ModalBannerConfiguration(maximumHeight: 161),
         titleFont: .system(size: 25, weight: .heavy),
         titleColor: Color(uiColor: .systemIndigo),
         subtitleFont: .system(size: 17, weight: .light),
@@ -128,11 +127,10 @@ final class ModalPropertiesEquivalenceTests: XCTestCase {
 
     // MARK: - The gate
 
-    /// **`bannerFixedHeight` is the ONLY field the two derivations are allowed to differ on**, and
-    /// it is compared explicitly here so the equality below can be unqualified. The field is
-    /// measured inert on both UIKit paths and is deliberately absent from `ModalProperties`, so the
-    /// SwiftUI derivation keeps `standard`'s nil.
-    func test_theOnlyDerivedDifference_isTheDeadBannerField() {
+    /// UIKit ratio and fixed-height constraints deliberately have no SwiftUI-native counterpart.
+    func test_swiftUIBannerUsesIntrinsicAspectAndOmitsUIKitFixedHeight() {
+        XCTAssertEqual(ModalTokens(from: Self.uiKit).bannerRatio, 1.75)
+        XCTAssertNil(ModalTokens(from: Self.swiftUI).bannerRatio)
         XCTAssertEqual(ModalTokens(from: Self.uiKit).bannerFixedHeight, 162)
         XCTAssertNil(
             ModalTokens(from: Self.swiftUI).bannerFixedHeight,
@@ -144,8 +142,8 @@ final class ModalPropertiesEquivalenceTests: XCTestCase {
         var fromUIKit = ModalTokens(from: Self.uiKit)
         let fromSwiftUI = ModalTokens(from: Self.swiftUI)
 
-        // Normalise the ONE documented difference, pinned on its own above, so what remains is an
-        // unqualified equality over every other field.
+        // Normalise the UIKit-only banner constraints before comparing the shared visual tokens.
+        fromUIKit.bannerRatio = nil
         fromUIKit.bannerFixedHeight = nil
 
         XCTAssertEqual(fromUIKit, fromSwiftUI)

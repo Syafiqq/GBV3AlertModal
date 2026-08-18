@@ -114,8 +114,7 @@ enum GeniePresets {
             ),
             margin: EdgeInsets(top: 0, leading: 20, bottom: 0, trailing: 20),
             padding: UIMinMaxEdgeInsets(top: (16, 24), left: (16, 32), bottom: (16, 24), right: (16, 32)),
-            bannerRatio: 1,
-            bannerMaxHeight: nil,
+            banner: ModalBannerConfiguration(),
             titleFont: .system(size: 24, weight: .bold),
             titleColor: Color(uiColor: .label),
             subtitleFont: .system(size: 16),
@@ -185,31 +184,30 @@ enum GeniePresets {
 
     /// Shared shape behind the 7 banner-popup catalog entries — same reason `GeniePresets
     /// .popupBannerProperties(ratio:maxHeight:fixedHeight:)` is spelled once.
-    static func popupBannerModalProperties(ratio: CGFloat, maxHeight: CGFloat) -> ModalProperties {
+    static func popupBannerModalProperties(maximumHeight: CGFloat) -> ModalProperties {
         var properties = popupModalProperties()
-        properties.bannerRatio = ratio
-        properties.bannerMaxHeight = maxHeight
+        properties.banner = ModalBannerConfiguration(maximumHeight: maximumHeight)
         return properties
     }
 
     static func errorBannerModalProperties() -> ModalProperties {
-        popupBannerModalProperties(ratio: 295.0 / 256.0, maxHeight: 320)
+        popupBannerModalProperties(maximumHeight: 320)
     }
 
     static func forceUpdateBannerModalProperties() -> ModalProperties {
-        popupBannerModalProperties(ratio: 320.0 / 320.0, maxHeight: 320)
+        popupBannerModalProperties(maximumHeight: 320)
     }
 
     static func capBannerModalProperties() -> ModalProperties {
-        popupBannerModalProperties(ratio: 320.0 / 197.0, maxHeight: 216)
+        popupBannerModalProperties(maximumHeight: 216)
     }
 
     static func quizBannerModalProperties() -> ModalProperties {
-        popupBannerModalProperties(ratio: 320.0 / 229.0, maxHeight: 216)
+        popupBannerModalProperties(maximumHeight: 216)
     }
 
     static func aiNotesBannerModalProperties() -> ModalProperties {
-        popupBannerModalProperties(ratio: 960.0 / 681.0, maxHeight: 320)
+        popupBannerModalProperties(maximumHeight: 320)
     }
 
     static func creditDeductionModalProperties() -> ModalProperties {
@@ -221,8 +219,7 @@ enum GeniePresets {
     static func streakModalProperties() -> ModalProperties {
         var properties = standardModalProperties()
         properties.padding = UIMinMaxEdgeInsets(top: (20, 40), left: (20, 48), bottom: (20, 32), right: (20, 48))
-        properties.bannerRatio = 200.0 / 168.0
-        properties.bannerMaxHeight = 168
+        properties.banner = ModalBannerConfiguration(maximumHeight: 168)
         properties.space = ModalProperties.ComponentSpace(banner: 16, title: 12, subtitle: 24, interButton: 8)
         return properties
     }
@@ -230,15 +227,13 @@ enum GeniePresets {
     static func timerBannerModalProperties() -> ModalProperties {
         var properties = standardModalProperties()
         properties.padding = UIMinMaxEdgeInsets(top: (32, 32), left: (32, 32), bottom: (32, 32), right: (32, 32))
-        properties.bannerRatio = 193.0 / 170.0
-        properties.bannerMaxHeight = 170
+        properties.banner = ModalBannerConfiguration(maximumHeight: 170)
         return properties
     }
 
     static func exitWorksheetBannerModalProperties() -> ModalProperties {
         var properties = standardModalProperties()
-        properties.bannerRatio = 365.0 / 206.0
-        properties.bannerMaxHeight = 144
+        properties.banner = ModalBannerConfiguration(maximumHeight: 144)
         return properties
     }
 
@@ -268,15 +263,14 @@ enum GeniePresets {
     static func badgeUnlockModalProperties() -> ModalProperties {
         var properties = standardModalProperties()
         properties.padding = UIMinMaxEdgeInsets(top: (20, 40), left: (20, 48), bottom: (20, 32), right: (20, 48))
-        properties.bannerRatio = 1
-        properties.bannerMaxHeight = 144
+        properties.banner = ModalBannerConfiguration(maximumHeight: 144)
         properties.space = ModalProperties.ComponentSpace(banner: 16, title: 12, subtitle: 24, interButton: 8)
         return properties
     }
 
     static func badgeMultiModalProperties() -> ModalProperties {
         var properties = badgeUnlockModalProperties()
-        properties.bannerMaxHeight = 216
+        properties.banner = ModalBannerConfiguration(maximumHeight: 216)
         return properties
     }
 

@@ -12,7 +12,7 @@
 //  `SwiftUICatalog.variantButtonStyleEntries` is presentable — the other 7 variant entries
 //  (title/subtitle/button-state) use `.standard`, already seeded.
 //
-//  STRUCTURAL geometry (padding, banner ratio/height, component spacing) is transcribed verbatim
+//  Structural geometry (padding, optional banner height cap, component spacing) is transcribed
 //  from `SwiftUICatalog+Presets.swift`, because that is what `ModalTokens`/`ResolvedModal` actually
 //  read. Fonts/colours follow `GalleryPresets.standardModalProperties`'s own precedent — a minimal,
 //  functional preset, not a GallerySHSans/GalleryColor fidelity port: these two catalog screens exist
@@ -132,16 +132,15 @@ enum UIKitFreeCatalogPresets {
         if orientation == .horizontal {
             properties.buttonActionOrientation = .horizontal
         }
-        if let ratio = banner.ratio {
-            properties.bannerRatio = ratio
+        if banner != .none {
+            properties.banner = ModalBannerConfiguration()
         }
         return properties
     }
 
-    private static func popupBanner(ratio: CGFloat, maxHeight: CGFloat) -> ModalProperties {
+    private static func popupBanner(maximumHeight: CGFloat) -> ModalProperties {
         var properties = GalleryPresets.standardModalProperties
-        properties.bannerRatio = ratio
-        properties.bannerMaxHeight = maxHeight
+        properties.banner = ModalBannerConfiguration(maximumHeight: maximumHeight)
         return properties
     }
 
@@ -167,11 +166,11 @@ enum UIKitFreeCatalogPresets {
         return properties
     }
 
-    static var errorBanner: ModalProperties { popupBanner(ratio: 295.0 / 256.0, maxHeight: 320) }
-    static var forceUpdateBanner: ModalProperties { popupBanner(ratio: 320.0 / 320.0, maxHeight: 320) }
-    static var capBanner: ModalProperties { popupBanner(ratio: 320.0 / 197.0, maxHeight: 216) }
-    static var quizBanner: ModalProperties { popupBanner(ratio: 320.0 / 229.0, maxHeight: 216) }
-    static var aiNotesBanner: ModalProperties { popupBanner(ratio: 960.0 / 681.0, maxHeight: 320) }
+    static var errorBanner: ModalProperties { popupBanner(maximumHeight: 320) }
+    static var forceUpdateBanner: ModalProperties { popupBanner(maximumHeight: 320) }
+    static var capBanner: ModalProperties { popupBanner(maximumHeight: 216) }
+    static var quizBanner: ModalProperties { popupBanner(maximumHeight: 216) }
+    static var aiNotesBanner: ModalProperties { popupBanner(maximumHeight: 320) }
 
     static var creditDeduction: ModalProperties {
         var properties = GalleryPresets.standardModalProperties
@@ -182,8 +181,7 @@ enum UIKitFreeCatalogPresets {
     static var streak: ModalProperties {
         var properties = GalleryPresets.standardModalProperties
         properties.padding = UIMinMaxEdgeInsets(top: (20, 40), left: (20, 48), bottom: (20, 32), right: (20, 48))
-        properties.bannerRatio = 200.0 / 168.0
-        properties.bannerMaxHeight = 168
+        properties.banner = ModalBannerConfiguration(maximumHeight: 168)
         properties.space = ModalProperties.ComponentSpace(banner: 16, title: 12, subtitle: 24, interButton: 8)
         return properties
     }
@@ -191,15 +189,13 @@ enum UIKitFreeCatalogPresets {
     static var timerBanner: ModalProperties {
         var properties = GalleryPresets.standardModalProperties
         properties.padding = UIMinMaxEdgeInsets(top: (32, 32), left: (32, 32), bottom: (32, 32), right: (32, 32))
-        properties.bannerRatio = 193.0 / 170.0
-        properties.bannerMaxHeight = 170
+        properties.banner = ModalBannerConfiguration(maximumHeight: 170)
         return properties
     }
 
     static var exitWorksheetBanner: ModalProperties {
         var properties = GalleryPresets.standardModalProperties
-        properties.bannerRatio = 365.0 / 206.0
-        properties.bannerMaxHeight = 144
+        properties.banner = ModalBannerConfiguration(maximumHeight: 144)
         return properties
     }
 
@@ -227,15 +223,14 @@ enum UIKitFreeCatalogPresets {
     static var badgeUnlock: ModalProperties {
         var properties = GalleryPresets.standardModalProperties
         properties.padding = UIMinMaxEdgeInsets(top: (20, 40), left: (20, 48), bottom: (20, 32), right: (20, 48))
-        properties.bannerRatio = 1
-        properties.bannerMaxHeight = 144
+        properties.banner = ModalBannerConfiguration(maximumHeight: 144)
         properties.space = ModalProperties.ComponentSpace(banner: 16, title: 12, subtitle: 24, interButton: 8)
         return properties
     }
 
     static var badgeMulti: ModalProperties {
         var properties = badgeUnlock
-        properties.bannerMaxHeight = 216
+        properties.banner = ModalBannerConfiguration(maximumHeight: 216)
         return properties
     }
 

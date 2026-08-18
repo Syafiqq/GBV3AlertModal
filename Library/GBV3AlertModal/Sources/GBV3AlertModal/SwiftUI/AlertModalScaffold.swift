@@ -1,20 +1,5 @@
 import SwiftUI
 
-/// How the banner row — which lives inside the caller's `content` closure — learns the geometry the
-/// scaffold computed from its `GeometryReader`. An environment value rather than a `PreferenceKey`
-/// on purpose: preferences flow UP from content, which is the measurement cycle the brief's §7
-/// warns about. This flows DOWN from the container.
-private struct ModalBannerGeometryKey: EnvironmentKey {
-    static let defaultValue = ModalTokens.BannerGeometry.zero
-}
-
-extension EnvironmentValues {
-    var modalBannerGeometry: ModalTokens.BannerGeometry {
-        get { self[ModalBannerGeometryKey.self] }
-        set { self[ModalBannerGeometryKey.self] = newValue }
-    }
-}
-
 /// The shared modal chrome (spec D1's bespoke-content surface): full-screen scrim + centered card +
 /// primary/secondary buttons + optional close, wrapped around a caller-supplied `@ViewBuilder` body.
 /// Never dismisses itself. `SwiftUIAlertModal` is this with a built-in standard body; bespoke dialogs
@@ -67,7 +52,7 @@ public struct AlertModalScaffold<Content: View>: View {
     public var buttonsMatchParent: Bool = true
     /// The banner artwork's point size, or `.zero` when this modal has no banner. Drives
     /// `ModalTokens.bannerGeometry`, which the banner row reads back out of the environment.
-    public let bannerArtworkSize: CGSize
+    public let hasBanner: Bool
     @ViewBuilder public let content: () -> Content
 
     public init(
@@ -85,7 +70,7 @@ public struct AlertModalScaffold<Content: View>: View {
         onOverlayTap: (() -> Void)? = nil,
         buttonAxis: Axis = .vertical,
         buttonsMatchParent: Bool = true,
-        bannerArtworkSize: CGSize = .zero,
+        hasBanner: Bool = false,
         @ViewBuilder content: @escaping () -> Content
     ) {
         self.tokens = tokens
@@ -104,7 +89,7 @@ public struct AlertModalScaffold<Content: View>: View {
         self.onOverlayTap = onOverlayTap
         self.buttonAxis = buttonAxis
         self.buttonsMatchParent = buttonsMatchParent
-        self.bannerArtworkSize = bannerArtworkSize
+        self.hasBanner = hasBanner
         self.content = content
     }
 
@@ -119,10 +104,6 @@ public struct AlertModalScaffold<Content: View>: View {
         //
         // The reader is the container's own size, so nothing the card contains can influence it.
         GeometryReader { proxy in
-            let bannerGeometry = tokens.bannerGeometry(
-                imageSize: bannerArtworkSize,
-                availableCardWidth: max(0, proxy.size.width - tokens.cardMarginH * 2)
-            )
             ZStack {
                 scrim
                     .ignoresSafeArea()
@@ -134,8 +115,7 @@ public struct AlertModalScaffold<Content: View>: View {
                 // read an environment value it publishes on its own descendant. The `.environment`
                 // injection stays for `BannerSlot`, which is built inside the caller's `content`
                 // closure and so is a genuine descendant.
-                card(bannerGeometry: bannerGeometry)
-                    .environment(\.modalBannerGeometry, bannerGeometry)
+                card()
                 // The CARD's cap — `contentMaxWidth + leftMax + rightMax`, i.e. the width UIKit's
                 // `vwContainer` ends up with, NOT the width `ContentProperty` states (that one caps
                 // the content container inside `card`). Feeding the content width in here is the
@@ -164,11 +144,7 @@ public struct AlertModalScaffold<Content: View>: View {
                 // `column + leftMax + rightMax ≥ column + leftMin + rightMin`. The slot fits either
                 // way, and `test_bannerWide_theSlotNeverOverflowsTheCard_atAnyHostWidth` asserts the
                 // consequence at three host widths rather than trusting the algebra.
-                .frame(maxWidth: max(
-                    tokens.cardMaxWidth,
-                    bannerGeometry.column
-                        + tokens.contentPadding.leftMax + tokens.contentPadding.rightMax
-                ))   // fills to margin, capped (not fixed width)
+                .frame(maxWidth: tokens.cardMaxWidth)
                 .overlay(alignment: .topTrailing) {
                     // Pinned to the CARD's top-right corner (real modal: top.trailing.equalToSuperview,
                     // 48pt tap target), not the screen corner.
@@ -287,7 +263,7 @@ public struct AlertModalScaffold<Content: View>: View {
     /// the scaffold's OWN ambient environment — the one fixed before it published anything — and read
     /// `.zero` forever. Threading it as a parameter is the only way `card` can see the same number
     /// `BannerSlot` does. (Same trap, opposite side, as the one `BannerSlot`'s doc records.)
-    private func card(bannerGeometry: ModalTokens.BannerGeometry) -> some View {
+    private func card() -> some View {
         // `buttonAxis` is the resolver's decision (`Properties.buttonActionOrientation`), obeyed
         // here the way the UIKit main-action `UIStackView` obeys it: `.horizontal` → HStack,
         // `.vertical` → the (default) vertical run. The vertical branch is spelled inline rather
@@ -341,7 +317,7 @@ public struct AlertModalScaffold<Content: View>: View {
         // `svContentContainer`'s `width == fixedWidth` at `.medium` (500), so a wide banner widens
         // the column. `bannerGeometry` is `.zero` with no banner, so `max` is the identity for
         // every shape that has none.
-        .frame(maxWidth: max(tokens.contentMaxWidth, bannerGeometry.column))
+        .frame(maxWidth: tokens.contentMaxWidth)
         // (2) the rigid MINIMUM horizontal padding (`.required` in UIKit).
         .padding(.leading, tokens.contentPadding.leftMin)
         .padding(.trailing, tokens.contentPadding.rightMin)

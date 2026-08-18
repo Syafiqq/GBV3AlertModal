@@ -45,11 +45,6 @@ final class SwiftUIPurityTests: XCTestCase {
     /// - `DataHolder+ModalContentInputs.swift`: **permanent while `DataHolder` is.** Bridges
     ///   `GBAlertModal.DataHolder` (a UIKit-region type) to `ModalContentInputs` — reads
     ///   `UIImage.size` to decide `hasBanner`. The conformance's whole job is naming the UIKit type.
-    /// - `ModalContent.swift`: **permanent.** `hasBanner` still asks `UIImage(named:in:)` whether the
-    ///   asset resolves — the SAME probe `AlertHolder.make` ran, moved here rather than removed
-    ///   (Pass 5 step 6). `ModalImage`'s bundle-relative asset resolution is inherently a UIKit-region
-    ///   question as long as banners are loaded by name.
-    ///
     /// - `SwiftUIModalRenderer+InputViews.swift`: **owner-approved, scoped to `WheelDatePicker`.**
     ///   `SwiftUI.DatePicker(.wheel)` wraps `UIPickerView`/`UIDatePicker` through Apple's own
     ///   PRIVATE bridge, and that bridge does not forward any SwiftUI-level frame constraint down
@@ -72,7 +67,6 @@ final class SwiftUIPurityTests: XCTestCase {
         "AttributedTextBridge.swift",
         "SwiftUIModalRenderer.swift",
         "DataHolder+ModalContentInputs.swift",
-        "ModalContent.swift",
         "SwiftUIModalRenderer+InputViews.swift"
     ]
 
