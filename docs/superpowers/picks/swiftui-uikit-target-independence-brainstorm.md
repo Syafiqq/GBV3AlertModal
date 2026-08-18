@@ -84,3 +84,5 @@ should the handoff conclude?
 
 Recommendation rationale: A respects this skill's no-implementation boundary, requires no new
 authority, and preserves the reviewed sequential plan as the clean handoff artifact.
+
+**Answer:** A. Leave the reviewed plan ready for a fresh implementation session. *(auto-accepted — lazy/away)*
