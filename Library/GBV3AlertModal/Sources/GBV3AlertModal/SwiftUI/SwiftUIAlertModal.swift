@@ -43,7 +43,7 @@ public struct SwiftUIAlertModal: View {
     ///
     /// One resolver still, not two: see `ModalStructureInputs`. `nil` falls back to
     /// `sentinelProperties`.
-    public let properties: (any ModalStructureInputs)?
+    public let properties: ModalProperties
     /// Presentation state — NOT part of `AlertDialog`. The caller owns this; the view only reads it.
     public var primaryEnabled: Bool = true
     public var secondaryEnabled: Bool = true
@@ -53,7 +53,7 @@ public struct SwiftUIAlertModal: View {
 
     public init(
         config: AlertDialog,
-        properties: (any ModalStructureInputs)? = nil,
+        properties: ModalProperties? = nil,
         primaryEnabled: Bool = true,
         secondaryEnabled: Bool = true,
         isPrimaryLoading: Bool = false,
@@ -61,7 +61,7 @@ public struct SwiftUIAlertModal: View {
         onAction: @escaping (AlertDialog.Result) -> Void
     ) {
         self.config = config
-        self.properties = properties
+        self.properties = properties ?? Self.sentinelProperties
         self.primaryEnabled = primaryEnabled
         self.secondaryEnabled = secondaryEnabled
         self.isPrimaryLoading = isPrimaryLoading
@@ -93,8 +93,8 @@ public struct SwiftUIAlertModal: View {
     /// real Genie preset does (they all set it `true`). The sentinel's job is to stand in for the real
     /// preset's SHAPE, so it has to state the real preset's value here rather than inherit an
     /// unrelated init default.
-    private static var sentinelProperties: GBAlertModal.Properties {
-        GBAlertModal.Properties(
+    private static var sentinelProperties: ModalProperties {
+        ModalProperties(
             buttonActionShouldMatchParent: true,
             primaryActionStyle: .plain(.init()),
             secondaryActionStyle: .plain(.init())
@@ -107,7 +107,7 @@ public struct SwiftUIAlertModal: View {
     /// repeat.
     private func resolved(from content: ModalContent, isLandscape: Bool) -> GBAlertModal.ResolvedModal {
         GBAlertModal.resolve(
-            inputs: properties ?? Self.sentinelProperties,
+            inputs: properties,
             content: content,
             isLandscape: isLandscape
         )

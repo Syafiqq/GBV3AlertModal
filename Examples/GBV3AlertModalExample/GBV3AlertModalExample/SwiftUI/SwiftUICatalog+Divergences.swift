@@ -43,7 +43,6 @@
 //
 
 import Foundation
-import UIKit
 import GBV3AlertModal
 
 // MARK: - Style tokens
@@ -57,18 +56,6 @@ extension ModalStyle {
     static let divergenceTallUncapped = ModalStyle("divergence.tallUncapped")
     static let divergenceBannerWide = ModalStyle("divergence.bannerWide")
     static let divergenceNilPrimaryStyle = ModalStyle("divergence.nilPrimaryStyle")
-}
-
-extension SwiftUICatalogPresets {
-    /// Every value comes from `DivergenceCatalog`, so the UIKit twin and this entry are drawn
-    /// with ONE `Properties` instance's worth of configuration rather than two transcriptions.
-    static var divergencePresets: [(ModalStyle, GBAlertModal.Properties)] {
-        [
-            (.divergenceTallUncapped, DivergenceCatalog.tallUncappedProperties),
-            (.divergenceBannerWide, DivergenceCatalog.bannerWideProperties),
-            (.divergenceNilPrimaryStyle, DivergenceCatalog.nilPrimaryStyleProperties)
-        ]
-    }
 }
 
 // MARK: - Captions

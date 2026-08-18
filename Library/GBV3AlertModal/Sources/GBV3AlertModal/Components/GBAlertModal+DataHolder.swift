@@ -98,3 +98,22 @@ extension GBAlertModal {
         }
     }
 }
+
+extension GBAlertModal.DataHolder: ModalContentInputs {
+    public var hasBanner: Bool {
+        guard let banner else { return false }
+        return banner.size.width > 0 && banner.size.height > 0
+    }
+
+    public var hasAttributedTitle: Bool {
+        (titleAttributed?.length ?? 0) > 0
+    }
+
+    public var hasAttributedSubtitle: Bool {
+        (subtitleAttributed?.length ?? 0) > 0
+    }
+
+    public var hasSubtitleCustomView: Bool {
+        subtitleCustomView != nil
+    }
+}

@@ -2,30 +2,18 @@
 //  UIKitFreeCatalogPresets.swift
 //  GBV3AlertModalExample
 //
-//  `ModalStyle` → `ModalProperties` for `EmbeddedCatalogScreen`/`WindowCatalogScreen` — the
-//  `EmbeddedModalRenderer`/`WindowModalRenderer` twins of `SwiftUICatalog+Presets.swift`, registering
-//  the SAME 17 style tokens (`.genieErrorBanner` and friends, declared once in `SwiftUICatalog.swift`)
-//  so `SwiftUICatalog.dialogEntries` — built against those tokens — can be presented UNCHANGED on
-//  either UIKit-free renderer. `stressPresets` below does the same for the 5 stress-matrix tokens
-//  (`SwiftUICatalog+Stress.swift`), so `SwiftUICatalog.stressEntries` is presentable too, and
-//  `variantPresets` does it for the 4 button-style variant tokens, so
-//  `SwiftUICatalog.variantButtonStyleEntries` is presentable — the other 7 variant entries
-//  (title/subtitle/button-state) use `.standard`, already seeded.
+//  SwiftUI-native `ModalStyle` → `ModalProperties` presets for the 70-entry comparison catalog.
+//  The renderer registers these tables once and every example selects the appropriate style token.
 //
-//  Structural geometry (padding, optional banner height cap, component spacing) is transcribed
-//  from `SwiftUICatalog+Presets.swift`, because that is what `ModalTokens`/`ResolvedModal` actually
-//  read. Fonts/colours follow `GalleryPresets.standardModalProperties`'s own precedent — a minimal,
-//  functional preset, not a GallerySHSans/GalleryColor fidelity port: these two catalog screens exist
-//  to answer "does the shape actually render", the same bar `EmbeddedShapeCoverageTests`/
-//  `WindowShapeCoverageTests` already gate structurally; looking at them is the added, non-automatable
-//  half of that same claim.
+//  Structural geometry, fonts, and colours are expressed entirely with the package's SwiftUI-native
+//  configuration types.
 //
 
 import SwiftUI
 import GBV3AlertModal
 
 @MainActor
-enum UIKitFreeCatalogPresets {
+enum SwiftUICatalogPresets {
 
     /// The 17 style→preset pairs `SwiftUICatalog.dialogEntries` asks for by name (`.standard`/
     /// `.standard` is already seeded by both renderers' `init`). The 4 `variant*` tokens
@@ -69,10 +57,10 @@ enum UIKitFreeCatalogPresets {
         var properties = GalleryPresets.standardModalProperties
         properties.primaryActionStyle = .capsule(
             ModalProperties.ActionStyle.CapsuleTheme(
-                backgroundColor: Color(uiColor: GalleryColor.accentSecondary),
-                backgroundDisableColor: Color(uiColor: GalleryColor.borderLight),
-                titleColor: Color(uiColor: GalleryColor.white),
-                titleDisableColor: Color(uiColor: GalleryColor.white),
+                backgroundColor: color(0xF7A440),
+                backgroundDisableColor: color(0xB4B4B4),
+                titleColor: .white,
+                titleDisableColor: .white,
                 titleFont: .system(size: 16, weight: .heavy)
             )
         )
@@ -85,11 +73,11 @@ enum UIKitFreeCatalogPresets {
             ModalProperties.ActionStyle.CapsuleOutlineTheme(
                 backgroundColor: .clear,
                 backgroundDisableColor: .clear,
-                titleColor: Color(uiColor: GalleryColor.labelSubtitle),
-                titleDisableColor: Color(uiColor: GalleryColor.borderLight),
+                titleColor: color(0x515151),
+                titleDisableColor: color(0xB4B4B4),
                 borderWidth: 2,
-                borderColor: Color(uiColor: GalleryColor.labelSubtitle),
-                borderDisableColor: Color(uiColor: GalleryColor.borderLight),
+                borderColor: color(0x515151),
+                borderDisableColor: color(0xB4B4B4),
                 titleFont: .system(size: 16, weight: .heavy)
             )
         )
@@ -100,8 +88,8 @@ enum UIKitFreeCatalogPresets {
         var properties = GalleryPresets.standardModalProperties
         properties.primaryActionStyle = .plain(
             ModalProperties.ActionStyle.PlainTheme(
-                titleColor: Color(uiColor: GalleryColor.accentSecondaryDark),
-                titleDisableColor: Color(uiColor: GalleryColor.borderLight),
+                titleColor: color(0xF7941E),
+                titleDisableColor: color(0xB4B4B4),
                 titleFont: .system(size: 16, weight: .heavy)
             )
         )
@@ -159,7 +147,7 @@ enum UIKitFreeCatalogPresets {
                 // Matches UIKit's real "leave class" theme (`GalleryPresets.obliqueBottomLeftRedTheme.shadowColor`
                 // = `GalleryColor.englishVermillion`) rather than `.red` again — same-as-fill flattens
                 // the oblique offset layer into the surface.
-                shadowColor: Color(uiColor: GalleryColor.englishVermillion),
+                shadowColor: color(0xC54A47),
                 titleColor: .white, titleDisableColor: .white
             )
         )
@@ -239,5 +227,33 @@ enum UIKitFreeCatalogPresets {
         properties.padding = UIMinMaxEdgeInsets(top: (20, 36), left: (20, 48), bottom: (20, 36), right: (20, 48))
         properties.space = ModalProperties.ComponentSpace(banner: 0, title: 0, subtitle: 24, interButton: 0)
         return properties
+    }
+
+    static var divergencePresets: [(ModalStyle, ModalProperties)] {
+        [
+            (.divergenceTallUncapped, divergenceTallUncapped),
+            (.divergenceBannerWide, popupBanner(maximumHeight: 256)),
+            (.divergenceNilPrimaryStyle, divergenceNilPrimaryStyle)
+        ]
+    }
+
+    private static var divergenceTallUncapped: ModalProperties {
+        var properties = GalleryPresets.standardModalProperties
+        properties.banner = ModalBannerConfiguration(maximumHeight: nil)
+        return properties
+    }
+
+    private static var divergenceNilPrimaryStyle: ModalProperties {
+        var properties = GalleryPresets.standardModalProperties
+        properties.primaryActionStyle = nil
+        return properties
+    }
+
+    private static func color(_ hex: Int) -> Color {
+        Color(
+            red: Double((hex >> 16) & 0xFF) / 255,
+            green: Double((hex >> 8) & 0xFF) / 255,
+            blue: Double(hex & 0xFF) / 255
+        )
     }
 }

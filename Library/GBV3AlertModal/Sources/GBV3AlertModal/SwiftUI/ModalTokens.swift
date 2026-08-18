@@ -573,7 +573,7 @@ public struct ModalTokens: Sendable, Equatable {
     /// `btCloseAction`). Pinned by `test_noCounterpartFields_stayAtStandardLiterals`, and each is
     /// pinned to UIKIT's literal — not to a SwiftUI-side opinion — by the differential gate.
     // swiftlint:disable:next function_body_length
-    public init(from properties: GBAlertModal.Properties) {
+    init(from properties: GBAlertModal.Properties) {
         self = .standard
 
         if let contentProperty = properties.contentProperty {

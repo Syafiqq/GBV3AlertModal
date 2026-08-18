@@ -6,24 +6,12 @@
 //  representation and every `GBAlertModal.ActionStyle` case, name-for-name with the
 //  UIKit side so the two galleries can be compared row by row.
 //
-//  ONE of the eleven is `notRenderable`, down from three (Pass 2). All three used to
-//  fail the same way — the UIKit entry reaches PAST the descriptor — but that was two
-//  different limits wearing one description, and they have different answers:
-//
-//   * NO POST-CONSTRUCTION HOOK (the two button-state entries). Fixed. `AlertDialog`
-//     carries `primaryEnabled`/`secondaryEnabled` and `update(_:to:)` was already the
-//     channel; see `ButtonEnablement`.
-//   * CANNOT CARRY A VIEW (`variant-subtitle-customview`). NOT fixed, deliberately —
-//     `ModalDescriptor: Sendable` is the thing being protected, and the bespoke-view
-//     route already serves the real use case. See that entry's own reason.
-//
-//  `notRenderable` rather than an approximation on purpose: an entry that renders
-//  something adjacent looks like agreement and is worse than an honest gap.
+//  All eleven variants are renderable. Custom subtitle content uses the renderer's
+//  SwiftUI-native `register(_:view:)` extension point.
 //
 
 import Foundation
 import SwiftUI
-import UIKit
 import GBV3AlertModal
 
 struct CatalogCustomSubtitleDialog: ModalDescriptor {

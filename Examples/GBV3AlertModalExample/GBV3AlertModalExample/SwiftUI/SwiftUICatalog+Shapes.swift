@@ -15,7 +15,8 @@
 //
 
 import Foundation
-import UIKit
+import Foundation
+import SwiftUI
 import GBV3AlertModal
 
 // MARK: - Cross-cutting (#1–#8)
@@ -207,14 +208,14 @@ extension SwiftUICatalog {
                 AlertDialog(
                     title: SwiftUICatalog.styled(
                         "Device Switch Recommended",
-                        font: GallerySHSans.bold.font(16),
-                        color: GalleryColor.blueSky
+                        font: Font.system(size: 16, weight: .bold),
+                        color: Color.blue
                     ),
                     subtitle: SwiftUICatalog.styled(
                         "For the best experience in reading and understanding long passages, "
                             + "you may wish to switch over to the laptop or tablet to complete this exercise",
-                        font: GallerySHSans.medium.font(16),
-                        color: GalleryColor.textPrimaryDark
+                        font: Font.system(size: 16, weight: .medium),
+                        color: Color.primary
                     ),
                     primary: "Okay",
                     closeOnTapOverlay: true
@@ -354,8 +355,8 @@ extension SwiftUICatalog {
                     title: AttributedString("Are you ready?"),
                     subtitle: SwiftUICatalog.styled(
                         "[API] You have 30 minutes remaining to complete this Practice Worksheet.",
-                        font: GallerySHSans.regular.font(16),
-                        color: GalleryColor.labelSubtitle
+                        font: Font.system(size: 16),
+                        color: Color.secondary
                     ),
                     primary: "Proceed",
                     style: .genieTimerBanner
@@ -372,8 +373,8 @@ extension SwiftUICatalog {
                     title: AttributedString("Time's up!"),
                     subtitle: SwiftUICatalog.styled(
                         "Tap \"Continue\" to keep working on the worksheet, or submit for marking.",
-                        font: GallerySHSans.regular.font(16),
-                        color: GalleryColor.labelSubtitle
+                        font: Font.system(size: 16),
+                        color: Color.secondary
                     ),
                     primary: "Continue",
                     secondary: "Submit for marking",
@@ -454,18 +455,18 @@ extension SwiftUICatalog {
     static func badgeUnlockSubtitle(badgeName: String) -> AttributedString {
         var subtitle = styled(
             "you unlocked the ",
-            font: GallerySHSans.regular.font(16),
-            color: GalleryColor.labelSubtitle
+            font: Font.system(size: 16),
+            color: Color.secondary
         )
         subtitle.append(styled(
             badgeName,
-            font: GallerySHSans.bold.font(16),
-            color: GalleryColor.labelSubtitle
+            font: Font.system(size: 16, weight: .bold),
+            color: Color.secondary
         ))
         subtitle.append(styled(
             " badge!",
-            font: GallerySHSans.regular.font(16),
-            color: GalleryColor.labelSubtitle
+            font: Font.system(size: 16),
+            color: Color.secondary
         ))
         return subtitle
     }

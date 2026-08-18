@@ -7,6 +7,7 @@
 
 import XCTest
 
+@MainActor
 final class GBV3AlertModalExampleUITests: XCTestCase {
 
     override func setUpWithError() throws {

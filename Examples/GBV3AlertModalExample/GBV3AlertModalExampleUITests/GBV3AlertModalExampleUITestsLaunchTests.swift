@@ -7,6 +7,7 @@
 
 import XCTest
 
+@MainActor
 final class GBV3AlertModalExampleUITestsLaunchTests: XCTestCase {
 
     override static var runsForEachTargetApplicationUIConfiguration: Bool {

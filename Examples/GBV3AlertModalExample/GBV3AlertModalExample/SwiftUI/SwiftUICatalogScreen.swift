@@ -86,22 +86,14 @@ final class SwiftUICatalogModel: ObservableObject {
         pending?.cancel()
         currentIndex = index
 
-        let entry = SwiftUICatalog.entries[index]
-        guard entry.present != nil else {
-            // Listed, selectable, and visibly NOT presentable — never silently skipped.
-            lastResult = "not yet renderable"
-            pending = nil
-            return
-        }
-
         lastResult = "…"
         // Captures only `index` (Sendable) and `self` (a @MainActor class); the
         // entry itself is re-read inside, on the main actor.
         pending = Task { @MainActor [weak self] in
-            guard let self, let present = SwiftUICatalog.entries[index].present else {
+            guard let self else {
                 return
             }
-            let outcome = await present(self.executor)
+            let outcome = await SwiftUICatalog.entries[index].present(self.executor)
             guard !Task.isCancelled else {
                 return   // superseded by a newer present, or the screen went away
             }
@@ -222,12 +214,6 @@ struct SwiftUICatalogScreen: View {
                     Text(entry.category)
                         .font(.caption2)
                         .foregroundColor(.secondary)
-                }
-                if let reason = entry.notRenderableReason {
-                    Text("not yet renderable: \(reason)")
-                        .font(.caption)
-                        .foregroundColor(.red)
-                        .fixedSize(horizontal: false, vertical: true)
                 }
                 ForEach(entry.divergences, id: \.caption) { divergence in
                     Text("⚠︎ " + divergence.caption)

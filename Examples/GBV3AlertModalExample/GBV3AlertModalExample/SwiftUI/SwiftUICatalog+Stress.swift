@@ -22,7 +22,7 @@
 //
 
 import Foundation
-import UIKit
+import Foundation
 import GBV3AlertModal
 
 // MARK: - Style tokens
@@ -37,22 +37,6 @@ extension ModalStyle {
     static let stressWideBannerHorizontal = ModalStyle("stress.wideBanner.horizontal")
     static let stressTallBanner = ModalStyle("stress.tallBanner")
     static let stressTallBannerHorizontal = ModalStyle("stress.tallBanner.horizontal")
-}
-
-extension SwiftUICatalogPresets {
-    /// Registered alongside `stylePresets`. `.standard` is already seeded by
-    /// `SwiftUIModalRenderer.init` with `GalleryPresets.properties`, which is exactly what
-    /// `StressCatalog.properties(banner: .none, orientation: .vertical)` returns, so the
-    /// no-banner vertical shapes need no token of their own.
-    static var stressPresets: [(ModalStyle, GBAlertModal.Properties)] {
-        [
-            (.stressHorizontal, StressCatalog.properties(banner: .none, orientation: .horizontal)),
-            (.stressWideBanner, StressCatalog.properties(banner: .wide, orientation: .vertical)),
-            (.stressWideBannerHorizontal, StressCatalog.properties(banner: .wide, orientation: .horizontal)),
-            (.stressTallBanner, StressCatalog.properties(banner: .tall, orientation: .vertical)),
-            (.stressTallBannerHorizontal, StressCatalog.properties(banner: .tall, orientation: .horizontal))
-        ]
-    }
 }
 
 // MARK: - Divergences carried by these entries

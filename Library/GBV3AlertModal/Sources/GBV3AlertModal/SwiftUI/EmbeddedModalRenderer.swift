@@ -1,44 +1,33 @@
 import Combine // `ObservableObject`/`@Published` (SwiftUI re-exports these; imported explicitly).
 import SwiftUI
 
-/// **The genuinely UIKit-free SwiftUI backend for `ModalRenderer`.**
+/// The SwiftUI-native backend for `ModalRenderer`.
 ///
-/// Same shape as `SwiftUIModalRenderer` — a factory registry keyed by `ObjectIdentifier(D.self)`, a
-/// resolve-once `gate` per presentation, a `live` dictionary, one `teardown` funnel — but its PUBLIC
-/// vocabulary names no UIKit type anywhere: `Factory<D>` returns `(ModalProperties?, ModalContent)`,
-/// not `(GBAlertModal.Properties?, GBAlertModal.DataHolder)`. Deliberately NOT sharing code with
-/// `SwiftUIModalRenderer` — that type's registry is structurally tied to its own frozen public
-/// `Factory<D>` (an owner decision, kept non-breaking for existing callers); this is a separate,
-/// parallel implementation, the same relationship `UIKitModalRenderer` and `SwiftUIModalRenderer`
-/// already have with each other.
+/// A factory registry keyed by `ObjectIdentifier(D.self)`, with a resolve-once gate per
+/// presentation, a live-presentation dictionary, and one teardown funnel. Its public vocabulary is
+/// SwiftUI-native: factories return `(ModalProperties?, ModalContent)`.
 ///
-/// Scoped, for now, to the unified standard `AlertDialog` — see `init`. The bespoke
-/// descriptors (`TextInputDialog` and friends) are a later increment: their SwiftUI bodies
-/// (`TextInputContent`, `BadgeContent`, …) are already UIKit-free and reusable unchanged when that
-/// happens: only their `Registration` entries need writing, mirroring `SwiftUIModalRenderer
-/// .registerBuiltInDescriptors()`.
+/// The standard alert family is registered at initialization. Input, badge, loading, and
+/// satisfaction descriptors are available through `registerBuiltInDescriptors()`.
 ///
-/// Meant to be embedded inside existing content via `EmbeddedModalHost` (a screen-scoped overlay,
-/// e.g. `MainTabBarViewController`'s own view hierarchy) — never a separate `UIWindow`. That's the
-/// rootRenderer's job, a different presentation scope with its own (later, un-queued) renderer type.
+/// `ModalHost` embeds presentations in the caller's SwiftUI hierarchy. Window-level installation
+/// remains the separate responsibility of `WindowModalRenderer`.
 @MainActor
-public final class EmbeddedModalRenderer: ObservableObject, ModalRenderer {
+public final class SwiftUIModalRenderer: ObservableObject, ModalRenderer {
 
     /// Builds `(ModalProperties?, ModalContent)` for a descriptor. `resolve` closes over the token
-    /// gate. Same role as `SwiftUIModalRenderer.Factory`, retyped.
+    /// gate.
     public typealias Factory<D: ModalDescriptor> =
         (D, @escaping (D.Result) -> Void) -> (ModalProperties?, ModalContent)
 
-    /// Builds the SwiftUI body for a descriptor — same role as `SwiftUIModalRenderer.ContentBuilder`,
-    /// retyped for nothing (it was already UIKit-free: `AnyView`, no `DataHolder`/`Properties`
-    /// anywhere in this signature). The seam that makes bespoke descriptors (`TextInputDialog` and
-    /// friends) renderable, not merely routable.
+    /// Builds the SwiftUI body for a descriptor. This seam makes bespoke descriptors
+    /// (`TextInputDialog` and friends) renderable, not merely routable.
     public typealias ContentBuilder<D: ModalDescriptor> =
         (D, @escaping (D.Result) -> Void) -> AnyView
 
     // MARK: - Presentation
 
-    /// One live presentation — the UIKit-free mirror of `SwiftUIModalRenderer.Presentation`.
+    /// One live presentation.
     public struct Presentation: Identifiable {
         public let id: ModalID
         /// INTERNAL bookkeeping, same status as on `SwiftUIModalRenderer.Presentation`: a host draws
@@ -52,11 +41,11 @@ public final class EmbeddedModalRenderer: ObservableObject, ModalRenderer {
         /// registered through `register(_:view:)`, which carries no `StandardAlertContent`.
         public let content: AlertDialog?
         /// The consumer's own SwiftUI body, built ONCE per present/refresh by the `register(_:view:)`
-        /// builder with the gate already bound. `EmbeddedModalHost` draws this in PREFERENCE to
+        /// builder with the gate already bound. `ModalHost` draws this in PREFERENCE to
         /// `content` when both exist — same precedence `ModalPresentationBody.view(for:)` uses.
         public let customContent: AnyView?
         public var isHidden: Bool
-        public let onAction: (GBAlertModal.ActionType) -> Void
+        public let onAction: (ModalAction) -> Void
     }
 
     // MARK: - Registry
@@ -64,7 +53,7 @@ public final class EmbeddedModalRenderer: ObservableObject, ModalRenderer {
     /// A descriptor kind's registration. Same shape as `SwiftUIModalRenderer.Registration`, retyped.
     private struct Registration<D: ModalDescriptor> {
         let factory: (D, @escaping (D.Result) -> Void) -> (ModalProperties?, ModalContent)
-        let route: ((GBAlertModal.ActionType) -> D.Result)?
+        let route: ((ModalAction) -> D.Result)?
         let content: ((D) -> AlertDialog)?
         let view: ContentBuilder<D>?
     }
@@ -73,7 +62,7 @@ public final class EmbeddedModalRenderer: ObservableObject, ModalRenderer {
     struct Live {
         let resolveDismissed: () -> Void
         let rebuild: (Any) -> Void
-        let route: ((GBAlertModal.ActionType) -> Void)?
+        let route: ((ModalAction) -> Void)?
     }
 
     @Published public private(set) var presentations: [Presentation] = []
@@ -85,7 +74,7 @@ public final class EmbeddedModalRenderer: ObservableObject, ModalRenderer {
     /// Same diagnostic hook, same default, as `UIKitModalRenderer`/`SwiftUIModalRenderer` — symmetric
     /// across all three backends.
     public var onUnregisteredDescriptor: ((Any.Type) -> Void)? = { type in
-        ModalDiagnostics.logUnregisteredDescriptor(type, renderer: "EmbeddedModalRenderer")
+        ModalDiagnostics.logUnregisteredDescriptor(type, renderer: "SwiftUIModalRenderer")
     }
 
     // MARK: - Init
@@ -129,7 +118,7 @@ public final class EmbeddedModalRenderer: ObservableObject, ModalRenderer {
     /// `DataHolder.completion` on this backend.
     public func register<D: ModalDescriptor>(
         _ type: D.Type,
-        route: @escaping (GBAlertModal.ActionType) -> D.Result,
+        route: @escaping (ModalAction) -> D.Result,
         factory: @escaping Factory<D>
     ) {
         let previous = registrations[ObjectIdentifier(type)] as? Registration<D>
@@ -161,7 +150,7 @@ public final class EmbeddedModalRenderer: ObservableObject, ModalRenderer {
     /// OPT-IN registration of the five bespoke descriptors, same rule as
     /// `SwiftUIModalRenderer.registerBuiltInDescriptors()`: each kind gets BOTH halves (a factory, so
     /// `Presentation.properties`/`.tokens` derive from real `ModalProperties`, and a `view`, so
-    /// `EmbeddedModalHost` has a body to draw) — the view constructions are VERBATIM the same view
+    /// `ModalHost` has a body to draw) — the view constructions are VERBATIM the same view
     /// types `SwiftUIModalRenderer+BespokeViews.swift`/`+InputViews.swift` already use, since those
     /// are top-level, UIKit-free, and were never coupled to that renderer's registry.
     ///
@@ -257,7 +246,7 @@ public final class EmbeddedModalRenderer: ObservableObject, ModalRenderer {
             { [weak self] descriptor, _ in
                 (self?.properties(for: descriptor.style), ModalContent.make(for: descriptor))
             }
-        let route: (GBAlertModal.ActionType) -> AlertDialog.Result = { action in
+        let route: (ModalAction) -> AlertDialog.Result = { action in
             switch action {
             case .primary: return AlertDialog.Result.primary
             case .secondary: return AlertDialog.Result.secondary
@@ -305,7 +294,7 @@ public final class EmbeddedModalRenderer: ObservableObject, ModalRenderer {
 
         let (properties, holder) = registration.factory(descriptor, gate)
 
-        var router: ((GBAlertModal.ActionType) -> Void)?
+        var router: ((ModalAction) -> Void)?
         if let route = registration.route {
             router = { action in gate(route(action)) }
         }
@@ -363,7 +352,7 @@ public final class EmbeddedModalRenderer: ObservableObject, ModalRenderer {
     /// Builds a `Presentation` via the SAME shared chain every backend uses: `GBAlertModal.resolve`
     /// for structure, `ModalTokens(from:)` for styling — over the effective `ModalProperties`.
     /// Portrait-only for the same reason `SwiftUIModalRenderer.makePresentation` is: the value never
-    /// reaches a renderer (`EmbeddedModalHost` reads `properties`/`tokens`, never `resolved`), and the
+    /// reaches a renderer (`ModalHost` reads `properties`/`tokens`, never `resolved`), and the
     /// one orientation-sensitive resolver output every shipped preset states identically either way.
     private func makePresentation(
         id: ModalID,
@@ -372,7 +361,7 @@ public final class EmbeddedModalRenderer: ObservableObject, ModalRenderer {
         content: AlertDialog?,
         customContent: AnyView?,
         isHidden: Bool,
-        onAction: @escaping (GBAlertModal.ActionType) -> Void
+        onAction: @escaping (ModalAction) -> Void
     ) -> Presentation {
         let effective = properties ?? ModalProperties()
         return Presentation(
@@ -414,7 +403,7 @@ public final class EmbeddedModalRenderer: ObservableObject, ModalRenderer {
     ///
     /// Same split `SwiftUIModalRenderer.teardown` uses: `live[id] = nil` is synchronous (the
     /// coordinator's `finish()` needs it to advance the queue immediately), only the visual removal
-    /// animates — `withAnimation` wraps the `presentations` mutation so `EmbeddedModalHost`'s
+    /// animates — `withAnimation` wraps the `presentations` mutation so `ModalHost`'s
     /// `.transition(.opacity)` fades the row out over the same 0.2s `GBAlertModal.hide()` uses,
     /// rather than the row vanishing instantly. `present`'s `presentations.append` stays unwrapped,
     /// so appearing is still instant — matching UIKit's un-animated `show()`.

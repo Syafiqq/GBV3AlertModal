@@ -250,7 +250,7 @@ public struct BadgeModalView: View {
 
     /// `ActionType` → the descriptor's result vocabulary. Kept out of the body (the same split
     /// `TextInputModalView.result` uses) so a test can call it without hosting a view.
-    nonisolated static func result(for action: GBAlertModal.ActionType) -> BadgeDialog.Result {
+    nonisolated static func result(for action: ModalAction) -> BadgeDialog.Result {
         switch action {
         case .primary: return .viewBadges
         case .secondary, .close: return .dismissed
@@ -309,7 +309,7 @@ public struct LoadingModalView: View {
         }
     }
 
-    nonisolated static func result(for action: GBAlertModal.ActionType) -> LoadingDialog.Result {
+    nonisolated static func result(for action: ModalAction) -> LoadingDialog.Result {
         switch action {
         case .primary: return .confirmed
         case .secondary: return .cancelled
@@ -409,7 +409,7 @@ public struct SatisfactionModalView: View {
     /// selected is unreachable through the UI (the button is disabled) and maps to `.dismissed`
     /// rather than fabricating an index.
     nonisolated static func result(
-        for action: GBAlertModal.ActionType, selectedIndex: Int?
+        for action: ModalAction, selectedIndex: Int?
     ) -> SatisfactionDialog.Result {
         switch action {
         case .primary:

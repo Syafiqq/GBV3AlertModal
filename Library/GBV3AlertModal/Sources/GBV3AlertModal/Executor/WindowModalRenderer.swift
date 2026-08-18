@@ -3,27 +3,27 @@ import UIKit
 
 /// **rootRenderer — the SwiftUI-native alternative to `UIKitModalRenderer` at the true window
 /// level.** Genuinely UIKit-free public API (`Factory<D>` is `(ModalProperties?, ModalContent)`,
-/// same as `EmbeddedModalRenderer`); imports `UIKit` internally for the one thing this scope
+/// same as `SwiftUIModalRenderer`); imports `UIKit` internally for the one thing this scope
 /// genuinely needs it for — installing SwiftUI content into a real `UIWindow`, same reason
 /// `UIKitModalRenderer` lives in `Executor/` and not `SwiftUI/`.
 ///
-/// **No queue, by design.** Unlike `EmbeddedModalRenderer` (meant to sit behind
+/// **No queue, by design.** Unlike `SwiftUIModalRenderer` (meant to sit behind
 /// `MainTabModalCoordinator`, one dialog live at a time, scoped to a specific screen),
 /// window-level presentations are rare and one-off — the same "overlap accepted" stance
 /// `UIKitModalRenderer`'s own doc states. A caller wanting serialization installs a coordinator
 /// over this renderer exactly as they would over any other; this type itself stays direct-present.
 ///
-/// **Per-presentation hosting, not a shared `@Published` array.** `EmbeddedModalRenderer` needs
-/// `ObservableObject`/`@Published` because a CALLER embeds `EmbeddedModalHost` somewhere in their
+/// **Per-presentation hosting, not a shared `@Published` array.** `SwiftUIModalRenderer` needs
+/// `ObservableObject`/`@Published` because a CALLER embeds `ModalHost` somewhere in their
 /// own SwiftUI tree and that tree must re-render when presentations change. This renderer has no
 /// such caller-owned host: it installs its own `UIHostingController` per presentation directly into
 /// the window, exactly the shape `UIKitModalRenderer.present` already uses for its own `GBAlertModal`
 /// view — one modal, one view, added/removed imperatively. `SwiftUIAlertModal` already draws its own
 /// full-screen scrim (`AlertModalScaffold`), so the hosted view needs no overlay/EmptyView-passthrough
-/// trick `EmbeddedModalHost` needs — it fills the window and IS the presentation, nothing to composite
+/// trick `ModalHost` needs — it fills the window and IS the presentation, nothing to composite
 /// with.
 ///
-/// Scoped, like `EmbeddedModalRenderer`, to the standard family (`AlertDialog`/`PopupDialog`) for
+/// Scoped, like `SwiftUIModalRenderer`, to the standard family (`AlertDialog`/`PopupDialog`) for
 /// now — see that type's doc for why.
 @MainActor
 public final class WindowModalRenderer: ModalRenderer {
@@ -31,7 +31,7 @@ public final class WindowModalRenderer: ModalRenderer {
     public typealias Factory<D: ModalDescriptor> =
         (D, @escaping (D.Result) -> Void) -> (ModalProperties?, ModalContent)
 
-    /// Builds the SwiftUI body for a bespoke descriptor — same role as `EmbeddedModalRenderer
+    /// Builds the SwiftUI body for a bespoke descriptor — same role as `SwiftUIModalRenderer
     /// .ContentBuilder`/`SwiftUIModalRenderer.ContentBuilder`. Handed the resolve GATE directly
     /// (not routed through `route`), because these views own their own state and resolve themselves
     /// at interaction time — the same reason `SwiftUIModalRenderer.registerBuiltInDescriptors` never
@@ -41,14 +41,14 @@ public final class WindowModalRenderer: ModalRenderer {
 
     private struct Registration<D: ModalDescriptor> {
         let factory: (D, @escaping (D.Result) -> Void) -> (ModalProperties?, ModalContent)
-        let route: ((GBAlertModal.ActionType) -> D.Result)?
+        let route: ((ModalAction) -> D.Result)?
         let content: ((D) -> AlertDialog)?
         let view: ContentBuilder<D>?
     }
 
     /// One installed presentation: the hosting controller actually mounted in the window, plus the
     /// teardown/rebuild handles every renderer's `live` dictionary carries. Internal, not private —
-    /// matching `UIKitModalRenderer.Live`/`EmbeddedModalRenderer.Live`, since `var live` below is
+    /// matching `UIKitModalRenderer.Live`/`SwiftUIModalRenderer.Live`, since `var live` below is
     /// internal for `@testable` assertions and must be at least as visible as its value type.
     struct Live {
         /// Structure only — same shared chain every backend runs (`GBAlertModal.resolve`), kept
@@ -62,9 +62,9 @@ public final class WindowModalRenderer: ModalRenderer {
         /// is a class, so `rootView` can still be reassigned on rebuild without this being `var`.
         let hostingController: UIHostingController<AnyView>?
         /// `ActionType -> Void`, looked up via `live[id]?.route` by the hosted view's `onAction`
-        /// closure — same "captured now, dereferenced later via id" pattern `EmbeddedModalRenderer
+        /// closure — same "captured now, dereferenced later via id" pattern `SwiftUIModalRenderer
         /// .present` uses, so a stale closure after teardown is inert rather than dangling.
-        let route: ((GBAlertModal.ActionType) -> Void)?
+        let route: ((ModalAction) -> Void)?
         let resolveDismissed: () -> Void
         let rebuild: (Any) -> Void
     }
@@ -118,7 +118,7 @@ public final class WindowModalRenderer: ModalRenderer {
 
     public func register<D: ModalDescriptor>(
         _ type: D.Type,
-        route: @escaping (GBAlertModal.ActionType) -> D.Result,
+        route: @escaping (ModalAction) -> D.Result,
         factory: @escaping Factory<D>
     ) {
         let previous = registrations[ObjectIdentifier(type)] as? Registration<D>
@@ -127,7 +127,7 @@ public final class WindowModalRenderer: ModalRenderer {
         )
     }
 
-    /// Register the SwiftUI body for a descriptor kind — same rules as `EmbeddedModalRenderer
+    /// Register the SwiftUI body for a descriptor kind — same rules as `SwiftUIModalRenderer
     /// .register(_:view:)`: does not require a factory (a neutral one is installed so the
     /// presentation is still tearable-down), and the two registrations are independent.
     public func register<D: ModalDescriptor>(
@@ -146,7 +146,7 @@ public final class WindowModalRenderer: ModalRenderer {
     }
 
     /// OPT-IN registration of the five bespoke descriptors — same rule and same VERBATIM view
-    /// constructions as `EmbeddedModalRenderer.registerBuiltInDescriptors()` (see that type for why
+    /// constructions as `SwiftUIModalRenderer.registerBuiltInDescriptors()` (see that type for why
     /// these views are reusable, top-level, UIKit-free types).
     public func registerBuiltInDescriptors() {
         registrations[ObjectIdentifier(TextInputDialog.self)] = Registration<TextInputDialog>(
@@ -237,7 +237,7 @@ public final class WindowModalRenderer: ModalRenderer {
             { [weak self] descriptor, _ in
                 (self?.properties(for: descriptor.style), ModalContent.make(for: descriptor))
             }
-        let route: (GBAlertModal.ActionType) -> AlertDialog.Result = { action in
+        let route: (ModalAction) -> AlertDialog.Result = { action in
             switch action {
             case .primary: return AlertDialog.Result.primary
             case .secondary: return AlertDialog.Result.secondary
@@ -293,11 +293,11 @@ public final class WindowModalRenderer: ModalRenderer {
         // `SwiftUIAlertModal`/a registered bespoke view each re-resolve internally from
         // `config`/`properties` for actual RENDERING (see `SwiftUIAlertModal`'s own doc) — this
         // resolve is purely for `Live.resolved`, the parity-harness introspection point
-        // (`RendererHarness.resolvedSubtitle`), same role `EmbeddedModalRenderer.Presentation
+        // (`RendererHarness.resolvedSubtitle`), same role `SwiftUIModalRenderer.Presentation
         // .resolved` plays.
         let resolved = GBAlertModal.resolve(inputs: effective, content: holder, isLandscape: false)
 
-        var router: ((GBAlertModal.ActionType) -> Void)?
+        var router: ((ModalAction) -> Void)?
         if let route = registration.route {
             router = { action in gate(route(action)) }
         }
@@ -404,7 +404,7 @@ public final class WindowModalRenderer: ModalRenderer {
 
     /// Installs a hosting controller's view as a transparent, edge-pinned overlay of `window`.
     /// `SwiftUIAlertModal` draws its own full-screen scrim, so the container itself stays clear —
-    /// same reasoning `EmbeddedModalHost`'s base content states, just with no app content underneath
+    /// same reasoning `ModalHost`'s base content states, just with no app content underneath
     /// to preserve (this IS the topmost layer, by construction of being window-level).
     private static func install(_ controller: UIHostingController<AnyView>, in window: UIWindow) {
         controller.view.backgroundColor = .clear
@@ -413,7 +413,7 @@ public final class WindowModalRenderer: ModalRenderer {
         window.addSubview(controller.view)
     }
 
-    private static func actionType(for result: AlertDialog.Result) -> GBAlertModal.ActionType {
+    private static func actionType(for result: AlertDialog.Result) -> ModalAction {
         switch result {
         case .primary: return .primary
         case .secondary: return .secondary

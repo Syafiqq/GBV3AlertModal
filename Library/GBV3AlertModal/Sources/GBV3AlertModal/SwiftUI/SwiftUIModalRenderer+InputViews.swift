@@ -138,7 +138,7 @@ public struct TextInputModalView: View {
     ///
     /// `nonisolated`: it is pure, so it has no business borrowing the view's main-actor isolation.
     nonisolated static func result(
-        for action: GBAlertModal.ActionType, text: String
+        for action: ModalAction, text: String
     ) -> TextInputDialog.Result {
         switch action {
         case .primary: return .submitted(text)
@@ -286,7 +286,7 @@ public struct DatePickerModalView: View {
     /// `ActionType` + the live picker value → the descriptor's own result. The switch
     /// `UIKitModalRenderer.DatePickerHolder` performs, verbatim. See `TextInputModalView.result`.
     nonisolated static func result(
-        for action: GBAlertModal.ActionType, date: Date
+        for action: ModalAction, date: Date
     ) -> DatePickerDialog.Result {
         switch action {
         case .primary: return .submitted(date)

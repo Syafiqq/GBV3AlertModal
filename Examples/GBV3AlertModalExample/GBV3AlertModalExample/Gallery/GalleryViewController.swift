@@ -78,26 +78,11 @@ final class GalleryViewController: UITableViewController {
         super.viewDidLoad()
         title = "Dialog Gallery (\(Self.allEntries.count))"
         tableView.register(UITableViewCell.self, forCellReuseIdentifier: Self.cellReuseIdentifier)
-        // 8 titled bar button items don't fit an iPhone-width nav bar — UIKit silently drops
-        // whichever ones don't fit rather than showing an overflow affordance, so half of these
-        // were unreachable by tapping. One menu button, grouped into the two pairings that were
-        // getting confused for each other (adoption demo vs. its same-shape 54-entry catalog).
         navigationItem.rightBarButtonItem = UIBarButtonItem(
-            image: UIImage(systemName: "ellipsis.circle"),
-            menu: UIMenu(children: [
-                UIMenu(title: "", options: .displayInline, children: [
-                    UIAction(title: "SwiftUI") { [weak self] _ in self?.openSwiftUIDemo() },
-                    UIAction(title: "Tier 0") { [weak self] _ in self?.openTier0Demo() },
-                    UIAction(title: "Tier 1") { [weak self] _ in self?.openAdoptionDemo() },
-                    UIAction(title: "Embedded") { [weak self] _ in self?.openEmbeddedDemo() },
-                    UIAction(title: "Window") { [weak self] _ in self?.openWindowDemo() },
-                ]),
-                UIMenu(title: "", options: .displayInline, children: [
-                    UIAction(title: "SwiftUI Catalog") { [weak self] _ in self?.openSwiftUICatalogTapped() },
-                    UIAction(title: "Embedded Catalog") { [weak self] _ in self?.openEmbeddedCatalog() },
-                    UIAction(title: "Window Catalog") { [weak self] _ in self?.openWindowCatalog() },
-                ]),
-            ])
+            title: "SwiftUI (70)",
+            style: .plain,
+            target: self,
+            action: #selector(openSwiftUICatalogTapped)
         )
     }
 
@@ -109,89 +94,8 @@ final class GalleryViewController: UITableViewController {
         floatingControl?.isHidden = false
     }
 
-    @objc private func openSwiftUIDemo() {
-        let host = UIHostingController(rootView: SwiftUIDemoScreen())
-        navigationController?.pushViewController(host, animated: true)
-    }
-
-    /// Tier 0: build the library executor over a UIKit renderer and inject it into a SwiftUI VM.
-    /// The renderer paints the real UIKit modal on the key window, over the pushed SwiftUI screen.
-    /// Styling comes from `GalleryPresets` — the faithful mirror of the distribution app's
-    /// `Presentation.UiKit.V3AlertModal` preset — so the demo exercises production-shaped config.
-    @objc private func openTier0Demo() {
-        let properties = GalleryPresets.properties
-        let renderer = UIKitModalRenderer(alertProperties: properties)
-        // Custom-content input descriptors — registered by the consumer with the library's holders.
-        renderer.register(TextInputDialog.self) { descriptor, resolve in
-            (properties, UIKitModalRenderer.TextInputHolder.make(for: descriptor, resolve: resolve))
-        }
-        renderer.register(DatePickerDialog.self) { descriptor, resolve in
-            (properties, UIKitModalRenderer.DatePickerHolder.make(for: descriptor, resolve: resolve))
-        }
-        let executor = DefaultModalExecutor(renderer: renderer)
-        let host = UIHostingController(rootView: Tier0DemoScreen(executor: executor))
-        navigationController?.pushViewController(host, animated: true)
-    }
-
-    /// Tier 1: the whole chain — VM → executor → coordinator → `SwiftUIModalRenderer`, with the
-    /// modals rendered as SwiftUI views inside the pushed screen rather than on the key window. The
-    /// same `GalleryPresets` config the Tier 0 demo uses, so the two differ only by renderer.
-    @objc private func openAdoptionDemo() {
-        let host = UIHostingController(
-            rootView: AdoptionScreen(properties: GalleryPresets.properties)
-        )
-        navigationController?.pushViewController(host, animated: true)
-    }
-
-    /// Sanity check for `EmbeddedModalRenderer` — the UIKit-free renderer
-    /// (`docs`... see the plan at `iridescent-enchanting-pike.md`) — running in a real app screen,
-    /// not just unit tests. Same chain shape as `openAdoptionDemo`, minimal preset (not
-    /// `GalleryPresets`-fidelity — this answers "does it work", not "does it look production-exact").
-    @objc private func openEmbeddedDemo() {
-        let host = UIHostingController(rootView: EmbeddedAdoptionScreen())
-        navigationController?.pushViewController(host, animated: true)
-    }
-
-    /// Sanity check for `WindowModalRenderer` — rootRenderer, the window-level UIKit-free renderer
-    /// (plan: `iridescent-enchanting-pike.md`; shipped `a1c6bbb`). Reuses `Tier0DemoScreen` as-is:
-    /// that screen's whole point is "VM drives the executor, the modal paints over this SwiftUI
-    /// screen at window level" — exactly rootRenderer's job, just SwiftUI-drawn instead of UIKit.
-    /// All 5 of its buttons work here since `1d7aa46`: `registerBuiltInDescriptors()` registers the
-    /// 5 bespoke kinds (Rename/Pick date included), same call `EmbeddedAdoptionScreen`'s renderer
-    /// never needed for ITS 3 buttons (none of them use a bespoke kind) but this one does.
-    @objc private func openWindowDemo() {
-        let renderer = WindowModalRenderer(alertProperties: GalleryPresets.standardModalProperties)
-        renderer.registerBuiltInDescriptors()
-        let executor = DefaultModalExecutor(renderer: renderer)
-        let host = UIHostingController(rootView: Tier0DemoScreen(executor: executor))
-        navigationController?.pushViewController(host, animated: true)
-    }
-
     @objc private func openSwiftUICatalogTapped() {
         openSwiftUICatalog(entryNamed: nil)
-    }
-
-    /// The 26 real shapes, in front of a human's eyes, on `EmbeddedModalRenderer` — the visual half
-    /// of the claim `EmbeddedShapeCoverageTests` proves structurally in the library's test target.
-    ///
-    /// Hides the window-level pill first, same reason `openSwiftUICatalog` does: this screen draws
-    /// its OWN bottom traversal pill (`EmbeddedCatalogScreen.traversalPill`), and leaving the
-    /// window-level one up stacked the two at nearly the same bottom position.
-    @objc private func openEmbeddedCatalog() {
-        floatingControl?.pauseAutoPlay()
-        floatingControl?.isHidden = true
-        let host = UIHostingController(rootView: EmbeddedCatalogScreen())
-        navigationController?.pushViewController(host, animated: true)
-    }
-
-    /// The `WindowModalRenderer` twin of `openEmbeddedCatalog` — same 26 shapes, rootRenderer
-    /// backend, same own-pill-vs-window-pill overlap fixed the same way (`WindowCatalogScreen`
-    /// draws its own `traversalPill` too).
-    @objc private func openWindowCatalog() {
-        floatingControl?.pauseAutoPlay()
-        floatingControl?.isHidden = true
-        let host = UIHostingController(rootView: WindowCatalogScreen())
-        navigationController?.pushViewController(host, animated: true)
     }
 
     /// Tier 1: the SAME 26 shapes as this gallery's `DialogCatalog` rows, rendered

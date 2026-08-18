@@ -35,7 +35,7 @@ public struct ModalHost<Content: View>: View {
                             // semantics: not drawn, not hit-testable, still alive.
                             .opacity(presentation.isHidden ? 0 : 1)
                             .allowsHitTesting(!presentation.isHidden)
-                            // Same rule as `EmbeddedModalHost`: fires only on structural
+                            // Same rule as `ModalHost`: fires only on structural
                             // insertion/removal, so this is purely `SwiftUIModalRenderer
                             // .teardown`'s animated fade-out — appearing stays instant.
                             .transition(.opacity)
@@ -93,10 +93,10 @@ enum ModalPresentationBody {
         presentation.customContent != nil || presentation.content != nil
     }
 
-    /// `AlertDialog.Result` (what the view emits) → `GBAlertModal.ActionType` (what the renderer's
+    /// `AlertDialog.Result` (what the view emits) → `ModalAction` (what the renderer's
     /// router consumes). The exact inverse of the router's mapping in `registerStandard`, so a tap
     /// round-trips to the identical `Result` the UIKit path would have produced.
-    nonisolated static func actionType(for result: AlertDialog.Result) -> GBAlertModal.ActionType {
+    nonisolated static func actionType(for result: AlertDialog.Result) -> ModalAction {
         switch result {
         case .primary: return .primary
         case .secondary: return .secondary

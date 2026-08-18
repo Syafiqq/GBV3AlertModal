@@ -35,7 +35,7 @@ final class CatalogSnapshotComparisonTests: XCTestCase {
         window.rootViewController = host
         window.makeKeyAndVisible()
 
-        for entry in SwiftUICatalog.entries where entry.present != nil {
+        for entry in SwiftUICatalog.entries {
             autoreleasepool {
                 snapshotSwiftUI(entry, using: host, in: window)
             }
@@ -86,10 +86,7 @@ final class CatalogSnapshotComparisonTests: XCTestCase {
         XCTAssertEqual(Set(uikit), Set(swiftUI))
         XCTAssertEqual(uikit.count, Set(uikit).count, "UIKit catalog contains duplicate keys")
         XCTAssertEqual(swiftUI.count, Set(swiftUI).count, "SwiftUI catalog contains duplicate keys")
-        XCTAssertEqual(
-            SwiftUICatalog.entries.filter { $0.present == nil }.map(\.name),
-            []
-        )
+        XCTAssertEqual(SwiftUICatalog.entries.count, 70)
     }
 
     private func renderedImage(of view: UIView) -> UIImage {

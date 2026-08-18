@@ -33,7 +33,6 @@
 //
 
 import SwiftUI
-import UIKit
 import GBV3AlertModal
 
 // MARK: - Style tokens
@@ -42,7 +41,7 @@ import GBV3AlertModal
 /// `.standard`; everything else is a CONSUMER preset, which is exactly the
 /// claim `ModalStyle` makes ("Extend it from the app side"). This block is that
 /// extension, written the way the real app would write it, and every token is
-/// mapped to a `GBAlertModal.Properties` in `SwiftUICatalogPresets`.
+/// mapped to native `ModalProperties` values in `SwiftUICatalogPresets`.
 extension ModalStyle {
     static let geniePermissionAlert = ModalStyle("genie.permissionAlert")
     static let genieObliqueRed = ModalStyle("genie.obliqueRed")
@@ -170,20 +169,15 @@ struct SwiftUICatalogEntry: Identifiable {
 
     let name: String
     let category: String
-    /// Non-nil = this shape has NO SwiftUI presentation yet. The gallery still
-    /// lists it, marked "not yet renderable: <reason>" — a gallery that quietly
-    /// lists 23 of 26 is worse than one that shows 26 with 3 marked broken.
-    let notRenderableReason: String?
     let divergences: [SwiftUIDivergence]
-    /// `nil` iff `notRenderableReason` is non-nil. Returns a short description of
-    /// the descriptor's own result, shown in the traversal pill.
+    /// Returns a short description of the descriptor's own result, shown in the traversal pill.
     ///
     /// Takes the CONCRETE `DefaultModalExecutor` rather than `any ModalExecutor`:
     /// this closure is stored in a `@MainActor` value and awaited from a `Task`,
     /// and a concrete `@MainActor final class` is unambiguously `Sendable` where a
     /// main-actor-isolated existential is not. Nothing in the body depends on the
     /// concrete type — it only calls the `ModalExecutor` front door.
-    let present: (@MainActor (DefaultModalExecutor) async -> String)?
+    let present: @MainActor (DefaultModalExecutor) async -> String
 
     /// The ordinary case: present `descriptor` and stringify whatever result the
     /// descriptor's own vocabulary resolves with.
@@ -196,7 +190,6 @@ struct SwiftUICatalogEntry: Identifiable {
         SwiftUICatalogEntry(
             name: name,
             category: category,
-            notRenderableReason: nil,
             divergences: divergences,
             present: { executor in
                 let result = await executor.presentAndWait(descriptor())
@@ -205,21 +198,6 @@ struct SwiftUICatalogEntry: Identifiable {
         )
     }
 
-    /// The honest case: a shape that cannot be presented on this backend yet.
-    /// Kept in the list, visibly broken, never silently dropped.
-    static func notRenderable(
-        _ name: String,
-        category: String,
-        reason: String
-    ) -> SwiftUICatalogEntry {
-        SwiftUICatalogEntry(
-            name: name,
-            category: category,
-            notRenderableReason: reason,
-            divergences: [],
-            present: nil
-        )
-    }
 }
 
 // MARK: - The catalog
@@ -228,8 +206,7 @@ struct SwiftUICatalogEntry: Identifiable {
 enum SwiftUICatalog {
     /// The 26 real Geniebook shapes, in `DialogCatalog.entries` order (cross-cutting,
     /// worksheet, GenieClass, campaign, working-space, badges) so the two galleries step
-    /// in lockstep. `SwiftUIDemoScreenSmokeTests` pins THIS list against
-    /// `DialogCatalog.entries` name-for-name and order-for-order.
+    /// in lockstep. `CatalogSnapshotComparisonTests` pins the complete catalog against its UIKit twin.
     static let dialogEntries: [SwiftUICatalogEntry] =
         crossCuttingEntries
             + worksheetEntries
@@ -250,18 +227,6 @@ enum SwiftUICatalog {
     static let entries: [SwiftUICatalogEntry] =
         dialogEntries + stressEntries + variantEntries + divergenceEntries
 
-    /// `dialogEntries` + `stressEntries` + `variantEntries` — what `EmbeddedCatalogScreen`/
-    /// `WindowCatalogScreen` present. Those two screens exist to answer "does the shape actually
-    /// render" on the UIKit-free renderers, same bar as their structural coverage suites; variants
-    /// (title/subtitle representations, the four button styles) are real shapes by that same bar,
-    /// so they're included. `divergenceEntries` stay out — that section is UIKit-vs-SwiftUI
-    /// comparison material specific to `SwiftUICatalogScreen`, not a shape of its own.
-    ///
-    /// Order matters: `dialogEntries` first, unchanged, is what
-    /// `EmbeddedCatalogScreenTests`/`WindowCatalogScreenTests` index past (`dialogEntries.count`) to
-    /// reach the first stress entry.
-    static let dialogAndStressEntries: [SwiftUICatalogEntry] = dialogEntries + stressEntries + variantEntries
-
     static func index(ofEntryNamed name: String) -> Int? {
         entries.firstIndex { $0.name == name }
     }
@@ -277,128 +242,19 @@ enum SwiftUICatalog {
     /// registration, which is the point: a consumer's preset table and holder
     /// factories are portable between the two backends verbatim.
     static func makeRenderer() -> SwiftUIModalRenderer {
-        let renderer = SwiftUIModalRenderer(alertProperties: GalleryPresets.properties)
+        let renderer = SwiftUIModalRenderer(alertProperties: GalleryPresets.standardModalProperties)
         let presets = SwiftUICatalogPresets.stylePresets
             + SwiftUICatalogPresets.stressPresets
+            + SwiftUICatalogPresets.variantPresets
             + SwiftUICatalogPresets.divergencePresets
         for (style, properties) in presets {
             renderer.register(style: style, properties: properties)
         }
-        registerInputDialogs(on: renderer)
-        registerBespokeContent(on: renderer)
+        renderer.registerBuiltInDescriptors()
         renderer.register(CatalogCustomSubtitleDialog.self, view: { descriptor, resolve in
             AnyView(CatalogCustomSubtitleModalView(descriptor: descriptor, resolve: resolve))
         })
         return renderer
-    }
-
-    /// The two input descriptors the library ships. Each gets BOTH a factory
-    /// (descriptor → `Properties` + `DataHolder`, so the presentation resolves a
-    /// real structure and real tokens) and a view (`register(_:view:)`, so
-    /// `ModalHost` has a body to draw). The two registrations are independent
-    /// and neither clears the other.
-    private static func registerInputDialogs(on renderer: SwiftUIModalRenderer) {
-        let renameProperties = SwiftUICatalogPresets.renameInput
-        renderer.register(TextInputDialog.self) { descriptor, resolve in
-            (renameProperties, UIKitModalRenderer.TextInputHolder.make(for: descriptor, resolve: resolve))
-        }
-        renderer.register(TextInputDialog.self, view: { descriptor, resolve in
-            SwiftUIModalRenderer.TextInputContent.make(
-                for: descriptor,
-                tokens: ModalTokens(from: renameProperties),
-                resolve: resolve
-            )
-        })
-
-        let datePickerProperties = SwiftUICatalogPresets.datePickerInput
-        renderer.register(DatePickerDialog.self) { descriptor, resolve in
-            (datePickerProperties, UIKitModalRenderer.DatePickerHolder.make(for: descriptor, resolve: resolve))
-        }
-        renderer.register(DatePickerDialog.self, view: { descriptor, resolve in
-            SwiftUIModalRenderer.DatePickerContent.make(
-                for: descriptor,
-                tokens: ModalTokens(from: datePickerProperties),
-                resolve: resolve
-            )
-        })
-    }
-
-    /// The bespoke ports: the badge family (three catalog shapes, one descriptor)
-    /// and the loading confirm. Both reach `Properties` through the SAME style map
-    /// the standard family uses, so their cards are styled by `GalleryPresets`
-    /// and not by `ModalTokens.standard`.
-    private static func registerBespokeContent(on renderer: SwiftUIModalRenderer) {
-        renderer.register(BadgeDialog.self) { [weak renderer] descriptor, _ in
-            (renderer?.properties(for: descriptor.style), badgeHolder(for: descriptor))
-        }
-        renderer.register(BadgeDialog.self, view: { [weak renderer] descriptor, resolve in
-            SwiftUIModalRenderer.BadgeContent.make(
-                for: descriptor,
-                tokens: tokens(for: descriptor.style, on: renderer),
-                resolve: resolve
-            )
-        })
-
-        renderer.register(LoadingDialog.self) { [weak renderer] descriptor, _ in
-            (renderer?.properties(for: descriptor.style), loadingHolder(for: descriptor))
-        }
-        renderer.register(LoadingDialog.self, view: { [weak renderer] descriptor, resolve in
-            SwiftUIModalRenderer.LoadingContent.make(
-                for: descriptor,
-                tokens: tokens(for: descriptor.style, on: renderer),
-                resolve: resolve
-            )
-        })
-    }
-
-    private static func tokens(for style: ModalStyle, on renderer: SwiftUIModalRenderer?) -> ModalTokens {
-        guard let properties = renderer?.properties(for: style) else {
-            return .standard
-        }
-        return ModalTokens(from: properties)
-    }
-
-    // MARK: Holders for the bespoke descriptors
-    //
-    // The CONSUMER's descriptor→`DataHolder` mappings. They exist so the
-    // presentation's `resolved`/`tokens` come from the shape's REAL `Properties`
-    // rather than the renderer's neutral fallback. They deliberately do NOT
-    // fabricate a `subtitleCustomView`: on this backend the bespoke content is
-    // `Presentation.customContent`, and inventing an empty `UIView` purely to
-    // make the UIKit-scoped resolver say `.custom` would be a lie about a view
-    // nobody renders.
-
-    static func badgeHolder(for descriptor: BadgeDialog) -> GBAlertModal.DataHolder {
-        let (titlePlain, titleAttributed) = ModalText.split(descriptor.title)
-        let (subtitlePlain, subtitleAttributed) = ModalText.split(descriptor.subtitle)
-        return GBAlertModal.DataHolder(
-            closeOnTapOverlay: descriptor.closeOnTapOverlay,
-            banner: descriptor.banner.flatMap { UIImage(named: $0.assetName) },
-            title: titlePlain,
-            titleAttributed: titleAttributed,
-            subtitle: subtitlePlain,
-            subtitleAttributed: subtitleAttributed,
-            primaryAction: descriptor.primary,
-            secondaryAction: descriptor.secondary,
-            showCloseButton: descriptor.showCloseButton,
-            dismissOnAction: false      // the renderer's resolve gate owns teardown
-        )
-    }
-
-    static func loadingHolder(for descriptor: LoadingDialog) -> GBAlertModal.DataHolder {
-        let (titlePlain, titleAttributed) = ModalText.split(descriptor.title)
-        let (subtitlePlain, subtitleAttributed) = ModalText.split(descriptor.subtitle)
-        return GBAlertModal.DataHolder(
-            closeOnTapOverlay: descriptor.closeOnTapOverlay,
-            title: titlePlain,
-            titleAttributed: titleAttributed,
-            subtitle: subtitlePlain,
-            subtitleAttributed: subtitleAttributed,
-            primaryAction: descriptor.primary,
-            secondaryAction: descriptor.secondary,
-            showCloseButton: descriptor.showCloseButton,
-            dismissOnAction: false
-        )
     }
 
     // MARK: Text helpers
@@ -407,10 +263,10 @@ enum SwiftUICatalog {
     /// `ModalText.split` classifies as attributed, i.e. the scope that makes a
     /// shape's subtitle really resolve `.attributed` the way its UIKit twin's
     /// `NSAttributedString` does.
-    static func styled(_ string: String, font: UIFont, color: UIColor) -> AttributedString {
+    static func styled(_ string: String, font: Font, color: Color) -> AttributedString {
         var value = AttributedString(string)
-        value.uiKit.font = font
-        value.uiKit.foregroundColor = color
+        value.font = font
+        value.foregroundColor = color
         return value
     }
 }
