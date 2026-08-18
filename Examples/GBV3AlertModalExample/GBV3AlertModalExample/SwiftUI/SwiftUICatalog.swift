@@ -242,7 +242,7 @@ enum SwiftUICatalog {
     /// registration, which is the point: a consumer's preset table and holder
     /// factories are portable between the two backends verbatim.
     static func makeRenderer() -> SwiftUIModalRenderer {
-        let renderer = SwiftUIModalRenderer(alertProperties: GalleryPresets.standardModalProperties)
+        let renderer = SwiftUIModalRenderer(alertProperties: SwiftUICatalogPresets.standard)
         let presets = SwiftUICatalogPresets.stylePresets
             + SwiftUICatalogPresets.stressPresets
             + SwiftUICatalogPresets.variantPresets
