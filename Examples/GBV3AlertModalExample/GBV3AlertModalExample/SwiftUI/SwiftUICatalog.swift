@@ -204,7 +204,7 @@ struct SwiftUICatalogEntry: Identifiable {
 enum SwiftUICatalog {
     /// The 26 real Geniebook shapes, in `DialogCatalog.entries` order (cross-cutting,
     /// worksheet, GenieClass, campaign, working-space, badges) so the two galleries step
-    /// in lockstep. `CatalogSnapshotComparisonTests` pins the complete catalog against its UIKit twin.
+    /// in lockstep. `CatalogContractTests` verifies that both backends expose the same unique entries.
     static let dialogEntries: [SwiftUICatalogEntry] =
         crossCuttingEntries
             + worksheetEntries

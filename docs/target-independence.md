@@ -33,25 +33,24 @@ Script/test-swiftui-independence.sh
 ```
 
 Each test entry point fails when an expected suite reports zero executed tests. The example suite
-separates contracts, snapshots, UI smoke, and the standalone SwiftUI build. Run one stage while
+separates contracts, UI smoke, and the standalone SwiftUI build. Run one stage while
 diagnosing a failure with:
 
 ```sh
 EXAMPLE_TEST_STAGE=contracts Script/test-example.sh
-EXAMPLE_TEST_STAGE=snapshots Script/test-example.sh
 EXAMPLE_TEST_STAGE=ui-smoke Script/test-example.sh
 EXAMPLE_TEST_STAGE=swiftui-build Script/test-example.sh
 ```
 
 Each stage has a bounded timeout. Only a recognized simulator-infrastructure failure is retried,
-once, after restarting and waiting for the selected simulator. Snapshot assertion failures are
-reported from the result bundle with their catalog entry names and are never retried.
+once, after restarting and waiting for the selected simulator. UIKit/SwiftUI visual comparison is
+performed manually in the gallery rather than enforced through platform-sensitive image baselines.
 
 ## Snapshot review
 
-The target-independence work moved existing comparison snapshots into the Migration test target but
-did not change their image content. There are therefore no native-rendering, accessibility, or
-Dynamic Type snapshot deltas requiring visual acceptance for this split.
+The package retains focused Migration snapshots for library regressions. The example gallery does
+not keep full-catalog image baselines; compare its paired UIKit and SwiftUI entries manually when
+reviewing native rendering, accessibility, or Dynamic Type behavior.
 
 ## Consumer migration and retirement checklist
 

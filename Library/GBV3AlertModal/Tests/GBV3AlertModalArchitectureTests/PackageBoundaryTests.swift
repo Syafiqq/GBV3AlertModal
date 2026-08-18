@@ -101,10 +101,10 @@ final class PackageBoundaryTests: XCTestCase {
 
     func testExampleKeepsExactlySeventyUniqueSwiftUIEntriesContract() throws {
         let test = try String(contentsOf: repositoryRoot.appendingPathComponent(
-            "Examples/GBV3AlertModalExample/GBV3AlertModalExampleTests/CatalogSnapshotComparisonTests.swift"
+            "Examples/GBV3AlertModalExample/GBV3AlertModalExampleTests/CatalogContractTests.swift"
         ), encoding: .utf8)
-        XCTAssertTrue(test.contains("XCTAssertEqual(SwiftUICatalog.entries.count, 70)"))
-        XCTAssertTrue(test.contains("XCTAssertEqual(swiftUI.count, Set(swiftUI).count"))
+        XCTAssertTrue(test.contains("#expect(SwiftUICatalog.entries.count == 70)"))
+        XCTAssertTrue(test.contains("#expect(swiftUI.count == Set(swiftUI).count"))
     }
 
     func testDeletionProofFixtureAndEntryPointStayIndependent() throws {

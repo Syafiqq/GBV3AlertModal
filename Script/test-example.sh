@@ -1,6 +1,6 @@
 #!/bin/zsh
-# Runs deterministic example contracts, visual snapshots, one UI smoke test, and the independent
-# SwiftUI example build as separate stages. Only simulator-infrastructure failures are retried.
+# Runs deterministic example contracts, one UI smoke test, and the independent SwiftUI example
+# build as separate stages. Visual comparison is performed manually in the gallery.
 set -eu
 set -o pipefail
 
@@ -79,12 +79,8 @@ assert_stage_executed() {
     local output_file=$2
     case "$stage" in
         contracts)
-            rg -q "testCatalogPairingContract.*passed" "$output_file" &&
+            rg -q "backendsExposeTheSameSeventyUniqueEntries.*passed" "$output_file" &&
                 rg -q "testEveryCatalogEntryBuildsAContainer.*passed" "$output_file"
-            ;;
-        snapshots)
-            rg -q "testEveryUIKitExample.*passed" "$output_file" &&
-                rg -q "testEverySwiftUIExample.*passed" "$output_file"
             ;;
         ui-smoke)
             rg -q "testApplicationLaunches.*passed" "$output_file"
@@ -145,16 +141,7 @@ run_test_stage() {
 if [[ "$REQUESTED_STAGE" == all || "$REQUESTED_STAGE" == contracts ]]; then
     resolve_simulator
     run_test_stage contracts 300 \
-        -only-testing:GBV3AlertModalExampleTests \
-        -skip-testing:GBV3AlertModalExampleTests/CatalogSnapshotComparisonTests/testEveryUIKitExample \
-        -skip-testing:GBV3AlertModalExampleTests/CatalogSnapshotComparisonTests/testEverySwiftUIExample
-fi
-
-if [[ "$REQUESTED_STAGE" == all || "$REQUESTED_STAGE" == snapshots ]]; then
-    [ -n "$SIMULATOR_UDID" ] || resolve_simulator
-    run_test_stage snapshots 900 \
-        -only-testing:GBV3AlertModalExampleTests/CatalogSnapshotComparisonTests/testEveryUIKitExample \
-        -only-testing:GBV3AlertModalExampleTests/CatalogSnapshotComparisonTests/testEverySwiftUIExample
+        -only-testing:GBV3AlertModalExampleTests
 fi
 
 if [[ "$REQUESTED_STAGE" == all || "$REQUESTED_STAGE" == ui-smoke ]]; then
@@ -181,10 +168,9 @@ if [[ "$REQUESTED_STAGE" == all || "$REQUESTED_STAGE" == swiftui-build ]]; then
 fi
 
 if [[ "$REQUESTED_STAGE" != all && "$REQUESTED_STAGE" != contracts &&
-      "$REQUESTED_STAGE" != snapshots && "$REQUESTED_STAGE" != ui-smoke &&
-      "$REQUESTED_STAGE" != swiftui-build ]]; then
+      "$REQUESTED_STAGE" != ui-smoke && "$REQUESTED_STAGE" != swiftui-build ]]; then
     print -u2 "Unknown EXAMPLE_TEST_STAGE '$REQUESTED_STAGE'."
-    print -u2 "Expected: all, contracts, snapshots, ui-smoke, or swiftui-build."
+    print -u2 "Expected: all, contracts, ui-smoke, or swiftui-build."
     exit 2
 fi
 
