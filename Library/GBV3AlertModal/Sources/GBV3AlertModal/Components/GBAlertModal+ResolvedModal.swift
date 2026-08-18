@@ -1,175 +1,23 @@
-import UIKit
+import Foundation
 
 extension GBAlertModal {
-    /// Pure, deterministic description of every render *decision* `GBAlertModal` makes for a
-    /// given `(properties, holder, orientation)` input — which views are shown, the subtitle
-    /// kind, button axis/alignment, the dismiss/overlay flags, and the resolved content width.
-    ///
-    /// This is a **verbatim mirror** of the inline decisions in the view's render pipeline
-    /// (`registerDialogView`, `adjustDialogViewStyle`, `adjustSvContentContainerConstraint*`).
-    /// It intentionally changes no behavior; the view routes its decisions through
-    /// `resolve(...)` so this type can be exhaustively unit-tested and later used as the
-    /// SwiftUI equivalence spec.
-    public struct ResolvedModal: Equatable {
-        /// Which subtitle representation is rendered. Precedence mirrors `registerDialogView`:
-        /// a non-empty plain `subtitle` wins over a non-empty `subtitleAttributed`, which wins
-        /// over a `subtitleCustomView`; otherwise `.none`.
-        public enum SubtitleKind: Equatable {
-            case none
-            case plain(String)
-            case attributed
-            case custom
-        }
-
-        /// Resolved width constraint(s) applied to the content container. The view applies a
-        /// fixed-width constraint and a max-width constraint independently, so both can be
-        /// present at once (`.fixedAndMax`) — this mirrors the two independent `if let`s in
-        /// `adjustSvContentContainerConstraint`.
-        public enum WidthResolution: Equatable {
-            case flexible
-            case fixed(CGFloat)
-            case max(CGFloat)
-            case fixedAndMax(fixed: CGFloat, max: CGFloat)
-        }
-
-        public var showsBanner: Bool
-        public var showsTitle: Bool
-        public var subtitle: SubtitleKind
-        public var showsPrimary: Bool
-        public var showsSecondary: Bool
-        public var showsCloseButton: Bool
-        public var buttonAxis: NSLayoutConstraint.Axis
-        public var buttonsMatchParent: Bool
-        public var dismissOnAction: Bool
-        public var closeOnTapOverlay: Bool
-        public var contentWidth: WidthResolution
+    nonisolated public static func resolve(
+        properties: Properties?, holder: DataHolder, isLandscape: Bool
+    ) -> ResolvedModal {
+        resolveModal(inputs: properties, content: holder, isLandscape: isLandscape)
     }
 
-    /// Compute the render decisions for the given input. Pure: orientation is passed in
-    /// (`isLandscape`) rather than read from `UIWindow`, so the result is deterministic and
-    /// unit-testable. The view passes whatever it currently computes.
-    /// `nonisolated`: genuinely pure (value inputs only, no main-actor state), so it is callable
-    /// off the main actor — matching its role as the exhaustive, testable resolver.
     nonisolated public static func resolve(
-            properties: Properties?,
-            holder: DataHolder,
-            isLandscape: Bool
+        inputs: (any ModalStructureInputs)?, holder: DataHolder, isLandscape: Bool
     ) -> ResolvedModal {
-        resolve(inputs: properties, holder: holder, isLandscape: isLandscape)
+        resolveModal(inputs: inputs, content: holder, isLandscape: isLandscape)
     }
 
-    /// **The same resolver, over whichever configuration vocabulary the caller has.**
-    ///
-    /// The body moved here unchanged; the `Properties` signature above now forwards, so no existing
-    /// call site or public API moved. `ModalStructureInputs` is the FIVE things this function was
-    /// already reading off `Properties` — see that protocol for the measurement and for why a second
-    /// resolver was never necessary.
-    ///
-    /// This is what keeps both backends deciding identically once a SwiftUI-native config exists.
-    /// §5 expected Pass 3 to give that up; it did not have to.
-    ///
-    /// Forwards to the `content:`-generalized overload below now that `DataHolder` conforms to
-    /// `ModalContentInputs` — same relationship as the `Properties`-typed `resolve` above has to
-    /// this one, one level down.
     nonisolated public static func resolve(
-            inputs: (any ModalStructureInputs)?,
-            holder: DataHolder,
-            isLandscape: Bool
+        inputs: (any ModalStructureInputs)?,
+        content: any ModalContentInputs,
+        isLandscape: Bool
     ) -> ResolvedModal {
-        resolve(inputs: inputs, content: holder, isLandscape: isLandscape)
-    }
-
-    /// **The same resolver, over whichever CONTENT vocabulary the caller has.**
-    ///
-    /// `ModalContentInputs` is the ELEVEN things this function reads off a `DataHolder` — see that
-    /// protocol for the measurement. Added at Pass 5 step 6
-    /// (`2026-08-07-uikit-retirement.md` §3) for the same reason `ModalStructureInputs` was added at
-    /// Pass 3: a second, independent resolver for the SwiftUI-native holder would be able to drift
-    /// from this one, and nothing here needed to fork to accept it.
-    nonisolated public static func resolve(
-            inputs: (any ModalStructureInputs)?,
-            content: any ModalContentInputs,
-            isLandscape: Bool
-    ) -> ResolvedModal {
-        // Banner — `registerDialogView`: `if let banner = dataHolder?.banner`. A degenerate
-        // (nil OR zero-size) image reserves no banner slot: a zero-size `UIImage()` has no
-        // pixels to render and would otherwise leave an empty gap above the title. Folded into
-        // `hasBanner` itself now that the holder may carry no `UIImage` at all to measure.
-        let showsBanner = content.hasBanner
-
-        // Title — `registerDialogView`: non-empty plain title, else non-empty attributed title.
-        let hasPlainTitle = (content.title?.isEmpty == false)
-        let hasAttributedTitle = content.hasAttributedTitle
-        let showsTitle = hasPlainTitle || hasAttributedTitle
-
-        // Subtitle — `registerDialogView`: plain (non-empty) > attributed (length > 0) > custom.
-        let subtitle: ResolvedModal.SubtitleKind
-        if let plain = content.subtitle, !plain.isEmpty {
-            subtitle = .plain(plain)
-        } else if content.hasAttributedSubtitle {
-            subtitle = .attributed
-        } else if content.hasSubtitleCustomView {
-            subtitle = .custom
-        } else {
-            subtitle = .none
-        }
-
-        // Actions — `registerDialogView`: requires BOTH the action string and its style.
-        let showsPrimary = content.primaryAction != nil && inputs?.hasPrimaryActionStyle == true
-        let showsSecondary = content.secondaryAction != nil && inputs?.hasSecondaryActionStyle == true
-
-        // Close — `registerDialogView`: `dataHolder?.showCloseButton == true` (vwContainer is
-        // always present once the base design is built).
-        let showsCloseButton = content.showCloseButton == true
-
-        // Button axis / alignment — `adjustDialogViewStyle`. When no orientation is set the
-        // main-action stack keeps its generated default of `.vertical`.
-        // The `Bool -> Axis` direction of the lossless collapse documented on
-        // `ModalStructureInputs.buttonsAreHorizontal`. `ResolvedModal` keeps speaking
-        // `NSLayoutConstraint.Axis` because `UIStackView.axis` takes exactly that type and the UIKit
-        // renderer is frozen; SwiftUI bridges it once, at `AlertModalScaffold`'s boundary.
-        let buttonAxis: NSLayoutConstraint.Axis = inputs?.buttonsAreHorizontal == true
-                ? .horizontal
-                : .vertical
-        let buttonsMatchParent = inputs?.buttonsMatchParent == true
-
-        // Runtime flags — consumed by the overlay-tap / dismiss callbacks.
-        let dismissOnAction = content.dismissOnAction
-        let closeOnTapOverlay = content.closeOnTapOverlay
-
-        // Content width — `adjustSvContentContainerConstraint`: fixed and max are independent,
-        // each preferring the current orientation and falling back to the other.
-        let fixedWidth = isLandscape
-                ? inputs?.fixedWidthLandscape ?? inputs?.fixedWidthPortrait
-                : inputs?.fixedWidthPortrait ?? inputs?.fixedWidthLandscape
-        let maxWidth = isLandscape
-                ? inputs?.maxWidthLandscape ?? inputs?.maxWidthPortrait
-                : inputs?.maxWidthPortrait ?? inputs?.maxWidthLandscape
-
-        let contentWidth: ResolvedModal.WidthResolution
-        switch (fixedWidth, maxWidth) {
-        case let (fixed?, max?):
-            contentWidth = .fixedAndMax(fixed: fixed, max: max)
-        case let (fixed?, nil):
-            contentWidth = .fixed(fixed)
-        case let (nil, max?):
-            contentWidth = .max(max)
-        case (nil, nil):
-            contentWidth = .flexible
-        }
-
-        return ResolvedModal(
-                showsBanner: showsBanner,
-                showsTitle: showsTitle,
-                subtitle: subtitle,
-                showsPrimary: showsPrimary,
-                showsSecondary: showsSecondary,
-                showsCloseButton: showsCloseButton,
-                buttonAxis: buttonAxis,
-                buttonsMatchParent: buttonsMatchParent,
-                dismissOnAction: dismissOnAction,
-                closeOnTapOverlay: closeOnTapOverlay,
-                contentWidth: contentWidth
-        )
+        resolveModal(inputs: inputs, content: content, isLandscape: isLandscape)
     }
 }

@@ -2,6 +2,40 @@ import XCTest
 import UIKit
 @testable import GBV3AlertModal
 
+private struct SendableStructureInputs: ModalStructureInputs, Sendable {
+    let hasPrimaryActionStyle = true
+    let hasSecondaryActionStyle = true
+    let buttonsAreHorizontal = true
+    let buttonsMatchParent = true
+    let fixedWidthPortrait: CGFloat? = 200
+    let maxWidthPortrait: CGFloat? = 300
+    let fixedWidthLandscape: CGFloat? = 400
+    let maxWidthLandscape: CGFloat? = 500
+}
+
+private struct SendableContentInputs: ModalContentInputs, Sendable {
+    let closeOnTapOverlay = true
+    let hasBanner = true
+    let title: String? = "Title"
+    let hasAttributedTitle = false
+    let subtitle: String? = "Subtitle"
+    let hasAttributedSubtitle = false
+    let hasSubtitleCustomView = false
+    let primaryAction: String? = "Continue"
+    let secondaryAction: String? = "Cancel"
+    let showCloseButton = true
+    let dismissOnAction = true
+}
+
+/// Compile witness: the Core resolver is synchronous, nonisolated, and accepts Sendable values.
+private nonisolated func resolveFromNonisolatedContext() -> ResolvedModal {
+    resolveModal(
+        inputs: SendableStructureInputs(),
+        content: SendableContentInputs(),
+        isLandscape: false
+    )
+}
+
 /// Layer A: unit tests for the pure `GBAlertModal.resolve(...)` resolver.
 ///
 /// Task 3 seeded this suite with the banner-visibility decisions; Task 4 exhausts every
@@ -12,6 +46,12 @@ import UIKit
 // though `resolve(...)` itself is a nonisolated pure function.
 @MainActor
 final class LayerA_ResolverTests: XCTestCase {
+    func test_coreResolverUsesNeutralButtonAxisFromNonisolatedContext() {
+        let resolved = resolveFromNonisolatedContext()
+        XCTAssertEqual(resolved.buttonAxis, .horizontal)
+        XCTAssertEqual(ResolvedModal.ButtonAxis.vertical, .vertical)
+    }
+
     // MARK: - Banner (seeded by Task 3)
 
     func test_resolve_bannerVisibleWhenImagePresent() {

@@ -98,3 +98,12 @@ extension GBAlertModal {
         )
     }
 }
+
+extension ResolvedModal.ButtonAxis {
+    var uiKitAxis: NSLayoutConstraint.Axis {
+        switch self {
+        case .horizontal: .horizontal
+        case .vertical: .vertical
+        }
+    }
+}

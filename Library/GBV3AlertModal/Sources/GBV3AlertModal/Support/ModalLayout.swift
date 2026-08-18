@@ -11,7 +11,7 @@ enum ModalLayout {
     /// into the independent fixed/max values that `adjustSvContentContainerConstraint` and
     /// `adjustSvContentContainerConstraintWidth` each conditionally apply via their own `if let`.
     static func resolveContentWidths(
-            _ contentWidth: GBAlertModal.ResolvedModal.WidthResolution
+            _ contentWidth: ResolvedModal.WidthResolution
     ) -> (fixed: CGFloat?, max: CGFloat?) {
         switch contentWidth {
         case .flexible:

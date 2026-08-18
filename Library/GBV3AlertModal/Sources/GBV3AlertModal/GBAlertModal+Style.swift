@@ -27,7 +27,7 @@ extension GBAlertModal {
         svMainActionContainer?.alignment = resolved.buttonsMatchParent ? .fill : .center
 
         // Button Action Orientation
-        svMainActionContainer?.axis = resolved.buttonAxis
+        svMainActionContainer?.axis = resolved.buttonAxis.uiKitAxis
 
         // Close Button
         btCloseAction?.tintColor = properties?.closeButtonTint

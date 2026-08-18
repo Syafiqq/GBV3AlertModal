@@ -601,20 +601,12 @@ private struct CompressibleVerticalPadding: ViewModifier {
 
 // MARK: - Axis bridge
 
-extension NSLayoutConstraint.Axis {
-    /// UIKit's axis as SwiftUI's. The resolver speaks `NSLayoutConstraint.Axis` because
-    /// `UIStackView.axis` does and the UIKit renderer is frozen; `AlertModalScaffold` speaks
-    /// `SwiftUI.Axis` because it is a public SwiftUI view. This is the single crossing point.
-    ///
-    /// `NSLayoutConstraint.Axis` is an `@objc` enum, so it is NOT exhaustively switchable from
-    /// Swift's point of view — a `default` is required. It maps to `.vertical`, matching what
-    /// `GBAlertModal.resolve` returns when `Properties` states no orientation, so an unknown
-    /// future case degrades to the documented default rather than trapping.
+extension ResolvedModal.ButtonAxis {
+    /// Maps the platform-neutral resolver decision at the SwiftUI rendering edge.
     var swiftUIAxis: Axis {
         switch self {
         case .horizontal: return .horizontal
         case .vertical: return .vertical
-        @unknown default: return .vertical
         }
     }
 }

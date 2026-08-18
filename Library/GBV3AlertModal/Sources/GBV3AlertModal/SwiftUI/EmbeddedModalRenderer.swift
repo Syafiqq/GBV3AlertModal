@@ -32,7 +32,7 @@ public final class SwiftUIModalRenderer: ObservableObject, ModalRenderer {
         public let id: ModalID
         /// INTERNAL bookkeeping, same status as on `SwiftUIModalRenderer.Presentation`: a host draws
         /// from `properties`/`tokens`/`content`, never from this.
-        let resolved: GBAlertModal.ResolvedModal
+        let resolved: ResolvedModal
         let holder: ModalContent
         /// The EFFECTIVE `ModalProperties` this presentation was resolved and tokenised with.
         public let properties: ModalProperties

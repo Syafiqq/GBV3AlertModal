@@ -105,8 +105,8 @@ public struct SwiftUIAlertModal: View {
     /// can compute it exactly once per render — the resolver call itself is cheap, but
     /// `self.modalContent` re-runs `UIImage(named:)` and `ModalText.split`, which isn't free to
     /// repeat.
-    private func resolved(from content: ModalContent, isLandscape: Bool) -> GBAlertModal.ResolvedModal {
-        GBAlertModal.resolve(
+    private func resolved(from content: ModalContent, isLandscape: Bool) -> ResolvedModal {
+        resolveModal(
             inputs: properties,
             content: content,
             isLandscape: isLandscape
@@ -178,11 +178,7 @@ public struct SwiftUIAlertModal: View {
             // `resolved.closeOnTapOverlay` mirrors `content.closeOnTapOverlay` / `config.closeOnTapOverlay`
             // — reading it off the resolver keeps this decision flowing through the shared chain too.
             onOverlayTap: { if resolved.closeOnTapOverlay { onAction(.dismissed) } },
-            // The one place UIKit's axis vocabulary becomes SwiftUI's. The RESOLVER keeps speaking
-            // `NSLayoutConstraint.Axis` — it must, because `UIStackView.axis` takes exactly that
-            // type and the UIKit renderer is frozen — but `AlertModalScaffold` is a public SwiftUI
-            // view and should not make its callers import UIKit for a two-case enum. Total mapping,
-            // no failure case; `ModalAxisBridgeTests` pins both directions.
+            // Map the Core resolver's neutral axis at the SwiftUI rendering edge.
             buttonAxis: resolved.buttonAxis.swiftUIAxis,
             // `Properties.buttonActionShouldMatchParent`, via the shared resolver — the same field
             // UIKit turns into `svMainActionContainer.alignment`. Resolved AND obeyed now; it used to
@@ -213,7 +209,7 @@ public struct SwiftUIAlertModal: View {
     /// on one answer.
     @ViewBuilder
     private func titleAndSubtitle(
-        resolved: GBAlertModal.ResolvedModal,
+        resolved: ResolvedModal,
         payload: SubtitlePayload,
         hasSubtitle: Bool,
         hasButtons: Bool
@@ -623,7 +619,7 @@ extension SwiftUIAlertModal {
     /// `ModalText.split(config.subtitle)`. Cheap and deterministic; computing it twice from
     /// identical input is not a second decision, just a second call.
     static func subtitlePayload(
-        resolved: GBAlertModal.ResolvedModal,
+        resolved: ResolvedModal,
         config: AlertDialog
     ) -> SubtitlePayload {
         switch resolved.subtitle {

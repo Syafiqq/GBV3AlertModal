@@ -42,6 +42,18 @@ final class CorePurityTests: XCTestCase {
         )
     }
 
+    func testResolvedModalDeclarationContainsNoUIFrameworkSymbols() throws {
+        let file = packageRoot.appendingPathComponent(
+            "Sources/GBV3AlertModal/Core/ResolvedModal.swift"
+        )
+        let source = try String(contentsOf: file, encoding: .utf8)
+        let forbidden = ["UIKit", "SwiftUI", "NSLayoutConstraint", "UIView", "UIStackView"]
+
+        for symbol in forbidden {
+            XCTAssertFalse(source.contains(symbol), "ResolvedModal must not contain \(symbol)")
+        }
+    }
+
     /// **The import forms this recognises, and why matching whole lines was not enough.**
     ///
     /// This used to compare the trimmed line against exactly `"import UIKit"` / `"import SwiftUI"`,

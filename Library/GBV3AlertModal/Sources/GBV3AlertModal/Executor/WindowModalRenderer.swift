@@ -56,7 +56,7 @@ public final class WindowModalRenderer: ModalRenderer {
         /// Never read by rendering: `SwiftUIAlertModal`/the registered bespoke view each re-resolve
         /// internally from `config`/`properties`, same as every other backend's own doc states. `var`
         /// so `update(_:to:)` can refresh it in place via `live[id]?.resolved = ...`.
-        var resolved: GBAlertModal.ResolvedModal
+        var resolved: ResolvedModal
         /// `nil` for a descriptor registered with no content projection — still live and routable,
         /// nothing installed in the window. See `present`'s own doc on this. `UIHostingController`
         /// is a class, so `rootView` can still be reassigned on rebuild without this being `var`.
