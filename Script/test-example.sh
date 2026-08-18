@@ -1,65 +1,165 @@
 #!/bin/zsh
-# Runs the example-app test suite: project
-# `Examples/GBV3AlertModalExample/GBV3AlertModalExample.xcodeproj`, scheme
-# `GBV3AlertModalExample` (both `GBV3AlertModalExampleTests` and
-# `GBV3AlertModalExampleUITests`).
-#
-# ~25 MINUTES, vs. seconds for `Script/test-lib.sh`. That asymmetry is exactly why this
-# suite keeps getting skipped — it hid a real structural regression for four consecutive
-# task gates because nothing forced it to run. Budget the time; do not skip it.
-#
-# KNOWN FLAKE: this machine's simulator intermittently produces
-#   ** TEST FAILED **
-# with ZERO tests executed (SpringBoard crash, result-bundle IO fault, boot timeout) —
-# not a code failure. `xcrun simctl shutdown all` clears it. This script detects that
-# shape (a failing run with no "Test case '...' passed|failed" lines) and retries once
-# after shutting the simulators down, so a real code failure and a simulator flake are
-# never confused for each other. If it still shows zero executed tests after the retry,
-# treat that as an environment problem to fix by hand, NOT as 8 (or however many) failing
-# tests — read the actual xcodebuild output before concluding anything failed.
+# Runs deterministic example contracts, visual snapshots, one UI smoke test, and the independent
+# SwiftUI example build as separate stages. Only simulator-infrastructure failures are retried.
+set -eu
 set -o pipefail
 
 SIMULATOR_NAME="${SIMULATOR_NAME:-iPhone 17}"
+PROJECT="Examples/GBV3AlertModalExample/GBV3AlertModalExample.xcodeproj"
+SCHEME="GBV3AlertModalExample"
+DERIVED_DATA="${EXAMPLE_DERIVED_DATA:-/tmp/gbv3-alert-modal-example-derived}"
+OUTPUT_DIRECTORY=$(mktemp -d /tmp/gbv3-example-tests.XXXXXX)
+SIMULATOR_UDID=""
+LAST_STATUS=0
 
-run_tests() {
-    xcodebuild test \
-        -project Examples/GBV3AlertModalExample/GBV3AlertModalExample.xcodeproj \
-        -scheme GBV3AlertModalExample \
-        -destination "platform=iOS Simulator,name=${SIMULATOR_NAME}"
+cleanup() {
+    rm -rf "$OUTPUT_DIRECTORY"
+}
+trap cleanup EXIT INT TERM
+
+resolve_simulator() {
+    SIMULATOR_UDID=$(xcrun simctl list devices available -j | jq -r --arg name "$SIMULATOR_NAME" \
+        '[.devices[][] | select(.name == $name)][0].udid // empty')
+    if [ -z "$SIMULATOR_UDID" ]; then
+        print -u2 "No available simulator named '$SIMULATOR_NAME'."
+        return 1
+    fi
 }
 
-OUTPUT_FILE=$(mktemp)
-trap 'rm -f "$OUTPUT_FILE"' EXIT
+recover_simulator() {
+    print "Restarting only $SIMULATOR_NAME ($SIMULATOR_UDID) and waiting for boot readiness."
+    xcrun simctl shutdown "$SIMULATOR_UDID" >/dev/null 2>&1 || true
+    xcrun simctl boot "$SIMULATOR_UDID" >/dev/null 2>&1 || true
+    xcrun simctl bootstatus "$SIMULATOR_UDID" -b
+}
 
-run_tests | tee "$OUTPUT_FILE"
-STATUS=$?
+run_with_timeout() {
+    local timeout_seconds=$1
+    local output_file=$2
+    shift 2
 
-if [ $STATUS -ne 0 ] && ! grep -qi "Test case '.*' \(passed\|failed\)" "$OUTPUT_FILE"; then
-    echo ""
-    echo "No test cases executed — this looks like the known simulator flake, not a code"
-    echo "failure. Shutting down simulators and retrying once."
-    xcrun simctl shutdown all
-    run_tests | tee "$OUTPUT_FILE"
-    STATUS=$?
+    "$@" > "$output_file" 2>&1 &
+    local command_pid=$!
+    local started_at=$SECONDS
 
-    if [ $STATUS -ne 0 ] && ! grep -qi "Test case '.*' \(passed\|failed\)" "$OUTPUT_FILE"; then
-        echo ""
-        echo "Still zero tests executed after the retry — this is an environment problem" \
-            "(simulator/Xcode), not a code failure. Investigate by hand before concluding" \
-            "anything actually failed."
+    while kill -0 "$command_pid" >/dev/null 2>&1; do
+        if (( SECONDS - started_at >= timeout_seconds )); then
+            print -u2 "Timed out after ${timeout_seconds}s: $*"
+            kill -TERM "$command_pid" >/dev/null 2>&1 || true
+            wait "$command_pid" >/dev/null 2>&1 || true
+            LAST_STATUS=124
+            return
+        fi
+        sleep 1
+    done
+
+    if wait "$command_pid"; then
+        LAST_STATUS=0
+    else
+        LAST_STATUS=$?
     fi
-fi
+}
 
-if [ $STATUS -eq 0 ] && ! grep -Eqi "Test case '.*' (passed|failed)|Executed [1-9][0-9]* tests?" "$OUTPUT_FILE"; then
-    echo "The example test command succeeded without executing an expected test suite." >&2
-    STATUS=1
-fi
+is_infrastructure_failure() {
+    local output_file=$1
+    if [ $LAST_STATUS -eq 124 ]; then
+        return 0
+    fi
+    if rg -qi \
+        'DebuggerVersionStore|no debugger version|Failed to boot|SpringBoard|Lost connection|Early unexpected exit|Failed to launch|Simulator device failed' \
+        "$output_file" && ! rg -qi "Test case '.*' failed" "$output_file"; then
+        return 0
+    fi
+    return 1
+}
 
-if [ $STATUS -eq 0 ]; then
+assert_stage_executed() {
+    local stage=$1
+    local output_file=$2
+    case "$stage" in
+        contracts)
+            rg -q "testCatalogPairingContract.*passed" "$output_file" &&
+                rg -q "testEveryCatalogEntryBuildsAContainer.*passed" "$output_file"
+            ;;
+        snapshots)
+            rg -q "testEveryUIKitExample.*passed" "$output_file" &&
+                rg -q "testEverySwiftUIExample.*passed" "$output_file"
+            ;;
+        ui-smoke)
+            rg -q "GBV3AlertModalExampleUITests.testExample.*passed" "$output_file"
+            ;;
+        *)
+            return 1
+            ;;
+    esac
+}
+
+run_test_stage() {
+    local stage=$1
+    local timeout_seconds=$2
+    shift 2
+    local output_file="$OUTPUT_DIRECTORY/${stage}.log"
+    local attempt=1
+
+    while [ $attempt -le 2 ]; do
+        print "Running example stage '$stage' (attempt $attempt/2)."
+        run_with_timeout "$timeout_seconds" "$output_file" \
+            xcodebuild test \
+                -project "$PROJECT" \
+                -scheme "$SCHEME" \
+                -destination "platform=iOS Simulator,id=${SIMULATOR_UDID}" \
+                -derivedDataPath "$DERIVED_DATA" \
+                -parallel-testing-enabled NO \
+                "$@"
+
+        if [ $LAST_STATUS -eq 0 ] && assert_stage_executed "$stage" "$output_file"; then
+            print "Example stage '$stage' passed."
+            return
+        fi
+
+        if [ $attempt -eq 1 ] && is_infrastructure_failure "$output_file"; then
+            recover_simulator
+            attempt=2
+            continue
+        fi
+
+        if [ $LAST_STATUS -eq 0 ]; then
+            print -u2 "Stage '$stage' returned success without its expected tests."
+        else
+            print -u2 "Stage '$stage' failed with status $LAST_STATUS."
+        fi
+        tail -120 "$output_file" >&2
+        return 1
+    done
+}
+
+resolve_simulator
+
+run_test_stage contracts 300 \
+    -only-testing:GBV3AlertModalExampleTests \
+    -skip-testing:GBV3AlertModalExampleTests/CatalogSnapshotComparisonTests/testEveryUIKitExample \
+    -skip-testing:GBV3AlertModalExampleTests/CatalogSnapshotComparisonTests/testEverySwiftUIExample
+
+run_test_stage snapshots 900 \
+    -only-testing:GBV3AlertModalExampleTests/CatalogSnapshotComparisonTests/testEveryUIKitExample \
+    -only-testing:GBV3AlertModalExampleTests/CatalogSnapshotComparisonTests/testEverySwiftUIExample
+
+run_test_stage ui-smoke 180 \
+    -only-testing:GBV3AlertModalExampleUITests/GBV3AlertModalExampleUITests/testExample
+
+print "Building the standalone SwiftUI-only example."
+BUILD_LOG="$OUTPUT_DIRECTORY/swiftui-build.log"
+run_with_timeout 300 "$BUILD_LOG" \
     xcodebuild build \
-        -project Examples/GBV3AlertModalExample/GBV3AlertModalExample.xcodeproj \
+        -project "$PROJECT" \
         -scheme GBV3AlertModalSwiftUIExample \
-        -destination "generic/platform=iOS Simulator"
+        -destination 'generic/platform=iOS Simulator' \
+        -derivedDataPath "$DERIVED_DATA/swiftui" \
+        CODE_SIGNING_ALLOWED=NO
+if [ $LAST_STATUS -ne 0 ]; then
+    print -u2 "SwiftUI-only example build failed with status $LAST_STATUS."
+    tail -120 "$BUILD_LOG" >&2
+    exit $LAST_STATUS
 fi
 
-exit $STATUS
+print "All example stages passed."
