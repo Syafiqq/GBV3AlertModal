@@ -3,7 +3,7 @@ import Foundation
 extension GBAlertModal {
     /// Transitional source-compatible spelling for the platform-neutral result.
     @available(*, deprecated, renamed: "ResolvedModal")
-    public typealias ResolvedModal = GBV3AlertModal.ResolvedModal
+    public typealias ResolvedModal = CoreResolvedModal
 
     nonisolated public static func resolve(
         properties: Properties?, holder: DataHolder, isLandscape: Bool

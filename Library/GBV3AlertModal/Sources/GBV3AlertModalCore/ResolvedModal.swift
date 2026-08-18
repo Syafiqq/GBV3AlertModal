@@ -54,6 +54,10 @@ public struct ResolvedModal: Sendable, Equatable {
     }
 }
 
+/// Unambiguous bridge used by the deprecated nested UIKit spelling. The bridge avoids qualifying
+/// the type with the former aggregate module name, which no longer owns Core after the target split.
+public typealias CoreResolvedModal = ResolvedModal
+
 /// Resolves backend-independent rendering decisions from neutral input contracts.
 nonisolated public func resolveModal(
     inputs: (any ModalStructureInputs)?,

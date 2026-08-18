@@ -101,13 +101,13 @@ extension ModalLayout {
     /// Shared by BOTH renderers: `ModalTokens.titleMinimumScaleFactor` is initialised from this
     /// constant rather than transcribing it, so SwiftUI's `minimumScaleFactor` and UIKit's computed
     /// fit cannot drift apart (`test_theShrinkFloor_isOneSharedNumber`).
-    static var titleMinimumScaleFactor: CGFloat { 0.75 }
+    static var titleMinimumScaleFactor: CGFloat { ModalLayoutMetrics.titleMinimumScaleFactor }
 
     /// The coarse grid the fit search walks. 0.05 is deliberately coarse: it bounds the search at six
     /// measurements, and — more importantly — it QUANTISES the answer, so a fractional-point wobble in
     /// the available height cannot make the chosen scale oscillate between two neighbouring values on
     /// successive layout passes.
-    static var titleFontScaleStep: CGFloat { 0.05 }
+    static var titleFontScaleStep: CGFloat { ModalLayoutMetrics.titleFontScaleStep }
 
     /// **The largest font scale at which the title still fits, or the floor.**
     ///

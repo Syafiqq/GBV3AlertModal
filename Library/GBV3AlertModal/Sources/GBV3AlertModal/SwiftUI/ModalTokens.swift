@@ -65,14 +65,15 @@ public struct ModalTokens: Sendable, Equatable {
     /// and only then scale the title's glyphs down, as far as this factor and no further — because
     /// shrinking keeps every glyph and truncating does not.
     ///
-    /// **Initialised FROM `ModalLayout.titleMinimumScaleFactor`, never transcribed.** That constant is
-    /// what UIKit's `adjustTitleFontScale` searches against, so the two renderers cannot drift to
-    /// different floors — the failure mode this whole type exists to prevent, and one this very field
+    /// **Initialised FROM `ModalLayoutMetrics.titleMinimumScaleFactor`, never transcribed.** That
+    /// neutral constant is what UIKit's `adjustTitleFontScale` searches against, so the two
+    /// renderers cannot drift to different floors — the failure mode this whole type exists to
+    /// prevent, and one this very field
     /// used to have (it carried a hand-copied 0.75 while UIKit hardcoded its own). Pinned by
     /// `test_theShrinkFloor_isOneSharedNumber`.
     ///
     /// No `Properties` counterpart: UIKit hardcodes the floor too.
-    public var titleMinimumScaleFactor: CGFloat = ModalLayout.titleMinimumScaleFactor
+    public var titleMinimumScaleFactor: CGFloat = ModalLayoutMetrics.titleMinimumScaleFactor
 
     // The title's and subtitle's fonts live below, as `titleFont`/`subtitleFont`, and are `ModalFont`
     // rather than `Font` — ONE value carrying both what SwiftUI draws and what `ModalLayout`
