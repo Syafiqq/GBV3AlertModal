@@ -30,10 +30,6 @@ public final class SwiftUIModalRenderer: ObservableObject, ModalRenderer {
     /// One live presentation.
     public struct Presentation: Identifiable {
         public let id: ModalID
-        /// INTERNAL bookkeeping, same status as on `SwiftUIModalRenderer.Presentation`: a host draws
-        /// from `properties`/`tokens`/`content`, never from this.
-        let resolved: ResolvedModal
-        let holder: ModalContent
         /// The EFFECTIVE `ModalProperties` this presentation was resolved and tokenised with.
         public let properties: ModalProperties
         public let tokens: ModalTokens
@@ -292,7 +288,7 @@ public final class SwiftUIModalRenderer: ObservableObject, ModalRenderer {
             resolve(result)
         }
 
-        let (properties, holder) = registration.factory(descriptor, gate)
+        let (properties, _) = registration.factory(descriptor, gate)
 
         var router: ((ModalAction) -> Void)?
         if let route = registration.route {
@@ -303,11 +299,10 @@ public final class SwiftUIModalRenderer: ObservableObject, ModalRenderer {
             resolveDismissed: { gate(D.dismissedResult) },
             rebuild: { [weak self] anyDescriptor in
                 guard let self, let next = anyDescriptor as? D else { return }
-                let (nextProperties, nextHolder) = registration.factory(next, gate)
+                let (nextProperties, _) = registration.factory(next, gate)
                 self.refresh(
                     id,
                     properties: nextProperties,
-                    holder: nextHolder,
                     content: registration.content?(next),
                     // Rebuilt from the NEW descriptor, symmetrically with `content` — same identity
                     // note `SwiftUIModalRenderer.present`'s rebuild carries: this does NOT reset the
@@ -322,7 +317,6 @@ public final class SwiftUIModalRenderer: ObservableObject, ModalRenderer {
             makePresentation(
                 id: id,
                 properties: properties,
-                holder: holder,
                 content: registration.content?(descriptor),
                 customContent: registration.view?(descriptor, gate),
                 isHidden: false,
@@ -349,15 +343,10 @@ public final class SwiftUIModalRenderer: ObservableObject, ModalRenderer {
 
     // MARK: - Internals
 
-    /// Builds a `Presentation` via the SAME shared chain every backend uses: `GBAlertModal.resolve`
-    /// for structure, `ModalTokens(from:)` for styling — over the effective `ModalProperties`.
-    /// Portrait-only for the same reason `SwiftUIModalRenderer.makePresentation` is: the value never
-    /// reaches a renderer (`ModalHost` reads `properties`/`tokens`, never `resolved`), and the
-    /// one orientation-sensitive resolver output every shipped preset states identically either way.
+    /// Builds a presentation from platform-native properties and content.
     private func makePresentation(
         id: ModalID,
         properties: ModalProperties?,
-        holder: ModalContent,
         content: AlertDialog?,
         customContent: AnyView?,
         isHidden: Bool,
@@ -366,8 +355,6 @@ public final class SwiftUIModalRenderer: ObservableObject, ModalRenderer {
         let effective = properties ?? ModalProperties()
         return Presentation(
             id: id,
-            resolved: GBAlertModal.resolve(inputs: effective, content: holder, isLandscape: false),
-            holder: holder,
             properties: effective,
             tokens: ModalTokens(from: effective),
             content: content,
@@ -382,7 +369,6 @@ public final class SwiftUIModalRenderer: ObservableObject, ModalRenderer {
     private func refresh(
         _ id: ModalID,
         properties: ModalProperties?,
-        holder: ModalContent,
         content: AlertDialog?,
         customContent: AnyView?
     ) {
@@ -391,7 +377,6 @@ public final class SwiftUIModalRenderer: ObservableObject, ModalRenderer {
         presentations[index] = makePresentation(
             id: id,
             properties: properties,
-            holder: holder,
             content: content,
             customContent: customContent,
             isHidden: previous.isHidden,

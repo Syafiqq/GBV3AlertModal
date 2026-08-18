@@ -295,7 +295,7 @@ public final class WindowModalRenderer: ModalRenderer {
         // resolve is purely for `Live.resolved`, the parity-harness introspection point
         // (`RendererHarness.resolvedSubtitle`), same role `SwiftUIModalRenderer.Presentation
         // .resolved` plays.
-        let resolved = GBAlertModal.resolve(inputs: effective, content: holder, isLandscape: false)
+        let resolved = resolveModal(inputs: effective, content: holder, isLandscape: false)
 
         var router: ((ModalAction) -> Void)?
         if let route = registration.route {
@@ -337,7 +337,7 @@ public final class WindowModalRenderer: ModalRenderer {
                 guard let self, let next = anyDescriptor as? D else { return }
                 let (nextProperties, nextHolder) = registration.factory(next, gate)
                 let nextEffective = nextProperties ?? ModalProperties()
-                self.live[id]?.resolved = GBAlertModal.resolve(
+                self.live[id]?.resolved = resolveModal(
                     inputs: nextEffective, content: nextHolder, isLandscape: false
                 )
                 if let view = registration.view {
