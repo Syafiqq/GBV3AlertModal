@@ -70,3 +70,17 @@ Options:
 Recommendation rationale: A directly satisfies the release gate—UIKit and Migration can later be removed without editing Core or SwiftUI production files—and preserves the brief's forced implementation order.
 
 **Answer:** A. Approve the proposed design. *(auto-accepted — lazy/away)*
+
+## Decision 6 — Execution handoff
+
+Neither `superpowers:subagent-driven-development` nor `superpowers:executing-plans` is installed, so
+the poor-pick workflow cannot hand the reviewed plan to either prescribed execution runner. How
+should the handoff conclude?
+
+- **A. Leave the reviewed plan ready for a fresh implementation session (Recommended):** stop at
+  this skill's terminal state and let a later session execute the committed plan directly.
+- **B. Install an execution skill:** request installation separately, then choose its workflow.
+- **C. Execute manually now:** explicitly start a new implementation request outside poor-pick.
+
+Recommendation rationale: A respects this skill's no-implementation boundary, requires no new
+authority, and preserves the reviewed sequential plan as the clean handoff artifact.
