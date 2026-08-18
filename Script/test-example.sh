@@ -5,6 +5,7 @@ set -eu
 set -o pipefail
 
 SIMULATOR_NAME="${SIMULATOR_NAME:-iPhone 17}"
+REQUESTED_STAGE="${EXAMPLE_TEST_STAGE:-all}"
 PROJECT="Examples/GBV3AlertModalExample/GBV3AlertModalExample.xcodeproj"
 SCHEME="GBV3AlertModalExample"
 DERIVED_DATA="${EXAMPLE_DERIVED_DATA:-/tmp/gbv3-alert-modal-example-derived}"
@@ -141,33 +142,50 @@ run_test_stage() {
     done
 }
 
-resolve_simulator
-
-run_test_stage contracts 300 \
-    -only-testing:GBV3AlertModalExampleTests \
-    -skip-testing:GBV3AlertModalExampleTests/CatalogSnapshotComparisonTests/testEveryUIKitExample \
-    -skip-testing:GBV3AlertModalExampleTests/CatalogSnapshotComparisonTests/testEverySwiftUIExample
-
-run_test_stage snapshots 900 \
-    -only-testing:GBV3AlertModalExampleTests/CatalogSnapshotComparisonTests/testEveryUIKitExample \
-    -only-testing:GBV3AlertModalExampleTests/CatalogSnapshotComparisonTests/testEverySwiftUIExample
-
-run_test_stage ui-smoke 180 \
-    -only-testing:GBV3AlertModalExampleUITests/GBV3AlertModalExampleUITests/testApplicationLaunches
-
-print "Building the standalone SwiftUI-only example."
-BUILD_LOG="$OUTPUT_DIRECTORY/swiftui-build.log"
-run_with_timeout 300 "$BUILD_LOG" \
-    xcodebuild build \
-        -project "$PROJECT" \
-        -scheme GBV3AlertModalSwiftUIExample \
-        -destination 'generic/platform=iOS Simulator' \
-        -derivedDataPath "$DERIVED_DATA/swiftui" \
-        CODE_SIGNING_ALLOWED=NO
-if [ $LAST_STATUS -ne 0 ]; then
-    print -u2 "SwiftUI-only example build failed with status $LAST_STATUS."
-    tail -120 "$BUILD_LOG" >&2
-    exit $LAST_STATUS
+if [[ "$REQUESTED_STAGE" == all || "$REQUESTED_STAGE" == contracts ]]; then
+    resolve_simulator
+    run_test_stage contracts 300 \
+        -only-testing:GBV3AlertModalExampleTests \
+        -skip-testing:GBV3AlertModalExampleTests/CatalogSnapshotComparisonTests/testEveryUIKitExample \
+        -skip-testing:GBV3AlertModalExampleTests/CatalogSnapshotComparisonTests/testEverySwiftUIExample
 fi
 
-print "All example stages passed."
+if [[ "$REQUESTED_STAGE" == all || "$REQUESTED_STAGE" == snapshots ]]; then
+    [ -n "$SIMULATOR_UDID" ] || resolve_simulator
+    run_test_stage snapshots 900 \
+        -only-testing:GBV3AlertModalExampleTests/CatalogSnapshotComparisonTests/testEveryUIKitExample \
+        -only-testing:GBV3AlertModalExampleTests/CatalogSnapshotComparisonTests/testEverySwiftUIExample
+fi
+
+if [[ "$REQUESTED_STAGE" == all || "$REQUESTED_STAGE" == ui-smoke ]]; then
+    [ -n "$SIMULATOR_UDID" ] || resolve_simulator
+    run_test_stage ui-smoke 180 \
+        -only-testing:GBV3AlertModalExampleUITests/GBV3AlertModalExampleUITests/testApplicationLaunches
+fi
+
+if [[ "$REQUESTED_STAGE" == all || "$REQUESTED_STAGE" == swiftui-build ]]; then
+    print "Building the standalone SwiftUI-only example."
+    BUILD_LOG="$OUTPUT_DIRECTORY/swiftui-build.log"
+    run_with_timeout 300 "$BUILD_LOG" \
+        xcodebuild build \
+            -project "$PROJECT" \
+            -scheme GBV3AlertModalSwiftUIExample \
+            -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath "$DERIVED_DATA/swiftui" \
+            CODE_SIGNING_ALLOWED=NO
+    if [ $LAST_STATUS -ne 0 ]; then
+        print -u2 "SwiftUI-only example build failed with status $LAST_STATUS."
+        tail -120 "$BUILD_LOG" >&2
+        exit $LAST_STATUS
+    fi
+fi
+
+if [[ "$REQUESTED_STAGE" != all && "$REQUESTED_STAGE" != contracts &&
+      "$REQUESTED_STAGE" != snapshots && "$REQUESTED_STAGE" != ui-smoke &&
+      "$REQUESTED_STAGE" != swiftui-build ]]; then
+    print -u2 "Unknown EXAMPLE_TEST_STAGE '$REQUESTED_STAGE'."
+    print -u2 "Expected: all, contracts, snapshots, ui-smoke, or swiftui-build."
+    exit 2
+fi
+
+print "Requested example stage '$REQUESTED_STAGE' passed."
