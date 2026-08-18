@@ -120,10 +120,7 @@ final class GalleryViewController: UITableViewController {
     /// `Presentation.UiKit.V3AlertModal` preset — so the demo exercises production-shaped config.
     @objc private func openTier0Demo() {
         let properties = GalleryPresets.properties
-        let renderer = UIKitModalRenderer(
-            alertProperties: properties,
-            popupProperties: GalleryPresets.properties
-        )
+        let renderer = UIKitModalRenderer(alertProperties: properties)
         // Custom-content input descriptors — registered by the consumer with the library's holders.
         renderer.register(TextInputDialog.self) { descriptor, resolve in
             (properties, UIKitModalRenderer.TextInputHolder.make(for: descriptor, resolve: resolve))
@@ -141,10 +138,7 @@ final class GalleryViewController: UITableViewController {
     /// same `GalleryPresets` config the Tier 0 demo uses, so the two differ only by renderer.
     @objc private func openAdoptionDemo() {
         let host = UIHostingController(
-            rootView: AdoptionScreen(
-                properties: GalleryPresets.properties,
-                popupProperties: GalleryPresets.properties
-            )
+            rootView: AdoptionScreen(properties: GalleryPresets.properties)
         )
         navigationController?.pushViewController(host, animated: true)
     }
@@ -166,10 +160,7 @@ final class GalleryViewController: UITableViewController {
     /// 5 bespoke kinds (Rename/Pick date included), same call `EmbeddedAdoptionScreen`'s renderer
     /// never needed for ITS 3 buttons (none of them use a bespoke kind) but this one does.
     @objc private func openWindowDemo() {
-        let renderer = WindowModalRenderer(
-            alertProperties: GalleryPresets.standardModalProperties,
-            popupProperties: GalleryPresets.standardModalProperties
-        )
+        let renderer = WindowModalRenderer(alertProperties: GalleryPresets.standardModalProperties)
         renderer.registerBuiltInDescriptors()
         let executor = DefaultModalExecutor(renderer: renderer)
         let host = UIHostingController(rootView: Tier0DemoScreen(executor: executor))

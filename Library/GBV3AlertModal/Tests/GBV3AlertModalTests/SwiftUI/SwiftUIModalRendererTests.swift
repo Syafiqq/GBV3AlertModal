@@ -166,26 +166,6 @@ final class SwiftUIModalRendererTests: XCTestCase {
         }
     }
 
-    /// `PopupDialog` is a DIFFERENT descriptor type registered with its own `Properties`, but shares
-    /// `AlertDialog.Result` — the same-type constraint the router is built on. Proves the generic
-    /// registration works for the whole standard family, not just `AlertDialog`.
-    func test_popupDialog_routesThroughItsOwnRegistration() throws {
-        let renderer = SwiftUIModalRenderer(
-            alertProperties: GeniePresets.standardProperties(),
-            popupProperties: GeniePresets.popupProperties()
-        )
-        var result: AlertDialog.Result?
-
-        renderer.present(
-            PopupDialog(title: "T", subtitle: "S", primary: "OK"),
-            id: ModalID(),
-            resolve: { result = $0 }
-        )
-        try XCTUnwrap(renderer.presentations.first).onAction(.primary)
-
-        XCTAssertEqual(result, .primary)
-    }
-
     // MARK: - consumer-defined descriptors (the executor suite's extension point)
 
     /// The gate Task 8 depends on: a descriptor registered from OUTSIDE the library, whose `Result`

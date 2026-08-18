@@ -296,10 +296,7 @@ enum GenieShapeCatalog {
     /// A renderer carrying every preset, factory and body the 26 shapes need — the library-side
     /// equivalent of the app's modal setup.
     static func makeRenderer() -> SwiftUIModalRenderer {
-        let renderer = SwiftUIModalRenderer(
-            alertProperties: GeniePresets.standardProperties(),
-            popupProperties: GeniePresets.popupProperties()
-        )
+        let renderer = SwiftUIModalRenderer(alertProperties: GeniePresets.standardProperties())
         for (style, properties) in stylePresets {
             renderer.register(style: style, properties: properties)
         }
@@ -308,7 +305,7 @@ enum GenieShapeCatalog {
         return renderer
     }
 
-    /// style → preset. `.standard`/`.popup` are already seeded by `init`.
+    /// Consumer-owned style presets; `.standard` is seeded by `init`.
     static var stylePresets: [(ModalStyle, GBAlertModal.Properties)] {
         [
             (.permissionAlert, GeniePresets.permissionAlertProperties()),
@@ -350,13 +347,6 @@ enum GenieShapeCatalog {
     /// pins the blast radius to exactly `showsBanner`.
     static func registerStandardFamily(on renderer: SwiftUIModalRenderer) {
         renderer.register(AlertDialog.self) { [weak renderer] descriptor, resolve in
-            (
-                renderer?.properties(for: descriptor.style),
-                UIKitModalRenderer.AlertHolder.make(for: descriptor, resolve: resolve)
-                    .copy(banner: substitutedBanner(for: descriptor.image))
-            )
-        }
-        renderer.register(PopupDialog.self) { [weak renderer] descriptor, resolve in
             (
                 renderer?.properties(for: descriptor.style),
                 UIKitModalRenderer.AlertHolder.make(for: descriptor, resolve: resolve)
@@ -793,12 +783,9 @@ extension GenieShapeCatalog {
 
     static var campaignShapes: [Shape] {
         [
-            // The one shape presented as `PopupDialog` rather than `AlertDialog(style: .popup)` —
-            // the two spellings must resolve through the same style map, and this keeps the
-            // retained-for-compatibility type exercised by real content.
             Shape(name: "onboarding-welcome-nobanner") { renderer, id in
                 renderer.present(
-                    PopupDialog(
+                    AlertDialog(
                         title: "Hello there!",
                         subtitle: "Let's explore Geniebook!",
                         primary: "I'm ready"

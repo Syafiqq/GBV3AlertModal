@@ -10,7 +10,7 @@ import SwiftUI
 /// (`ModalTokens`).
 ///
 /// **Equivalence scope**: `properties` is the resolver's other input, and `SwiftUIModalRenderer`
-/// supplies the REAL caller-supplied `alertProperties`/`popupProperties` for every presentation it
+/// supplies the real caller-provided standard properties for every presentation it
 /// hosts (via `ModalHost`) — the same values the UIKit renderer feeds `resolve`. So on the rendered
 /// path all TEN properties-and-holder-derived resolver fields now agree with UIKit by construction:
 /// `showsBanner`, `showsTitle`, `subtitle`, `showsCloseButton`, `closeOnTapOverlay`,

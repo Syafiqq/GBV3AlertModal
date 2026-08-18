@@ -26,7 +26,7 @@ import GBV3AlertModal
 enum SwiftUICatalogPresets {
 
     /// The style→preset pairs registered on every catalog renderer. `.standard`
-    /// Both `.standard` and `.popup` are seeded with `GalleryPresets.properties`: the example has
+    /// `.standard` is seeded with `GalleryPresets.properties`: the example has
     /// one base preset, retaining the former popup title/subtitle typography. They are not repeated.
     static var stylePresets: [(ModalStyle, GBAlertModal.Properties)] {
         [

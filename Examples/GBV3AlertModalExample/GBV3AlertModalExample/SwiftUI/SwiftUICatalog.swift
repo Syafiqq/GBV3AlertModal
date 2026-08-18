@@ -39,7 +39,7 @@ import GBV3AlertModal
 // MARK: - Style tokens
 
 /// The style presets the 26 shapes ask for. The library ships only `.standard`
-/// and `.popup`; everything else is a CONSUMER preset, which is exactly the
+/// `.standard`; everything else is a CONSUMER preset, which is exactly the
 /// claim `ModalStyle` makes ("Extend it from the app side"). This block is that
 /// extension, written the way the real app would write it, and every token is
 /// mapped to a `GBAlertModal.Properties` in `SwiftUICatalogPresets`.
@@ -277,12 +277,7 @@ enum SwiftUICatalog {
     /// registration, which is the point: a consumer's preset table and holder
     /// factories are portable between the two backends verbatim.
     static func makeRenderer() -> SwiftUIModalRenderer {
-        let renderer = SwiftUIModalRenderer(
-            alertProperties: GalleryPresets.properties,
-            // `PopupDialog` remains source-compatible, but the example intentionally gives
-            // `.popup` the same consolidated configuration as `.standard`.
-            popupProperties: GalleryPresets.properties
-        )
+        let renderer = SwiftUIModalRenderer(alertProperties: GalleryPresets.properties)
         let presets = SwiftUICatalogPresets.stylePresets
             + SwiftUICatalogPresets.stressPresets
             + SwiftUICatalogPresets.divergencePresets

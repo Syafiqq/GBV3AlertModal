@@ -69,23 +69,6 @@ final class EmbeddedModalRendererTests: XCTestCase {
         XCTAssertNotEqual(ModalTokens.standard.contentMaxWidth, 256) // guards the test's premise
     }
 
-    func test_popupDialog_routesThroughItsOwnRegistration() throws {
-        let renderer = EmbeddedModalRenderer(
-            alertProperties: GeniePresets.standardModalProperties(),
-            popupProperties: GeniePresets.popupModalProperties()
-        )
-        var result: AlertDialog.Result?
-
-        renderer.present(
-            PopupDialog(title: "T", subtitle: "S", primary: "OK"),
-            id: ModalID(),
-            resolve: { result = $0 }
-        )
-        try XCTUnwrap(renderer.presentations.first).onAction(.primary)
-
-        XCTAssertEqual(result, .primary)
-    }
-
     // MARK: - dismiss / teardown
 
     func test_dismiss_resolvesDismissed_andRemovesPresentation() {

@@ -12,7 +12,7 @@ import SwiftUI
 /// parallel implementation, the same relationship `UIKitModalRenderer` and `SwiftUIModalRenderer`
 /// already have with each other.
 ///
-/// Scoped, for now, to the standard family (`AlertDialog`/`PopupDialog`) — see `init`. The bespoke
+/// Scoped, for now, to the unified standard `AlertDialog` — see `init`. The bespoke
 /// descriptors (`TextInputDialog` and friends) are a later increment: their SwiftUI bodies
 /// (`TextInputContent`, `BadgeContent`, …) are already UIKit-free and reusable unchanged when that
 /// happens: only their `Registration` entries need writing, mirroring `SwiftUIModalRenderer
@@ -90,19 +90,11 @@ public final class EmbeddedModalRenderer: ObservableObject, ModalRenderer {
 
     // MARK: - Init
 
-    /// Registers ONLY the standard family — `AlertDialog` always, `PopupDialog` when `popupProperties`
-    /// is supplied, exactly the rule both existing renderers use. Consumer descriptor kinds register
-    /// through `register(_:factory:)`/`register(_:route:factory:)`.
-    public init(alertProperties: ModalProperties, popupProperties: ModalProperties? = nil) {
+    /// Registers the unified standard `AlertDialog`. Consumer descriptor kinds register through
+    /// `register(_:factory:)`/`register(_:route:factory:)`.
+    public init(alertProperties: ModalProperties) {
         styleProperties[.standard] = alertProperties
-        if let popupProperties {
-            styleProperties[.popup] = popupProperties
-        }
-
         registerStandard(AlertDialog.self)
-        if popupProperties != nil {
-            registerStandard(PopupDialog.self)
-        }
     }
 
     /// Register a design-system preset under a `ModalStyle` token. Source-identical rule to both
@@ -124,7 +116,7 @@ public final class EmbeddedModalRenderer: ObservableObject, ModalRenderer {
     /// `register(_:route:factory:)` for anything a user can act on.
     ///
     /// Re-registering an already-registered kind PRESERVES its routing/content, same rule as the
-    /// other two renderers — overriding the built-in `AlertDialog`/`PopupDialog` factory is a
+    /// other two renderers — overriding the built-in `AlertDialog` factory is a
     /// documented extension point, not a reset.
     public func register<D: ModalDescriptor>(_ type: D.Type, factory: @escaping Factory<D>) {
         let previous = registrations[ObjectIdentifier(type)] as? Registration<D>

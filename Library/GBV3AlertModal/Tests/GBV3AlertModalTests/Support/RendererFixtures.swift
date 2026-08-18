@@ -56,8 +56,7 @@ final class RendererHarness {
     private let window: UIWindow?
     private let box: Box
 
-    /// Both backends are configured with the SAME `alertProperties` and the SAME `popupProperties`,
-    /// so any difference a parity test observes is the renderer and not its styling input.
+    /// Every backend receives the same standard properties.
     init(_ kind: RendererKind) {
         self.kind = kind
         switch kind {
@@ -75,18 +74,12 @@ final class RendererHarness {
         case .swiftUI:
             self.window = nil
             self.box = .swiftUI(
-                SwiftUIModalRenderer(
-                    alertProperties: GeniePresets.standardProperties(),
-                    popupProperties: GeniePresets.popupProperties()
-                )
+                SwiftUIModalRenderer(alertProperties: GeniePresets.standardProperties())
             )
         case .embedded:
             self.window = nil
             self.box = .embedded(
-                EmbeddedModalRenderer(
-                    alertProperties: GeniePresets.standardModalProperties(),
-                    popupProperties: GeniePresets.popupModalProperties()
-                )
+                EmbeddedModalRenderer(alertProperties: GeniePresets.standardModalProperties())
             )
         case .window:
             // Needs a real UIWindow, same as .uiKit — WindowModalRenderer installs directly into it.

@@ -35,16 +35,14 @@ final class Tier0DemoViewModel: ObservableObject {
         lastResult = "\(result)"
     }
 
-    /// PopupDialog: same content as AlertDialog, a distinct descriptor → the popup STYLE. Proves the
-    /// executor path isn't AlertDialog-only.
-    func showPopup() async {
+    func showSecondaryInfo() async {
         let result = await executor.presentAndWait(
-            PopupDialog(title: "Popup style",
-                        subtitle: "Same content shape, different style descriptor.",
+            AlertDialog(title: "More information",
+                        subtitle: "SwiftUI examples use one standard alert descriptor.",
                         primary: "Got it")
         )
         guard !Task.isCancelled else { return }
-        lastResult = "popup: \(result)"
+        lastResult = "info: \(result)"
     }
 
     /// Custom content: a text field inside the modal; the result carries the entered text.
@@ -101,7 +99,7 @@ struct Tier0DemoScreen: View {
 
             Button("Confirm delete (await result)") { present { await vm.confirmDelete() } }
             Button("Show info") { present { await vm.showInfo() } }
-            Button("Show popup (PopupDialog)") { present { await vm.showPopup() } }
+            Button("Show more information") { present { await vm.showSecondaryInfo() } }
             Button("Rename (text input)") { present { await vm.showRename() } }
             Button("Pick date (date picker)") { present { await vm.pickDate() } }
         }

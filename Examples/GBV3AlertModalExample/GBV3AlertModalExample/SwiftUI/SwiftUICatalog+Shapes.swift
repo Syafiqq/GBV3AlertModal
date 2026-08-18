@@ -294,12 +294,9 @@ extension SwiftUICatalog {
 extension SwiftUICatalog {
     static var campaignEntries: [SwiftUICatalogEntry] {
         [
-            // #17 — first-run welcome popup, no banner. Presented as `PopupDialog`
-            // rather than `AlertDialog(style: .popup)`, so the retained-for-
-            // compatibility type stays exercised by real content; both spellings
-            // resolve through the same style map.
+            // #17 — first-run welcome modal, no banner.
             SwiftUICatalogEntry.renderable("onboarding-welcome-nobanner", category: "Campaign/Onboarding") {
-                PopupDialog(
+                AlertDialog(
                     title: "Hello there!",
                     subtitle: "Let's explore Geniebook!",
                     primary: "I'm ready"

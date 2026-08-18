@@ -115,23 +115,4 @@ final class ButtonEnablementTests: XCTestCase {
         XCTAssertTrue(content.secondaryEnabled)
     }
 
-    /// A descriptor that does NOT conform to `ButtonEnablement` must come through enabled rather
-    /// than crash or default to disabled — both renderers ask with a cast.
-    func test_aDescriptorWithoutEnablement_rendersEnabled() throws {
-        // `PopupDialog` is registered by `init` only when popup styling is supplied — same rule as
-        // UIKit — so the other tests' `alertProperties`-only renderer would silently drop it.
-        let renderer = SwiftUIModalRenderer(
-            alertProperties: GeniePresets.standardProperties(),
-            popupProperties: GeniePresets.standardProperties()
-        )
-        let id = ModalID()
-
-        renderer.present(
-            PopupDialog(title: "T", subtitle: "S", primary: "OK"), id: id, resolve: { _ in }
-        )
-
-        let content = try XCTUnwrap(renderer.presentations.first?.content)
-        XCTAssertTrue(content.primaryEnabled)
-        XCTAssertTrue(content.secondaryEnabled)
-    }
 }

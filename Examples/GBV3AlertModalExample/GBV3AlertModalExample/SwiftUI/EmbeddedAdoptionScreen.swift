@@ -8,7 +8,7 @@ import GBV3AlertModal
 /// `SwiftUIModalRenderer`/`ModalHost`/`GBAlertModal.Properties` swapped for
 /// `EmbeddedModalRenderer`/`EmbeddedModalHost`/`ModalProperties` — the UIKit-free renderer this
 /// session's plan (`iridescent-enchanting-pike.md`) shipped. No "rename (custom content)" button:
-/// this renderer registers only the standard family (`AlertDialog`/`PopupDialog`) so far — bespoke
+/// this renderer registers only the standard `AlertDialog` so far — bespoke
 /// descriptors are a later increment.
 ///
 /// Minimal preset, not a `GalleryPresets`-fidelity port — this screen answers "does the whole chain
@@ -25,10 +25,7 @@ final class EmbeddedAdoptionViewModel: ObservableObject {
     init() {
         // GalleryPresets.standardModalProperties — the single UIKit-free example preset
         // preset shared with the "Window" gallery demo (rootRenderer's own sanity check).
-        let renderer = EmbeddedModalRenderer(
-            alertProperties: GalleryPresets.standardModalProperties,
-            popupProperties: GalleryPresets.standardModalProperties
-        )
+        let renderer = EmbeddedModalRenderer(alertProperties: GalleryPresets.standardModalProperties)
         self.renderer = renderer
 
         let executor = DefaultModalExecutor(renderer: renderer)
@@ -51,12 +48,12 @@ final class EmbeddedAdoptionViewModel: ObservableObject {
         }
     }
 
-    func showPopup() async {
-        await record("popup") {
+    func showInfo() async {
+        await record("info") {
             await executor.presentAndWait(
-                PopupDialog(
-                    title: "Popup style",
-                    subtitle: "PopupDialog resolves through the same consolidated standard configuration.",
+                AlertDialog(
+                    title: "Information",
+                    subtitle: "Every SwiftUI alert uses the unified standard configuration.",
                     primary: "Got it"
                 )
             )
@@ -67,7 +64,7 @@ final class EmbeddedAdoptionViewModel: ObservableObject {
     func presentTwoAtOnce() async {
         append("— two at once —")
         async let first: Void = confirmDelete()
-        async let second: Void = showPopup()
+        async let second: Void = showInfo()
         _ = await (first, second)
     }
 
@@ -91,7 +88,7 @@ struct EmbeddedAdoptionScreen: View {
             List {
                 Section("Present (EmbeddedModalRenderer — UIKit-free)") {
                     button("Confirm delete") { await viewModel.confirmDelete() }
-                    button("Popup style") { await viewModel.showPopup() }
+                    button("Show information") { await viewModel.showInfo() }
                     button("Two at once — coordinator serialises") {
                         await viewModel.presentTwoAtOnce()
                     }

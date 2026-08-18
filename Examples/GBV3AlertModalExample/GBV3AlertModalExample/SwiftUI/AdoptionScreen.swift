@@ -31,11 +31,8 @@ final class AdoptionViewModel: ObservableObject {
 
     private let executor: DefaultModalExecutor
 
-    init(properties: GBAlertModal.Properties, popupProperties: GBAlertModal.Properties) {
-        let renderer = SwiftUIModalRenderer(
-            alertProperties: properties,
-            popupProperties: popupProperties
-        )
+    init(properties: GBAlertModal.Properties) {
+        let renderer = SwiftUIModalRenderer(alertProperties: properties)
         // Custom-content descriptors are registered by the CONSUMER, exactly as the Tier 0 screen
         // registers them against the UIKit renderer — the registration API is the same shape on both
         // backends, which is the portability claim being exercised.
@@ -62,12 +59,12 @@ final class AdoptionViewModel: ObservableObject {
         }
     }
 
-    func showPopup() async {
-        await record("popup") {
+    func showInfo() async {
+        await record("info") {
             await executor.presentAndWait(
-                PopupDialog(
-                    title: "Popup style",
-                    subtitle: "PopupDialog resolves through the same consolidated standard configuration.",
+                AlertDialog(
+                    title: "Information",
+                    subtitle: "Every SwiftUI alert uses the unified standard configuration.",
                     primary: "Got it"
                 )
             )
@@ -98,7 +95,7 @@ final class AdoptionViewModel: ObservableObject {
     func presentTwoAtOnce() async {
         append("— two at once —")
         async let first: Void = confirmDelete()
-        async let second: Void = showPopup()
+        async let second: Void = showInfo()
         _ = await (first, second)
     }
 
@@ -120,12 +117,8 @@ final class AdoptionViewModel: ObservableObject {
 struct AdoptionScreen: View {
     @StateObject private var viewModel: AdoptionViewModel
 
-    init(properties: GBAlertModal.Properties, popupProperties: GBAlertModal.Properties) {
-        _viewModel = StateObject(
-            wrappedValue: AdoptionViewModel(
-                properties: properties, popupProperties: popupProperties
-            )
-        )
+    init(properties: GBAlertModal.Properties) {
+        _viewModel = StateObject(wrappedValue: AdoptionViewModel(properties: properties))
     }
 
     var body: some View {
@@ -133,7 +126,7 @@ struct AdoptionScreen: View {
             List {
                 Section("Present") {
                     button("Confirm delete") { await viewModel.confirmDelete() }
-                    button("Popup style") { await viewModel.showPopup() }
+                    button("Show information") { await viewModel.showInfo() }
                     button("Rename (custom content)") { await viewModel.rename() }
                     button("Two at once — coordinator serialises") {
                         await viewModel.presentTwoAtOnce()

@@ -16,7 +16,7 @@ import UIKit // `Properties`/`DataHolder`/`ResolvedModal` are UIKit-region types
 /// MAPPING ONLY and view interactions are routed through this renderer's own resolve-once gate
 /// (see `Registration.route`).
 ///
-/// **Two ways a descriptor gets a body.** The standard family (`AlertDialog`, `PopupDialog`)
+/// **Two ways a descriptor gets a body.** The standard `AlertDialog`
 /// projects to `AlertDialog` and is drawn by `SwiftUIAlertModal`. Everything else registers its own
 /// SwiftUI body with `register(_:view:)`, which hands that body the resolve GATE rather than an
 /// `ActionType` router — so a view that owns `@State` can resolve with the value it is holding
@@ -77,7 +77,7 @@ public final class SwiftUIModalRenderer: ObservableObject, ModalRenderer {
         /// (`registerStandard`), never read here beyond feeding `resolve`.
         let holder: any ModalContentInputs
         /// The EFFECTIVE `Properties` this presentation was resolved and tokenised with — the ones
-        /// the factory returned, i.e. the caller's real `alertProperties`/`popupProperties`.
+        /// the factory returned, i.e. the caller's real standard properties.
         public let properties: GBAlertModal.Properties
         public let tokens: ModalTokens
         /// Standard-family content projected into `AlertDialog` (the shape `SwiftUIAlertModal`
@@ -162,22 +162,9 @@ public final class SwiftUIModalRenderer: ObservableObject, ModalRenderer {
 
     // MARK: - Init
 
-    public init(
-        alertProperties: GBAlertModal.Properties,
-        popupProperties: GBAlertModal.Properties? = nil
-    ) {
-        // The existing init SEEDS the style map — signature unchanged, so no breaking change.
+    public init(alertProperties: GBAlertModal.Properties) {
         styleProperties[.standard] = alertProperties
-        if let popupProperties {
-            styleProperties[.popup] = popupProperties
-        }
-
         registerStandard(AlertDialog.self)
-        // PopupDialog shares AlertDialog's content + result; only the Properties (style) differ.
-        // Registered only when the consumer supplies popup styling — same rule as UIKit.
-        if popupProperties != nil {
-            registerStandard(PopupDialog.self)
-        }
     }
 
     /// Register a design-system preset under a `ModalStyle` token. Any `AlertDialog` carrying that
@@ -218,7 +205,7 @@ public final class SwiftUIModalRenderer: ObservableObject, ModalRenderer {
     /// `dismiss(_:)`.
     ///
     /// **Re-registering an already-registered kind PRESERVES its routing, content projection and
-    /// registered view.** Overriding the built-in `AlertDialog`/`PopupDialog` factory is a
+    /// registered view.** Overriding the built-in `AlertDialog` factory is a
     /// documented extension point on the UIKit renderer, and wiping the router here would silently
     /// produce a modal that renders nothing and can never be resolved. The four handles
     /// (`factory`/`route`/`content`/`view`) are independent: setting one never clears the others.
@@ -409,8 +396,7 @@ public final class SwiftUIModalRenderer: ObservableObject, ModalRenderer {
         return ModalTokens(from: properties)
     }
 
-    /// The standard family (`AlertDialog`, `PopupDialog`, …) all resolve to `AlertDialog.Result`
-    /// — verified: `PopupDialog` declares `typealias Result = AlertDialog.Result`. Constraining on
+    /// Standard alert content resolves to `AlertDialog.Result`. Constraining on
     /// that same-type requirement is what makes the `ActionType -> Result` mapping STATICALLY
     /// type-safe: inside this method `D.Result` canonicalises to `AlertDialog.Result`, so the
     /// router below is an ordinary typed closure rather than a runtime cast.

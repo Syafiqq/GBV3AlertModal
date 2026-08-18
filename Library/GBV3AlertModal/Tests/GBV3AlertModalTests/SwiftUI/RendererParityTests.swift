@@ -377,25 +377,6 @@ final class RendererParityTests: XCTestCase {
         }
     }
 
-    // MARK: - PopupDialog — the second member of the standard family
-
-    /// `PopupDialog` is a distinct descriptor type registered with its own `Properties` on both
-    /// backends. Covers the "registered only when popup styling is supplied" branch on both.
-    func test_popupDialog_resolvesPrimary_onBothRenderers() async {
-        for kind in RendererKind.allCases {
-            let (harness, executor) = stack(kind)
-
-            let token = executor.present(
-                PopupDialog(title: "T", subtitle: "S", primary: "OK", secondary: "No")
-            )
-            XCTAssertTrue(harness.isLive(token.id), "renderer \(kind.rawValue) never presented")
-            harness.emit(.primary, on: token.id)
-
-            let result = await token.result
-            XCTAssertEqual(result, .primary, "renderer \(kind.rawValue) diverged")
-        }
-    }
-
     // MARK: - ModalStyle — the style token must mean the same thing on both backends
 
     /// **THE style parity gate.** One descriptor, one `register(style:properties:)` call (source-

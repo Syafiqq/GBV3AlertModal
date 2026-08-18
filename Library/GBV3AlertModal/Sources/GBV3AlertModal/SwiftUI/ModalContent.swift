@@ -57,7 +57,7 @@ public struct ModalContent: ModalContentInputs, Sendable {
 }
 
 extension ModalContent {
-    /// The standard family (`AlertDialog`, `PopupDialog`, …) — the SwiftUI-native mirror of
+    /// Standard alert descriptors — the SwiftUI-native mirror of
     /// `UIKitModalRenderer.AlertHolder.make`'s mapping. Same decisions, verbatim: `hasBanner` still
     /// asks whether `descriptor.image` resolves in its bundle (the identical
     /// `UIImage(named:in:compatibleWith:)` probe), it just never keeps the result — nothing here

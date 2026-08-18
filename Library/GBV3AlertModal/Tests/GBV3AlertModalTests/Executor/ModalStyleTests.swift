@@ -244,17 +244,13 @@ final class ModalStyleTests: XCTestCase {
         }
     }
 
-    // MARK: - PopupDialog keeps working through the same map
+    // MARK: - UIKit PopupDialog compatibility
 
     /// Source compatibility: `PopupDialog` and `AlertDialog(style: .popup)` resolve to the SAME
     /// preset, because `PopupDialog.style` is pinned to `.popup` and both go through
     /// `properties(for:)`.
-    func test_popupDialog_andPopupStyledAlert_resolveTheSamePreset_onBothRenderers() throws {
-        // .embedded excluded: register(style:properties:)/effectiveProperties are UIKit-typed-
-        // argument, deliberately unsupported there (RendererFixtures.swift's own docs) — this whole
-        // file is style/`Properties` testing, so every loop here needs the same exclusion.
-        for kind: RendererKind in [.uiKit, .swiftUI] {
-            let harness = RendererHarness(kind)   // seeded with popupProperties()
+    func test_popupDialog_andPopupStyledAlert_resolveTheSamePreset_onUIKit() throws {
+            let harness = RendererHarness(.uiKit)
             let executor = DefaultModalExecutor(renderer: harness.renderer)
 
             let viaType = executor.present(PopupDialog(title: "T", primary: "OK"))
@@ -263,14 +259,13 @@ final class ModalStyleTests: XCTestCase {
             let typeSpace = try XCTUnwrap(harness.effectiveProperties(viaType.id)).space
             let tokenSpace = try XCTUnwrap(harness.effectiveProperties(viaToken.id)).space
             // popupProperties() overrides ComponentSpace to 16/16/24/8; standard is 8/8/16/8.
-            XCTAssertEqual(typeSpace?.subtitle, 24, "renderer \(kind.rawValue): premise")
+            XCTAssertEqual(typeSpace?.subtitle, 24, "UIKit premise")
             XCTAssertEqual(
                 tokenSpace?.subtitle, typeSpace?.subtitle,
-                "renderer \(kind.rawValue): .popup must reach the same preset PopupDialog does"
+                "UIKit .popup must reach the same preset PopupDialog does"
             )
 
             executor.dismiss(viaType)
             executor.dismiss(viaToken)
-        }
     }
 }

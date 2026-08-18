@@ -28,7 +28,7 @@ import GBV3AlertModal
 enum UIKitFreeCatalogPresets {
 
     /// The 17 style→preset pairs `SwiftUICatalog.dialogEntries` asks for by name (`.standard`/
-    /// `.popup` are already seeded by both renderers' `init`). The 4 `variant*` tokens
+    /// `.standard` is already seeded by both renderers' `init`). The 4 `variant*` tokens
     /// (`SwiftUICatalog+Variants.swift`) are a separate table, `variantPresets` below.
     static var stylePresets: [(ModalStyle, ModalProperties)] {
         [

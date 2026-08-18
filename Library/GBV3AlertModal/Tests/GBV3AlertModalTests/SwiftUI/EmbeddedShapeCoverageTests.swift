@@ -24,10 +24,7 @@ final class EmbeddedShapeCoverageTests: XCTestCase {
     // MARK: - Renderer setup — the EmbeddedModalRenderer equivalent of GenieShapeCatalog.makeRenderer()
 
     static func makeRenderer() -> EmbeddedModalRenderer {
-        let renderer = EmbeddedModalRenderer(
-            alertProperties: GeniePresets.standardModalProperties(),
-            popupProperties: GeniePresets.popupModalProperties()
-        )
+        let renderer = EmbeddedModalRenderer(alertProperties: GeniePresets.standardModalProperties())
         for (style, properties) in stylePresets {
             renderer.register(style: style, properties: properties)
         }
@@ -65,9 +62,6 @@ final class EmbeddedShapeCoverageTests: XCTestCase {
     /// field passed through unchanged from the real `ModalContent.make(for:)` mapping.
     static func registerStandardFamily(on renderer: EmbeddedModalRenderer) {
         renderer.register(AlertDialog.self) { [weak renderer] descriptor, _ in
-            (renderer?.properties(for: descriptor.style), withSubstitutedBanner(for: descriptor))
-        }
-        renderer.register(PopupDialog.self) { [weak renderer] descriptor, _ in
             (renderer?.properties(for: descriptor.style), withSubstitutedBanner(for: descriptor))
         }
     }

@@ -27,10 +27,7 @@ final class EmbeddedCatalogModel: ObservableObject {
     private var pending: Task<Void, Never>?
 
     init() {
-        let renderer = EmbeddedModalRenderer(
-            alertProperties: GalleryPresets.standardModalProperties,
-            popupProperties: GalleryPresets.standardModalProperties
-        )
+        let renderer = EmbeddedModalRenderer(alertProperties: GalleryPresets.standardModalProperties)
         let presets = UIKitFreeCatalogPresets.stylePresets
             + UIKitFreeCatalogPresets.stressPresets
             + UIKitFreeCatalogPresets.variantPresets

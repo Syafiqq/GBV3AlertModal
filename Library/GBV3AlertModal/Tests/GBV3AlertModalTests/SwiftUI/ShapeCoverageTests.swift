@@ -419,18 +419,14 @@ final class ShapeCoverageTests: XCTestCase {
 
     // MARK: - Campaign shapes
 
-    /// Presented as `PopupDialog` rather than `AlertDialog(style: .popup)` — both spellings must
-    /// resolve through the same style map, and `gapBelowSubtitle == 24` is the popup preset's value
-    /// (standard is 16), so it proves the popup `Properties` were the ones used.
     func test_shape_onboarding_welcome_nobanner_rendersOnSwiftUI() throws {
-        let presented = try assertRenders(
+        try assertRenders(
             "onboarding-welcome-nobanner",
             showsBanner: false,
             showsTitle: true,
             subtitle: .plain("Let's explore Geniebook!"),
             showsSecondary: false
         )
-        XCTAssertEqual(presented.tokens.gapBelowSubtitle, 24, "PopupDialog must draw with the popup preset")
     }
 
     func test_shape_onboarding_trial_banner_rendersOnSwiftUI() throws {
@@ -664,10 +660,7 @@ final class ShapeCoverageTests: XCTestCase {
         )
 
         // Production registration: no substitution, so `UIImage(named:)` returns nil here.
-        let production = SwiftUIModalRenderer(
-            alertProperties: GeniePresets.standardProperties(),
-            popupProperties: GeniePresets.popupProperties()
-        )
+        let production = SwiftUIModalRenderer(alertProperties: GeniePresets.standardProperties())
         for (style, properties) in GenieShapeCatalog.stylePresets {
             production.register(style: style, properties: properties)
         }
