@@ -99,16 +99,19 @@ run_test_stage() {
     local timeout_seconds=$2
     shift 2
     local output_file="$OUTPUT_DIRECTORY/${stage}.log"
+    local result_bundle="$OUTPUT_DIRECTORY/${stage}.xcresult"
     local attempt=1
 
     while [ $attempt -le 2 ]; do
         print "Running example stage '$stage' (attempt $attempt/2)."
+        rm -rf "$result_bundle"
         run_with_timeout "$timeout_seconds" "$output_file" \
             xcodebuild test \
                 -project "$PROJECT" \
                 -scheme "$SCHEME" \
                 -destination "platform=iOS Simulator,id=${SIMULATOR_UDID}" \
                 -derivedDataPath "$DERIVED_DATA" \
+                -resultBundlePath "$result_bundle" \
                 -parallel-testing-enabled NO \
                 "$@"
 
@@ -129,6 +132,11 @@ run_test_stage() {
             print -u2 "Stage '$stage' failed with status $LAST_STATUS."
         fi
         tail -120 "$output_file" >&2
+        if [ -d "$result_bundle" ]; then
+            print -u2 "Structured test failures:"
+            xcrun xcresulttool get test-results summary --path "$result_bundle" 2>/dev/null |
+                jq -r '.testFailures[]?.failureText' >&2 || true
+        fi
         return 1
     done
 }
