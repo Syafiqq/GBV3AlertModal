@@ -1,6 +1,8 @@
+@testable import GBV3AlertModalCore
+@testable import GBV3AlertModalSwiftUI
+@testable import GBV3AlertModalUIKit
 import XCTest
 import SnapshotTesting
-@testable import GBV3AlertModal
 
 /// Layer C: snapshot + behavioral characterization of the shipped Genie preset shapes.
 ///

@@ -1,6 +1,7 @@
+@testable import GBV3AlertModalCore
+@testable import GBV3AlertModalUIKit
 import XCTest
 import UIKit
-@testable import GBV3AlertModal
 
 /// Unit tests for `ModalLayout`, the pure extraction of the constraint arithmetic that used to
 /// live inline in `GBAlertModal`'s `adjust*` methods (now `GBAlertModal+Layout.swift`). Every

@@ -8,7 +8,7 @@ final class SwiftUIBackendPurityTests: XCTestCase {
             .deletingLastPathComponent()
             .deletingLastPathComponent()
             .deletingLastPathComponent()
-        let root = packageRoot.appendingPathComponent("Sources/GBV3AlertModal/SwiftUI")
+        let root = packageRoot.appendingPathComponent("Sources/GBV3AlertModalSwiftUI")
         guard let files = FileManager.default.enumerator(at: root, includingPropertiesForKeys: nil) else {
             return []
         }

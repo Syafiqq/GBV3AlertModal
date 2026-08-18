@@ -1,5 +1,6 @@
+@testable import GBV3AlertModalCore
+@testable import GBV3AlertModalUIKit
 import XCTest
-@testable import GBV3AlertModal
 
 final class MinMaxEdgeInsetsTests: XCTestCase {
     func testInitializerAndEqualityPreserveEveryEdge() {

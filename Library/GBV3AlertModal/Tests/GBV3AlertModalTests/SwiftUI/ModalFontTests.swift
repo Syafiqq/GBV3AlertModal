@@ -1,6 +1,6 @@
+@testable import GBV3AlertModalSwiftUI
 import SwiftUI
 import Testing
-@testable import GBV3AlertModal
 
 struct ModalFontTests {
     @Test(arguments: ModalFont.Weight.allCases)

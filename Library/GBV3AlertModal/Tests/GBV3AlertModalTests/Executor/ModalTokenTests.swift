@@ -1,5 +1,5 @@
+@testable import GBV3AlertModalCore
 import XCTest
-@testable import GBV3AlertModal
 
 final class ModalTokenTests: XCTestCase {
     @MainActor

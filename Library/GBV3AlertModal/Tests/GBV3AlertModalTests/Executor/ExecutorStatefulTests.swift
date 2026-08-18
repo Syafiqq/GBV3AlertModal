@@ -1,6 +1,8 @@
+@testable import GBV3AlertModalCore
+@testable import GBV3AlertModalSwiftUI
+@testable import GBV3AlertModalUIKit
 import XCTest
 import UIKit
-@testable import GBV3AlertModal
 
 /// A consumer-defined STATEFUL descriptor, registered from outside the library — proves the
 /// extension mechanism and the `update(token,to:)` re-render path (the Gc2Gs shape, minus app UI).

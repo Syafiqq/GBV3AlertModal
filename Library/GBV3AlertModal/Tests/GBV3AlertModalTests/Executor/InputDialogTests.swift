@@ -1,6 +1,8 @@
+@testable import GBV3AlertModalCore
+@testable import GBV3AlertModalSwiftUI
+@testable import GBV3AlertModalUIKit
 import XCTest
 import UIKit
-@testable import GBV3AlertModal
 
 /// The custom-content mechanism: input descriptors carry `Sendable` config, the renderer materializes
 /// the input view in the modal's `subtitleCustomView`, and the result carries the entered value.

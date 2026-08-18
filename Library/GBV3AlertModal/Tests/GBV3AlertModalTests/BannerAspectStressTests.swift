@@ -1,6 +1,8 @@
+@testable import GBV3AlertModalCore
+@testable import GBV3AlertModalSwiftUI
+@testable import GBV3AlertModalUIKit
 import XCTest
 import SnapshotTesting
-@testable import GBV3AlertModal
 
 /// Stress test for the natural-image-aspect banner path (`bannerRatio == nil`, see
 /// `GBAlertModal+ViewGraph.swift`'s `installConstraints` and `ModalLayout.bannerHeightMultiplier`).

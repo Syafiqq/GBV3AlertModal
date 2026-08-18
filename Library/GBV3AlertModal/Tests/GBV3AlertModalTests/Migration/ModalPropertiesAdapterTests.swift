@@ -1,7 +1,10 @@
+@testable import GBV3AlertModalCore
+@testable import GBV3AlertModalSwiftUI
+@testable import GBV3AlertModalUIKit
+@testable import GBV3AlertModalMigration
 import SwiftUI
 import Testing
 import UIKit
-@testable import GBV3AlertModal
 
 @MainActor
 struct ModalPropertiesAdapterTests {

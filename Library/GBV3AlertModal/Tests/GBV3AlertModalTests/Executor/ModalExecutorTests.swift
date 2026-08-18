@@ -1,6 +1,8 @@
+@testable import GBV3AlertModalCore
+@testable import GBV3AlertModalSwiftUI
+@testable import GBV3AlertModalUIKit
 import XCTest
 import UIKit
-@testable import GBV3AlertModal
 
 @MainActor
 final class ModalExecutorTests: XCTestCase {

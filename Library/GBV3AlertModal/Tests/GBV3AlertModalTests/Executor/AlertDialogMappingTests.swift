@@ -1,6 +1,8 @@
+@testable import GBV3AlertModalCore
+@testable import GBV3AlertModalSwiftUI
+@testable import GBV3AlertModalUIKit
 import XCTest
 import UIKit
-@testable import GBV3AlertModal
 
 /// The executor does not change rendering — it only builds a `DataHolder`. This asserts the
 /// AlertDialog→DataHolder mapping produces the SAME render decisions the Layer-A resolver

@@ -1,7 +1,10 @@
 import SwiftUI
 import UIKit
 import XCTest
-import GBV3AlertModal
+import GBV3AlertModalCore
+import GBV3AlertModalSwiftUI
+import GBV3AlertModalUIKit
+import GBV3AlertModalMigration
 
 /// Checked-in ownership decisions for declarations referenced across the Task 8 target boundaries.
 /// A type entry covers its explicitly declared public initializers, members, nested types,
@@ -110,9 +113,9 @@ final class CrossModuleAPITests: XCTestCase {
     func testEveryCrossOwnerDeclaredTypeHasAnInventoryClassification() throws {
         let roots: [(owner: String, path: String)] = [
             ("Core", "Sources/GBV3AlertModalCore"),
-            ("SwiftUI", "Sources/GBV3AlertModal/SwiftUI"),
-            ("UIKit", "Sources/GBV3AlertModal/Components"),
-            ("UIKit", "Sources/GBV3AlertModal/Executor"),
+            ("SwiftUI", "Sources/GBV3AlertModalSwiftUI"),
+            ("UIKit", "Sources/GBV3AlertModalUIKit/Components"),
+            ("UIKit", "Sources/GBV3AlertModalUIKit/Executor"),
         ]
         let inventory = Set(CrossModuleAPIInventory.entries.map(\.symbol))
         var missing: [String] = []

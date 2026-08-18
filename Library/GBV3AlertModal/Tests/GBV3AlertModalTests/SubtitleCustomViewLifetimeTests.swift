@@ -1,6 +1,6 @@
+@testable import GBV3AlertModalUIKit
 import XCTest
 import UIKit
-@testable import GBV3AlertModal
 
 /// Task 11 (Tier 2): `GBAlertModal.DataHolder.subtitleCustomView` must survive without the
 /// caller holding an external strong reference to it.

@@ -1,6 +1,6 @@
+@testable import GBV3AlertModalUIKit
 import XCTest
 import UIKit
-@testable import GBV3AlertModal
 
 /// Unit tests for `ModalKeyboardAvoider`, the pure extraction of the geometry math that used to
 /// live inline in `GBAlertModal.adjustDialogPosition(_:)`. Every expected number in this file is

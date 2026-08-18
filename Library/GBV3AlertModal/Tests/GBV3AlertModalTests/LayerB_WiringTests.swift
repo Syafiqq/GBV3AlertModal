@@ -1,6 +1,7 @@
+@testable import GBV3AlertModalCore
+@testable import GBV3AlertModalUIKit
 import XCTest
 import UIKit
-@testable import GBV3AlertModal
 
 /// Layer B: public-surface wiring coverage.
 ///

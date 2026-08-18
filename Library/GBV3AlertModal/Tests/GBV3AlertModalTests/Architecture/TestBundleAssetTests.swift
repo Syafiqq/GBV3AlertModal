@@ -1,7 +1,8 @@
+@testable import GBV3AlertModalCore
+@testable import GBV3AlertModalUIKit
 import SwiftUI
 import UIKit
 import XCTest
-@testable import GBV3AlertModal
 
 /// **The premise behind the banner differential row.**
 ///

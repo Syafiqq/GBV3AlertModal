@@ -1,5 +1,5 @@
+@testable import GBV3AlertModalCore
 import XCTest
-@testable import GBV3AlertModal
 
 /// `presentAndWait` AND a coordinator are the two primitives `CoordinatorUsageExample` documents as
 /// recommended (its examples 2 and 3), and their INTERSECTION had zero coverage: both pre-existing

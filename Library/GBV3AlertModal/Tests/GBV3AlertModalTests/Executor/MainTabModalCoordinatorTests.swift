@@ -1,5 +1,5 @@
+@testable import GBV3AlertModalCore
 import XCTest
-@testable import GBV3AlertModal
 
 /// A fake `ModalRenderer` that records presentations without a window, and lets a test drive
 /// resolution (user tap) or dismissal the way the real UIKit renderer's gate would.

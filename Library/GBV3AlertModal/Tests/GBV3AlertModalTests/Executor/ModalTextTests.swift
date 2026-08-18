@@ -1,8 +1,9 @@
+@testable import GBV3AlertModalCore
+@testable import GBV3AlertModalUIKit
 import Foundation
 import SwiftUI
 import UIKit
 import XCTest
-@testable import GBV3AlertModal
 
 final class ModalTextTests: XCTestCase {
     func test_nilMapsToNothing() {

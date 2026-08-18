@@ -1,5 +1,7 @@
+@testable import GBV3AlertModalCore
+@testable import GBV3AlertModalSwiftUI
+@testable import GBV3AlertModalUIKit
 import XCTest
-@testable import GBV3AlertModal
 
 /// The executor's optional coordinator slot: `nil` = today's unbounded direct path; installed =
 /// requests route through the serial/dedup policy. Reuses `SpyRenderer` from the coordinator tests.

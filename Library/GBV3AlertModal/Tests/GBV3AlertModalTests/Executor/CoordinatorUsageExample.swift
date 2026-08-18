@@ -1,3 +1,5 @@
+@testable import GBV3AlertModalCore
+@testable import GBV3AlertModalUIKit
 //
 //  CoordinatorUsageExample.swift
 //  GBV3AlertModalTests
@@ -18,7 +20,6 @@
 
 import UIKit
 import XCTest
-@testable import GBV3AlertModal
 
 @MainActor
 final class CoordinatorUsageExample: XCTestCase {

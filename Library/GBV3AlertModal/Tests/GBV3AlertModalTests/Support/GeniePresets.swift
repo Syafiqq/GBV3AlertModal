@@ -1,6 +1,8 @@
+@testable import GBV3AlertModalCore
+@testable import GBV3AlertModalSwiftUI
+@testable import GBV3AlertModalUIKit
 import SwiftUI
 import UIKit
-@testable import GBV3AlertModal
 
 /// Test-only re-creation of the Genie consumer app's `Presentation.UiKit.V3AlertModal`
 /// preset (see `Examples/GBV3AlertModalExample/.../ViewController.swift` for the shape this
