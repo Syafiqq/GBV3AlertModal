@@ -208,8 +208,8 @@ Migration, or SnapKit while preserving UIKit through an explicit compatibility s
   the future SwiftUI, UIKit, or Migration targets.
 - Update declarations in the existing `SwiftUI/`, UIKit-owned, and `Migration/` directories that
   will be consumed by another future target.
-- Add `Tests/Architecture/CrossModuleAPITests.swift`, a checked-in symbol-ownership inventory, and
-  `Script/validate-cross-module-api.sh`.
+- Add `Library/GBV3AlertModal/Tests/GBV3AlertModalTests/CrossModuleAPITests.swift`, a checked-in
+  symbol-ownership inventory, and `Script/validate-cross-module-api.sh`.
 
 **Steps:**
 
