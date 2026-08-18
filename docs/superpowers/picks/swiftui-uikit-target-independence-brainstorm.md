@@ -50,3 +50,21 @@ What Dynamic Type contract should the UIKit-free `ModalFont` expose?
 Recommendation rationale: A avoids falsely promising scaling for existing fixed custom fonts, keeps migration predictable, and still makes accessibility behavior explicit and extensible rather than accidental.
 
 **Answer:** A. Use an explicit scaling policy with a fixed-size default and opt-in semantic scaling. *(auto-accepted — lazy/away)*
+
+## Decision 5 — Design approval
+
+Should the standalone design proceed with the following architecture?
+
+- Core owns descriptors, executor/coordinator protocols and state, `ResolvedModal`, the single pure resolver, `MinMaxEdgeInsets`, and resource identifiers—but no rendering framework types.
+- SwiftUI owns `ModalProperties`, descriptive `ModalFont`, token derivation, SwiftUI-scoped attributed content, native views/renderers/host, and its own bundle resources.
+- UIKit owns all legacy modal/controller/window/layout implementation, UIKit resources, and the only SnapKit dependency.
+- Migration owns every cross-backend conversion and coverage test; a compatibility shim preserves `import GBV3AlertModal` during coexistence.
+- Boundary-first commits neutralize dependencies before physical moves and target declarations; test suites then split by ownership, followed by a manifest-variant deletion proof.
+
+Options:
+
+- **A. Approve this design (Recommended):** write it as the standalone design and derive the implementation plan from it.
+- **B. Revise boundaries:** reopen ownership or compatibility decisions before planning.
+- **C. Defer:** retain the source brief without producing an execution plan.
+
+Recommendation rationale: A directly satisfies the release gate—UIKit and Migration can later be removed without editing Core or SwiftUI production files—and preserves the brief's forced implementation order.
