@@ -46,6 +46,11 @@ private nonisolated func resolveFromNonisolatedContext() -> ResolvedModal {
 // though `resolve(...)` itself is a nonisolated pure function.
 @MainActor
 final class LayerA_ResolverTests: XCTestCase {
+    func test_legacyNestedResolvedModalNameStillCompiles() {
+        let resolved: GBAlertModal.ResolvedModal = resolveFromNonisolatedContext()
+        XCTAssertEqual(resolved.buttonAxis, .horizontal)
+    }
+
     func test_coreResolverUsesNeutralButtonAxisFromNonisolatedContext() {
         let resolved = resolveFromNonisolatedContext()
         XCTAssertEqual(resolved.buttonAxis, .horizontal)
