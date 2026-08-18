@@ -33,7 +33,19 @@ Script/test-swiftui-independence.sh
 ```
 
 Each test entry point fails when an expected suite reports zero executed tests. The example suite
-retains one retry for the documented simulator infrastructure flake.
+separates contracts, snapshots, UI smoke, and the standalone SwiftUI build. Run one stage while
+diagnosing a failure with:
+
+```sh
+EXAMPLE_TEST_STAGE=contracts Script/test-example.sh
+EXAMPLE_TEST_STAGE=snapshots Script/test-example.sh
+EXAMPLE_TEST_STAGE=ui-smoke Script/test-example.sh
+EXAMPLE_TEST_STAGE=swiftui-build Script/test-example.sh
+```
+
+Each stage has a bounded timeout. Only a recognized simulator-infrastructure failure is retried,
+once, after restarting and waiting for the selected simulator. Snapshot assertion failures are
+reported from the result bundle with their catalog entry names and are never retried.
 
 ## Snapshot review
 
