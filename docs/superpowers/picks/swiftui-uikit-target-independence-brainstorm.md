@@ -48,3 +48,5 @@ What Dynamic Type contract should the UIKit-free `ModalFont` expose?
 - **C. Fixed fonts only:** preserve current behavior and leave Dynamic Type support to a future API redesign.
 
 Recommendation rationale: A avoids falsely promising scaling for existing fixed custom fonts, keeps migration predictable, and still makes accessibility behavior explicit and extensible rather than accidental.
+
+**Answer:** A. Use an explicit scaling policy with a fixed-size default and opt-in semantic scaling. *(auto-accepted — lazy/away)*
