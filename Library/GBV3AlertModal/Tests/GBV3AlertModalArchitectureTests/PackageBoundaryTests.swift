@@ -107,6 +107,22 @@ final class PackageBoundaryTests: XCTestCase {
         XCTAssertTrue(test.contains("XCTAssertEqual(swiftUI.count, Set(swiftUI).count"))
     }
 
+    func testDeletionProofFixtureAndEntryPointStayIndependent() throws {
+        let fixture = try source("Tests/Architecture/SwiftUIOnlyPackage.swift.fixture")
+        XCTAssertTrue(fixture.contains("GBV3AlertModalCore"))
+        XCTAssertTrue(fixture.contains("GBV3AlertModalSwiftUI"))
+        for forbidden in ["SnapKit", "GBV3AlertModalUIKit", "GBV3AlertModalMigration"] {
+            XCTAssertFalse(fixture.contains(forbidden))
+        }
+
+        let script = try String(contentsOf: repositoryRoot.appendingPathComponent(
+            "Script/test-swiftui-independence.sh"
+        ), encoding: .utf8)
+        XCTAssertTrue(script.contains("mktemp -d /tmp/gbv3-swiftui-independence"))
+        XCTAssertTrue(script.contains("SwiftUIOnlyPackage.swift.fixture"))
+        XCTAssertTrue(script.contains("GBV3AlertModalSwiftUIExample"))
+    }
+
     private func source(_ path: String) throws -> String {
         try String(contentsOf: packageRoot.appendingPathComponent(path), encoding: .utf8)
     }
