@@ -14,3 +14,13 @@ Which implementation shape should turn the current monolithic package into indep
 Recommendation rationale: A follows the brief's forced order, keeps each failure attributable, minimizes duplicate logic, and gives every stage a green build and atomic commit boundary.
 
 **Answer:** A. Boundary-first staged extraction. *(auto-accepted — lazy/away)*
+
+## Decision 2 — Compatibility product
+
+How should the existing `GBV3AlertModal` product behave after the package is split?
+
+- **A. Preserve it as an explicit compatibility umbrella (Recommended):** keep the product name and export Core, SwiftUI, UIKit, and Migration during coexistence; add backend-specific products for new consumers and deletion-proof builds.
+- **B. Repoint it to Core + SwiftUI:** make the old product name mean the new default backend, accepting an immediate breaking change for UIKit consumers.
+- **C. Remove it:** require every consumer to choose backend-specific products immediately.
+
+Recommendation rationale: A honors the brief's compatibility allowance, separates migration timing from architectural extraction, and gives the SwiftUI-only example a product that proves it does not inherit UIKit or SnapKit transitively.
