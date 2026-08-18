@@ -102,9 +102,7 @@ public struct SwiftUIAlertModal: View {
     }
 
     /// Takes `content` as a parameter (rather than reaching for `self.modalContent` again) so `body`
-    /// can compute it exactly once per render — the resolver call itself is cheap, but
-    /// `self.modalContent` re-runs `UIImage(named:)` and `ModalText.split`, which isn't free to
-    /// repeat.
+    /// can compute it exactly once per render.
     private func resolved(from content: ModalContent, isLandscape: Bool) -> ResolvedModal {
         resolveModal(
             inputs: properties,
@@ -215,7 +213,7 @@ public struct SwiftUIAlertModal: View {
         hasButtons: Bool
     ) -> some View {
             if resolved.showsTitle, let title = config.title {
-                Text(Self.bridgedTitle(title))
+                Text(title)
                     .font(tokens.titleFont.font)
                     .foregroundColor(tokens.palette.titleText)
                     .multilineTextAlignment(.center)
@@ -270,11 +268,8 @@ public struct SwiftUIAlertModal: View {
             EmptyView()
         case let .plain(subtitle):
             SubtitleSlot(fillsWidth: tokens.contentChildrenFillWidth) {
-                // `.plain` means `ModalText.split` found no UIKit-scoped run at all, so
-                // `AttributedTextBridge` is a no-op here today — wrapped anyway, uniformly with
-                // every other Text(descriptor field) in this module, so nothing has to keep proving
-                // that classification stays a no-op rather than re-deciding it at every call site.
-                Text(AttributedTextBridge.swiftUIRenderable(subtitle))
+                // Renderer-specific adaptation has already happened at the migration boundary.
+                Text(subtitle)
                     .font(tokens.subtitleFont.font)
                     .foregroundColor(tokens.palette.subtitleText)
                     .multilineTextAlignment(.center)
@@ -292,12 +287,6 @@ public struct SwiftUIAlertModal: View {
             .layoutPriority(Self.subtitleLayoutPriority)
         case let .attributed(attributed):
             SubtitleSlot(fillsWidth: tokens.contentChildrenFillWidth) {
-                // The UIKit path stores an NSAttributedString on the holder. Bridged straight
-                // through, its runs stay on UIKIT's attribute scope and SwiftUI's `Text` — which
-                // reads its own — draws them completely unstyled. `AttributedTextBridge` re-scopes
-                // colour and font so the emphasis the caller asked for survives. Styling stays
-                // limited to the whitelisted bold/color/link subgrammar.
-                //
                 // `.font`/`.foregroundColor` here are AMBIENT, same as the `.plain` case above —
                 // they are what a run WITHOUT an explicit attribute falls back to. Their absence was
                 // a real gap: a caller styling only PART of a subtitle (e.g. one bold word, the rest
@@ -306,9 +295,8 @@ public struct SwiftUIAlertModal: View {
                 // `.subtitleText`, matching UIKit's OWN equivalent gap (`ModalLayout.renderedFont`'s
                 // doc: `lbSubtitle.font` is never assigned, so an unstyled UIKit run falls back to the
                 // 17pt system default too) rather than fixing it — this closes the SwiftUI side.
-                // `AttributedTextBridge` sets an explicit per-run attribute only where the caller did,
-                // so a run's own styling still wins over this ambient default, exactly like `.plain`.
-                Text(AttributedTextBridge.swiftUIRenderable(attributed))
+                // Explicit run styling still wins over this ambient default.
+                Text(attributed)
                     .font(tokens.subtitleFont.font)
                     .foregroundColor(tokens.palette.subtitleText)
                     .multilineTextAlignment(.center)
@@ -568,7 +556,7 @@ extension SwiftUIAlertModal {
     enum SubtitlePayload {
         case none
         case plain(AttributedString)
-        case attributed(NSAttributedString)
+        case attributed(AttributedString)
         case custom
 
         /// Whether this payload puts an actual ROW in the card — the counterpart of UIKit's
@@ -591,20 +579,8 @@ extension SwiftUIAlertModal {
     ///
     /// `resolved.subtitle` (`ResolvedModal.SubtitleKind`) decides ONLY none/plain/attributed/
     /// custom — it never supplies the payload this function returns for `.plain`. That split
-    /// matters: `SubtitleKind.plain`'s associated `String` is the STRIPPED text
-    /// `ModalText.split` produced for the UIKit `holder` (plain-vs-styled is a UIKit-scoped
-    /// classification — see `ModalText.swift`), which would silently drop SwiftUI-scoped styling
-    /// (e.g. `subtitle.swiftUI.foregroundColor = .red`) a caller applied the natural way. So
-    /// `.plain` here returns `config.subtitle` — the descriptor's own `AttributedString` — as-is,
-    /// exactly like the `showsTitle`/`title` pairing in `body` above.
-    ///
-    /// `.attributed` is the one case that DOES need a payload beyond `resolved`/`config`: the
-    /// resolver only records THAT the subtitle is attributed, never the runs themselves —
-    /// `ModalContent` doesn't carry them (Pass 5 step 6: nothing `Sendable` stores an
-    /// `NSAttributedString` here) — so this re-derives the SAME `NSAttributedString`
-    /// `ModalContent.make` used to decide `hasAttributedSubtitle`, from the SAME pure
-    /// `ModalText.split(config.subtitle)`. Cheap and deterministic; computing it twice from
-    /// identical input is not a second decision, just a second call.
+    /// matters: both text cases return the descriptor's Core `AttributedString` directly so the
+    /// view never reconstructs or reinterprets renderer-specific attribute scopes.
     static func subtitlePayload(
         resolved: ResolvedModal,
         config: AlertDialog
@@ -616,24 +592,11 @@ extension SwiftUIAlertModal {
             guard let subtitle = config.subtitle else { return .none }
             return .plain(subtitle)
         case .attributed:
-            return .attributed(ModalText.split(config.subtitle).attributed ?? NSAttributedString())
+            guard let subtitle = config.subtitle else { return .none }
+            return .attributed(subtitle)
         case .custom:
             return .custom
         }
     }
 
-    /// **What the title `Text` actually draws — pulled out so a test can call it directly, the same
-    /// reason `subtitlePayload` is a function and not inline in the view.**
-    ///
-    /// `config.title` is a raw `AttributedString`: unlike the subtitle, nothing routed it through
-    /// `AttributedTextBridge` before this fix, so a caller's UIKit-scoped styling (the vocabulary
-    /// `GenieShapeCatalog.styled(_:color:)` and a caller writing `.uiKit.foregroundColor` both use —
-    /// the real `switch-device-recommendation` catalog shape ships a blue UIKit-scoped title) reached
-    /// `Text`'s draw call on its OWN scope and was silently ignored, exactly the bug
-    /// `AttributedTextBridge` exists to close on the subtitle's `.attributed` path. This applies the
-    /// SAME already-proven bridge (`AttributedTextBridgeTests`) here too, via its `AttributedString`
-    /// overload — no `NSAttributedString` round trip needed.
-    static func bridgedTitle(_ title: AttributedString) -> AttributedString {
-        AttributedTextBridge.swiftUIRenderable(title)
-    }
 }

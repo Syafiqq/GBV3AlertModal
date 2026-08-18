@@ -30,8 +30,8 @@ extension UIKitModalRenderer {
             for descriptor: BadgeDialog,
             resolve: @escaping (BadgeDialog.Result) -> Void
         ) -> GBAlertModal.DataHolder {
-            let (titlePlain, titleAttr) = ModalText.split(descriptor.title)
-            let (subPlain, subAttr) = ModalText.split(descriptor.subtitle)
+            let (titlePlain, titleAttr) = UIKitModalTextAdapter.split(descriptor.title)
+            let (subPlain, subAttr) = UIKitModalTextAdapter.split(descriptor.subtitle)
             return GBAlertModal.DataHolder(
                 closeOnTapOverlay: descriptor.closeOnTapOverlay,
                 banner: descriptor.banner.flatMap { UIImage(named: $0.assetName, in: $0.bundle, compatibleWith: nil) },
@@ -67,8 +67,8 @@ extension UIKitModalRenderer {
             for descriptor: LoadingDialog,
             resolve: @escaping (LoadingDialog.Result) -> Void
         ) -> GBAlertModal.DataHolder {
-            let (titlePlain, titleAttr) = ModalText.split(descriptor.title)
-            let (subPlain, subAttr) = ModalText.split(descriptor.subtitle)
+            let (titlePlain, titleAttr) = UIKitModalTextAdapter.split(descriptor.title)
+            let (subPlain, subAttr) = UIKitModalTextAdapter.split(descriptor.subtitle)
             return GBAlertModal.DataHolder(
                 closeOnTapOverlay: descriptor.closeOnTapOverlay,
                 title: titlePlain,
@@ -112,7 +112,7 @@ extension UIKitModalRenderer {
             control.translatesAutoresizingMaskIntoConstraints = false
             control.heightAnchor.constraint(equalToConstant: 44).isActive = true
 
-            let (titlePlain, titleAttr) = ModalText.split(descriptor.title)
+            let (titlePlain, titleAttr) = UIKitModalTextAdapter.split(descriptor.title)
             // Captured as a value: the completion must not read `descriptor` again, and bounds are
             // checked because `selectedSegmentIndex` is negative while nothing is selected.
             let optionCount = descriptor.options.count

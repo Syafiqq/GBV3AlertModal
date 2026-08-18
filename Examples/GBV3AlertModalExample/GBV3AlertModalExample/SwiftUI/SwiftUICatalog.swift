@@ -95,9 +95,8 @@ struct SwiftUIDivergence: Hashable {
                 + "compare every banner shape side by side."
         ),
         SwiftUIDivergence(
-            caption: "Fonts. Title/subtitle/button fonts DO flow from the same Properties (UIFont→Font bridge over "
-                + "the bundled OpenSans stand-in for SHSans). Per-RUN fonts inside attributed text do NOT: "
-                + "SwiftUI's Text ignores UIKit-scoped attributes, so those runs fall back to the system font."
+            caption: "Fonts. Title/subtitle/button fonts use platform-native descriptors; attributed runs "
+                + "retain their explicitly authored SwiftUI font."
         ),
         SwiftUIDivergence(
             caption: "Orientation. SwiftUIModalRenderer pins isLandscape: false, so the resolver always takes the "
@@ -105,12 +104,10 @@ struct SwiftUIDivergence: Hashable {
         )
     ]
 
-    /// CLOSED 2026-08-01 — kept as a named constant so the entries referencing it keep compiling
-    /// while the caption tells the truth. `AttributedTextBridge` re-scopes UIKit colour and font onto
-    /// SwiftUI's scope before `Text` draws, so bold and colour now survive.
+    /// Closed: legacy attributed text is converted at the Migration boundary before rendering.
     static let attributedRuns = SwiftUIDivergence(
-        caption: "Attributed text: bold/colour runs are re-scoped by AttributedTextBridge and now render "
-            + "as UIKit draws them. Compare against the UIKit gallery entry of the same name."
+        caption: "Attributed text: bold/colour runs are converted at the Migration boundary and render "
+            + "consistently across backends."
     )
     static let bespokePort = SwiftUIDivergence(
         caption: "Bespoke port: drawn by a register(_:view:) body, where the UIKit entry builds a UIView and hands "
@@ -259,10 +256,7 @@ enum SwiftUICatalog {
 
     // MARK: Text helpers
 
-    /// An `AttributedString` carrying UIKIT-scoped styling — the only scope
-    /// `ModalText.split` classifies as attributed, i.e. the scope that makes a
-    /// shape's subtitle really resolve `.attributed` the way its UIKit twin's
-    /// `NSAttributedString` does.
+    /// An `AttributedString` carrying native SwiftUI run styling.
     static func styled(_ string: String, font: Font, color: Color) -> AttributedString {
         var value = AttributedString(string)
         value.font = font

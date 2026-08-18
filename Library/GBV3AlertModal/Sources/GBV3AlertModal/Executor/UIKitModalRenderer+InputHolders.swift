@@ -17,7 +17,7 @@ extension UIKitModalRenderer {
             field.translatesAutoresizingMaskIntoConstraints = false
             field.heightAnchor.constraint(equalToConstant: 44).isActive = true
 
-            let (titlePlain, titleAttr) = ModalText.split(descriptor.title)
+            let (titlePlain, titleAttr) = UIKitModalTextAdapter.split(descriptor.title)
             return GBAlertModal.DataHolder(
                 closeOnTapOverlay: descriptor.closeOnTapOverlay,
                 title: titlePlain,
@@ -55,7 +55,7 @@ extension UIKitModalRenderer {
             picker.translatesAutoresizingMaskIntoConstraints = false
             if #available(iOS 14.0, *) { picker.preferredDatePickerStyle = .wheels }
 
-            let (titlePlain, titleAttr) = ModalText.split(descriptor.title)
+            let (titlePlain, titleAttr) = UIKitModalTextAdapter.split(descriptor.title)
             return GBAlertModal.DataHolder(
                 closeOnTapOverlay: descriptor.closeOnTapOverlay,
                 title: titlePlain,

@@ -1,7 +1,6 @@
 import Foundation
 
-/// **The SwiftUI half's own holder — `Sendable`, and carrying no `UIImage`/`UIView`/
-/// `NSAttributedString`.**
+/// The SwiftUI renderer's `Sendable`, platform-native structural content.
 ///
 /// Pass 5 step 6 (`2026-08-07-uikit-retirement.md` §3): the replacement for
 /// `UIKitModalRenderer.AlertHolder.make`'s `GBAlertModal.DataHolder` on the paths that build one
@@ -11,11 +10,8 @@ import Foundation
 ///
 /// `ModalContentInputs` is every question `resolve` asks — see that protocol. This type answers
 /// them directly, as `Bool`/`String`, rather than by carrying an object `resolve` would inspect.
-/// **The one field this type does NOT carry is the actual styled subtitle content** for the
-/// `.attributed` case: `resolve` only needs to know THAT it is attributed, never the runs
-/// themselves, and `SwiftUIAlertModal` re-derives the real `NSAttributedString` from `config`
-/// directly where it is actually rendered (`subtitlePayload`) — computed twice from the same pure
-/// `ModalText.split`, never stored on a `Sendable` value.
+/// Styled text remains on the Core descriptor as Foundation `AttributedString`; this value carries
+/// only the presence and character questions needed by structural resolution.
 public struct ModalContent: ModalContentInputs, Sendable {
     public let closeOnTapOverlay: Bool
     public let hasBanner: Bool
@@ -63,15 +59,11 @@ extension ModalContent {
     /// `UIImage(named:in:compatibleWith:)` probe), it just never keeps the result — nothing here
     /// stores a `UIImage`, so there is nothing non-`Sendable` to carry.
     public static func make(for descriptor: StandardAlertContent) -> ModalContent {
-        let (titlePlain, titleAttr) = ModalText.split(descriptor.title)
-        let (subtitlePlain, subtitleAttr) = ModalText.split(descriptor.subtitle)
         return ModalContent(
             closeOnTapOverlay: descriptor.closeOnTapOverlay,
             hasBanner: descriptor.image != nil,
-            title: titlePlain,
-            hasAttributedTitle: (titleAttr?.length ?? 0) > 0,
-            subtitle: subtitlePlain,
-            hasAttributedSubtitle: (subtitleAttr?.length ?? 0) > 0,
+            title: ModalText.plainText(descriptor.title),
+            subtitle: ModalText.plainText(descriptor.subtitle),
             primaryAction: descriptor.primary,
             secondaryAction: descriptor.secondary,
             showCloseButton: descriptor.showCloseButton,
@@ -85,11 +77,9 @@ extension ModalContent {
     /// kept for structural parity. No `showCloseButton` field on `TextInputDialog` — always `false`,
     /// same as the UIKit holder never setting it either.
     public static func make(for descriptor: TextInputDialog) -> ModalContent {
-        let (titlePlain, titleAttr) = ModalText.split(descriptor.title)
         return ModalContent(
             closeOnTapOverlay: descriptor.closeOnTapOverlay,
-            title: titlePlain,
-            hasAttributedTitle: (titleAttr?.length ?? 0) > 0,
+            title: ModalText.plainText(descriptor.title),
             hasSubtitleCustomView: true,
             primaryAction: descriptor.primary,
             secondaryAction: descriptor.secondary,
@@ -101,11 +91,9 @@ extension ModalContent {
     /// `ModalContentInputs` field (`resolve` never asks about them; they only bound the date picker
     /// this backend doesn't build), so only the fields `resolve` reads are carried, same as TextInput.
     public static func make(for descriptor: DatePickerDialog) -> ModalContent {
-        let (titlePlain, titleAttr) = ModalText.split(descriptor.title)
         return ModalContent(
             closeOnTapOverlay: descriptor.closeOnTapOverlay,
-            title: titlePlain,
-            hasAttributedTitle: (titleAttr?.length ?? 0) > 0,
+            title: ModalText.plainText(descriptor.title),
             hasSubtitleCustomView: true,
             primaryAction: descriptor.primary,
             secondaryAction: descriptor.secondary,
@@ -118,15 +106,11 @@ extension ModalContent {
     /// `BadgeModalView` directly from the descriptor, never through `ModalContentInputs`, which only
     /// answers `resolve`'s structural questions.
     public static func make(for descriptor: BadgeDialog) -> ModalContent {
-        let (titlePlain, titleAttr) = ModalText.split(descriptor.title)
-        let (subPlain, subAttr) = ModalText.split(descriptor.subtitle)
         return ModalContent(
             closeOnTapOverlay: descriptor.closeOnTapOverlay,
             hasBanner: descriptor.banner != nil,
-            title: titlePlain,
-            hasAttributedTitle: (titleAttr?.length ?? 0) > 0,
-            subtitle: subPlain,
-            hasAttributedSubtitle: (subAttr?.length ?? 0) > 0,
+            title: ModalText.plainText(descriptor.title),
+            subtitle: ModalText.plainText(descriptor.subtitle),
             primaryAction: descriptor.primary,
             secondaryAction: descriptor.secondary,
             showCloseButton: descriptor.showCloseButton,
@@ -138,14 +122,10 @@ extension ModalContent {
     /// `ModalContentInputs` field — same drop the UIKit holder makes (see its doc): the spinner state
     /// is drawn by `LoadingModalView` directly, `resolve` never asks about it.
     public static func make(for descriptor: LoadingDialog) -> ModalContent {
-        let (titlePlain, titleAttr) = ModalText.split(descriptor.title)
-        let (subPlain, subAttr) = ModalText.split(descriptor.subtitle)
         return ModalContent(
             closeOnTapOverlay: descriptor.closeOnTapOverlay,
-            title: titlePlain,
-            hasAttributedTitle: (titleAttr?.length ?? 0) > 0,
-            subtitle: subPlain,
-            hasAttributedSubtitle: (subAttr?.length ?? 0) > 0,
+            title: ModalText.plainText(descriptor.title),
+            subtitle: ModalText.plainText(descriptor.subtitle),
             primaryAction: descriptor.primary,
             secondaryAction: descriptor.secondary,
             showCloseButton: descriptor.showCloseButton,
@@ -157,11 +137,9 @@ extension ModalContent {
     /// `secondary` field — `secondaryAction` stays `nil`, don't pattern-match the other four here.
     /// `hasSubtitleCustomView: true` mirrors the `UISegmentedControl` in the subtitle slot.
     public static func make(for descriptor: SatisfactionDialog) -> ModalContent {
-        let (titlePlain, titleAttr) = ModalText.split(descriptor.title)
         return ModalContent(
             closeOnTapOverlay: descriptor.closeOnTapOverlay,
-            title: titlePlain,
-            hasAttributedTitle: (titleAttr?.length ?? 0) > 0,
+            title: ModalText.plainText(descriptor.title),
             hasSubtitleCustomView: true,
             primaryAction: descriptor.primary,
             dismissOnAction: false

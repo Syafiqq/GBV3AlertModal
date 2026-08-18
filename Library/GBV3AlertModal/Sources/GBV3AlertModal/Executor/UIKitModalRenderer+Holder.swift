@@ -10,8 +10,8 @@ extension UIKitModalRenderer {
             for descriptor: StandardAlertContent,
             resolve: @escaping (AlertDialog.Result) -> Void
         ) -> GBAlertModal.DataHolder {
-            let (titlePlain, titleAttr) = ModalText.split(descriptor.title)
-            let (subPlain, subAttr) = ModalText.split(descriptor.subtitle)
+            let (titlePlain, titleAttr) = UIKitModalTextAdapter.split(descriptor.title)
+            let (subPlain, subAttr) = UIKitModalTextAdapter.split(descriptor.subtitle)
             return GBAlertModal.DataHolder(
                 closeOnTapOverlay: descriptor.closeOnTapOverlay,
                 banner: descriptor.image.flatMap { UIImage(named: $0.assetName, in: $0.bundle, compatibleWith: nil) },

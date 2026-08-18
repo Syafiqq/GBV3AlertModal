@@ -171,11 +171,8 @@ public struct BadgeModalView: View {
     @ViewBuilder
     private var titleView: some View {
         if let title = descriptor.title {
-            // `AttributedTextBridge`, not the raw descriptor value: without it a caller's
-            // UIKit-scoped styling (`GenieShapeCatalog.styled(_:color:)`'s vocabulary) reaches
-            // `Text`'s draw call on the wrong scope and is silently dropped — the same bug
-            // `SwiftUIAlertModal.bridgedTitle` closes for the standard family.
-            Text(AttributedTextBridge.swiftUIRenderable(title))
+            // Descriptor text is rendered directly after any migration-boundary conversion.
+            Text(title)
                 .font(tokens.titleFont.font)
                 .foregroundColor(tokens.palette.titleText)
                 .multilineTextAlignment(.center)
@@ -186,11 +183,8 @@ public struct BadgeModalView: View {
     @ViewBuilder
     private var subtitleView: some View {
         if let subtitle = descriptor.subtitle {
-            // The descriptor's own `AttributedString`, rendered as-is — the same choice
-            // `SwiftUIAlertModal.subtitlePayload` documents for `.plain`: routing it through
-            // `ModalText.split`'s plain `String` would drop SwiftUI-scoped styling. Bridged through
-            // `AttributedTextBridge` for the same reason `titleView` above is.
-            Text(AttributedTextBridge.swiftUIRenderable(subtitle))
+            // Preserve the descriptor's Core `AttributedString` without a renderer-side bridge.
+            Text(subtitle)
                 .font(tokens.subtitleFont.font)
                 .foregroundColor(tokens.palette.subtitleText)
                 .multilineTextAlignment(.center)
@@ -293,14 +287,14 @@ public struct LoadingModalView: View {
             onOverlayTap: { if descriptor.closeOnTapOverlay { resolve(Self.result(for: .close)) } }
         ) {
             if let title = descriptor.title {
-                Text(AttributedTextBridge.swiftUIRenderable(title))
+                Text(title)
                     .font(tokens.titleFont.font)
                     .foregroundColor(tokens.palette.titleText)
                     .multilineTextAlignment(.center)
                     .padding(.bottom, tokens.gapBelowTitle)
             }
             if let subtitle = descriptor.subtitle {
-                Text(AttributedTextBridge.swiftUIRenderable(subtitle))
+                Text(subtitle)
                     .font(tokens.subtitleFont.font)
                     .foregroundColor(tokens.palette.subtitleText)
                     .multilineTextAlignment(.center)
@@ -359,7 +353,7 @@ public struct SatisfactionModalView: View {
             }
         ) {
             if let title = descriptor.title {
-                Text(AttributedTextBridge.swiftUIRenderable(title))
+                Text(title)
                     .font(tokens.titleFont.font)
                     .foregroundColor(tokens.palette.titleText)
                     .multilineTextAlignment(.center)
