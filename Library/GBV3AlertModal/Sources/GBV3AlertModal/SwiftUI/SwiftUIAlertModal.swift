@@ -237,7 +237,6 @@ public struct SwiftUIAlertModal: View {
                     // own font where it has one — `.font(tokens.titleFont.font)` above is only the ambient
                     // default — so flattening to characters measured a font the view may not draw and
                     // produced a floor too short for the text it was protecting.
-                    .frame(minHeight: tokens.titleFloorHeight(for: NSAttributedString(title)))
                     .modalGeometryProbe(.title)
                     // UIKit's `vwTitleAndBelowDivider`, which `buildDividers` creates only when
                     // `svSubtitleContainer != nil || svMainActionContainer != nil`.
@@ -270,9 +269,7 @@ public struct SwiftUIAlertModal: View {
         case .none:
             EmptyView()
         case let .plain(subtitle):
-            SubtitleSlot(
-                floor: tokens.subtitleFloorHeight, fillsWidth: tokens.contentChildrenFillWidth
-            ) {
+            SubtitleSlot(fillsWidth: tokens.contentChildrenFillWidth) {
                 // `.plain` means `ModalText.split` found no UIKit-scoped run at all, so
                 // `AttributedTextBridge` is a no-op here today — wrapped anyway, uniformly with
                 // every other Text(descriptor field) in this module, so nothing has to keep proving
@@ -294,9 +291,7 @@ public struct SwiftUIAlertModal: View {
             // The LOWER rung of the directive's ordering — see `subtitleLayoutPriority`.
             .layoutPriority(Self.subtitleLayoutPriority)
         case let .attributed(attributed):
-            SubtitleSlot(
-                floor: tokens.subtitleFloorHeight, fillsWidth: tokens.contentChildrenFillWidth
-            ) {
+            SubtitleSlot(fillsWidth: tokens.contentChildrenFillWidth) {
                 // The UIKit path stores an NSAttributedString on the holder. Bridged straight
                 // through, its runs stay on UIKIT's attribute scope and SwiftUI's `Text` — which
                 // reads its own — draws them completely unstyled. `AttributedTextBridge` re-scopes
@@ -381,11 +376,9 @@ private struct BannerSlot: View {
 /// That is exactly what the differential gate measured — SwiftUI kept the full 38.3 and the banner
 /// below it paid the 19.33 UIKit had taken out of the subtitle.
 ///
-/// The fix is the mirror of `BannerSlot`'s: put a view with a genuinely FLEXIBLE height under the
-/// frame. A `ScrollView` reports `[0, ∞)`, so `.frame(minHeight: floor, maxHeight: contentHeight)`
-/// turns it into `[floor, contentHeight]` — the same interval Auto Layout arbitrates over, arrived at
-/// rather than computed. And it is a real scroll, so the clipped remainder stays reachable, which is
-/// what `svSubtitleContainer` does too.
+/// The fix is the mirror of `BannerSlot`'s: put a view with a genuinely flexible height under the
+/// frame. Native layout proposes the available height, capped by the measured ideal, and the real
+/// scroll keeps any clipped remainder reachable.
 ///
 /// ## Why it is inert when the content fits
 ///
@@ -402,12 +395,7 @@ private struct BannerSlot: View {
 /// subtitle together; it is deleted, because this slot already delivers the scrolling subtitle it was
 /// asked for and UIKit never had a counterpart for the outer wrapper.
 ///
-/// The floor lives here rather than on the `Text` (where it used to be, as `.frame(minHeight:)`)
-/// because the floor UIKit installs is a `>=` on the CONTAINER, not on the label. On the `Text` it was
-/// inert by construction — a non-empty label is already at least one line tall.
 private struct SubtitleSlot<Content: View>: View {
-    /// `ModalTokens.subtitleFloorHeight` — one line, the same number UIKit's `>=` carries.
-    let floor: CGFloat
     /// `ContentProperty.childShouldMatchParent`. A `ScrollView` is greedy ACROSS its scroll axis as
     /// well as along it, so a hugging row needs its width clamped back to its content's; a filling
     /// row wants exactly the greed it already has.
@@ -426,7 +414,6 @@ private struct SubtitleSlot<Content: View>: View {
         if usesExternalScroll {
             content()
                 .frame(maxWidth: fillsWidth ? .infinity : nil)
-                .frame(minHeight: floor)
         } else {
             ScrollView(.vertical, showsIndicators: true) {
                 content()
@@ -439,7 +426,7 @@ private struct SubtitleSlot<Content: View>: View {
                     )
             }
             .frame(maxWidth: fillsWidth ? .infinity : ideal?.width)
-            .frame(minHeight: floor, maxHeight: ideal?.height)
+            .frame(maxHeight: ideal?.height)
             .onPreferenceChange(SubtitleIdealSizeKey.self) { size in
                 // Guarded: an unconditional write re-renders with the same value on every pass, which is
                 // a layout loop rather than a settled layout.

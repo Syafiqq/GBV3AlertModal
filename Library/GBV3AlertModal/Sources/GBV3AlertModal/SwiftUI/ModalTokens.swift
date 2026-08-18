@@ -2,6 +2,35 @@ import CoreText
 import SwiftUI
 import UIKit
 
+extension ModalFont {
+    /// Temporary legacy adapter; Task 3 moves this UIKit conversion into Migration ownership.
+    init(_ uiFont: UIFont) {
+        let isSystem = uiFont.familyName == ".AppleSystemUIFont"
+            || uiFont.fontName.hasPrefix(".SFUI")
+        self.init(
+            family: isSystem ? .system : .custom(uiFont.fontName),
+            size: uiFont.pointSize,
+            weight: Self.weight(from: uiFont),
+            scalingPolicy: .fixed
+        )
+    }
+
+    private static func weight(from font: UIFont) -> Weight {
+        let value = (font.fontDescriptor.object(forKey: .traits) as? [UIFontDescriptor.TraitKey: Any])?[.weight] as? CGFloat ?? 0
+        switch value {
+        case ..<(-0.7): return .ultraLight
+        case ..<(-0.5): return .thin
+        case ..<(-0.2): return .light
+        case ..<0.115: return .regular
+        case ..<0.265: return .medium
+        case ..<0.35: return .semibold
+        case ..<0.48: return .bold
+        case ..<0.59: return .heavy
+        default: return .black
+        }
+    }
+}
+
 /// Design vocabulary for the SwiftUI alert modal (spec D8: `Properties` dissolves into tokens +
 /// `ButtonStyle`s, not per-call fields). Was a `static`-member `enum` transcribed by hand from the
 /// app's `Presentation.UiKit.V3AlertModal` preset while the prototype couldn't reach `Properties`
@@ -90,7 +119,7 @@ public struct ModalTokens: Sendable, Equatable {
     // Two stored properties sat here — `titleUIFont`/`subtitleUIFont`, "the FALLBACK font the title
     // floor measures with" — because `SwiftUI.Font` is opaque: renderable, not measurable, with no
     // `Font -> UIFont` direction to recover one from. That reason is unchanged and is why `ModalFont`
-    // stores the `UIFont` and derives the `Font`, rather than the other way round.
+    // stores a platform-neutral description and derives the SwiftUI `Font` at the view edge.
     //
     // What DID change is that they are no longer separately settable. `init(from: Properties)` set
     // both from the one `Properties.titleFont` and could not drift — but the memberwise `init` took
@@ -389,47 +418,6 @@ public struct ModalTokens: Sendable, Equatable {
     /// Compatibility accessor: the LEFT max inset. Same caveat as `contentPaddingV`.
     public var contentPaddingH: CGFloat { contentPadding.leftMax }
 
-    /// **The least height the title row may be given — rung 2's floor, in points.**
-    ///
-    /// `minimumScaleFactor` bounds how small SwiftUI draws the glyphs; this bounds how little room the
-    /// row is allocated, which is the other half of the same guarantee (measured: a title allocated
-    /// 64.7pt where its floor-scaled text needed 85.9pt simply lost the difference). Delegates to
-    /// `ModalLayout.titleFloorHeight`, the same measurement UIKit's rung 2 searches with.
-    ///
-    /// Measured at `contentMaxWidth` — the width the content column gives the row. For a HUGGING row
-    /// (`contentChildrenFillWidth == false`) the real width is narrower, so the floor comes out
-    /// slightly small; that errs toward less protection and never toward a too-tall row, which is the
-    /// only direction that could disturb a passing shape.
-    ///
-    /// **Takes the STYLED title.** It used to take a `String`, and the call site flattened the
-    /// `AttributedString` with `String(title.characters)` — discarding any per-run font, which `Text`
-    /// nonetheless draws. `titleFont.uiFont` is the fallback for runs stating no font of their own, not a
-    /// replacement for the ones that do.
-    func titleFloorHeight(for text: NSAttributedString) -> CGFloat {
-        ModalLayout.titleFloorHeight(text, fallback: titleFont.uiFont, width: contentMaxWidth)
-    }
-
-    /// Convenience for an unstyled title: every glyph in `titleFont.uiFont`. Same answer the `String`
-    /// overload used to give, kept because most callers (and every test fixture) have a plain string.
-    func titleFloorHeight(for text: String) -> CGFloat {
-        titleFloorHeight(for: NSAttributedString(string: text, attributes: [.font: titleFont.uiFont]))
-    }
-
-    /// **The subtitle row's floor: one line, the SwiftUI half of `ModalLayout.subtitleFloorHeight`.**
-    ///
-    /// UIKit holds this back with a `>=` on the scroll slot at `Priority.subtitleSlotFloor`; SwiftUI
-    /// carries it as the `minHeight` of `SwiftUIAlertModal.SubtitleSlot`, which is the same slot in
-    /// the same place. Same function, same number, so neither renderer can protect more of the body
-    /// text than the other.
-    ///
-    /// **It used to sit on the `Text` instead, where it was inert by construction** — a non-empty
-    /// label already reports at least one line, so a floor on the text could never bind. It binds on
-    /// the SLOT, whose whole job is to be given less than its content: measured in landscape, the
-    /// slot lands exactly here (19.09) while the text inside it is 38.33.
-    var subtitleFloorHeight: CGFloat {
-        ModalLayout.subtitleFloorHeight(font: subtitleFont.uiFont)
-    }
-
     init(
         cornerRadius: CGFloat,
         contentMaxWidth: CGFloat,
@@ -504,7 +492,7 @@ public struct ModalTokens: Sendable, Equatable {
     /// | `bannerRatio` | (a) | `bannerRatio` — `test_bannerRatio_comesFromProperties` |
     /// | `bannerMaxHeight` | (a) | `bannerMaxHeight` — `test_bannerMaxHeight_comesFromProperties`, `test_bannerMaxHeight_isNilWhenPropertiesSetsNoCap` |
     /// | `bannerFixedHeight` | (a) | `bannerFixedHeight` — `test_bannerFixedHeight_comesFromProperties` |
-    /// | `titleFont` | (a) | `titleFont`, a `ModalFont` — ONE value carrying both what SwiftUI draws (`.font`) and what `ModalLayout` measures (`.uiFont`) — `test_titleFont_comesFromProperties_viaFontBridge`. It stores the `UIFont` and derives the `Font` because `Font` can be rendered but not measured; `.uiFont` is the FALLBACK for title runs stating no font, not a second way to state one. |
+    /// | `titleFont` | (a) | `titleFont`, a descriptive `ModalFont`; legacy adaptation records its family, size, and weight before SwiftUI derives the rendered `Font`. |
     /// | `titleColor` | (a) | `palette.titleText` — `test_titleColor_comesFromProperties` |
     /// | `subtitleFont` | (a) | `subtitleFont` — `test_subtitleFont_comesFromProperties_viaFontBridge` |
     /// | `subtitleColor` | (a) | `palette.subtitleText` — `test_subtitleColor_comesFromProperties` |
