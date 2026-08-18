@@ -24,3 +24,5 @@ How should the existing `GBV3AlertModal` product behave after the package is spl
 - **C. Remove it:** require every consumer to choose backend-specific products immediately.
 
 Recommendation rationale: A honors the brief's compatibility allowance, separates migration timing from architectural extraction, and gives the SwiftUI-only example a product that proves it does not inherit UIKit or SnapKit transitively.
+
+**Answer:** A. Preserve `GBV3AlertModal` as an explicit compatibility umbrella during coexistence. *(auto-accepted — lazy/away)*
