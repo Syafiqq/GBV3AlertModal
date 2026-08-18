@@ -1,4 +1,5 @@
 import Foundation
+import SwiftUI
 import UIKit
 import XCTest
 @testable import GBV3AlertModal
@@ -46,6 +47,17 @@ final class ModalTextTests: XCTestCase {
         let result = UIKitModalTextAdapter.split(text)
 
         XCTAssertEqual(result.plain, "Just plain text, no markup")
+        XCTAssertNil(result.attributed)
+    }
+
+    func test_swiftUIOnlyStylingDegradesToPlain() {
+        var text = AttributedString("Styled")
+        text.swiftUI.foregroundColor = .red
+        text.swiftUI.font = .headline
+
+        let result = UIKitModalTextAdapter.split(text)
+
+        XCTAssertEqual(result.plain, "Styled")
         XCTAssertNil(result.attributed)
     }
 }
