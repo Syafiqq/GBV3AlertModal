@@ -38,3 +38,13 @@ How should the misleading but Foundation-only `UIMinMaxEdgeInsets` type cross th
 Recommendation rationale: A makes Core vocabulary honest without coupling backend extraction to a consumer flag day; the alias can disappear with UIKit/Migration retirement.
 
 **Answer:** A. Add Core `MinMaxEdgeInsets` with a deprecated UIKit-side `UIMinMaxEdgeInsets` typealias. *(auto-accepted — lazy/away)*
+
+## Decision 4 — Font scaling semantics
+
+What Dynamic Type contract should the UIKit-free `ModalFont` expose?
+
+- **A. Explicit scaling policy with fixed-size default (Recommended):** model `.fixed` and an opt-in semantic relative-text-style policy; preserve current preset geometry by default and test both paths.
+- **B. Always scale:** interpret every system and custom font relative to a Dynamic Type text style, accepting broad geometry and snapshot changes.
+- **C. Fixed fonts only:** preserve current behavior and leave Dynamic Type support to a future API redesign.
+
+Recommendation rationale: A avoids falsely promising scaling for existing fixed custom fonts, keeps migration predictable, and still makes accessibility behavior explicit and extensible rather than accidental.
