@@ -38,9 +38,10 @@ Migration, or SnapKit while preserving UIKit through an explicit compatibility s
 
 **Steps:**
 
-1. Add failing assertions that Core `ResolvedModal.ButtonAxis` is `.horizontal`/`.vertical`, that
-   the resolver is callable from a detached non-main-actor test context with Sendable stub inputs,
-   and that the Core declaration contains no UI-framework symbol.
+1. Add failing assertions that Core `ResolvedModal.ButtonAxis` is `.horizontal`/`.vertical`, plus a
+   synchronous `nonisolated` compile witness that calls the resolver with Sendable stub inputs. Do
+   not introduce `Task.detached` merely to demonstrate the absence of actor isolation. Add a purity
+   assertion that the Core declaration contains no UI-framework symbol.
 2. Move `ResolvedModal`, including `SubtitleKind` and `WidthResolution`, into Core. Replace
    `NSLayoutConstraint.Axis` with the neutral `ButtonAxis`; make all nested values `Sendable` and
    `Equatable`.
@@ -126,17 +127,20 @@ Migration, or SnapKit while preserving UIKit through an explicit compatibility s
 - Update `SwiftUI/SwiftUIAlertModal.swift`, `SwiftUIModalRenderer+BespokeViews.swift`, and
   `SwiftUIModalRenderer+InputViews.swift`.
 - Add `Migration/LegacyAttributedTextAdapter.swift`.
-- Update `Executor/Descriptors/ModalText.swift` and its mapping call sites.
+- Split `Executor/Descriptors/ModalText.swift` into a Core-neutral descriptor contract, a
+  UIKit-local renderer adapter, and the cross-backend Migration adapter.
 - Add `Tests/GBV3AlertModalTests/Migration/LegacyAttributedTextAdapterTests.swift`.
 
 **Steps:**
 
 1. Add failing adapter tests for legacy foreground color and font conversion, mixed runs, absent
    attributes, and precedence when explicit SwiftUI and UIKit scopes overlap.
-2. Convert legacy `NSAttributedString`/UIKit scopes at the Migration boundary into a SwiftUI-scoped
-   `AttributedString`. Preserve explicit SwiftUI values when both scopes provide the same semantic
-   attribute.
-3. Make all SwiftUI views render the already-normalized `AttributedString` directly. Delete the
+2. Keep descriptor payloads in Core as Foundation `AttributedString` without importing either UI
+   framework. UIKit's standalone adapter may read Foundation/UIKit attributes and degrade unknown
+   SwiftUI-only scopes to plain text; it must not import SwiftUI. Cross-backend Migration converts
+   legacy `NSAttributedString`/UIKit scopes into SwiftUI-scoped attributes and preserves explicit
+   SwiftUI values when both scopes provide the same semantic attribute.
+3. Make all SwiftUI views render the Core `AttributedString` directly. Delete the
    bridge if it becomes an identity function; otherwise rename it to describe SwiftUI-only work.
 4. Update catalog captions and historical comments that claim UIKit scope handling lives in SwiftUI.
 5. Run adapter tests, `ModalTextTests`, affected rendering tests, and the generic example build.
@@ -187,8 +191,11 @@ Migration, or SnapKit while preserving UIKit through an explicit compatibility s
    deprecated `UIMinMaxEdgeInsets` alias.
 2. Introduce the neutral name and migrate Core/SwiftUI code to it. Keep the old name only in UIKit,
    Migration, and compatibility-facing tests/examples.
-3. Move files with no semantic edits. Update the existing single target's `path`/`sources` only as
-   needed to compile both old and new roots; do not declare the final target graph yet.
+3. Move files with no semantic edits. Temporarily set the existing target's `path` to
+   `Library/GBV3AlertModal/Sources` and give it explicit `sources` entries for the legacy
+   `GBV3AlertModal` root and new `GBV3AlertModalCore` root; update the resource path accordingly.
+   SwiftPM cannot compile sources outside a target path, so do not point the target at one child
+   directory while trying to include its sibling. Do not declare the final target graph yet.
 4. Run the full library tests and generic example build. Review `git diff --summary` to confirm moves
    are detected as moves and no behavior changed.
 5. Commit: `Move platform-neutral modal sources`.
@@ -209,9 +216,11 @@ Migration, or SnapKit while preserving UIKit through an explicit compatibility s
    `WindowModalRenderer` with UIKit integration.
 2. Declare four backend products and targets. Core has no UI dependency; SwiftUI depends only on
    Core; UIKit depends on Core + SnapKit; Migration depends on Core + SwiftUI + UIKit.
-3. Add a tiny `GBV3AlertModal` compatibility target/product that re-exports split modules and is
-   explicitly marked transitional. Verify existing `import GBV3AlertModal` source continues to
-   compile before migrating the example.
+3. Add a tiny `GBV3AlertModal` compatibility target/product that transitionally uses
+   `@_exported import` to preserve the old single-import surface. This underscored attribute is an
+   explicit accepted risk limited to the disposable compatibility target; backend modules must not
+   use it. Add a compile fixture that imports only `GBV3AlertModal` and exercises representative
+   Core, SwiftUI, UIKit, and Migration APIs before migrating the example.
 4. Give SwiftUI and UIKit separate resource catalogs and `Bundle.module` resolution. Duplicate the
    close asset if both need it rather than sharing a backend bundle.
 5. Run `swift package describe --type json` and inspect the dependency graph. Then build each scheme
@@ -226,7 +235,8 @@ Migration, or SnapKit while preserving UIKit through an explicit compatibility s
 
 - Update `Package.swift` with Core, SwiftUI, UIKit, and Migration test targets.
 - Move tests from `Tests/GBV3AlertModalTests/` into non-overlapping target directories.
-- Update the example Xcode project, imports, schemes, and `Script/test-lib.sh`.
+- Update the example Xcode project, imports, schemes, and `Script/test-lib.sh`; add a distinct
+  SwiftUI-only example target/scheme rather than treating the mixed app as boundary proof.
 - Add architecture tests for module imports, symbols, dependencies, field coverage, and resources.
 
 **Steps:**
@@ -235,8 +245,11 @@ Migration, or SnapKit while preserving UIKit through an explicit compatibility s
    SwiftUI; legacy layout/renderer tests to UIKit; adapters and cross-backend parity to Migration.
 2. Ensure Core tests do not import UI frameworks and nonisolated resolver tests run outside the main
    actor. Keep SwiftUI renderer tests `@MainActor` where required by actual isolation.
-3. Change the SwiftUI catalog/example target to import only Core + SwiftUI backend products. Keep
-   UIKit gallery code in a separate target or explicit compatibility path.
+3. Keep the existing mixed gallery app on the compatibility product for coexistence. Add a distinct
+   SwiftUI-only application target and shared scheme containing the SwiftUI catalog sources but no
+   UIKit gallery sources; link only Core + SwiftUI products and import only those modules. Move
+   genuinely shared, framework-neutral example fixtures into a separate shared source group rather
+   than duplicating them.
 4. Add gates for all ten architecture requirements in the design, including resource resolution and
    the 70 unique SwiftUI catalog entries. Source scanning supplements rather than replaces builds.
 5. Update test scripts to name each scheme explicitly and fail if an expected suite executes zero
@@ -258,8 +271,9 @@ Migration, or SnapKit while preserving UIKit through an explicit compatibility s
 
 1. Make the script create a disposable directory/worktree under `/tmp`; never delete or rewrite the
    developer's current checkout.
-2. Apply the manifest variant that exposes only Core + SwiftUI and the SwiftUI-only example. Ensure
-   package resolution does not include SnapKit and compile logs contain no UIKit/Migration target.
+2. Apply the manifest variant that removes the SnapKit package declaration and exposes only Core +
+   SwiftUI. Build the separate SwiftUI-only example scheme against that variant. Ensure dependency
+   resolution omits SnapKit and compile logs contain no UIKit/Migration/compatibility target.
 3. Build and test Core, SwiftUI, and the SwiftUI-only example under Swift 6 strict concurrency.
 4. Add assertions that fail if forbidden source directories, products, resources, or dependencies
    participate. Verify the script fails when a deliberate temporary SwiftUI-to-UIKit dependency is
@@ -299,3 +313,31 @@ Migration, or SnapKit while preserving UIKit through an explicit compatibility s
   tests, and 70-entry catalog.
 - No Core or SwiftUI production file needs modification in the future UIKit/Migration deletion
   commit.
+
+## Adversarial plan review
+
+**Review result:** GO after corrections in this revision.
+
+Findings resolved:
+
+1. **No-go — invalid intermediate SwiftPM source layout.** A target cannot include a sibling outside
+   its `path`. Task 6 now moves the temporary target path to the common `Sources` parent and lists
+   both child roots explicitly.
+2. **No-go — product composition did not prove old import compatibility.** Task 7 now specifies a
+   transitional `@_exported import` shim, records the underscored-attribute risk, and requires a
+   compile fixture that imports only the legacy module.
+3. **No-go — the mixed example could link UIKit while appearing SwiftUI-pure.** Tasks 8–9 now require
+   a separate SwiftUI-only application target/scheme and build it with UIKit, Migration,
+   compatibility, and SnapKit absent.
+4. **No-go — attributed-text ownership could force UIKit to import SwiftUI or Core to import a UI
+   framework.** Task 4 now keeps Foundation `AttributedString` in Core, a Foundation/UIKit-only
+   adapter in UIKit, and true cross-backend scope conversion in Migration.
+5. **Medium — a detached task was unnecessary proof of resolver isolation.** Task 1 now uses a
+   synchronous nonisolated compile witness, avoiding unstructured concurrency in the test.
+
+Accepted risk:
+
+- The compatibility shim uses underscored `@_exported import`. It is confined to a disposable
+  coexistence target, covered by a source-compatibility compile fixture, and removed with the legacy
+  compatibility product. Replacing it with wrappers/typealiases for the entire public API would add
+  a larger and more drift-prone transitional surface.
