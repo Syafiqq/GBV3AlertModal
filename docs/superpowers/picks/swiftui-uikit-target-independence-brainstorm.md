@@ -36,3 +36,5 @@ How should the misleading but Foundation-only `UIMinMaxEdgeInsets` type cross th
 - **C. Replace it separately in each backend:** use SwiftUI `EdgeInsets` and a UIKit-local min/max type, accepting duplicated range semantics and adapters.
 
 Recommendation rationale: A makes Core vocabulary honest without coupling backend extraction to a consumer flag day; the alias can disappear with UIKit/Migration retirement.
+
+**Answer:** A. Add Core `MinMaxEdgeInsets` with a deprecated UIKit-side `UIMinMaxEdgeInsets` typealias. *(auto-accepted — lazy/away)*
