@@ -249,6 +249,8 @@ Migration, or SnapKit while preserving UIKit through an explicit compatibility s
   `GBV3AlertModalMigration`, and compatibility `GBV3AlertModal`.
 - Move backend files without semantic edits.
 - Split `Assets.xcassets` into backend-owned catalogs and add target-local bundle access helpers.
+- Temporarily update the existing `GBV3AlertModalTests` target dependencies and test imports to
+  access declarations through their owning backend modules.
 
 **Steps:**
 
@@ -258,25 +260,34 @@ Migration, or SnapKit while preserving UIKit through an explicit compatibility s
    corrected in a separate preceding commit before continuing this task.
 2. Declare four backend products and targets. Core has no UI dependency; SwiftUI depends only on
    Core; UIKit depends on Core + SnapKit; Migration depends on Core + SwiftUI + UIKit.
-3. Add a tiny `GBV3AlertModal` compatibility target/product that transitionally uses
+3. Before replacing the implementation module with the compatibility shim, make the existing
+   aggregate `GBV3AlertModalTests` target depend directly on Core, SwiftUI, UIKit, and Migration.
+   Replace each `@testable import GBV3AlertModal` with `@testable` imports of only the module or
+   modules that own the internals exercised by that test file. Keep this temporary aggregate target
+   until Task 9 assigns the files to separate test targets; do not rely on the compatibility shim to
+   re-export another module's internal declarations.
+4. Add a tiny `GBV3AlertModal` compatibility target/product that transitionally uses
    `@_exported import` to preserve the old single-import surface. This underscored attribute is an
    explicit accepted risk limited to the disposable compatibility target; backend modules must not
    use it. Add a compile fixture that imports only `GBV3AlertModal` and exercises representative
    Core, SwiftUI, UIKit, and Migration APIs before migrating the example.
-4. Give SwiftUI and UIKit separate resource catalogs and `Bundle.module` resolution. Duplicate the
+5. Give SwiftUI and UIKit separate resource catalogs and `Bundle.module` resolution. Duplicate the
    close asset if both need it rather than sharing a backend bundle.
-5. Run `swift package describe --type json` and inspect the dependency graph. Then build each scheme
+6. Run `swift package describe --type json` and inspect the dependency graph. Then build each scheme
    for a generic iOS Simulator, including Core and SwiftUI independently. Confirm only UIKit has a
    SnapKit edge, and compare the result with Task 7's disposable boundary-validation build.
-6. Run the full existing library suite through the compatibility product and the example build.
-7. Commit: `Split alert modal package targets`.
+7. Run the full existing library suite through the temporary backend-aware aggregate test target,
+   run the compatibility-only compile fixture, and build the example through the compatibility
+   product.
+8. Commit: `Split alert modal package targets`.
 
 ## Task 9 — Split tests and the example by ownership
 
 **Files:**
 
 - Update `Package.swift` with Core, SwiftUI, UIKit, and Migration test targets.
-- Move tests from `Tests/GBV3AlertModalTests/` into non-overlapping target directories.
+- Move tests from the temporary aggregate `Tests/GBV3AlertModalTests/` target into non-overlapping
+  target directories.
 - Update the example Xcode project, imports, schemes, and `Script/test-lib.sh`; add a distinct
   SwiftUI-only example target/scheme rather than treating the mixed app as boundary proof.
 - Add architecture tests for module imports, symbols, dependencies, field coverage, and resources.
