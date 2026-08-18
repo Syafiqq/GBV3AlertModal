@@ -16,7 +16,7 @@ final class CorePurityTests: XCTestCase {
     }
 
     private var coreSwiftFiles: [URL] {
-        let core = packageRoot.appendingPathComponent("Sources/GBV3AlertModal/Core")
+        let core = packageRoot.appendingPathComponent("Sources/GBV3AlertModalCore")
         guard let e = FileManager.default.enumerator(at: core, includingPropertiesForKeys: nil)
         else { return [] }
         return e.compactMap { $0 as? URL }.filter { $0.pathExtension == "swift" }
@@ -44,7 +44,7 @@ final class CorePurityTests: XCTestCase {
 
     func testResolvedModalDeclarationContainsNoUIFrameworkSymbols() throws {
         let file = packageRoot.appendingPathComponent(
-            "Sources/GBV3AlertModal/Core/ResolvedModal.swift"
+            "Sources/GBV3AlertModalCore/ResolvedModal.swift"
         )
         let source = try String(contentsOf: file, encoding: .utf8)
         let forbidden = ["UIKit", "SwiftUI", "NSLayoutConstraint", "UIView", "UIStackView"]

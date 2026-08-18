@@ -116,14 +116,14 @@ public struct ModalTokens: Sendable, Equatable {
     ///    keeps the content at its stated 256. A rigid `.padding()` cannot do that;
     /// 3. the LEFT/RIGHT distinction, for the same reason as (1).
     ///
-    /// `UIMinMaxEdgeInsets` is carried as-is rather than remodelled, for the same reason
+    /// `MinMaxEdgeInsets` is carried as-is rather than remodelled, for the same reason
     /// `AlertModalScaffold.buttonAxis` speaks `NSLayoutConstraint.Axis`: it is the exact type
     /// `Properties.padding` speaks, and a parallel SwiftUI vocabulary would be a second thing to
     /// keep in sync. `contentPaddingV`/`contentPaddingH` survive below as computed accessors.
     ///
     /// The `AlertModalScaffold` counterpart of the priority tiers, and its ONE stated limit, are
     /// documented on `AlertModalScaffold.card`.
-    public var contentPadding: UIMinMaxEdgeInsets
+    public var contentPadding: MinMaxEdgeInsets
 
     /// Whether the title/subtitle/button rows span the content width or hug their own content —
     /// `ContentProperty.childShouldMatchParent`, which UIKit applies as
@@ -302,7 +302,7 @@ public struct ModalTokens: Sendable, Equatable {
         // and equal min and max reproduce EXACTLY what the single-number `contentPaddingV: 24` /
         // `contentPaddingH: 32` did (a rigid 24/32 inset that never compresses). Callers with no
         // `Properties` therefore see no change from this field's split.
-        contentPadding: UIMinMaxEdgeInsets(
+        contentPadding: MinMaxEdgeInsets(
             top: (24, 24), left: (32, 32), bottom: (24, 24), right: (32, 32)
         ),
         // `false`, matching UIKit's own default: `svContentContainer.alignment` is `.fill` only when
@@ -374,7 +374,7 @@ public struct ModalTokens: Sendable, Equatable {
         contentMaxWidth: CGFloat,
         cardMarginV: CGFloat,
         cardMarginH: CGFloat,
-        contentPadding: UIMinMaxEdgeInsets,
+        contentPadding: MinMaxEdgeInsets,
         contentChildrenFillWidth: Bool,
         bannerRatio: CGFloat? = nil,
         bannerMaxHeight: CGFloat?,

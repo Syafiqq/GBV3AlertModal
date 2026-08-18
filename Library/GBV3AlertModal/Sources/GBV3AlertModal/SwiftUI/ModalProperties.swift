@@ -11,10 +11,9 @@ import SwiftUI
 ///
 /// - UIKit banner ratio and fixed-height constraints are not carried over. They duplicate image
 ///   metadata or fight SwiftUI's proposal-based layout.
-/// - **`padding` reuses `UIMinMaxEdgeInsets`.** SwiftUI has no min/max inset type, so this one is
-///   genuinely ours either way — it is `import Foundation`, eight `let CGFloat`s, already
-///   `Sendable`. The `UI` prefix is a misnomer it has carried since before this work; renaming it
-///   would be a source break on a public type for a cosmetic gain.
+/// - **`padding` reuses `MinMaxEdgeInsets`.** SwiftUI has no min/max inset type, so this one is
+///   genuinely platform-neutral: eight `let CGFloat`s, with the UIKit-era spelling retained as a
+///   deprecated compatibility alias.
 /// - **`shadowColor`, `borderColor`, `borderDisableColor` become `Color?`, not `CGColor?`.**
 ///   `CGColor` is CoreGraphics rather than UIKit so it could have been kept, but a SwiftUI caller
 ///   writing one colour as `Color` and the next as `CGColor` is exactly the seam this type exists
@@ -41,7 +40,7 @@ public struct ModalProperties: Sendable {
     public var contentProperty: ContentProperty?
 
     public var margin: EdgeInsets?
-    public var padding: UIMinMaxEdgeInsets?
+    public var padding: MinMaxEdgeInsets?
 
     public var banner: ModalBannerConfiguration?
     public var titleFont: ModalFont?
@@ -65,7 +64,7 @@ public struct ModalProperties: Sendable {
         overlayColor: Color? = nil,
         contentProperty: ContentProperty? = nil,
         margin: EdgeInsets? = nil,
-        padding: UIMinMaxEdgeInsets? = nil,
+        padding: MinMaxEdgeInsets? = nil,
         banner: ModalBannerConfiguration? = nil,
         titleFont: ModalFont? = nil,
         titleColor: Color? = nil,

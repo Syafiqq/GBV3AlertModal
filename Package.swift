@@ -28,9 +28,9 @@ let package = Package(
             dependencies: [
                 "SnapKit"
             ],
-            path: "Library/GBV3AlertModal/Sources/GBV3AlertModal",
+            path: "Library/GBV3AlertModal/Sources",
             resources: [
-                .process("Assets.xcassets"),
+                .process("GBV3AlertModal/Assets.xcassets"),
             ],
             // No swiftSettings needed: tools-version 6.0 makes Swift 6 the default language mode
             // for every target here, so strict-concurrency violations are compile ERRORS.
