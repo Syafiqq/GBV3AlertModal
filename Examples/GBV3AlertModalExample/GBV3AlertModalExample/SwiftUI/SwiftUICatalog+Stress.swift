@@ -10,7 +10,7 @@
 //  Nothing here re-types a string or a `Properties`. The content constants come
 //  from `StressCatalog` itself (which is why that file's shared block is
 //  internal), and the styling comes from `StressCatalog.properties(banner:orientation:)`
-//  through the `ModalStyle` tokens registered in `SwiftUICatalogPresets.stressPresets`.
+//  through the renderer-neutral `ModalButtonOrientation` carried by each descriptor.
 //  A stress matrix whose two halves disagree because someone retyped a string is
 //  a matrix that measures the typing, not the layout.
 //
@@ -25,16 +25,6 @@ import Foundation
 import Foundation
 import GBV3AlertModalCore
 import GBV3AlertModalSwiftUI
-
-// MARK: - Style tokens
-
-/// Only the horizontal stress cases need presets beyond `.standard`; their three
-/// names preserve the catalog's intent while sharing the same horizontal configuration.
-extension ModalStyle {
-    static let stressHorizontal = ModalStyle("stress.horizontal")
-    static let stressWideBannerHorizontal = ModalStyle("stress.wideBanner.horizontal")
-    static let stressTallBannerHorizontal = ModalStyle("stress.tallBanner.horizontal")
-}
 
 // MARK: - Divergences carried by these entries
 
@@ -190,7 +180,7 @@ extension SwiftUICatalog {
                     primary: CatalogFixtures.primaryFull,
                     secondary: CatalogFixtures.secondaryFull,
                     closeOnTapOverlay: true,
-                    style: .stressHorizontal
+                    buttonOrientation: .horizontal
                 )
             },
             SwiftUICatalogEntry.renderable(
@@ -253,7 +243,7 @@ extension SwiftUICatalog {
                     primary: CatalogFixtures.primaryWrapped,
                     secondary: CatalogFixtures.secondaryWrapped,
                     closeOnTapOverlay: true,
-                    style: .stressTallBannerHorizontal
+                    buttonOrientation: .horizontal
                 )
             }
         ]
@@ -322,7 +312,7 @@ extension SwiftUICatalog {
                     primary: CatalogFixtures.primaryWrapped,
                     secondary: CatalogFixtures.secondaryWrapped,
                     closeOnTapOverlay: true,
-                    style: .stressWideBannerHorizontal
+                    buttonOrientation: .horizontal
                 )
             },
             SwiftUICatalogEntry.renderable(
@@ -335,7 +325,7 @@ extension SwiftUICatalog {
                     primary: CatalogFixtures.primaryWrapped,
                     secondary: CatalogFixtures.secondaryWrapped,
                     closeOnTapOverlay: true,
-                    style: .stressHorizontal
+                    buttonOrientation: .horizontal
                 )
             },
             SwiftUICatalogEntry.renderable(
@@ -430,7 +420,7 @@ extension SwiftUICatalog {
                     secondary: CatalogFixtures.secondaryWrapped,
                     closeOnTapOverlay: true,
                     showCloseButton: true,
-                    style: .stressHorizontal
+                    buttonOrientation: .horizontal
                 )
             },
             SwiftUICatalogEntry.renderable(
@@ -445,7 +435,7 @@ extension SwiftUICatalog {
                     primary: CatalogFixtures.primaryWrapped,
                     secondary: CatalogFixtures.secondaryWrapped,
                     closeOnTapOverlay: true,
-                    style: .stressWideBannerHorizontal
+                    buttonOrientation: .horizontal
                 )
             }
         ]

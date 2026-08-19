@@ -38,6 +38,8 @@ private enum CrossModuleAPIInventory {
         .publicCore("MinMaxEdgeInsets", "SwiftUI, UIKit, Migration", "Neutral layout value"),
         .publicCore("ModalText", "Migration", "Attributed-text degradation policy"),
         .publicCore("ModalStyle", "SwiftUI, UIKit, Migration", "Renderer style key"),
+        .publicCore("ModalButtonStyle", "SwiftUI, UIKit", "Per-call button appearance selector"),
+        .publicCore("ModalButtonOrientation", "SwiftUI, UIKit", "Per-call button layout selector"),
         .publicCore("StandardAlertContent", "SwiftUI, UIKit", "Standard content projection"),
         .publicCore("AlertDialog", "SwiftUI, UIKit, Migration", "Supported descriptor"),
         .publicCore("PopupDialog", "SwiftUI, UIKit, Migration", "Supported descriptor"),

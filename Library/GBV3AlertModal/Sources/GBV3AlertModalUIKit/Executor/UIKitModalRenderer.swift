@@ -23,6 +23,7 @@ public final class UIKitModalRenderer: ModalRenderer {
     /// a NAME — the mapping to real `Properties` is necessarily renderer-side.
     /// `SwiftUIModalRenderer` holds the identical map, seeded and read the identical way.
     private var styleProperties: [ModalStyle: GBAlertModal.Properties] = [:]
+    private var buttonActionStyles: [ModalButtonStyle: GBAlertModal.ActionStyle] = [:]
     private let windowProvider: (() -> UIWindow?)?
 
     /// Called when `present(_:id:resolve:)` is handed a descriptor kind with NO registered factory —
@@ -45,6 +46,7 @@ public final class UIKitModalRenderer: ModalRenderer {
         // The existing init SEEDS the style map — the signature is unchanged, so this is not a
         // breaking change and every existing consumer gets `.standard`/`.popup` for free.
         styleProperties[.standard] = alertProperties
+        seedButtonStyles(from: alertProperties)
         if let popupProperties {
             styleProperties[.popup] = popupProperties
         }
@@ -115,6 +117,40 @@ public final class UIKitModalRenderer: ModalRenderer {
     /// style resolves to.
     public func register(style: ModalStyle, properties: GBAlertModal.Properties) {
         styleProperties[style] = properties
+        if style == .standard { seedButtonStyles(from: properties) }
+    }
+
+    /// Registers the UIKit theme used when a descriptor selects this button style.
+    public func register(buttonStyle: ModalButtonStyle, actionStyle: GBAlertModal.ActionStyle) {
+        buttonActionStyles[buttonStyle] = actionStyle
+    }
+
+    private func seedButtonStyles(from properties: GBAlertModal.Properties) {
+        if let style = properties.primaryActionStyle { seed(style) }
+        if let style = properties.secondaryActionStyle { seed(style) }
+    }
+
+    private func seed(_ actionStyle: GBAlertModal.ActionStyle) {
+        switch actionStyle {
+        case .capsule: buttonActionStyles[.capsule] = actionStyle
+        case .capsuleOutlined: buttonActionStyles[.capsuleOutlined] = actionStyle
+        case .plain: buttonActionStyles[.plain] = actionStyle
+        case .obliqueBottomLeft: buttonActionStyles[.oblique] = actionStyle
+        }
+    }
+
+    func resolvedProperties(for descriptor: StandardAlertContent) -> GBAlertModal.Properties? {
+        guard let properties = properties(for: descriptor.style) else { return nil }
+        let primary = descriptor.primaryButtonStyle.flatMap { buttonActionStyles[$0] }
+        let secondary = descriptor.secondaryButtonStyle.flatMap { buttonActionStyles[$0] }
+        let orientation = descriptor.buttonOrientation.map {
+            $0 == .horizontal ? NSLayoutConstraint.Axis.horizontal : .vertical
+        }
+        return properties.copy(
+            buttonActionOrientation: orientation,
+            primaryActionStyle: primary,
+            secondaryActionStyle: secondary
+        )
     }
 
     /// The `Properties` a descriptor carrying `style` will actually be rendered with.
@@ -145,7 +181,7 @@ public final class UIKitModalRenderer: ModalRenderer {
         // retain cycle. It can only ever run from `present`/`rebuild`, i.e. while `self` is alive.
         register(type) { [weak self] descriptor, resolve in
             (
-                self?.properties(for: descriptor.style),
+                self?.resolvedProperties(for: descriptor),
                 AlertHolder.make(for: descriptor, resolve: resolve)
             )
         }

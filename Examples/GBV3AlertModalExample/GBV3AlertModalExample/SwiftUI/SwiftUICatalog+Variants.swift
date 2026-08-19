@@ -161,7 +161,7 @@ extension SwiftUICatalog {
                     subtitle: "primaryActionStyle: .capsule(GalleryPresets.capsuleTheme)",
                     primary: "Capsule Button",
                     closeOnTapOverlay: true,
-                    style: .variantCapsule
+                    primaryButtonStyle: .capsule
                 )
             },
             SwiftUICatalogEntry.renderable(
@@ -173,7 +173,7 @@ extension SwiftUICatalog {
                         + ".capsuleOutlined(GalleryPresets.capsuleOutlinedTheme)",
                     primary: "Capsule Outlined",
                     closeOnTapOverlay: true,
-                    style: .variantCapsuleOutlined
+                    primaryButtonStyle: .capsuleOutlined
                 )
             },
             SwiftUICatalogEntry.renderable(
@@ -184,7 +184,7 @@ extension SwiftUICatalog {
                     subtitle: "primaryActionStyle: .plain(GalleryPresets.plainTheme)",
                     primary: "Plain Button",
                     closeOnTapOverlay: true,
-                    style: .variantPlain
+                    primaryButtonStyle: .plain
                 )
             },
             SwiftUICatalogEntry.renderable(
@@ -196,7 +196,7 @@ extension SwiftUICatalog {
                         + ".obliqueBottomLeft(GalleryPresets.obliqueBottomLeftTheme)",
                     primary: "Oblique Button",
                     closeOnTapOverlay: true,
-                    style: .variantOblique
+                    primaryButtonStyle: .oblique
                 )
             }
         ]

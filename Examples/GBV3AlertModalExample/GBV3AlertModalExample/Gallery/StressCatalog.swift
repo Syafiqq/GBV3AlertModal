@@ -133,9 +133,8 @@ extension StressCatalog {
 // MARK: - Entry builder
 
 extension StressCatalog {
-    /// INTERNAL for the same reason the strings are: `SwiftUICatalogPresets.stressPresets`
-    /// registers the SwiftUI twin's `ModalStyle` tokens from THIS function, so both galleries
-    /// draw the same shape with one `Properties` value rather than two transcriptions of it.
+    /// INTERNAL for the same reason the strings are: the SwiftUI catalog mirrors the same
+    /// orientation on its descriptor, keeping both galleries on the same case definition.
     static func properties(banner: BannerKind, orientation: NSLayoutConstraint.Axis) -> GBAlertModal.Properties {
         let base = orientation == .horizontal
             ? GalleryPresets.properties.copy(buttonActionOrientation: .horizontal)

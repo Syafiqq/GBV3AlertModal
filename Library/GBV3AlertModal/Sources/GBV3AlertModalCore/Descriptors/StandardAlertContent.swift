@@ -33,7 +33,17 @@ public protocol StandardAlertContent {
     var secondary: String? { get }
     var closeOnTapOverlay: Bool { get }
     var showCloseButton: Bool { get }
+    /// Optional per-call overrides. `nil` preserves the selected preset's configuration.
+    var primaryButtonStyle: ModalButtonStyle? { get }
+    var secondaryButtonStyle: ModalButtonStyle? { get }
+    var buttonOrientation: ModalButtonOrientation? { get }
     /// The style preset this descriptor asks for. Renderers resolve it through their own
     /// style→`Properties` map and fall back to `.standard` when it is unregistered.
     var style: ModalStyle { get }
+}
+
+public extension StandardAlertContent {
+    var primaryButtonStyle: ModalButtonStyle? { nil }
+    var secondaryButtonStyle: ModalButtonStyle? { nil }
+    var buttonOrientation: ModalButtonOrientation? { nil }
 }

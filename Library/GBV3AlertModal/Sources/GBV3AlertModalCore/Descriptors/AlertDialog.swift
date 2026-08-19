@@ -25,6 +25,9 @@ public struct AlertDialog: ModalDescriptor, StandardAlertContent, ButtonEnableme
     public var secondaryEnabled: Bool
     public var closeOnTapOverlay: Bool
     public var showCloseButton: Bool
+    public var primaryButtonStyle: ModalButtonStyle?
+    public var secondaryButtonStyle: ModalButtonStyle?
+    public var buttonOrientation: ModalButtonOrientation?
     /// Which registered style preset renders this dialog. Defaults to `.standard` in BOTH
     /// initializers, so every existing call site keeps its exact behaviour. An unregistered style
     /// falls back to `.standard` rather than failing — see the renderers' `properties(for:)`.
@@ -41,6 +44,9 @@ public struct AlertDialog: ModalDescriptor, StandardAlertContent, ButtonEnableme
         secondaryEnabled: Bool = true,
         closeOnTapOverlay: Bool = false,
         showCloseButton: Bool = false,
+        primaryButtonStyle: ModalButtonStyle? = nil,
+        secondaryButtonStyle: ModalButtonStyle? = nil,
+        buttonOrientation: ModalButtonOrientation? = nil,
         style: ModalStyle = .standard
     ) {
         self.init(
@@ -53,6 +59,9 @@ public struct AlertDialog: ModalDescriptor, StandardAlertContent, ButtonEnableme
             secondaryEnabled: secondaryEnabled,
             closeOnTapOverlay: closeOnTapOverlay,
             showCloseButton: showCloseButton,
+            primaryButtonStyle: primaryButtonStyle,
+            secondaryButtonStyle: secondaryButtonStyle,
+            buttonOrientation: buttonOrientation,
             style: style
         )
     }
@@ -70,6 +79,9 @@ public struct AlertDialog: ModalDescriptor, StandardAlertContent, ButtonEnableme
         secondaryEnabled: Bool = true,
         closeOnTapOverlay: Bool = false,
         showCloseButton: Bool = false,
+        primaryButtonStyle: ModalButtonStyle? = nil,
+        secondaryButtonStyle: ModalButtonStyle? = nil,
+        buttonOrientation: ModalButtonOrientation? = nil,
         style: ModalStyle = .standard
     ) {
         self.image = image
@@ -81,6 +93,9 @@ public struct AlertDialog: ModalDescriptor, StandardAlertContent, ButtonEnableme
         self.secondaryEnabled = secondaryEnabled
         self.closeOnTapOverlay = closeOnTapOverlay
         self.showCloseButton = showCloseButton
+        self.primaryButtonStyle = primaryButtonStyle
+        self.secondaryButtonStyle = secondaryButtonStyle
+        self.buttonOrientation = buttonOrientation
         self.style = style
     }
 }

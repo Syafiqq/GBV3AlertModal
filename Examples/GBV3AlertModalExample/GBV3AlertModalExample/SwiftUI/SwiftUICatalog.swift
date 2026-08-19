@@ -16,7 +16,7 @@
 //  TWO MORE SECTIONS follow the 26, on the same terms:
 //   * `SwiftUICatalog+Stress.swift` — the 28 `StressCatalog` shapes, same names,
 //     same categories and same strings. Vertical cases use `.standard`; horizontal
-//     cases retain the orientation preset required by their shape.
+//     cases set `buttonOrientation: .horizontal` directly on their descriptor.
 //   * `SwiftUICatalog+Divergences.swift` — one dialog per RECORDED difference
 //     between the two backends, each captioned with what to look for and whether
 //     it is accepted or a defect. Twins live in `Gallery/DivergenceCatalog.swift`.
@@ -24,8 +24,8 @@
 //  CONTENT is transcribed from `DialogCatalog+*.swift` (which is itself mined
 //  from `docs/superpowers/specs/2026-07-21-dialog-catalog.md`); `[API]`
 //  placeholders are kept verbatim. STYLING defaults to the single SwiftUI-owned
-//  `.standard` preset; only shapes explicitly testing a non-standard action style
-//  or horizontal button orientation select another token.
+//  `.standard` preset; common action styles and orientation are per-call enum selectors. The
+//  custom red oblique treatment is the sole additional preset.
 //
 //  NOTHING here is tuned to make a shape look right. Where the SwiftUI render is
 //  KNOWN to differ from the UIKit one, the difference is declared as a
@@ -38,22 +38,13 @@ import GBV3AlertModalSwiftUI
 
 // MARK: - Style tokens
 
-/// The remaining style presets the catalog asks for. The library ships `.standard`;
-/// everything else is a CONSUMER preset, which is exactly the
+/// The sole additional style preset the catalog asks for. The library ships `.standard`;
+/// the custom red treatment is a CONSUMER preset, which is exactly the
 /// claim `ModalStyle` makes ("Extend it from the app side"). This block is that
 /// extension, written the way the real app would write it, and every token is
 /// mapped to native `ModalProperties` values in `SwiftUICatalogPresets`.
 extension ModalStyle {
     static let genieObliqueRed = ModalStyle("genie.obliqueRed")
-
-    // The four `GBAlertModal.ActionStyle` cases, as styles the Variants section asks for by
-    // name. The UIKit twins pass `properties.copy(primaryActionStyle:)` directly at the call
-    // site; a descriptor cannot carry a `Properties`, so each case is registered as its own
-    // style instead. Same four themes either way — see `SwiftUICatalogPresets`.
-    static let variantCapsule = ModalStyle("variant.capsule")
-    static let variantCapsuleOutlined = ModalStyle("variant.capsuleOutlined")
-    static let variantPlain = ModalStyle("variant.plain")
-    static let variantOblique = ModalStyle("variant.oblique")
 }
 
 // MARK: - Divergences
@@ -224,11 +215,11 @@ enum SwiftUICatalog {
     /// factories are portable between the two backends verbatim.
     static func makeRenderer() -> SwiftUIModalRenderer {
         let renderer = SwiftUIModalRenderer(alertProperties: SwiftUICatalogPresets.standard)
-        let presets = SwiftUICatalogPresets.stylePresets
-            + SwiftUICatalogPresets.stressPresets
-            + SwiftUICatalogPresets.variantPresets
-        for (style, properties) in presets {
+        for (style, properties) in SwiftUICatalogPresets.stylePresets {
             renderer.register(style: style, properties: properties)
+        }
+        for (selector, actionStyle) in SwiftUICatalogPresets.buttonStyles {
+            renderer.register(buttonStyle: selector, actionStyle: actionStyle)
         }
         renderer.registerBuiltInDescriptors()
         renderer.register(CatalogCustomSubtitleDialog.self, view: { descriptor, resolve in

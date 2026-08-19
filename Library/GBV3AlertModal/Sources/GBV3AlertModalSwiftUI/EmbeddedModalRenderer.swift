@@ -67,6 +67,7 @@ public final class SwiftUIModalRenderer: ObservableObject, ModalRenderer {
 
     private var registrations: [ObjectIdentifier: Any] = [:]
     private var styleProperties: [ModalStyle: ModalProperties] = [:]
+    private var buttonActionStyles: [ModalButtonStyle: ModalProperties.ActionStyle] = [:]
     var live: [ModalID: Live] = [:]   // internal for @testable assertions, as on the other renderers
 
     /// Same diagnostic hook, same default, as `UIKitModalRenderer`/`SwiftUIModalRenderer` — symmetric
@@ -81,6 +82,7 @@ public final class SwiftUIModalRenderer: ObservableObject, ModalRenderer {
     /// `register(_:factory:)`/`register(_:route:factory:)`.
     public init(alertProperties: ModalProperties) {
         styleProperties[.standard] = alertProperties
+        seedButtonStyles(from: alertProperties)
         registerStandard(AlertDialog.self)
     }
 
@@ -88,6 +90,42 @@ public final class SwiftUIModalRenderer: ObservableObject, ModalRenderer {
     /// existing renderers, so a consumer's preset table is portable across all three verbatim.
     public func register(style: ModalStyle, properties: ModalProperties) {
         styleProperties[style] = properties
+        if style == .standard { seedButtonStyles(from: properties) }
+    }
+
+    /// Registers the platform-native theme used when a descriptor selects this button style.
+    public func register(buttonStyle: ModalButtonStyle, actionStyle: ModalProperties.ActionStyle) {
+        buttonActionStyles[buttonStyle] = actionStyle
+    }
+
+    private func seedButtonStyles(from properties: ModalProperties) {
+        if let style = properties.primaryActionStyle { seed(style) }
+        if let style = properties.secondaryActionStyle { seed(style) }
+    }
+
+    private func seed(_ actionStyle: ModalProperties.ActionStyle) {
+        switch actionStyle {
+        case .capsule: buttonActionStyles[.capsule] = actionStyle
+        case .capsuleOutlined: buttonActionStyles[.capsuleOutlined] = actionStyle
+        case .plain: buttonActionStyles[.plain] = actionStyle
+        case .obliqueBottomLeft: buttonActionStyles[.oblique] = actionStyle
+        }
+    }
+
+    func resolvedProperties(for descriptor: StandardAlertContent) -> ModalProperties? {
+        guard var properties = properties(for: descriptor.style) else { return nil }
+        if let selector = descriptor.primaryButtonStyle,
+           let actionStyle = buttonActionStyles[selector] {
+            properties.primaryActionStyle = actionStyle
+        }
+        if let selector = descriptor.secondaryButtonStyle,
+           let actionStyle = buttonActionStyles[selector] {
+            properties.secondaryActionStyle = actionStyle
+        }
+        if let orientation = descriptor.buttonOrientation {
+            properties.buttonActionOrientation = orientation == .horizontal ? .horizontal : .vertical
+        }
+        return properties
     }
 
     /// Fallback: an unregistered style resolves to `.standard`, never traps, never renders un-styled.
@@ -242,7 +280,7 @@ public final class SwiftUIModalRenderer: ObservableObject, ModalRenderer {
     ) where D: ModalDescriptor & StandardAlertContent, D.Result == AlertDialog.Result {
         let factory: (D, @escaping (D.Result) -> Void) -> (ModalProperties?, ModalContent) =
             { [weak self] descriptor, _ in
-                (self?.properties(for: descriptor.style), ModalContent.make(for: descriptor))
+                (self?.resolvedProperties(for: descriptor), ModalContent.make(for: descriptor))
             }
         let route: (ModalAction) -> AlertDialog.Result = { action in
             switch action {
@@ -263,6 +301,9 @@ public final class SwiftUIModalRenderer: ObservableObject, ModalRenderer {
                 secondaryEnabled: state?.secondaryEnabled ?? true,
                 closeOnTapOverlay: descriptor.closeOnTapOverlay,
                 showCloseButton: descriptor.showCloseButton,
+                primaryButtonStyle: descriptor.primaryButtonStyle,
+                secondaryButtonStyle: descriptor.secondaryButtonStyle,
+                buttonOrientation: descriptor.buttonOrientation,
                 style: descriptor.style
             )
         }
