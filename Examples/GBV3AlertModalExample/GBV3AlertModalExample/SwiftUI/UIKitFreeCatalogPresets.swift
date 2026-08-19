@@ -66,28 +66,11 @@ enum SwiftUICatalogPresets {
         space: ModalProperties.ComponentSpace(banner: 8, title: 8, subtitle: 16, interButton: 8)
     )
 
-    /// The 17 style→preset pairs `SwiftUICatalog.dialogEntries` asks for by name (`.standard`/
-    /// `.standard` is already seeded by both renderers' `init`). The 4 `variant*` tokens
-    /// (`SwiftUICatalog+Variants.swift`) are a separate table, `variantPresets` below.
+    /// The remaining dialog-specific style→preset pairs. `.standard` is already seeded by the
+    /// renderer's initializer; button variants live in `variantPresets` below.
     static var stylePresets: [(ModalStyle, ModalProperties)] {
         [
-            (.geniePermissionAlert, permissionAlert),
-            (.genieObliqueRed, obliqueRed),
-            (.genieErrorBanner, errorBanner),
-            (.genieForceUpdateBanner, forceUpdateBanner),
-            (.genieCapBanner, capBanner),
-            (.genieQuizBanner, quizBanner),
-            (.genieTrialBanner, quizBanner),
-            (.genieAiNotesBanner, aiNotesBanner),
-            (.genieCreditDeduction, creditDeduction),
-            (.genieStreak, streak),
-            (.genieTimerBanner, timerBanner),
-            (.genieExitWorksheetBanner, exitWorksheetBanner),
-            (.genieRenameInput, renameInput),
-            (.genieDatePickerInput, datePickerInput),
-            (.genieBadgeUnlock, badgeUnlock),
-            (.genieBadgeMulti, badgeMulti),
-            (.genieBadgeDetail, badgeDetail)
+            (.genieObliqueRed, obliqueRed)
         ]
     }
 
@@ -151,41 +134,18 @@ enum SwiftUICatalogPresets {
     /// a plain passthrough rather than transcribing the theme a second time.
     static var variantOblique: ModalProperties { standard }
 
-    /// The 5 stress-matrix style→preset pairs `SwiftUICatalog.stressEntries` asks for by name
-    /// (`.standard`'s no-banner vertical shapes need no token of their own, same as the UIKit/SwiftUI
-    /// twins). These derive directly from the SwiftUI-owned base instead of reading the UIKit
-    /// stress catalog.
+    /// Only horizontal stress entries need a non-standard preset.
     static var stressPresets: [(ModalStyle, ModalProperties)] {
         [
-            (.stressHorizontal, stressProperties(hasBanner: false, orientation: .horizontal)),
-            (.stressWideBanner, stressProperties(hasBanner: true, orientation: .vertical)),
-            (.stressWideBannerHorizontal, stressProperties(hasBanner: true, orientation: .horizontal)),
-            (.stressTallBanner, stressProperties(hasBanner: true, orientation: .vertical)),
-            (.stressTallBannerHorizontal, stressProperties(hasBanner: true, orientation: .horizontal))
+            (.stressHorizontal, horizontalStressProperties),
+            (.stressWideBannerHorizontal, horizontalStressProperties),
+            (.stressTallBannerHorizontal, horizontalStressProperties)
         ]
     }
 
-    private static func stressProperties(hasBanner: Bool, orientation: Axis) -> ModalProperties {
+    private static var horizontalStressProperties: ModalProperties {
         var properties = standard
-        if orientation == .horizontal {
-            properties.buttonActionOrientation = .horizontal
-        }
-        if hasBanner {
-            properties.banner = ModalBannerConfiguration()
-        }
-        return properties
-    }
-
-    private static func popupBanner(maximumHeight: CGFloat) -> ModalProperties {
-        var properties = standard
-        properties.banner = ModalBannerConfiguration(maximumHeight: maximumHeight)
-        return properties
-    }
-
-    static var permissionAlert: ModalProperties {
-        var properties = standard
-        properties.padding = MinMaxEdgeInsets(top: (20, 20), left: (30, 30), bottom: (12, 12), right: (30, 30))
-        properties.space = ModalProperties.ComponentSpace(banner: 8, title: 12, subtitle: 20, interButton: 8)
+        properties.buttonActionOrientation = .horizontal
         return properties
     }
 
@@ -199,101 +159,6 @@ enum SwiftUICatalogPresets {
                 titleColor: .white, titleDisableColor: .white
             )
         )
-        return properties
-    }
-
-    static var errorBanner: ModalProperties { popupBanner(maximumHeight: 320) }
-    static var forceUpdateBanner: ModalProperties { popupBanner(maximumHeight: 320) }
-    static var capBanner: ModalProperties { popupBanner(maximumHeight: 216) }
-    static var quizBanner: ModalProperties { popupBanner(maximumHeight: 216) }
-    static var aiNotesBanner: ModalProperties { popupBanner(maximumHeight: 320) }
-
-    static var creditDeduction: ModalProperties {
-        var properties = standard
-        properties.titleFont = .system(size: 24, weight: .heavy)
-        return properties
-    }
-
-    static var streak: ModalProperties {
-        var properties = standard
-        properties.padding = MinMaxEdgeInsets(top: (20, 40), left: (20, 48), bottom: (20, 32), right: (20, 48))
-        properties.banner = ModalBannerConfiguration(maximumHeight: 168)
-        properties.space = ModalProperties.ComponentSpace(banner: 16, title: 12, subtitle: 24, interButton: 8)
-        return properties
-    }
-
-    static var timerBanner: ModalProperties {
-        var properties = standard
-        properties.padding = MinMaxEdgeInsets(top: (32, 32), left: (32, 32), bottom: (32, 32), right: (32, 32))
-        properties.banner = ModalBannerConfiguration(maximumHeight: 170)
-        return properties
-    }
-
-    static var exitWorksheetBanner: ModalProperties {
-        var properties = standard
-        properties.banner = ModalBannerConfiguration(maximumHeight: 144)
-        return properties
-    }
-
-    static var renameInput: ModalProperties {
-        var properties = standard
-        properties.padding = MinMaxEdgeInsets(top: (20, 32), left: (16, 32), bottom: (16, 16), right: (16, 32))
-        properties.titleFont = .system(size: 24, weight: .heavy)
-        properties.space = ModalProperties.ComponentSpace(banner: 8, title: 16, subtitle: 32, interButton: 8)
-        return properties
-    }
-
-    static var datePickerInput: ModalProperties {
-        var properties = standard
-        // `contentProperty` deliberately NOT overridden: widening it was tried (matched to the
-        // picker's own frame cap) and had no observable effect either way — the picker does not
-        // read this number in any direction (see `DatePickerModalView`'s doc). Left at `standard`'s
-        // real 256pt production column rather than kept at an unmotivated 320 that never did
-        // anything.
-        properties.padding = MinMaxEdgeInsets(top: (20, 32), left: (12, 40), bottom: (16, 16), right: (12, 40))
-        properties.titleFont = .system(size: 24, weight: .heavy)
-        properties.space = ModalProperties.ComponentSpace(banner: 8, title: 0, subtitle: 8, interButton: 8)
-        return properties
-    }
-
-    static var badgeUnlock: ModalProperties {
-        var properties = standard
-        properties.padding = MinMaxEdgeInsets(top: (20, 40), left: (20, 48), bottom: (20, 32), right: (20, 48))
-        properties.banner = ModalBannerConfiguration(maximumHeight: 144)
-        properties.space = ModalProperties.ComponentSpace(banner: 16, title: 12, subtitle: 24, interButton: 8)
-        return properties
-    }
-
-    static var badgeMulti: ModalProperties {
-        var properties = badgeUnlock
-        properties.banner = ModalBannerConfiguration(maximumHeight: 216)
-        return properties
-    }
-
-    static var badgeDetail: ModalProperties {
-        var properties = standard
-        properties.padding = MinMaxEdgeInsets(top: (20, 36), left: (20, 48), bottom: (20, 36), right: (20, 48))
-        properties.space = ModalProperties.ComponentSpace(banner: 0, title: 0, subtitle: 24, interButton: 0)
-        return properties
-    }
-
-    static var divergencePresets: [(ModalStyle, ModalProperties)] {
-        [
-            (.divergenceTallUncapped, divergenceTallUncapped),
-            (.divergenceBannerWide, popupBanner(maximumHeight: 256)),
-            (.divergenceNilPrimaryStyle, divergenceNilPrimaryStyle)
-        ]
-    }
-
-    private static var divergenceTallUncapped: ModalProperties {
-        var properties = standard
-        properties.banner = ModalBannerConfiguration(maximumHeight: nil)
-        return properties
-    }
-
-    private static var divergenceNilPrimaryStyle: ModalProperties {
-        var properties = standard
-        properties.primaryActionStyle = nil
         return properties
     }
 

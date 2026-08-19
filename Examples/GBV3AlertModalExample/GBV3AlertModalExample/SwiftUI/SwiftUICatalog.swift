@@ -15,17 +15,17 @@
 //
 //  TWO MORE SECTIONS follow the 26, on the same terms:
 //   * `SwiftUICatalog+Stress.swift` — the 28 `StressCatalog` shapes, same names,
-//     same categories, same strings, same `Properties`.
+//     same categories and same strings. Vertical cases use `.standard`; horizontal
+//     cases retain the orientation preset required by their shape.
 //   * `SwiftUICatalog+Divergences.swift` — one dialog per RECORDED difference
 //     between the two backends, each captioned with what to look for and whether
 //     it is accepted or a defect. Twins live in `Gallery/DivergenceCatalog.swift`.
 //
 //  CONTENT is transcribed from `DialogCatalog+*.swift` (which is itself mined
 //  from `docs/superpowers/specs/2026-07-21-dialog-catalog.md`); `[API]`
-//  placeholders are kept verbatim. STYLING comes from `GalleryPresets` — the
-//  citation-backed mirror of the app's `Presentation.UiKit.V3AlertModal`
-//  preset — reached through `ModalStyle` tokens registered on the renderer
-//  (see `SwiftUICatalogPresets`).
+//  placeholders are kept verbatim. STYLING defaults to the single SwiftUI-owned
+//  `.standard` preset; only shapes explicitly testing a non-standard action style
+//  or horizontal button orientation select another token.
 //
 //  NOTHING here is tuned to make a shape look right. Where the SwiftUI render is
 //  KNOWN to differ from the UIKit one, the difference is declared as a
@@ -38,29 +38,13 @@ import GBV3AlertModalSwiftUI
 
 // MARK: - Style tokens
 
-/// The style presets the 26 shapes ask for. The library ships only `.standard`
-/// `.standard`; everything else is a CONSUMER preset, which is exactly the
+/// The remaining style presets the catalog asks for. The library ships `.standard`;
+/// everything else is a CONSUMER preset, which is exactly the
 /// claim `ModalStyle` makes ("Extend it from the app side"). This block is that
 /// extension, written the way the real app would write it, and every token is
 /// mapped to native `ModalProperties` values in `SwiftUICatalogPresets`.
 extension ModalStyle {
-    static let geniePermissionAlert = ModalStyle("genie.permissionAlert")
     static let genieObliqueRed = ModalStyle("genie.obliqueRed")
-    static let genieErrorBanner = ModalStyle("genie.errorBanner")
-    static let genieForceUpdateBanner = ModalStyle("genie.forceUpdateBanner")
-    static let genieCapBanner = ModalStyle("genie.capBanner")
-    static let genieQuizBanner = ModalStyle("genie.quizBanner")
-    static let genieTrialBanner = ModalStyle("genie.trialBanner")
-    static let genieAiNotesBanner = ModalStyle("genie.aiNotesBanner")
-    static let genieCreditDeduction = ModalStyle("genie.creditDeduction")
-    static let genieStreak = ModalStyle("genie.streak")
-    static let genieTimerBanner = ModalStyle("genie.timerBanner")
-    static let genieExitWorksheetBanner = ModalStyle("genie.exitWorksheetBanner")
-    static let genieRenameInput = ModalStyle("genie.renameInput")
-    static let genieDatePickerInput = ModalStyle("genie.datePickerInput")
-    static let genieBadgeUnlock = ModalStyle("genie.badgeUnlock")
-    static let genieBadgeMulti = ModalStyle("genie.badgeMulti")
-    static let genieBadgeDetail = ModalStyle("genie.badgeDetail")
 
     // The four `GBAlertModal.ActionStyle` cases, as styles the Variants section asks for by
     // name. The UIKit twins pass `properties.copy(primaryActionStyle:)` directly at the call
@@ -233,8 +217,7 @@ enum SwiftUICatalog {
 
     /// A renderer carrying every preset, factory and SwiftUI body the catalog's
     /// shapes need — the app-side equivalent of the modal setup a real screen would
-    /// do once at composition time. Three preset tables: the 26 real shapes', the
-    /// stress matrix's, and the divergence section's.
+    /// do once at composition time.
     ///
     /// Structurally identical to `GalleryViewController.openTier0Demo`'s UIKit
     /// registration, which is the point: a consumer's preset table and holder
@@ -244,7 +227,6 @@ enum SwiftUICatalog {
         let presets = SwiftUICatalogPresets.stylePresets
             + SwiftUICatalogPresets.stressPresets
             + SwiftUICatalogPresets.variantPresets
-            + SwiftUICatalogPresets.divergencePresets
         for (style, properties) in presets {
             renderer.register(style: style, properties: properties)
         }

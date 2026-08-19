@@ -64,15 +64,14 @@ extension SwiftUICatalog {
                     showCloseButton: true
                 )
             },
-            // #5 — camera/mic permission nudge, own preset.
+            // #5 — camera/mic permission nudge, rendered with the shared standard preset.
             SwiftUICatalogEntry.renderable("permission-denied-settings", category: "GenieAsk") {
                 AlertDialog(
                     title: "Allow Permission",
                     subtitle: "Allow Geniebook to access your camera in your device's settings.",
                     primary: "Settings",
                     secondary: "Not now",
-                    closeOnTapOverlay: true,
-                    style: .geniePermissionAlert
+                    closeOnTapOverlay: true
                 )
             },
             // #6 — leave-class confirmation with the red oblique primary theme.
@@ -96,8 +95,7 @@ extension SwiftUICatalog {
                     image: ModalImage("img_database_error"),
                     title: "Something went wrong :(",
                     subtitle: "We're fixing our servers as fast as we can.\nTake a break and try again later.",
-                    primary: "Okay",
-                    style: .genieErrorBanner
+                    primary: "Okay"
                 )
             },
             // #8 — app version gate.
@@ -110,8 +108,7 @@ extension SwiftUICatalog {
                     image: ModalImage("img_illust_gc_finished_quiz"),
                     title: "A new update is ready!",
                     subtitle: "[API] Head over to the App Store to download the latest version.",
-                    primary: "Go to App Store",
-                    style: .genieForceUpdateBanner
+                    primary: "Go to App Store"
                 )
             }
         ]
@@ -151,8 +148,7 @@ extension SwiftUICatalog {
                     title: "Daily worksheet limit reached",
                     subtitle: "[API] You've reached your daily worksheet generation limit for today.",
                     primary: "Proceed",
-                    secondary: "I'll practise something else",
-                    style: .genieCapBanner
+                    secondary: "I'll practise something else"
                 )
             },
             // #11 — text input. `placeholder` is empty on purpose: the UIKit entry
@@ -196,8 +192,7 @@ extension SwiftUICatalog {
                     title: "You missed your streak!",
                     subtitle: "[API] You missed your 7 days streak and 15 extra bubbles. "
                         + "Save your streak by doing 5 questions!",
-                    primary: "Continue",
-                    style: .genieStreak
+                    primary: "Continue"
                 )
             },
             // #14 — the one shape with BOTH title and subtitle attributed.
@@ -241,8 +236,7 @@ extension SwiftUICatalog {
                     image: ModalImage("img_illust_gc_finished_quiz"),
                     title: "Great Effort",
                     subtitle: "[API] You've completed the quiz for Algebra Fundamentals.",
-                    primary: "Got it",
-                    style: .genieQuizBanner
+                    primary: "Got it"
                 )
             },
             // #16 — quiz begin prompt.
@@ -257,8 +251,7 @@ extension SwiftUICatalog {
                     subtitle: "[API] The GenieClass Algebra Fundamentals Quiz contains 10 MCQ questions "
                         + "and should take about 15 minutes to complete. Are you ready?",
                     primary: "Let's go",
-                    secondary: "Dismiss",
-                    style: .genieQuizBanner
+                    secondary: "Dismiss"
                 )
             },
             // #19 — live-class credit confirmation.
@@ -268,8 +261,7 @@ extension SwiftUICatalog {
                     subtitle: "[API] Joining this class will use 1 Mathematics lesson credit.\n\n"
                         + "Mathematics lesson credits left: 5",
                     primary: "Join class",
-                    secondary: "Not now",
-                    style: .genieCreditDeduction
+                    secondary: "Not now"
                 )
             },
             // #20 — AI summary notes ready. `title: nil` WITH a banner.
@@ -283,8 +275,7 @@ extension SwiftUICatalog {
                     title: String?.none,
                     subtitle: "[API] Your Personalised Summary Notes for Algebra Fundamentals is ready!",
                     primary: "Bring me there!",
-                    secondary: "Later",
-                    style: .genieAiNotesBanner
+                    secondary: "Later"
                 )
             }
         ]
@@ -315,8 +306,7 @@ extension SwiftUICatalog {
                     title: "Free trial has ended",
                     subtitle: "Subscribe to continue learning with Geniebook",
                     primary: "View pricing plans",
-                    secondary: "Dismiss",
-                    style: .genieTrialBanner
+                    secondary: "Dismiss"
                 )
             }
         ]
@@ -341,8 +331,7 @@ extension SwiftUICatalog {
                     subtitle: "[API] Don't give up, you still have 3 questions remaining. You can do it!",
                     primary: "Keep going!",
                     secondary: "I'll be back!",
-                    closeOnTapOverlay: true,
-                    style: .genieExitWorksheetBanner
+                    closeOnTapOverlay: true
                 )
             },
             // #22 — pre-start timer prompt (attributed subtitle).
@@ -359,8 +348,7 @@ extension SwiftUICatalog {
                         font: Font.system(size: 16),
                         color: Color.secondary
                     ),
-                    primary: "Proceed",
-                    style: .genieTimerBanner
+                    primary: "Proceed"
                 )
             },
             // #23 — timer-expired prompt (attributed subtitle).
@@ -378,8 +366,7 @@ extension SwiftUICatalog {
                         color: Color.secondary
                     ),
                     primary: "Continue",
-                    secondary: "Submit for marking",
-                    style: .genieTimerBanner
+                    secondary: "Submit for marking"
                 )
             }
         ]
@@ -407,8 +394,7 @@ extension SwiftUICatalog {
                     // no badge grid. Adding cells here would be invented content.
                     badges: [],
                     primary: "View my badges",
-                    secondary: "Dismiss",
-                    style: .genieBadgeUnlock
+                    secondary: "Dismiss"
                 )
             },
             // #25 — multiple badges unlocked, static banner (no grid, as in UIKit).
@@ -423,8 +409,7 @@ extension SwiftUICatalog {
                     subtitle: AttributedString("You unlocked new badges."),
                     badges: [],
                     primary: "View my badges",
-                    secondary: "Dismiss",
-                    style: .genieBadgeMulti
+                    secondary: "Dismiss"
                 )
             },
             // #26 — tapped-badge detail: no banner, no subtitle. The WHOLE content
@@ -444,8 +429,7 @@ extension SwiftUICatalog {
                         )
                     ],
                     primary: "Got it",
-                    closeOnTapOverlay: true,
-                    style: .genieBadgeDetail
+                    closeOnTapOverlay: true
                 )
             }
         ]

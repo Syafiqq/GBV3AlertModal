@@ -28,15 +28,11 @@ import GBV3AlertModalSwiftUI
 
 // MARK: - Style tokens
 
-/// The stress matrix asks for exactly five presets beyond `.standard`: the
-/// orientation flip, and the two ultra-aspect banners crossed with it. Each is
-/// `StressCatalog.properties(banner:orientation:)` for that combination — the
-/// SAME call the UIKit entry makes at its call site.
+/// Only the horizontal stress cases need presets beyond `.standard`; their three
+/// names preserve the catalog's intent while sharing the same horizontal configuration.
 extension ModalStyle {
     static let stressHorizontal = ModalStyle("stress.horizontal")
-    static let stressWideBanner = ModalStyle("stress.wideBanner")
     static let stressWideBannerHorizontal = ModalStyle("stress.wideBanner.horizontal")
-    static let stressTallBanner = ModalStyle("stress.tallBanner")
     static let stressTallBannerHorizontal = ModalStyle("stress.tallBanner.horizontal")
 }
 
@@ -117,8 +113,7 @@ extension SwiftUICatalog {
                     subtitle: CatalogFixtures.subtitle10Line,
                     primary: CatalogFixtures.primaryFull,
                     secondary: CatalogFixtures.secondaryFull,
-                    closeOnTapOverlay: true,
-                    style: .stressWideBanner
+                    closeOnTapOverlay: true
                 )
             },
             SwiftUICatalogEntry.renderable(
@@ -132,8 +127,7 @@ extension SwiftUICatalog {
                     subtitle: CatalogFixtures.subtitle10Line,
                     primary: CatalogFixtures.primaryFull,
                     secondary: CatalogFixtures.secondaryFull,
-                    closeOnTapOverlay: true,
-                    style: .stressTallBanner
+                    closeOnTapOverlay: true
                 )
             },
             SwiftUICatalogEntry.renderable("stress-title-none", category: category) {
@@ -244,8 +238,7 @@ extension SwiftUICatalog {
                     subtitle: CatalogFixtures.subtitle10Line,
                     primary: CatalogFixtures.primaryWrapped,
                     secondary: CatalogFixtures.secondaryWrapped,
-                    closeOnTapOverlay: true,
-                    style: .stressTallBanner
+                    closeOnTapOverlay: true
                 )
             },
             SwiftUICatalogEntry.renderable(
@@ -289,8 +282,7 @@ extension SwiftUICatalog {
                     title: String?.none,
                     subtitle: String?.none,
                     primary: nil,
-                    closeOnTapOverlay: true,
-                    style: .stressWideBanner
+                    closeOnTapOverlay: true
                 )
             },
             SwiftUICatalogEntry.renderable("stress-buttons-only", category: category) {
@@ -356,8 +348,7 @@ extension SwiftUICatalog {
                     title: String?.none,
                     subtitle: CatalogFixtures.subtitle10Line,
                     primary: CatalogFixtures.primaryFull,
-                    closeOnTapOverlay: true,
-                    style: .stressTallBanner
+                    closeOnTapOverlay: true
                 )
             }
         ]
@@ -425,8 +416,7 @@ extension SwiftUICatalog {
                     title: CatalogFixtures.title10Line,
                     subtitle: String?.none,
                     primary: nil,
-                    closeOnTapOverlay: true,
-                    style: .stressWideBanner
+                    closeOnTapOverlay: true
                 )
             },
             SwiftUICatalogEntry.renderable(
