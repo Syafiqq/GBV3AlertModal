@@ -67,7 +67,8 @@ let package = Package(
         .testTarget(
             name: "GBV3AlertModalSwiftUITests",
             dependencies: ["GBV3AlertModalCore", "GBV3AlertModalSwiftUI"],
-            path: "Library/GBV3AlertModal/Tests/GBV3AlertModalSwiftUITests"
+            path: "Library/GBV3AlertModal/Tests/GBV3AlertModalSwiftUITests",
+            resources: [.process("Resources")]
         ),
         .testTarget(
             name: "GBV3AlertModalUIKitTests",
