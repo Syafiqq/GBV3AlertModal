@@ -1,0 +1,56 @@
+@testable import GBV3AlertModalSwiftUI
+import SwiftUI
+import Testing
+
+struct ModalFontTests {
+    @Test(arguments: ModalFont.Weight.allCases)
+    func systemDescriptorPreservesEveryWeight(_ weight: ModalFont.Weight) {
+        let font = ModalFont.system(size: 18, weight: weight)
+
+        #expect(font.family == .system)
+        #expect(font.size == 18)
+        #expect(font.weight == weight)
+        #expect(font.scalingPolicy == .fixed)
+    }
+
+    @Test
+    func customDescriptorIsFixedByDefault() {
+        let font = ModalFont.custom("SHSans-Bold", size: 24)
+
+        #expect(font.family == .custom("SHSans-Bold"))
+        #expect(font.size == 24)
+        #expect(font.weight == .regular)
+        #expect(font.scalingPolicy == .fixed)
+    }
+
+    @Test(arguments: ModalFont.TextStyle.allCases)
+    func semanticScalingRecordsItsRelativeTextStyle(_ style: ModalFont.TextStyle) {
+        let font = ModalFont.custom(
+            "SHSans-Regular",
+            size: 16,
+            scalingPolicy: .relative(to: style)
+        )
+
+        #expect(font.scalingPolicy == .relative(to: style))
+        _ = font.font
+    }
+
+    @Test
+    func missingCustomFamilyRemainsRenderableThroughSwiftUIFallback() {
+        let font = ModalFont.custom("Definitely-Not-An-Installed-Font", size: 17)
+
+        #expect(font.family == .custom("Definitely-Not-An-Installed-Font"))
+        _ = font.font
+    }
+
+    @Test
+    func descriptorsAreEquatableAndSendable() {
+        let lhs = ModalFont.system(size: 16, weight: .semibold)
+        let rhs = ModalFont.system(size: 16, weight: .semibold)
+
+        #expect(lhs == rhs)
+        acceptSendable(lhs)
+    }
+
+    private func acceptSendable<T: Sendable>(_: T) {}
+}

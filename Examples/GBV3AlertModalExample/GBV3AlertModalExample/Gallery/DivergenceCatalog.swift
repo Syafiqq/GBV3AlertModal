@@ -167,9 +167,9 @@ extension DivergenceCatalog {
 
 extension DivergenceCatalog {
     /// `DifferentialGeometry`'s `banner-wide` shape, transcribed onto the gallery's presets:
-    /// the popup preset with the artwork's own 320:190 ratio and a 256pt cap.
+    /// the consolidated standard preset with the artwork's own 320:190 ratio and a 256pt cap.
     static var bannerWideProperties: GBAlertModal.Properties {
-        GalleryPresets.popupProperties.copy(bannerRatio: 320.0 / 190.0, bannerMaxHeight: 256)
+        GalleryPresets.properties.copy(bannerRatio: 320.0 / 190.0, bannerMaxHeight: 256)
     }
 
     static var bannerWideLandscapeWidth: DialogEntry {

@@ -1,14 +1,35 @@
 #!/bin/zsh
-# Runs the library test suite (scheme `GBV3AlertModal`, `Package.swift`'s
-# `GBV3AlertModalTests` target). Seconds, not minutes — safe to run on every change.
-#
-# See `Script/test-example.sh` for the example-app suite and why it is a SEPARATE script
-# rather than folded into this one.
+# Runs each backend-owned package test suite independently. A green build that selected no tests is
+# a failure: it does not prove the corresponding ownership boundary.
 set -e
 set -o pipefail
 
 SIMULATOR_NAME="${SIMULATOR_NAME:-iPhone 17}"
+SUITES=(Core SwiftUI UIKit Migration Architecture)
 
+for owner in "${SUITES[@]}"; do
+    target="GBV3AlertModal${owner}Tests"
+    output_file=$(mktemp)
+    trap 'rm -f "$output_file"' EXIT
+
+    xcodebuild test \
+        -scheme GBV3AlertModal-Package \
+        -destination "platform=iOS Simulator,name=${SIMULATOR_NAME}" \
+        -only-testing:"${target}" | tee "$output_file"
+
+    if ! grep -Eq "Executed [1-9][0-9]* tests?|Test Suite .+ passed" "$output_file"; then
+        echo "Expected ${target} to execute at least one test, but no test execution was reported." >&2
+        exit 1
+    fi
+    rm -f "$output_file"
+    trap - EXIT
+done
+
+# Compatibility is intentionally a separate compile/test witness for the umbrella import.
+output_file=$(mktemp)
+trap 'rm -f "$output_file"' EXIT
 xcodebuild test \
-    -scheme GBV3AlertModal \
-    -destination "platform=iOS Simulator,name=${SIMULATOR_NAME}"
+    -scheme GBV3AlertModal-Package \
+    -destination "platform=iOS Simulator,name=${SIMULATOR_NAME}" \
+    -only-testing:GBV3AlertModalCompatibilityTests | tee "$output_file"
+grep -Eq "Executed [1-9][0-9]* tests?|Test Suite .+ passed" "$output_file"

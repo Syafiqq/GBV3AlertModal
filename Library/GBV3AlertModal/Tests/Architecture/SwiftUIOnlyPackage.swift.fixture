@@ -1,0 +1,34 @@
+// swift-tools-version: 6.0
+
+import PackageDescription
+
+let package = Package(
+    name: "GBV3AlertModal",
+    platforms: [.iOS(.v15)],
+    products: [
+        .library(name: "GBV3AlertModalCore", targets: ["GBV3AlertModalCore"]),
+        .library(name: "GBV3AlertModalSwiftUI", targets: ["GBV3AlertModalSwiftUI"]),
+    ],
+    targets: [
+        .target(
+            name: "GBV3AlertModalCore",
+            path: "Library/GBV3AlertModal/Sources/GBV3AlertModalCore"
+        ),
+        .target(
+            name: "GBV3AlertModalSwiftUI",
+            dependencies: ["GBV3AlertModalCore"],
+            path: "Library/GBV3AlertModal/Sources/GBV3AlertModalSwiftUI",
+            resources: [.process("Assets.xcassets")]
+        ),
+        .testTarget(
+            name: "GBV3AlertModalCoreTests",
+            dependencies: ["GBV3AlertModalCore"],
+            path: "Library/GBV3AlertModal/Tests/GBV3AlertModalCoreTests"
+        ),
+        .testTarget(
+            name: "GBV3AlertModalSwiftUITests",
+            dependencies: ["GBV3AlertModalCore", "GBV3AlertModalSwiftUI"],
+            path: "Library/GBV3AlertModal/Tests/GBV3AlertModalSwiftUITests"
+        ),
+    ]
+)

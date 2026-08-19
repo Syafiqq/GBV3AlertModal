@@ -1,0 +1,371 @@
+# Brief — Pass 5: retire UIKit, and let Swift 6 hold the line
+
+**Status: IN PROGRESS**, steps 1,2,3,4,6 of §3 done, step 5 deferred, §2's acceptance test done.
+Written 2026-08-07 at the end of the Pass 4 session.
+Direction doc: `2026-08-05-backend-independence.md` (§5's Pass 5 entry, §6a's "ready is the finish
+line", §6's note that the differential gate has an end date). D2 and D4 (§4) picked **yes** — the
+full pass, not either cheaper alternative.
+
+## Progress (append-only; steps 4-6 still ahead)
+
+- **Step 1**, commit `b6236e5`: split `DifferentialGeometrySupport.swift` into `SwiftUIGeometry.swift`
+  (measurement, survives step 4) and `DifferentialGeometryComparison.swift` (comparison, dies at step
+  4). Correction to this brief found in the process: `uiKitFrames`/`makeUIKitModal` had to move into
+  the SURVIVING file, not the dying one as §3's own text suggested —
+  `TitleSubtitleTruncationTests.test_swiftUITitle_wrapsToTheSameHeightUIKitDoes`, outside the gate,
+  calls `uiKitFrames` directly. 552/0 before and after.
+- **Step 2**, commit `115bae6`: recorded `GeometryPinsTests.swift`, 38 tests pinning SwiftUI's own
+  numbers — 15 shapes' portrait frames, 7 of those also landscape (matching the gate's own landscape
+  gating), `banner-wide` landscape's origin+height only (matching the gate's own width exclusion for
+  that shape), and all 15 shapes' layer visuals. Generated mechanically from a throwaway recorder
+  test, not transcribed. 590/0.
+- **Step 3**, this commit, no code changes (verification only — all mutations reverted before
+  committing): ran the brief's own mutation table with the gate excluded via `-skip-testing`/
+  `-only-testing`, confirmed each row against the pins alone.
+  - `titleMinimumScaleFactor` 0.75→0.70 (the shared `ModalLayout` constant): caught by
+    `TitleSubtitleTruncationTests` (4 failures) — NOT by `GeometryPinsTests`, which stayed green, as
+    expected: none of the 15 catalog shapes' titles are long enough to hit the shrink floor. Confirms
+    this row's own point — a shared-constant mutation is invisible to a cross-backend diff (both
+    sides move together) and needs an absolute pin.
+  - `ModalTokens.contentMaxWidth` +20: `GeometryPinsTests`, 38/38 tests touched, 99 assertion
+    failures — card and every row, as predicted.
+  - `obliqueOffset` (−3,3)→(0,0): `GeometryPinsTests`, 52 assertion failures, exactly the
+    primary-button frame pin and the layer-visual pin, on every shape that has a primary button (the
+    3 no-primary shapes correctly unaffected).
+  - A row's trailing gap (title's, `SwiftUIAlertModal.body`) made unconditional: `GeometryPinsTests`,
+    1 failure — `no-buttons-title-only`, exactly the shape whose own doc comment says it is "the only
+    shape that fails" this mutation.
+  - All four confirmed. Full suite back to 590/0 after each revert.
+- **Step 4**, commit `9d5fff1`: deleted `DifferentialGeometryTests.swift` (46 tests) and
+  `DifferentialGeometryComparison.swift` entirely. NOT `RendererParityTests` — D6, step 5. Correction
+  found first: `LayerVisuals`/`swiftUILayerVisuals` had to move to `SwiftUIGeometry.swift` before
+  deleting — `GeometryPinsTests` depends on them and isn't part of the gate.
+  `bannerIsUnresolvableInTheLibraryBundle` is mentioned only in a doc comment outside the gate
+  (`TestBundleAssetTests.swift`), never called — confirmed by grep, died clean. 590 → 544/0.
+- **Steps 5 & 6 REORDERED — doing 6 first.** Found while starting step 5: entry points 1-4 aren't
+  separable from entry point 6 (`Factory`). `Presentation.properties`/`registerStandard`'s factory
+  read/write the SAME registry `Factory` writes into, and there is NO conversion between
+  `GBAlertModal.Properties` and `ModalProperties` by design (`ModalProperties`'s own doc: "nothing
+  converts at runtime"). So a `ModalProperties`-typed `init`/`register(style:)` would have nowhere
+  honest to put its values until Factory's `DataHolder` half is gone. Confirmed with the owner:
+  swap the order.
+  - Owner decision (additive, not breaking): `SwiftUIModalRenderer`'s public `Factory<D>`,
+    `register(_:factory:)`, `register(_:route:factory:)` stay UNCHANGED — the example app and every
+    existing test keep compiling untouched. Internally, `Registration<D>.factory` generalized to
+    `any ModalContentInputs` (was concrete `DataHolder`); the public methods adapt into it for free
+    (`DataHolder: ModalContentInputs` upcasts at the return point).
+  - Owner decision (Components/ precedent): added `GBAlertModal.resolve(inputs:content:isLandscape:)`
+    to the frozen `Components/GBAlertModal+ResolvedModal.swift` — purely additive, same shape as
+    Pass 3's own `ModalStructureInputs` addition there. The alternative (duplicate the decision logic
+    in SwiftUI/ to keep Components/ byte-for-byte untouched) was rejected as the exact "second
+    resolver, can drift" risk the codebase's docs already argue against.
+  - New: `Core/ModalContentInputs.swift` (protocol, mirrors `ModalStructureInputs`),
+    `SwiftUI/DataHolder+ModalContentInputs.swift` (conformance, since `Components/` is frozen),
+    `SwiftUI/ModalContent.swift` (`Sendable` struct + `.make(for:)` for the standard family).
+    `SwiftUIAlertModal` and `registerStandard` (AlertDialog/PopupDialog) switched to it.
+  - **Scoped down from "all 17 calls":** the 5 bespoke descriptors' holders
+    (TextInputDialog/DatePickerDialog/BadgeDialog/LoadingDialog/SatisfactionDialog, in
+    `registerBuiltInDescriptors()`) still call `UIKitModalRenderer.*Holder.make` via the
+    now-legacy-but-still-fully-supported `Factory<D>` path — deliberately left for a follow-up, not
+    forgotten. They still work; nothing regresses by leaving them.
+  - **Done, commit `048adab`.** 544/0, example app builds clean.
+
+**Step 5 — DEFERRED, owner decision.** `Presentation.properties`/`registerStandard`'s factory read
+the SAME registry entry point 6 writes; there is no conversion between `GBAlertModal.Properties` and
+`ModalProperties` by design. A `ModalProperties`-typed `init`/`register(style:)` for the standard
+family would need `Presentation` to represent BOTH vocabularies — new dual-tracking machinery
+(a `PropertiesSource` enum, a second `Presentation` field, `registerStandard` checking two maps) for
+a capability nothing currently consumes. §6a covers it: "ready is the finish line, not deleted" — step
+6 proved the mechanism works, closing entry points 1-4 is provably possible later, just not built now.
+
+**§2's acceptance test — done, commit `f399b7d`.** `OffMainActorResolutionTests
+.resolveOffMainActor`: `nonisolated`, no `@MainActor`, no `await`, descriptor + `ModalProperties` ->
+`resolve` + `ModalTokens`, run inside `Task.detached` to prove it genuinely compiles and runs off the
+main actor. 545/0.
+
+**The 5 bespoke holders — done, commits `13b842f`/`6fd917e`/`1b6a2f8`/`2456389`/`3bcc527`.** The
+follow-up scoped out of step 6 above, per its own brief
+(`docs/superpowers/specs/2026-08-07-bespoke-holders.md`). Five new `ModalContent.make(for:)`
+overloads (TextInputDialog, DatePickerDialog, BadgeDialog, LoadingDialog, SatisfactionDialog) in
+`SwiftUI/ModalContent.swift`, and `registerBuiltInDescriptors()`'s five factories rewritten to
+construct `Registration<D>` directly — same move `registerStandard` already made — instead of going
+through the public `DataHolder`-typed `register(_:factory:)`. `grep -n "Holder.make"
+SwiftUIModalRenderer.swift` now turns up only doc comments and the standard family's own doc, no
+live bespoke call sites. One commit per descriptor, 545/0 after each. `register(_:factory:)` itself
+untouched (public API, still `Factory<D>`-typed) — a consumer's custom factory for one of these five
+kinds keeps working unchanged, exactly as the brief promised.
+
+**Pass 5 is now fully closed.** Steps 1-6 done, §2's acceptance test done, the 5 bespoke holders
+done. Step 5 (entry points 1-4 gaining a `ModalProperties`-typed path) remains the one deliberately
+deferred piece — owner decision, no dual-tracking machinery built for a capability nothing consumes
+(§6a: "ready is the finish line, not deleted").
+
+**D6 re-checked, no action needed.** `RendererParityTests` ran clean through step 6 unmodified,
+because `SwiftUIModalRenderer`'s PUBLIC `Factory` type never changed (the whole point of the additive
+design at step 6) — `RendererFixtures`' "literally the same expression" trick is still exactly true.
+Brief's D6 assumed Factory's type would move; it didn't, so there is nothing to reduce.
+
+**Real Swift 6 compiler bug hit and worked around**, recorded in case it recurs elsewhere in this
+codebase: `Self.foo()` called inside a `Task.detached` closure trips the region-based isolation
+checker ("pattern that the region-based isolation checker does not understand how to check — please
+file a bug"). The fully-qualified type name (`ActualTypeName.foo()`) does not trip it and means the
+same thing. See `OffMainActorResolutionTests`' call site.
+
+**Pass 5 status: steps 1, 2, 3, 4, 6 done; step 5 deferred (owner decision); §2's acceptance test
+done. Remaining, not yet started:** the 5 bespoke holders (real step-6 leftover, still on the legacy
+path, still fully working).
+
+---
+
+## 0. What is already true, measured — read this before planning anything
+
+**Five statements in this spec family have been measured false**, four corrected in Pass 1's §0 and
+one in Pass 4 (§3d: the bespoke views were never delegating). Every one was a description of the
+boundary that nothing re-checked. This section exists so that this brief does not become the sixth.
+
+Everything below was measured on 2026-08-07, at commit `2923d8a`.
+
+### The module is ALREADY in Swift 6 language mode
+
+`Package.swift` is `// swift-tools-version: 6.0`, with a comment stating the consequence: "tools 6.0
+=> Swift 6 language mode is the default for all targets (strict concurrency = errors)." There is no
+migration to perform. **Do not scope this pass as a Swift 6 migration.**
+
+What Swift 6 *does* give this pass is a load-bearing test of whether the retirement actually worked —
+see §2.
+
+### The module has exactly ONE strict-concurrency escape hatch, and it is UIKit's
+
+```
+Library/.../GBV3AlertModal.swift:4
+nonisolated(unsafe) public var globalProperties = GBAlertModal.Properties()
+```
+
+That is the entire list. Grepped for `@unchecked Sendable`, `@preconcurrency` and
+`nonisolated(unsafe)` across `Sources/`: two hits, both the comment and the declaration above.
+
+**So "the SwiftUI half is Swift 6 clean" is not an aspiration — it is already true, and the one blot
+on the module belongs to the half being retired.** That is the cleanest available definition of done
+for this pass, and it is checkable in one grep.
+
+### The remaining UIKit surface in `SwiftUI/` is an enforced allow-list
+
+`SwiftUIPurityTests` (added in Pass 4) names it and fails both when it grows and when an entry goes
+stale:
+
+| file | why | fate |
+|---|---|---|
+| `ModalFont`, `ModalTokens` | measurement stays on `UIFont` by measurement, not choice (§3b); `ModalTokens` derives from `Properties`, the app's live API | **permanent** |
+| `AttributedTextBridge` | re-scopes attributes between SwiftUI's and UIKit's scopes — naming both is its job | permanent while `Properties` is |
+| `SwiftUIModalRenderer` | see §3 | **this pass** |
+
+`AlertModalScaffold.swift` was on that list until Pass 4 found it importing UIKit and using zero UIKit
+symbols. Expect more of that: a dead import is how an allow-list becomes a fiction.
+
+### The public UIKit-typed API of the SwiftUI half is 6 entry points
+
+All on `SwiftUIModalRenderer`:
+
+1. `init(alertProperties:popupProperties:)` — `GBAlertModal.Properties`
+2. `register(style:properties:)` — `GBAlertModal.Properties`
+3. `properties(for:)` — returns `GBAlertModal.Properties?`
+4. `Presentation.properties` — `GBAlertModal.Properties`
+5. `Presentation.onAction` — `(GBAlertModal.ActionType) -> Void`
+6. `Factory` typealias — `(GBAlertModal.Properties?, GBAlertModal.DataHolder)`
+
+`ModalTokens.init(from: GBAlertModal.Properties)` also names one and is **not** a gap: it is the
+UIKit path's own derivation, with `init(from: ModalProperties)` beside it.
+
+`SwiftUIAlertModal`, `AlertModalScaffold` and all five bespoke views are already clean.
+
+### The second coupling: the shared `DataHolder`
+
+`SwiftUI/` calls `UIKitModalRenderer.*Holder.make` **17 times**. `DataHolder` carries `UIImage?`
+twice and `UIView?` once, is **not** `Sendable`, and every holder factory is `@MainActor`.
+
+This was kept **on purpose** (Pass 3, D4): it is what makes both backends provably resolve
+identically. Its justification expires with the differential gate and not before.
+
+---
+
+## 1. The goal, stated so it can be checked
+
+§5's finish line is one sentence with two halves, and they are at different distances:
+
+- **"A caller never has to name a UIKit type."** Six entry points away. No open design questions.
+- **"A future module split is a manifest edit rather than a refactor."** Not reachable while the
+  SwiftUI renderer builds a `UIImage`-carrying `DataHolder` 17 times.
+
+**Both halves are in scope for this pass.** Doing only the first leaves the module permanently
+unsplittable, and the second's blocker is a decision that becomes retractable in this pass and never
+again.
+
+§6a still governs: **"ready" is the finish line, not "deleted."** UIKit stays present, compiling and
+untouched. Success is that nothing in `SwiftUI/` reaches for it except the three permanent entries
+above, and that deleting `Executor/` + `Components/` + `GBAlertModal*.swift` would be a manifest edit.
+
+---
+
+## 2. The Swift 6 angle, and why it is the acceptance test rather than the work
+
+Three facts compose into something useful:
+
+1. `GBAlertModal.resolve` is `nonisolated` — deliberately, and its doc says why: "genuinely pure
+   (value inputs only, no main-actor state), so it is callable off the main actor."
+2. Reaching it on the SwiftUI path requires a `DataHolder`.
+3. Every holder factory is `@MainActor`.
+
+**So `resolve`'s `nonisolated` promise is currently unreachable from the SwiftUI half.** The type
+system already knows the coupling is there; nothing has asked it.
+
+That makes the acceptance test for this pass a compile-time one rather than a matter of judgement:
+
+> **After the pass, a SwiftUI presentation must be resolvable off the main actor.**
+
+Write it as a `nonisolated` function — or better, an `actor` — that takes a descriptor and
+`ModalProperties`, resolves, and derives `ModalTokens`, with no `await` and no `@MainActor`. If that
+compiles, the UIKit coupling is genuinely gone; if it does not, the compiler names the file. This is
+strictly better than an import-counting check, which is why it should exist *in addition to*
+`SwiftUIPurityTests` rather than instead of it.
+
+Two corollaries worth deciding early:
+
+- **`ModalDescriptor: Sendable` already holds**, which is why `ModalImage` carries an asset name and
+  not a `UIImage`. The SwiftUI-native holder replacement must preserve that.
+- **Deleting `globalProperties`' `nonisolated(unsafe)` is NOT this pass's job.** It is UIKit's, it is
+  public API, and §6a forbids touching it. The pass's claim is narrower and still worth making: *the
+  SwiftUI half needs no escape hatch, and the module's only one is on the half being retired.*
+
+---
+
+## 3. The plan, in forced order
+
+Steps 1–3 are recoverable. Step 4 is not. Do not reorder them.
+
+### 1. Split `DifferentialGeometrySupport.swift` (974 lines) — refactor only, no deletions
+
+It is **two things wearing one filename**, and only one of them dies:
+
+- **SwiftUI measurement machinery** — `ProbeHost`, `Sink`, `host`, `landscapeHost`, `makeWindow`,
+  `pump`, `teardown`, `tolerance`, `swiftUIFrames`, and the 15 `Shape` fixtures. `BespokeBannerColumnTests`
+  already uses six of these for pure SwiftUI measurement, and step 2 needs all of them. **Keeps living**,
+  move to `SwiftUIGeometry.swift`.
+- **The comparison half** — `uiKitFrames`, `makeUIKitModal`, `uiKitLayerVisuals`, `compare`, `Verdict`,
+  `hugWidthElements`. Dies in step 4.
+
+Green before and after, as its own commit. A refactor and a deletion in one diff is how you lose track
+of which one broke something.
+
+### 2. Record the golden pins, WHILE THE GATE IS STILL GREEN ⚠️
+
+Today's absolute pins are **7 assertions covering measurement functions only** —
+`contentMaxWidth`, `titleMinimumScaleFactor`, `subtitleFloorHeight`, `textHeight` ×2,
+`titleFloorHeight` ×2 (`TitleSubtitleTruncationTests.test_theMeasurementsThemselves_arePinnedAbsolutely`).
+They cover **none** of the card geometry the gate proves.
+
+Record the gate's own SwiftUI-side numbers as absolute pins: **15 shapes × 7 probe elements**
+(`card`, `banner`, `title`, `subtitle`, `primaryButton`, `secondaryButton`, `closeButton`), in both
+orientations wherever the gate runs both, plus the layer visuals. This is mechanical — the gate
+already computes exactly these numbers.
+
+**The objection, and the answer.** §6 is emphatic that recorded baselines failed here before: *"a
+recorded snapshot can only detect drift FROM ITSELF — never wrong-but-consistent design."* True, and
+it is why the gate exists. But that failure was recording an **unverified prototype**; recording a
+state the live comparison has just certified is a different act, and §6 already sanctions it: *"Its
+measurements — the geometry rules, the truth table, the divergence catalogue — outlive it as
+documentation of what the shipping dialog did."*
+
+What is genuinely given up is the ability to detect drift **in UIKit**. That is acceptable precisely
+because UIKit is frozen and about to be inert — and it is the only thing being given up, so say so
+in the commit rather than letting a reader discover it.
+
+### 3. Mutation-verify the pins ALONE, with the gate switched off
+
+The step people skip. Disable the gate (do not delete it yet), then re-run the Pass 1 mutation set
+plus at least one card-geometry mutation, and confirm the pins catch what the gate caught:
+
+| mutation | must fail |
+|---|---|
+| `titleMinimumScaleFactor` 0.75 → 0.70 | the measurement pins (Pass 1 proved the gate alone could NOT see this — 517/518 passed) |
+| `ModalTokens.contentMaxWidth` +20 | the card + every row pin |
+| `obliqueOffset` (−3,3) → (0,0) | the primary-button pin, and the layer-visual pin |
+| a row's trailing gap made unconditional | the shapes Pass 2 added |
+
+If any of these survives, the pins are not yet a replacement and step 4 must wait. **Record the
+result in the commit either way** — this is the evidence that the net was in place before it was
+needed.
+
+### 4. Delete the gate
+
+`DifferentialGeometryTests.swift` (1437 lines, 46 tests) and the comparison half of the support file.
+
+**Not** `RendererParityTests` — see §4, D6.
+
+### 5. Lift the `Factory` constraint, move the 6 entry points
+
+`SwiftUIModalRenderer.Factory` is deliberately source-identical to `UIKitModalRenderer.Factory`, and
+that identity is asserted structurally by the parity suite (`RendererParityTests`, and
+`RendererFixtures`' *"the two branch bodies are LITERALLY THE SAME EXPRESSION"*). **That is the whole
+reason Pass 3c could not finish the job.** Once the geometry gate is gone and the parity suite is
+reduced (D6), the constraint lifts and the six entry points become mechanical.
+
+### 6. Give the SwiftUI half its own holder
+
+Replace the 17 `UIKitModalRenderer.*Holder.make` calls. The replacement must be `Sendable` and carry
+no `UIImage`/`UIView` — descriptors already prove this is possible (`ModalImage` is an asset name).
+This is what makes §2's acceptance test compile, and it is the half of §5's finish line that is
+otherwise never reached.
+
+---
+
+## 4. Decisions taken into this pass
+
+Carried from the decision list produced at the end of the Pass 4 session. **Two are still open** and
+are marked.
+
+| | decision | status |
+|---|---|---|
+| **D1** | Split the support file before deleting anything | recommended, uncontested |
+| **D2** | Convert the gate's SwiftUI numbers into absolute pins, before deletion | **OPEN — the whole risk of the pass** |
+| **D3** | The order in §3 is forced; step 3 is not optional | recommended |
+| **D4** | Retire the shared `DataHolder` in this pass, not later | **OPEN — decides whether the module can split** |
+| **D5** | Move the 6 renderer entry points; leave `Presentation.onAction` alone (`ActionType` is a 3-case enum, UIKit-*namespaced* not UIKit-*typed*; renaming is churn for a spelling) | recommended |
+| **D6** | `RendererParityTests` survives, REDUCED. It tests renderer *behaviour* (present/dismiss/update/route/resolve-once), not geometry — a different gate that shares the word "parity". Keep the file, drop the UIKit arm | recommended |
+| **D7** | No deletions outside `SwiftUI/` and the gate. UIKit stays, and so does the example app's UIKit gallery — once the gate's measurements become pins, that gallery is the only remaining live record of what the shipping dialog looked like | recommended |
+
+**D2's alternative, stated fairly:** keep the gate forever and accept that `SwiftUIModalRenderer`
+never sheds its six UIKit entry points. That is coherent — it is simply a different goal than §5's,
+and choosing it should be explicit rather than arrived at by not deciding.
+
+**D4's alternative:** stop at "no caller names a UIKit type" and leave the shared holder. Cheaper, and
+it forfeits "module split is a manifest edit" permanently, because the justification for removing the
+holder only exists while the gate is being retired.
+
+---
+
+## 5. What this pass must NOT do
+
+- **Touch UIKit.** `GBAlertModal*`, `Components/`, `Executor/` stay frozen. §7.
+- **Touch `geniebook-student-ios`.** Reference only, never a target. §6a.
+- **Remove anything from `Properties`,** including `bannerFixedHeight`. It is dead and it is public
+  and the consumer is not ours to edit.
+- **Scope itself as a Swift 6 migration.** The module is already there (§0).
+- **Delete the gate before §3 step 3 passes.** The one irreversible act in the sequence.
+
+---
+
+## 6. How the next session should start
+
+Do not trust this document. Re-measure §0 first — it is four greps and a `cat Package.swift`, and
+five of its predecessors' claims did not survive contact with the code:
+
+```bash
+cat Package.swift | head -3                                   # still tools 6.0?
+grep -rn "@unchecked Sendable\|@preconcurrency\|nonisolated(unsafe)" \
+  --include="*.swift" Library/GBV3AlertModal/Sources          # still just globalProperties?
+grep -rn "Holder.make" Library/GBV3AlertModal/Sources/GBV3AlertModal/SwiftUI/ | wc -l   # still 17?
+./Script/test-lib.sh                                          # still green? (552/0 at 2923d8a)
+```
+
+Then run `SwiftUIPurityTests` and read its allow-list — it is the live version of §0's table and, by
+construction, the one that cannot have gone stale.

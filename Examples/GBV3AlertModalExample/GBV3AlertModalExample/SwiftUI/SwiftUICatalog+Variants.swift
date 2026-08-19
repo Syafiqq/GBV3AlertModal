@@ -6,25 +6,56 @@
 //  representation and every `GBAlertModal.ActionStyle` case, name-for-name with the
 //  UIKit side so the two galleries can be compared row by row.
 //
-//  ONE of the eleven is `notRenderable`, down from three (Pass 2). All three used to
-//  fail the same way — the UIKit entry reaches PAST the descriptor — but that was two
-//  different limits wearing one description, and they have different answers:
-//
-//   * NO POST-CONSTRUCTION HOOK (the two button-state entries). Fixed. `AlertDialog`
-//     carries `primaryEnabled`/`secondaryEnabled` and `update(_:to:)` was already the
-//     channel; see `ButtonEnablement`.
-//   * CANNOT CARRY A VIEW (`variant-subtitle-customview`). NOT fixed, deliberately —
-//     `ModalDescriptor: Sendable` is the thing being protected, and the bespoke-view
-//     route already serves the real use case. See that entry's own reason.
-//
-//  `notRenderable` rather than an approximation on purpose: an entry that renders
-//  something adjacent looks like agreement and is worse than an honest gap.
+//  All eleven variants are renderable. Custom subtitle content uses the renderer's
+//  SwiftUI-native `register(_:view:)` extension point.
 //
 
 import Foundation
 import SwiftUI
-import UIKit
-import GBV3AlertModal
+import GBV3AlertModalCore
+import GBV3AlertModalSwiftUI
+
+struct CatalogCustomSubtitleDialog: ModalDescriptor {
+    enum Result: Sendable { case accepted, dismissed }
+    static let dismissedResult = Result.dismissed
+
+    let title: String
+    let message: String
+    let primary: String
+}
+
+@MainActor
+struct CatalogCustomSubtitleModalView: View {
+    let descriptor: CatalogCustomSubtitleDialog
+    let resolve: (CatalogCustomSubtitleDialog.Result) -> Void
+
+    var body: some View {
+        AlertModalScaffold(
+            layoutPreset: .customSubtitle,
+            primaryTitle: descriptor.primary,
+            onPrimary: { resolve(.accepted) },
+            onOverlayTap: { resolve(.dismissed) }
+        ) {
+            Text(descriptor.title)
+                .font(.system(size: 24, weight: .bold))
+                .foregroundStyle(Color(red: 0.15, green: 0.13, blue: 0.38))
+                .multilineTextAlignment(.center)
+                .padding(.bottom, 12)
+
+            Text(descriptor.message)
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundStyle(Color(red: 0.97, green: 0.58, blue: 0.12))
+                .multilineTextAlignment(.center)
+                .padding(12)
+                .frame(maxWidth: .infinity)
+                .background(Color.orange.opacity(0.08), in: RoundedRectangle(cornerRadius: 12))
+                .overlay {
+                    RoundedRectangle(cornerRadius: 12).stroke(Color.orange, lineWidth: 2)
+                }
+                .padding(.bottom, 12)
+        }
+    }
+}
 
 // MARK: - Title representations
 
@@ -104,18 +135,15 @@ extension SwiftUICatalog {
                     closeOnTapOverlay: true
                 )
             },
-            SwiftUICatalogEntry.notRenderable(
-                "variant-subtitle-customview",
-                category: "Variant · Subtitle",
-                reason: "WON'T FIX, not can't — the only row here that is a decision. The UIKit "
-                    + "entry sets `DataHolder.subtitleCustomView` to a live, bordered `UIView`, and "
-                    + "`ModalDescriptor` is `Sendable` precisely so descriptors can cross actor "
-                    + "boundaries (it is why `ModalImage` carries an asset NAME and not a "
-                    + "`UIImage`). Making a descriptor carry a view would trade that for one "
-                    + "gallery row. The bespoke-view route "
-                    + "(`SwiftUIModalRenderer.register(_:view:)`) already covers the real use case "
-                    + "— see the `badge-detail-popup` entry for a worked example."
-            )
+            SwiftUICatalogEntry.renderable(
+                "variant-subtitle-customview", category: "Variant · Subtitle"
+            ) {
+                CatalogCustomSubtitleDialog(
+                    title: "Subtitle · Custom View",
+                    message: "I'm a custom UIView (subtitleCustomView) — a bordered container with a label inside, not a subtitle string.",
+                    primary: "Okay"
+                )
+            }
         ]
     }
 }
@@ -133,7 +161,7 @@ extension SwiftUICatalog {
                     subtitle: "primaryActionStyle: .capsule(GalleryPresets.capsuleTheme)",
                     primary: "Capsule Button",
                     closeOnTapOverlay: true,
-                    style: .variantCapsule
+                    primaryButtonStyle: .capsule
                 )
             },
             SwiftUICatalogEntry.renderable(
@@ -145,7 +173,7 @@ extension SwiftUICatalog {
                         + ".capsuleOutlined(GalleryPresets.capsuleOutlinedTheme)",
                     primary: "Capsule Outlined",
                     closeOnTapOverlay: true,
-                    style: .variantCapsuleOutlined
+                    primaryButtonStyle: .capsuleOutlined
                 )
             },
             SwiftUICatalogEntry.renderable(
@@ -156,7 +184,7 @@ extension SwiftUICatalog {
                     subtitle: "primaryActionStyle: .plain(GalleryPresets.plainTheme)",
                     primary: "Plain Button",
                     closeOnTapOverlay: true,
-                    style: .variantPlain
+                    primaryButtonStyle: .plain
                 )
             },
             SwiftUICatalogEntry.renderable(
@@ -168,7 +196,7 @@ extension SwiftUICatalog {
                         + ".obliqueBottomLeft(GalleryPresets.obliqueBottomLeftTheme)",
                     primary: "Oblique Button",
                     closeOnTapOverlay: true,
-                    style: .variantOblique
+                    primaryButtonStyle: .oblique
                 )
             }
         ]
