@@ -192,13 +192,25 @@ public struct SwiftUIAlertModal: View {
                     tokens: tokens,
                     hasContentBelow: hasTitle || hasSubtitle || hasButtons
                 )
+                // Artwork is decorative and yields before descriptive text or actions.
+                .layoutPriority(-1)
+                ModalMeasuredScrollView {
+                    titleAndSubtitle(
+                        resolved: resolved,
+                        payload: payload,
+                        hasSubtitle: hasSubtitle,
+                        hasButtons: hasButtons
+                    )
+                }
+                .layoutPriority(1)
+            } else {
+                titleAndSubtitle(
+                    resolved: resolved,
+                    payload: payload,
+                    hasSubtitle: hasSubtitle,
+                    hasButtons: hasButtons
+                )
             }
-            titleAndSubtitle(
-                resolved: resolved,
-                payload: payload,
-                hasSubtitle: hasSubtitle,
-                hasButtons: hasButtons
-            )
         }
     }
 
@@ -245,8 +257,8 @@ public struct SwiftUIAlertModal: View {
                     // container (`AlertModalScaffold`'s VStack) off the view it actually holds, so a
                     // `.padding` applied after it would be the view the VStack sees. This is the
                     // SwiftUI analogue of UIKit's vertical compression resistance, and the ORDERING
-                    // is the directive: the title (1) out-ranks the subtitle (0), so when the VStack
-                    // has less height than its children want, the subtitle is what gives way.
+                    // is the directive: the title (1) out-ranks the subtitle (0), so when these rows
+                    // are laid out without their shared scroll group, the subtitle gives way first.
                     // Magnitudes are not comparable to UIKit's 0…1000 scale — only the order is.
                     .layoutPriority(Self.titleLayoutPriority)
             }
@@ -285,7 +297,7 @@ public struct SwiftUIAlertModal: View {
             // UIKit's `vwSubtitleAndBelowDivider`: `svMainActionContainer != nil` is its only
             // condition, the subtitle being the last content row.
             .padding(.bottom, hasButtons ? tokens.gapBelowSubtitle : 0)
-            // The LOWER rung of the directive's ordering — see `subtitleLayoutPriority`.
+            // The lower rung of the title/subtitle ordering — see `subtitleLayoutPriority`.
             .layoutPriority(Self.subtitleLayoutPriority)
         case let .attributed(attributed):
             SubtitleSlot(fillsWidth: tokens.contentChildrenFillWidth) {
@@ -514,40 +526,12 @@ private struct NeverTruncates: ViewModifier {
 extension SwiftUIAlertModal {
     /// **The SwiftUI analogue of UIKit's vertical compression-resistance ordering.**
     ///
-    /// `ModalLayout.Priority` puts the title (900) above the subtitle label (750) and far above the
-    /// subtitle SLOT's height tie (`.defaultLow`, 250). SwiftUI's `layoutPriority` is a `Double` on an
-    /// unrelated scale, so only the ORDER carries over — which is all the directive states. Two
-    /// named constants rather than bare literals in the body, so the ordering is one visible fact
-    /// that a reader (and `TitleSubtitleTruncationTests`) can check instead of two magic numbers.
+    /// `ModalLayout.Priority` puts the title (900) above the subtitle label (750). SwiftUI's
+    /// `layoutPriority` is a `Double` on an unrelated scale, so only the order carries over. Banner
+    /// dialogs protect both rows as one scrollable group; these constants still describe their
+    /// internal ordering when that external group is absent.
     static var titleLayoutPriority: Double { 1 }
-    /// **Below SwiftUI's DEFAULT, which is what puts it below the BANNER too — and that is measured,
-    /// not stylistic.**
-    ///
-    /// It was `0` (the default) while the only ordering that mattered was title-over-subtitle. It has
-    /// to be negative now, because with `SubtitleSlot` the subtitle is finally able to yield and the
-    /// question becomes WHO yields first — and the answer has to be UIKit's answer.
-    ///
-    /// UIKit's, measured on `banner-comparable` across a 120pt sweep of host heights: **the subtitle
-    /// slot yields all the way to its floor before the banner gives up a single point.** At 844x430
-    /// the banner is still 160.0 and the viewport is already 19.33 of a 38.33pt label; only from
-    /// 844x415 down does the banner start to move, and from there the subtitle sits on its floor and
-    /// the banner absorbs every further point.
-    ///
-    /// That order looks backwards against `ModalLayout.Priority` — the banner's drivers are 245/243/241,
-    /// BELOW the subtitle slot's `.defaultLow` (250), and `TitleSubtitleTruncationTests` asserts
-    /// exactly that. It is not backwards: those three set the banner's height, but what DEFENDS the
-    /// banner's height under pressure is `ivBanner`'s WIDTH compression resistance (750) reaching the
-    /// height through the required `width == height * ratio` tie. So the effective ladder is subtitle
-    /// slot (250) → banner (750) → subtitle floor (850), and the subtitle really does go first.
-    ///
-    /// SwiftUI expresses that as a group ordering: the VStack serves higher `layoutPriority` first
-    /// and hands the lowest whatever is left, while still reserving every child's MINIMUM — so the
-    /// subtitle takes `clamp(residual, floor, contentHeight)` and the banner's greedy
-    /// `.frame(maxHeight:)` takes the rest. Measured against UIKit at every 10pt step from 844x450 to
-    /// 844x330: identical to within 0.09pt on every row.
-    ///
-    /// Only the ORDER carries over; the magnitude is on an unrelated scale to UIKit's 0…1000.
-    static var subtitleLayoutPriority: Double { -1 }
+    static var subtitleLayoutPriority: Double { 0 }
 }
 
 extension SwiftUIAlertModal {

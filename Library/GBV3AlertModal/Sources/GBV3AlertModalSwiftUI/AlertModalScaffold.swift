@@ -339,9 +339,9 @@ public struct AlertModalScaffold<Content: View>: View {
     @ViewBuilder
     private func fittingCardRows(availableHeight: CGFloat) -> some View {
         if hasBanner {
-            // BannerSlot is already the pressure valve for banner dialogs: its flexible height
-            // yields to the title, subtitle, and actions. An outer scroll removes that proposal
-            // and can collapse ultra-tall artwork to a nearly invisible mark.
+            // SwiftUIAlertModal supplies its own measured title/subtitle scroll group for banner
+            // dialogs. Keeping the rows here lets that group and the banner compete for the card's
+            // bounded proposal while the fixed actions retain the highest priority.
             cardRows
         } else if let cardRowsIdealHeight, cardRowsIdealHeight > availableHeight {
             pressuredCardRows
@@ -367,7 +367,7 @@ public struct AlertModalScaffold<Content: View>: View {
     private var cardRows: some View {
         VStack(spacing: 0) {
             modalContent
-            buttonRows
+            buttonRows.layoutPriority(2)
         }
     }
 
@@ -396,7 +396,7 @@ public struct AlertModalScaffold<Content: View>: View {
                     modalContentIdealHeight = height
                 }
             }
-            buttonRows
+            buttonRows.layoutPriority(2)
         }
     }
 
