@@ -7,13 +7,14 @@ import argparse
 import base64
 import html
 import re
+import shutil
 import subprocess
 from dataclasses import dataclass
 from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-SNAPSHOTS = ROOT / "Examples/GBV3AlertModalExample/GBV3AlertModalExampleTests/__Snapshots__/CatalogSnapshotComparisonTests"
+SNAPSHOTS = ROOT / ".build/reports/catalog-snapshots"
 OUTPUT = ROOT / ".build/reports/alert-modal-snapshot-comparison.html"
 TEST_PROJECT = ROOT / "Examples/GBV3AlertModalExample/GBV3AlertModalExample.xcodeproj"
 DERIVED_DATA = ROOT / ".build/catalog-snapshot-derived-data"
@@ -28,14 +29,21 @@ class Pair:
 
 def discover(snapshot_dir: Path = SNAPSHOTS) -> list[Pair]:
     sides: dict[str, dict[str, Path]] = {}
-    pattern = re.compile(r"testEvery(?P<side>UIKit|SwiftUI)Example\.(?P<key>.+)\.png$")
+    pattern = re.compile(r"(?P<side>uikit|swiftui)\.(?P<key>.+)\.png$")
     for path in snapshot_dir.glob("*.png"):
         match = pattern.fullmatch(path.name)
         if match:
-            sides.setdefault(match["key"], {})[match["side"].lower()] = path
+            sides.setdefault(match["key"], {})[match["side"]] = path
     if not sides:
         raise SystemExit(f"No catalog snapshots found in {snapshot_dir}")
-    return [Pair(key, value.get("uikit"), value.get("swiftui")) for key, value in sorted(sides.items())]
+    pairs = [Pair(key, value.get("uikit"), value.get("swiftui")) for key, value in sorted(sides.items())]
+    incomplete = [pair.key for pair in pairs if pair.uikit is None or pair.swiftui is None]
+    if len(pairs) != 70 or incomplete:
+        raise SystemExit(
+            f"Expected 70 complete catalog pairs, found {len(pairs)}; "
+            f"incomplete: {', '.join(incomplete) or 'none'}"
+        )
+    return pairs
 
 
 def image(path: Path | None, label: str, key: str) -> str:
@@ -60,9 +68,10 @@ def build_html(pairs: list[Pair]) -> str:
 
 
 def run_tests(destination: str) -> None:
-    subprocess.run(["xcodebuild", "test", "-project", str(TEST_PROJECT), "-scheme", "GBV3AlertModalExample",
+    shutil.rmtree(SNAPSHOTS, ignore_errors=True)
+    subprocess.run(["xcodebuild", "test", "-project", str(TEST_PROJECT), "-scheme", "CatalogSnapshotCapture",
                     "-destination", destination, "-derivedDataPath", str(DERIVED_DATA),
-                    "-only-testing:GBV3AlertModalExampleTests/CatalogSnapshotComparisonTests",
+                    "-only-testing:GBV3AlertModalExampleTests/CatalogSnapshotCaptureTests",
                     "-skip-testing:GBV3AlertModalExampleUITests",
                     "-parallel-testing-enabled", "NO"], cwd=ROOT, check=True)
 

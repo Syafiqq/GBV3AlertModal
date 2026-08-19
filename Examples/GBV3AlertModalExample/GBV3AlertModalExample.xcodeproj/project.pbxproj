@@ -16,6 +16,7 @@
 		15D837B7443427679455B3AA /* AlertResolutionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 208B6DB5BEF6BE7A0B59FDFB /* AlertResolutionTests.swift */; };
 		01B9BAB389F03BF4E18FF491 /* GenerationGuardTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE42C37D4823D8857ABCACE7 /* GenerationGuardTests.swift */; };
 		CA10A0010000000000000001 /* CatalogContractTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA10A0020000000000000001 /* CatalogContractTests.swift */; };
+		CA10A0030000000000000001 /* CatalogSnapshotCaptureTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA10A0040000000000000001 /* CatalogSnapshotCaptureTests.swift */; };
 		5962A4D42935DFA200183658 /* GBV3AlertModalExampleUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5962A4D32935DFA200183658 /* GBV3AlertModalExampleUITests.swift */; };
 /* End PBXBuildFile section */
 
@@ -45,6 +46,7 @@
 		208B6DB5BEF6BE7A0B59FDFB /* AlertResolutionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlertResolutionTests.swift; sourceTree = "<group>"; };
 		EE42C37D4823D8857ABCACE7 /* GenerationGuardTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GenerationGuardTests.swift; sourceTree = "<group>"; };
 		CA10A0020000000000000001 /* CatalogContractTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CatalogContractTests.swift; sourceTree = "<group>"; };
+		CA10A0040000000000000001 /* CatalogSnapshotCaptureTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CatalogSnapshotCaptureTests.swift; sourceTree = "<group>"; };
 		5962A4CF2935DFA200183658 /* GBV3AlertModalExampleUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = GBV3AlertModalExampleUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		5962A4D32935DFA200183658 /* GBV3AlertModalExampleUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GBV3AlertModalExampleUITests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -153,6 +155,7 @@
 				208B6DB5BEF6BE7A0B59FDFB /* AlertResolutionTests.swift */,
 				EE42C37D4823D8857ABCACE7 /* GenerationGuardTests.swift */,
 				CA10A0020000000000000001 /* CatalogContractTests.swift */,
+				CA10A0040000000000000001 /* CatalogSnapshotCaptureTests.swift */,
 			);
 			path = GBV3AlertModalExampleTests;
 			sourceTree = "<group>";
@@ -352,6 +355,7 @@
 				15D837B7443427679455B3AA /* AlertResolutionTests.swift in Sources */,
 				01B9BAB389F03BF4E18FF491 /* GenerationGuardTests.swift in Sources */,
 				CA10A0010000000000000001 /* CatalogContractTests.swift in Sources */,
+				CA10A0030000000000000001 /* CatalogSnapshotCaptureTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

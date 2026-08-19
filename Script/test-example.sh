@@ -141,7 +141,10 @@ run_test_stage() {
 if [[ "$REQUESTED_STAGE" == all || "$REQUESTED_STAGE" == contracts ]]; then
     resolve_simulator
     run_test_stage contracts 300 \
-        -only-testing:GBV3AlertModalExampleTests
+        -only-testing:GBV3AlertModalExampleTests/AlertResolutionTests \
+        -only-testing:GBV3AlertModalExampleTests/CatalogContractTests \
+        -only-testing:GBV3AlertModalExampleTests/DialogCatalogSmokeTests \
+        -only-testing:GBV3AlertModalExampleTests/GenerationGuardTests
 fi
 
 if [[ "$REQUESTED_STAGE" == all || "$REQUESTED_STAGE" == ui-smoke ]]; then

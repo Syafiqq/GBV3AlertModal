@@ -46,6 +46,15 @@ Each stage has a bounded timeout. Only a recognized simulator-infrastructure fai
 once, after restarting and waiting for the selected simulator. UIKit/SwiftUI visual comparison is
 performed manually in the gallery rather than enforced through platform-sensitive image baselines.
 
+Generate a self-contained side-by-side review report without baseline assertions:
+
+```sh
+python3 Scripts/generate_snapshot_comparison.py
+```
+
+The command captures every UIKit and SwiftUI catalog entry into `.build/reports/catalog-snapshots`
+and writes `.build/reports/alert-modal-snapshot-comparison.html` for manual review.
+
 ## Snapshot review
 
 The package retains focused Migration snapshots for library regressions. The example gallery does
