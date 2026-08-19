@@ -43,33 +43,8 @@
 //
 
 import Foundation
-import UIKit
-import GBV3AlertModal
-
-// MARK: - Style tokens
-
-/// One token per divergence shape whose `Properties` differ from `.standard`.
-/// `divergence-ratio-not-artwork-aspect` and `divergence-inset-band` need NO token: their
-/// configuration IS `GalleryPresets.properties` (`bannerRatio: 1`, `bannerMaxHeight: nil`),
-/// which the renderer already holds as `.standard`. That is not a shortcut — it is the finding:
-/// D-B needs no unusual preset at all, only artwork whose aspect is not the stated ratio.
-extension ModalStyle {
-    static let divergenceTallUncapped = ModalStyle("divergence.tallUncapped")
-    static let divergenceBannerWide = ModalStyle("divergence.bannerWide")
-    static let divergenceNilPrimaryStyle = ModalStyle("divergence.nilPrimaryStyle")
-}
-
-extension SwiftUICatalogPresets {
-    /// Every value comes from `DivergenceCatalog`, so the UIKit twin and this entry are drawn
-    /// with ONE `Properties` instance's worth of configuration rather than two transcriptions.
-    static var divergencePresets: [(ModalStyle, GBAlertModal.Properties)] {
-        [
-            (.divergenceTallUncapped, DivergenceCatalog.tallUncappedProperties),
-            (.divergenceBannerWide, DivergenceCatalog.bannerWideProperties),
-            (.divergenceNilPrimaryStyle, DivergenceCatalog.nilPrimaryStyleProperties)
-        ]
-    }
-}
+import GBV3AlertModalCore
+import GBV3AlertModalSwiftUI
 
 // MARK: - Captions
 //
@@ -138,26 +113,11 @@ extension SwiftUIDivergence {
     // `d7Residual` sat here and is DELETED with `Properties.contentScrollable`, which was the
     // whole of what it captioned. With the flag gone the two backends agree on that shape.
 
-    /// **CLOSED in Pass 2.** The measurements are kept because they are what the fix has to be
-    /// judged against, not because the gap is still open — the two backends agree on this shape now.
+    /// **CLOSED in Pass 2.** The catalog now renders this historical ID with `.standard`; the
+    /// nil-primary-style condition remains covered by focused renderer tests rather than a preset.
     static let showsPrimaryNotObeyed = SwiftUIDivergence(
-        caption: "showsPrimary not obeyed · CLOSED (Pass 2). Kept as the record of a defect class "
-            + "the other five entries do not contain: this was never geometry, it was RENDERER "
-            + "OBEDIENCE — the shared resolver got the answer right and this backend could not read "
-            + "it. WHAT IT LOOKED LIKE, measured at 390x844 on the library's mirror of this preset: "
-            + "the UIKit card was 320x123.0 with no btPrimaryAction, no vwPrimaryAction and no "
-            + "svMainActionContainer; the SwiftUI card was 320x187.0 with a 256x48 button at "
-            + "(35, 112) — 64.0pt of phantom card height. The button was not even off-colour "
-            + "(ModalTokens keeps standard's 0xF7941E accent with no style to read, the same orange "
-            + "this preset supplies), so PRESENCE was the entire tell. Cause: a primaryActionStyle "
-            + "of nil with the action STRING still present makes resolve() report showsPrimary "
-            + "false — it requires BOTH — which GBAlertModal+ViewGraph obeys, but "
-            + "AlertModalScaffold.primaryTitle was a non-optional String and card drew primaryButton "
-            + "unconditionally. FIX: primaryTitle is String? and SwiftUIAlertModal passes "
-            + "resolved.showsPrimary ? config.primary : nil. The old note said this was 'out of "
-            + "scope for a frozen UIKit' — it needed no UIKit change at all. Gated by "
-            + "DifferentialGeometryTests' no-buttons-title-subtitle shape, whose UIKit card measures "
-            + "the same 320x123.0."
+        caption: "showsPrimary not obeyed · CLOSED (Pass 2). This historical catalog ID now uses "
+            + "the standard preset; focused renderer tests retain the nil-primary-style regression."
     )
 }
 
@@ -167,7 +127,7 @@ extension SwiftUICatalog {
     /// Five shapes, one per recorded divergence, in the order the design spec discusses them —
     /// the obedience gap last, because it is the one that is not geometry.
     static var divergenceEntries: [SwiftUICatalogEntry] {
-        let category = DivergenceCatalog.category
+        let category = CatalogFixtures.divergenceCategory
         return [
             // D-A — tall uncapped artwork.
             SwiftUICatalogEntry.renderable(
@@ -178,10 +138,9 @@ extension SwiftUICatalog {
                 AlertDialog(
                     image: ModalImage("banner_ultratall"),
                     title: "Tall uncapped artwork",
-                    subtitle: DivergenceCatalog.comparableSubtitle,
+                    subtitle: CatalogFixtures.comparableSubtitle,
                     primary: "Okay",
-                    closeOnTapOverlay: true,
-                    style: .divergenceTallUncapped
+                    closeOnTapOverlay: true
                 )
             },
             // D-B — the stated ratio is not the artwork's aspect. No style token: the
@@ -194,7 +153,7 @@ extension SwiftUICatalog {
                 AlertDialog(
                     image: ModalImage("banner_wide_320x190"),
                     title: "Ratio vs aspect",
-                    subtitle: DivergenceCatalog.comparableSubtitle,
+                    subtitle: CatalogFixtures.comparableSubtitle,
                     primary: "Okay",
                     closeOnTapOverlay: true
                 )
@@ -209,10 +168,9 @@ extension SwiftUICatalog {
                 AlertDialog(
                     image: ModalImage("banner_wide_320x190"),
                     title: "Heads up",
-                    subtitle: DivergenceCatalog.comparableSubtitle,
+                    subtitle: CatalogFixtures.comparableSubtitle,
                     primary: "Okay",
-                    closeOnTapOverlay: true,
-                    style: .divergenceBannerWide
+                    closeOnTapOverlay: true
                 )
             },
             // The vertical-compression band. Same `.standard` preset as its twin; the
@@ -226,14 +184,12 @@ extension SwiftUICatalog {
                 AlertDialog(
                     image: ModalImage("img_badge_multi_achievement"),
                     title: "Heads up",
-                    subtitle: DivergenceCatalog.comparableSubtitle,
+                    subtitle: CatalogFixtures.comparableSubtitle,
                     primary: "Okay",
                     closeOnTapOverlay: true
                 )
             },
-            // `showsPrimary` resolved false and drawn anyway. The `primary` string is
-            // deliberately still here — it is what makes the resolver's "no button"
-            // answer disagree with what this backend puts on screen.
+            // Historical regression ID; now rendered with the shared standard preset.
             SwiftUICatalogEntry.renderable(
                 "divergence-shows-primary-not-obeyed",
                 category: category,
@@ -241,10 +197,9 @@ extension SwiftUICatalog {
             ) {
                 AlertDialog(
                     title: "No primary style",
-                    subtitle: DivergenceCatalog.comparableSubtitle,
+                    subtitle: CatalogFixtures.comparableSubtitle,
                     primary: "Okay",
-                    closeOnTapOverlay: true,
-                    style: .divergenceNilPrimaryStyle
+                    closeOnTapOverlay: true
                 )
             }
         ]

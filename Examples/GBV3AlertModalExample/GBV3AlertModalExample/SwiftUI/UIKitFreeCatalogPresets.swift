@@ -2,247 +2,125 @@
 //  UIKitFreeCatalogPresets.swift
 //  GBV3AlertModalExample
 //
-//  `ModalStyle` → `ModalProperties` for `EmbeddedCatalogScreen`/`WindowCatalogScreen` — the
-//  `EmbeddedModalRenderer`/`WindowModalRenderer` twins of `SwiftUICatalog+Presets.swift`, registering
-//  the SAME 17 style tokens (`.genieErrorBanner` and friends, declared once in `SwiftUICatalog.swift`)
-//  so `SwiftUICatalog.dialogEntries` — built against those tokens — can be presented UNCHANGED on
-//  either UIKit-free renderer. `stressPresets` below does the same for the 5 stress-matrix tokens
-//  (`SwiftUICatalog+Stress.swift`), so `SwiftUICatalog.stressEntries` is presentable too, and
-//  `variantPresets` does it for the 4 button-style variant tokens, so
-//  `SwiftUICatalog.variantButtonStyleEntries` is presentable — the other 7 variant entries
-//  (title/subtitle/button-state) use `.standard`, already seeded.
+//  SwiftUI-native visual configuration for the 70-entry comparison catalog. Common button looks
+//  are registered by enum; only the genuinely custom red oblique treatment needs a `ModalStyle`.
 //
-//  STRUCTURAL geometry (padding, banner ratio/height, component spacing) is transcribed verbatim
-//  from `SwiftUICatalog+Presets.swift`, because that is what `ModalTokens`/`ResolvedModal` actually
-//  read. Fonts/colours follow `GalleryPresets.standardModalProperties`'s own precedent — a minimal,
-//  functional preset, not a GallerySHSans/GalleryColor fidelity port: these two catalog screens exist
-//  to answer "does the shape actually render", the same bar `EmbeddedShapeCoverageTests`/
-//  `WindowShapeCoverageTests` already gate structurally; looking at them is the added, non-automatable
-//  half of that same claim.
+//  Structural geometry, fonts, and colours are expressed entirely with the package's SwiftUI-native
+//  configuration types.
 //
 
 import SwiftUI
-import GBV3AlertModal
+import GBV3AlertModalCore
+import GBV3AlertModalSwiftUI
 
 @MainActor
-enum UIKitFreeCatalogPresets {
+enum SwiftUICatalogPresets {
 
-    /// The 17 style→preset pairs `SwiftUICatalog.dialogEntries` asks for by name (`.standard`/
-    /// `.popup` are already seeded by both renderers' `init`). The 4 `variant*` tokens
-    /// (`SwiftUICatalog+Variants.swift`) are a separate table, `variantPresets` below.
+    /// Canonical SwiftUI configuration. UIKit has an equivalent preset with the same field names,
+    /// but this value owns its colours, fonts, geometry, and button themes independently.
+    static let standard = ModalProperties(
+        baseTint: color(0xF7A440),
+        overlayColor: color(0x626262).opacity(0.6),
+        contentProperty: ModalProperties.ContentProperty(
+            backgroundColor: .white,
+            cornerRadius: 16,
+            fixedWidthPortrait: 256,
+            maxWidthPortrait: 256,
+            fixedWidthLandscape: 256,
+            maxWidthLandscape: 256,
+            childShouldMatchParent: true
+        ),
+        margin: EdgeInsets(top: 40, leading: 20, bottom: 40, trailing: 20),
+        padding: MinMaxEdgeInsets(
+            top: (16, 24),
+            left: (16, 32),
+            bottom: (16, 24),
+            right: (16, 32)
+        ),
+        banner: ModalBannerConfiguration(),
+        titleFont: .system(size: 24, weight: .bold),
+        titleColor: color(0x262262),
+        subtitleFont: .system(size: 16),
+        subtitleColor: color(0x515151),
+        buttonActionShouldMatchParent: true,
+        buttonActionOrientation: .vertical,
+        primaryActionStyle: .obliqueBottomLeft(obliqueTheme),
+        secondaryActionStyle: .plain(plainTheme),
+        closeButtonTint: .black,
+        space: ModalProperties.ComponentSpace(banner: 8, title: 8, subtitle: 16, interButton: 8)
+    )
+
+    /// The remaining dialog-specific style→preset pair. `.standard` is seeded by the renderer;
+    /// common button variants are registered independently through `buttonStyles` below.
     static var stylePresets: [(ModalStyle, ModalProperties)] {
         [
-            (.geniePermissionAlert, permissionAlert),
-            (.genieObliqueRed, obliqueRed),
-            (.genieErrorBanner, errorBanner),
-            (.genieForceUpdateBanner, forceUpdateBanner),
-            (.genieCapBanner, capBanner),
-            (.genieQuizBanner, quizBanner),
-            (.genieTrialBanner, quizBanner),
-            (.genieAiNotesBanner, aiNotesBanner),
-            (.genieCreditDeduction, creditDeduction),
-            (.genieStreak, streak),
-            (.genieTimerBanner, timerBanner),
-            (.genieExitWorksheetBanner, exitWorksheetBanner),
-            (.genieRenameInput, renameInput),
-            (.genieDatePickerInput, datePickerInput),
-            (.genieBadgeUnlock, badgeUnlock),
-            (.genieBadgeMulti, badgeMulti),
-            (.genieBadgeDetail, badgeDetail)
+            (.genieObliqueRed, obliqueRed)
         ]
     }
 
-    /// The 4 button-style variant style→preset pairs `SwiftUICatalog.variantButtonStyleEntries` asks
-    /// for by name. Mirrors `SwiftUICatalogPresets`'s own four (`GalleryPresets.properties.copy(
-    /// primaryActionStyle: …)`) using the SwiftUI-native `ModalProperties.ActionStyle` cases and
-    /// `GalleryColor` tokens instead — same colours, same shape, UIKit-free type.
-    static var variantPresets: [(ModalStyle, ModalProperties)] {
+    /// Platform-native themes selected per call by the renderer-neutral `ModalButtonStyle` enum.
+    static var buttonStyles: [(ModalButtonStyle, ModalProperties.ActionStyle)] {
         [
-            (.variantCapsule, variantCapsule),
-            (.variantCapsuleOutlined, variantCapsuleOutlined),
-            (.variantPlain, variantPlain),
-            (.variantOblique, variantOblique)
+            (.capsule, .capsule(capsuleTheme)),
+            (.capsuleOutlined, .capsuleOutlined(capsuleOutlinedTheme)),
+            (.plain, .plain(plainTheme)),
+            (.oblique, .obliqueBottomLeft(obliqueTheme))
         ]
     }
 
-    static var variantCapsule: ModalProperties {
-        var properties = GalleryPresets.standardModalProperties
-        properties.primaryActionStyle = .capsule(
-            ModalProperties.ActionStyle.CapsuleTheme(
-                backgroundColor: Color(uiColor: GalleryColor.accentSecondary),
-                backgroundDisableColor: Color(uiColor: GalleryColor.borderLight),
-                titleColor: Color(uiColor: GalleryColor.white),
-                titleDisableColor: Color(uiColor: GalleryColor.white),
-                titleFont: .system(size: 16, weight: .heavy)
-            )
-        )
-        return properties
-    }
+    private static let capsuleTheme = ModalProperties.ActionStyle.CapsuleTheme(
+        backgroundColor: color(0xF7A440),
+        backgroundDisableColor: color(0xB4B4B4),
+        titleColor: .white,
+        titleDisableColor: .white,
+        titleFont: .system(size: 16, weight: .heavy)
+    )
 
-    static var variantCapsuleOutlined: ModalProperties {
-        var properties = GalleryPresets.standardModalProperties
-        properties.primaryActionStyle = .capsuleOutlined(
-            ModalProperties.ActionStyle.CapsuleOutlineTheme(
-                backgroundColor: .clear,
-                backgroundDisableColor: .clear,
-                titleColor: Color(uiColor: GalleryColor.labelSubtitle),
-                titleDisableColor: Color(uiColor: GalleryColor.borderLight),
-                borderWidth: 2,
-                borderColor: Color(uiColor: GalleryColor.labelSubtitle),
-                borderDisableColor: Color(uiColor: GalleryColor.borderLight),
-                titleFont: .system(size: 16, weight: .heavy)
-            )
-        )
-        return properties
-    }
+    private static let capsuleOutlinedTheme = ModalProperties.ActionStyle.CapsuleOutlineTheme(
+        backgroundColor: .clear,
+        backgroundDisableColor: .clear,
+        titleColor: color(0x515151),
+        titleDisableColor: color(0xB4B4B4),
+        borderWidth: 2,
+        borderColor: color(0x515151),
+        borderDisableColor: color(0xB4B4B4),
+        titleFont: .system(size: 16, weight: .heavy)
+    )
 
-    static var variantPlain: ModalProperties {
-        var properties = GalleryPresets.standardModalProperties
-        properties.primaryActionStyle = .plain(
-            ModalProperties.ActionStyle.PlainTheme(
-                titleColor: Color(uiColor: GalleryColor.accentSecondaryDark),
-                titleDisableColor: Color(uiColor: GalleryColor.borderLight),
-                titleFont: .system(size: 16, weight: .heavy)
-            )
-        )
-        return properties
-    }
+    private static let plainTheme = ModalProperties.ActionStyle.PlainTheme(
+        titleColor: color(0xF7941E),
+        titleDisableColor: color(0xB4B4B4),
+        titleFont: .system(size: 16, weight: .heavy)
+    )
 
-    /// Same oblique theme `.standard` already carries — the UIKit twin (`SwiftUICatalogPresets
-    /// .variantOblique`) re-declares its own style token for this exact theme too, so this stays
-    /// a plain passthrough rather than transcribing the theme a second time.
-    static var variantOblique: ModalProperties { GalleryPresets.standardModalProperties }
-
-    /// The 5 stress-matrix style→preset pairs `SwiftUICatalog.stressEntries` asks for by name
-    /// (`.standard`'s no-banner vertical shapes need no token of their own, same as the UIKit/SwiftUI
-    /// twins). Transcribed from `StressCatalog.properties(banner:orientation:)`, the ONE function both
-    /// other galleries already read from — see that function's own doc for why it stays UIKit-typed.
-    static var stressPresets: [(ModalStyle, ModalProperties)] {
-        [
-            (.stressHorizontal, stressProperties(banner: .none, orientation: .horizontal)),
-            (.stressWideBanner, stressProperties(banner: .wide, orientation: .vertical)),
-            (.stressWideBannerHorizontal, stressProperties(banner: .wide, orientation: .horizontal)),
-            (.stressTallBanner, stressProperties(banner: .tall, orientation: .vertical)),
-            (.stressTallBannerHorizontal, stressProperties(banner: .tall, orientation: .horizontal))
-        ]
-    }
-
-    private static func stressProperties(banner: StressCatalog.BannerKind, orientation: Axis) -> ModalProperties {
-        var properties = GalleryPresets.standardModalProperties
-        if orientation == .horizontal {
-            properties.buttonActionOrientation = .horizontal
-        }
-        if let ratio = banner.ratio {
-            properties.bannerRatio = ratio
-        }
-        return properties
-    }
-
-    private static func popupBanner(ratio: CGFloat, maxHeight: CGFloat) -> ModalProperties {
-        var properties = GalleryPresets.popupModalProperties
-        properties.bannerRatio = ratio
-        properties.bannerMaxHeight = maxHeight
-        return properties
-    }
-
-    static var permissionAlert: ModalProperties {
-        var properties = GalleryPresets.standardModalProperties
-        properties.padding = UIMinMaxEdgeInsets(top: (20, 20), left: (30, 30), bottom: (12, 12), right: (30, 30))
-        properties.space = ModalProperties.ComponentSpace(banner: 8, title: 12, subtitle: 20, interButton: 8)
-        return properties
-    }
+    private static let obliqueTheme = ModalProperties.ActionStyle.ObliqueBottomLeftTheme(
+        unPressedColor: color(0xF7941E),
+        pressedColor: color(0x038CD5),
+        disabledColor: color(0xB4B4B4),
+        shadowColor: color(0xE57B41),
+        titleColor: .white,
+        titleDisableColor: .white,
+        titleFont: .system(size: 16, weight: .heavy)
+    )
 
     static var obliqueRed: ModalProperties {
-        var properties = GalleryPresets.standardModalProperties
+        var properties = standard
         properties.primaryActionStyle = .obliqueBottomLeft(
             ModalProperties.ActionStyle.ObliqueBottomLeftTheme(
                 unPressedColor: .red, pressedColor: .red, disabledColor: .gray,
-                // Matches UIKit's real "leave class" theme (`GalleryPresets.obliqueBottomLeftRedTheme.shadowColor`
-                // = `GalleryColor.englishVermillion`) rather than `.red` again — same-as-fill flattens
-                // the oblique offset layer into the surface.
-                shadowColor: Color(uiColor: GalleryColor.englishVermillion),
+                // The darker shadow keeps the oblique offset visually distinct from the red fill.
+                shadowColor: color(0xC54A47),
                 titleColor: .white, titleDisableColor: .white
             )
         )
         return properties
     }
 
-    static var errorBanner: ModalProperties { popupBanner(ratio: 295.0 / 256.0, maxHeight: 320) }
-    static var forceUpdateBanner: ModalProperties { popupBanner(ratio: 320.0 / 320.0, maxHeight: 320) }
-    static var capBanner: ModalProperties { popupBanner(ratio: 320.0 / 197.0, maxHeight: 216) }
-    static var quizBanner: ModalProperties { popupBanner(ratio: 320.0 / 229.0, maxHeight: 216) }
-    static var aiNotesBanner: ModalProperties { popupBanner(ratio: 960.0 / 681.0, maxHeight: 320) }
-
-    static var creditDeduction: ModalProperties {
-        var properties = GalleryPresets.popupModalProperties
-        properties.titleFont = .system(size: 24, weight: .heavy)
-        return properties
-    }
-
-    static var streak: ModalProperties {
-        var properties = GalleryPresets.standardModalProperties
-        properties.padding = UIMinMaxEdgeInsets(top: (20, 40), left: (20, 48), bottom: (20, 32), right: (20, 48))
-        properties.bannerRatio = 200.0 / 168.0
-        properties.bannerMaxHeight = 168
-        properties.space = ModalProperties.ComponentSpace(banner: 16, title: 12, subtitle: 24, interButton: 8)
-        return properties
-    }
-
-    static var timerBanner: ModalProperties {
-        var properties = GalleryPresets.standardModalProperties
-        properties.padding = UIMinMaxEdgeInsets(top: (32, 32), left: (32, 32), bottom: (32, 32), right: (32, 32))
-        properties.bannerRatio = 193.0 / 170.0
-        properties.bannerMaxHeight = 170
-        return properties
-    }
-
-    static var exitWorksheetBanner: ModalProperties {
-        var properties = GalleryPresets.standardModalProperties
-        properties.bannerRatio = 365.0 / 206.0
-        properties.bannerMaxHeight = 144
-        return properties
-    }
-
-    static var renameInput: ModalProperties {
-        var properties = GalleryPresets.standardModalProperties
-        properties.padding = UIMinMaxEdgeInsets(top: (20, 32), left: (16, 32), bottom: (16, 16), right: (16, 32))
-        properties.titleFont = .system(size: 24, weight: .heavy)
-        properties.space = ModalProperties.ComponentSpace(banner: 8, title: 16, subtitle: 32, interButton: 8)
-        return properties
-    }
-
-    static var datePickerInput: ModalProperties {
-        var properties = GalleryPresets.standardModalProperties
-        // `contentProperty` deliberately NOT overridden: widening it was tried (matched to the
-        // picker's own frame cap) and had no observable effect either way — the picker does not
-        // read this number in any direction (see `DatePickerModalView`'s doc). Left at `standard`'s
-        // real 256pt production column rather than kept at an unmotivated 320 that never did
-        // anything.
-        properties.padding = UIMinMaxEdgeInsets(top: (20, 32), left: (12, 40), bottom: (16, 16), right: (12, 40))
-        properties.titleFont = .system(size: 24, weight: .heavy)
-        properties.space = ModalProperties.ComponentSpace(banner: 8, title: 0, subtitle: 8, interButton: 8)
-        return properties
-    }
-
-    static var badgeUnlock: ModalProperties {
-        var properties = GalleryPresets.standardModalProperties
-        properties.padding = UIMinMaxEdgeInsets(top: (20, 40), left: (20, 48), bottom: (20, 32), right: (20, 48))
-        properties.bannerRatio = 1
-        properties.bannerMaxHeight = 144
-        properties.space = ModalProperties.ComponentSpace(banner: 16, title: 12, subtitle: 24, interButton: 8)
-        return properties
-    }
-
-    static var badgeMulti: ModalProperties {
-        var properties = badgeUnlock
-        properties.bannerMaxHeight = 216
-        return properties
-    }
-
-    static var badgeDetail: ModalProperties {
-        var properties = GalleryPresets.standardModalProperties
-        properties.padding = UIMinMaxEdgeInsets(top: (20, 36), left: (20, 48), bottom: (20, 36), right: (20, 48))
-        properties.space = ModalProperties.ComponentSpace(banner: 0, title: 0, subtitle: 24, interButton: 0)
-        return properties
+    private static func color(_ hex: Int) -> Color {
+        Color(
+            red: Double((hex >> 16) & 0xFF) / 255,
+            green: Double((hex >> 8) & 0xFF) / 255,
+            blue: Double(hex & 0xFF) / 255
+        )
     }
 }

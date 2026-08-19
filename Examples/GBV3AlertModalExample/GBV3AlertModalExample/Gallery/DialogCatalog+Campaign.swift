@@ -25,7 +25,7 @@ extension DialogCatalog {
     private static var onboardingWelcomeNoBanner: DialogEntry {
         DialogEntry(name: "onboarding-welcome-nobanner", category: "Campaign/Onboarding") {
             SampleAlertModal(
-                properties: GalleryPresets.popupProperties,
+                properties: GalleryPresets.properties,
                 holder: GalleryPresets.holder.copy(
                     closeOnTapOverlay: false,
                     title: "Hello there!",
@@ -46,7 +46,7 @@ extension DialogCatalog {
     private static var onboardingTrialBanner: DialogEntry {
         DialogEntry(name: "onboarding-trial-banner", category: "Campaign/Onboarding") {
             SampleAlertModal(
-                properties: GalleryPresets.popupProperties.copy(
+                properties: GalleryPresets.properties.copy(
                     bannerRatio: 320.0 / 229.0,
                     bannerMaxHeight: 216,
                     bannerFixedHeight: 184

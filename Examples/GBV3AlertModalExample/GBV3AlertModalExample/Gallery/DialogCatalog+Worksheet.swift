@@ -53,7 +53,7 @@ extension DialogCatalog {
     private static var worksheetAbusedCapBanner: DialogEntry {
         DialogEntry(name: "worksheet-abused-cap-banner", category: "Worksheet") {
             SampleAlertModal(
-                properties: GalleryPresets.popupProperties.copy(
+                properties: GalleryPresets.properties.copy(
                     bannerRatio: 320.0 / 197.0,
                     bannerMaxHeight: 216,
                     bannerFixedHeight: 184

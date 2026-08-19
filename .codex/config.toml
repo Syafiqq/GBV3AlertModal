@@ -1,0 +1,7 @@
+approval_policy = "on-request"
+approvals_reviewer = "auto_review"
+sandbox_mode = "workspace-write"
+
+[mcp_servers.proxyman]
+command = "/Applications/Proxyman_http2.app/Contents/MacOS/mcp-server"
+args = []

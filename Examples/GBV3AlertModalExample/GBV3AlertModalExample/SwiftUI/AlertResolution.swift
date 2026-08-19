@@ -1,5 +1,5 @@
 import Foundation
-import GBV3AlertModal
+import GBV3AlertModalCore
 
 /// A discrete user interaction with the modal. Pure enum so routing is testable without a view.
 enum AlertInteraction {
