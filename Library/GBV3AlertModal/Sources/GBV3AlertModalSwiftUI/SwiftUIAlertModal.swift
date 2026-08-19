@@ -192,17 +192,21 @@ public struct SwiftUIAlertModal: View {
                     tokens: tokens,
                     hasContentBelow: hasTitle || hasSubtitle || hasButtons
                 )
-                // Artwork is decorative and yields before descriptive text or actions.
-                .layoutPriority(-1)
-                ModalMeasuredScrollView {
-                    titleAndSubtitle(
-                        resolved: resolved,
-                        payload: payload,
-                        hasSubtitle: hasSubtitle,
-                        hasButtons: hasButtons
-                    )
+                // Artwork is decorative and yields before the priority-1 descriptive text group
+                // and priority-2 actions. Keep the default priority so it still receives unused
+                // space when no higher-priority content needs it.
+                .layoutPriority(0)
+                if hasTitle || hasSubtitle {
+                    ModalMeasuredScrollView {
+                        titleAndSubtitle(
+                            resolved: resolved,
+                            payload: payload,
+                            hasSubtitle: hasSubtitle,
+                            hasButtons: hasButtons
+                        )
+                    }
+                    .layoutPriority(1)
                 }
-                .layoutPriority(1)
             } else {
                 titleAndSubtitle(
                     resolved: resolved,
